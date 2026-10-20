@@ -1,126 +1,14 @@
-/* Drowned Light — art: the knight atlas, its drowned variants, and procedural pixel sprites. */
+/* Drowned Light — art: procedural pixel sprites for the world, camp and effects.
+   Knights (player and Drowned) are painted in src/units.js. */
 "use strict";
 (function (DL) {
-  const Art = (DL.Art = {
-    FW: 240, FH: 336, AX: 120, AY: 314, // atlas frame size + foot anchor
-    atlas: null,
-    variants: {},
-    sprites: {},
-  });
-
-  // Atlas columns: down, down-right, right, up-right, up, up-left, left, down-left.
-  // Octants from atan2 (0 = east, clockwise on screen) mapped to those columns.
-  const OCT2COL = [2, 1, 0, 7, 6, 5, 4, 3];
-  Art.col = (angle) => OCT2COL[((Math.round(angle / (Math.PI / 4)) % 8) + 8) % 8];
-
-  // How each Drowned variant recolours the player's armour.
-  const VARIANTS = {
-    drowned: { dark: 0.5, tint: [0.74, 0.93, 1.12], glow: [60, 235, 245] },
-    blackguard: { dark: 0.34, tint: [0.8, 0.86, 1.02], glow: [60, 220, 235] },
-    champion: { dark: 0.68, tint: [0.8, 0.96, 1.12], glow: [120, 250, 255] },
-    self: { dark: 0.6, tint: [0.84, 0.95, 1.1], glow: [80, 240, 250] },
-  };
+  const Art = (DL.Art = { sprites: {}, sheets: {} });
 
   Art.load = function () {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => { Art.atlas = img; finish(); };
-      img.onerror = () => { Art.atlas = fallbackAtlas(); finish(); };
-      img.src = "assets/lantern_atlas.png";
-      function finish() {
-        for (const k in VARIANTS) Art.variants[k] = recolor(Art.atlas, VARIANTS[k]);
-        buildSprites();
-        resolve();
-      }
-    });
+    buildSprites();
+    Art.buildUnits();
+    return Promise.resolve();
   };
-
-  // Half-resolution recoloured copy of the atlas. Warm lantern light becomes the abyss's cyan.
-  function recolor(img, o) {
-    const c = document.createElement("canvas");
-    c.width = 960; c.height = 504;
-    const g = c.getContext("2d");
-    g.imageSmoothingEnabled = true;
-    g.imageSmoothingQuality = "high";
-    try {
-      g.drawImage(img, 0, 0, 960, 504);
-      const d = g.getImageData(0, 0, 960, 504), p = d.data;
-      for (let i = 0; i < p.length; i += 4) {
-        if (!p[i + 3]) continue;
-        const r = p[i], gg = p[i + 1], b = p[i + 2];
-        const lum = 0.3 * r + 0.59 * gg + 0.11 * b;
-        if (r > 165 && r - b > 85 && gg > 85) {
-          const t = Math.min(1.15, lum / 190);
-          p[i] = o.glow[0] * t; p[i + 1] = o.glow[1] * t; p[i + 2] = o.glow[2] * t;
-        } else {
-          const L = lum * o.dark;
-          p[i] = Math.min(255, L * o.tint[0] + 4);
-          p[i + 1] = Math.min(255, L * o.tint[1] + 9);
-          p[i + 2] = Math.min(255, L * o.tint[2] + 14);
-        }
-      }
-      g.putImageData(d, 0, 0);
-    } catch (e) {
-      // Pixel access is blocked when opened from file:// — fall back to a CSS filter tint.
-      g.clearRect(0, 0, 960, 504);
-      g.filter = `grayscale(.7) brightness(${o.dark + 0.1}) sepia(.4) hue-rotate(160deg) saturate(1.4)`;
-      g.drawImage(img, 0, 0, 960, 504);
-      g.filter = "none";
-    }
-    return c;
-  }
-
-  const tmp = document.createElement("canvas");
-  tmp.width = 240; tmp.height = 336;
-  const tg = tmp.getContext("2d");
-
-  /* Draw one knight frame with its feet at (x, y).
-     src: "player" for the original art, or a variant key. scale is relative to the 240×336 frame. */
-  Art.drawKnight = function (ctx, src, row, col, x, y, scale, opt = {}) {
-    const img = src === "player" ? Art.atlas : Art.variants[src];
-    if (!img) return;
-    const k = src === "player" ? 1 : 0.5;
-    const sw = Art.FW * k, sh = Art.FH * k, sx = col * sw, sy = row * sh;
-    const dw = Art.FW * scale, dh = Art.FH * scale;
-    const dx = x - Art.AX * scale, dy = y - Art.AY * scale;
-    const clipH = opt.clip != null ? Math.max(0, Math.min(1, opt.clip)) : 1; // fraction visible from top (for rising)
-    ctx.save();
-    if (opt.alpha != null) ctx.globalAlpha *= opt.alpha;
-    if (opt.flash) {
-      tg.clearRect(0, 0, 240, 336);
-      tg.globalCompositeOperation = "source-over";
-      tg.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-      tg.globalCompositeOperation = "source-atop";
-      tg.fillStyle = opt.flashColor || "#fff";
-      tg.globalAlpha = Math.min(1, opt.flash);
-      tg.fillRect(0, 0, sw, sh);
-      tg.globalAlpha = 1;
-      tg.globalCompositeOperation = "source-over";
-      ctx.drawImage(tmp, 0, 0, sw, sh * clipH, dx, dy, dw, dh * clipH);
-    } else {
-      ctx.drawImage(img, sx, sy, sw, sh * clipH, dx, dy, dw, dh * clipH);
-    }
-    ctx.restore();
-  };
-
-  // A plain hooded knight drawn in code, used only if assets/lantern_atlas.png is missing.
-  function fallbackAtlas() {
-    const c = document.createElement("canvas");
-    c.width = 1920; c.height = 1008;
-    const g = c.getContext("2d");
-    const dirs = [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]];
-    for (let r = 0; r < 3; r++) for (let i = 0; i < 8; i++) {
-      const ox = i * 240 + 120, oy = r * 336 + 310, [dx, dy] = dirs[i];
-      g.fillStyle = "#3b3530"; g.fillRect(ox - 30 + (r === 1 ? 8 : 0), oy - 60, 22, 60); g.fillRect(ox + 8 - (r === 1 ? 8 : 0), oy - 60, 22, 60);
-      g.fillStyle = "#d8c9ae"; g.beginPath(); g.moveTo(ox, oy - 250); g.lineTo(ox + 75, oy - 40); g.lineTo(ox - 75, oy - 40); g.fill();
-      g.fillStyle = "#8b8f94"; g.fillRect(ox - 35, oy - 190, 70, 110);
-      g.fillStyle = "#e8dcc4"; g.beginPath(); g.arc(ox, oy - 210, 42, 0, Math.PI * 2); g.fill();
-      if (dy >= 0) { g.fillStyle = "#1a1a1a"; g.fillRect(ox - 18 + dx * 12, oy - 220, 36, 26); }
-      g.fillStyle = "#ffb54a"; g.fillRect(ox + 60 * (dx || 1) - 12, oy - 120, 24, 32);
-      g.strokeStyle = "#cfd3d6"; g.lineWidth = 10; g.beginPath(); g.moveTo(ox - 50, oy - 110); g.lineTo(ox - 70 - dx * 20, oy - 10); g.stroke();
-    }
-    return c;
-  }
 
   /* ---------------- Procedural pixel sprites ----------------
      Drawn small, alpha-thresholded, outlined, then upscaled ×2 with no smoothing. */
@@ -151,6 +39,21 @@
         g.closePath(); g.fill();
       },
       px(x, y, col) { g.fillStyle = col; g.fillRect(x, y, 1, 1); },
+      // crisp 1px Bresenham line
+      seg(x0, y0, x1, y1, col) {
+        g.fillStyle = col;
+        x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+        const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+        let e = dx + dy;
+        for (;;) {
+          g.fillRect(x0, y0, 1, 1);
+          if (x0 === x1 && y0 === y1) break;
+          const e2 = 2 * e;
+          if (e2 >= dy) { e += dy; x0 += sx; }
+          if (e2 <= dx) { e += dx; y0 += sy; }
+        }
+      },
+      g,
     };
     fn(P, w, h);
     const d = g.getImageData(0, 0, w, h), p = d.data;
@@ -170,6 +73,7 @@
     g.putImageData(d, 0, 0);
     return { c, w, h };
   }
+  Art.mk = mk;
 
   const C = {
     bark: "#3a3028", barkHi: "#56483a", barkDk: "#241d18", moss: "#2f4a38", mossHi: "#456b48",

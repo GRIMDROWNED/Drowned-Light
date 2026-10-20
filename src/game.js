@@ -249,7 +249,7 @@
       L.push({ x: p.x, y: p.y - 28, r: 80, s: 0.8, col: "255,180,90", a: 0.75, flick: 1 });
     }
     for (const e of G.enemies) {
-      if (e.type === "defiler") L.push({ x: e.x + 10, y: e.y - 40, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
+      if (e.type === "defiler") L.push({ x: e.x, y: e.y - 70, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
       else if (e.def.boss) L.push({ x: e.x, y: e.y - 40, r: 60, s: 0.3, col: "70,230,240", a: 0.6 });
     }
     for (const pr of G.projectiles) L.push({ x: pr.x, y: pr.y, r: 26, s: 0.3, col: pr.col, a: 0.8 });
@@ -300,7 +300,7 @@
       p.dashT -= dt;
       p.x += p.dashDir.x * 440 * dt;
       p.y += p.dashDir.y * 440 * dt;
-      p.trail.push({ x: p.x, y: p.y, life: 0.25, col: DL.Art.col(p.angle) });
+      p.trail.push({ x: p.x, y: p.y, life: 0.25, ang: p.angle });
       if (kit.dashDmg) {
         for (const e of G.enemies) {
           if (e.rise > 0 || p.dashHit.has(e)) continue;

@@ -54,7 +54,8 @@ No build step, no dependencies. These are plain scripts loaded in order:
 |---|---|
 | `src/core.js` | math, deterministic noise, input (keyboard + floating joystick), WebAudio sound effects |
 | `src/data.js` | **all balance numbers**: day/night lengths, zones, enemies, kits, upgrade costs |
-| `src/art.js` | loads the knight atlas, builds the recoloured Drowned variants, draws the procedural pixel sprites |
+| `src/art.js` | procedural pixel sprites for the world, camp and effects |
+| `src/units.js` | the knight and Drowned Knight sprite sheets (all animations, corruption stages) |
 | `src/world.js` | endless chunked wetland: ground texture, resources, blooms, collisions |
 | `src/game.js` | simulation: player, corruption, spawning, enemy AI, combat, camp economy, saving |
 | `src/render.js` | drawing, the darkness/light compositing, effects |
@@ -65,9 +66,12 @@ Progress (camp, stored supplies, kits, day) saves to the browser's `localStorage
 
 ## Art
 
-`assets/lantern_atlas.png` is the player sheet: 1920×1008, 8 columns × 3 rows of 240×336 frames.
-Columns: down, down-right, right, up-right, up, up-left, left, down-left. Rows: idle, walk, dash.
+The knight and every Drowned Knight are pixel sprites painted in code (`src/units.js`) at the same pixel size as the world. They follow the Lantern Knight concept sheets.
+- **Lantern Knight**: idle, 4-frame walk, 3-frame attack, dash, hurt and death, in down / up / side views (left mirrors right). There are four corruption stages: steel and cloth darken, cyan seeps in, and the lantern turns cyan.
+- **The Drowned** share the knight's hood, mantle and armour, darkened, with glowing visors and cyan drips. Each has its own gear: the squire's short sword, the footman's round shield, the archer's bow, the defiler's pole lantern, the Blackguard's tower shield and bulk, and the Champion's crown and greatsword. The revenant crawls.
 
-The Drowned Knights are generated from this same sheet at load time. Armour is darkened and the warm lantern light turns abyssal cyan, so they are literally the player's corrupted reflection. Blooms, ruins and camp buildings are drawn in code as pixel sprites. Dedicated sprite sheets can replace any of them later.
+Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite sheets can replace the generated ones later without touching the game code.
 
-**Art that would help most next:** a multi-frame walk cycle (4–6 frames per direction), an attack swing row, and dedicated enemy sheets (archer bow, blackguard shield, champion).
+`assets/lantern_atlas.png` (the earlier illustrated sheet) stays in the repo for reference but is no longer loaded.
+
+Blooms, ruins and camp buildings are also drawn in code (`src/art.js`).

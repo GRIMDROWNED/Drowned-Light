@@ -54,24 +54,24 @@
     root: { sprite: "root", bloom: true, light: 200, hp: 480, rad: 30, solid: 20, name: "Mother Root" },
   };
 
-  // Every Drowned Knight is the player's own armour, corrupted (see Art.VARIANTS).
+  // Every Drowned Knight wears the player's armour, corrupted. Sprites: src/units.js, keyed by type.
   DL.ENEMIES = {
     squire: { name: "Broken Squire", hp: 16, speed: 92, dmg: 6, range: 30, windup: 0.32, cd: 1.0, scale: 0.78,
-      variant: "drowned", radius: 10, mass: 0.7, drop: { iron: 0.15 } },
+      radius: 10, mass: 0.7, drop: { iron: 0.15 } },
     footman: { name: "Drowned Footman", hp: 34, speed: 58, dmg: 11, range: 36, windup: 0.45, cd: 1.4, scale: 1,
-      variant: "drowned", radius: 13, mass: 1, drop: { iron: 0.4 } },
+      radius: 13, mass: 1, drop: { iron: 0.4 } },
     archer: { name: "Shade Archer", hp: 22, speed: 64, dmg: 9, range: 230, windup: 0.7, cd: 2.3, scale: 0.95,
-      variant: "drowned", radius: 12, mass: 0.9, ranged: true, keep: 170, drop: { iron: 0.3 } },
-    revenant: { name: "Swarming Revenant", hp: 9, speed: 104, dmg: 5, range: 24, windup: 0.25, cd: 0.9, scale: 0.6,
-      variant: "drowned", radius: 8, mass: 0.4, crawl: true, drop: { resin: 0.1 } },
+      radius: 12, mass: 0.9, ranged: true, keep: 170, drop: { iron: 0.3 } },
+    revenant: { name: "Swarming Revenant", hp: 9, speed: 104, dmg: 5, range: 24, windup: 0.25, cd: 0.9, scale: 0.85,
+      radius: 8, mass: 0.4, crawl: true, drop: { resin: 0.1 } },
     defiler: { name: "Lantern Defiler", hp: 44, speed: 52, dmg: 12, range: 40, windup: 0.6, cd: 1.6, scale: 1.05,
-      variant: "drowned", radius: 13, mass: 1.2, targetsLight: true, lightDmg: 26, drop: { resin: 0.6, iron: 0.3 } },
-    blackguard: { name: "Blackguard", hp: 140, speed: 40, dmg: 20, range: 44, windup: 0.75, cd: 2.0, scale: 1.3,
-      variant: "blackguard", radius: 18, mass: 3.5, armor: 0.35, drop: { iron: 1 } },
-    champion: { name: "Drowned Champion", hp: 520, speed: 56, dmg: 28, range: 70, windup: 0.8, cd: 2.2, scale: 1.7,
-      variant: "champion", radius: 24, mass: 8, armor: 0.2, boss: true, drop: { iron: 1, pearl: 1 } },
+      radius: 13, mass: 1.2, targetsLight: true, lightDmg: 26, drop: { resin: 0.6, iron: 0.3 } },
+    blackguard: { name: "Blackguard", hp: 140, speed: 40, dmg: 20, range: 44, windup: 0.75, cd: 2.0, scale: 1.15,
+      radius: 18, mass: 3.5, armor: 0.35, drop: { iron: 1 } },
+    champion: { name: "Drowned Champion", hp: 520, speed: 56, dmg: 28, range: 70, windup: 0.8, cd: 2.2, scale: 1.5,
+      radius: 24, mass: 8, armor: 0.2, boss: true, drop: { iron: 1, pearl: 1 } },
     self: { name: "Your Drowned Self", hp: 200, speed: 70, dmg: 15, range: 44, windup: 0.5, cd: 1.3, scale: 1.05,
-      variant: "self", radius: 14, mass: 2, boss: true, drop: {} },
+      radius: 14, mass: 2, boss: true, drop: {} },
   };
 
   // Base kits. A kit = weapon + dash behaviour + signature ability.

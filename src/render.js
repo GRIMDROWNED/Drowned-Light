@@ -2,7 +2,6 @@
 "use strict";
 (function (DL) {
   const W = DL.World, Art = DL.Art;
-  const KS = 0.22; // knight frame scale: 240×336 art → 53×74 world px
   const PS = 2;   // procedural sprite pixel size in world px
 
   const R = (DL.Render = {});
@@ -311,54 +310,57 @@
     c.fillRect(k.x - 2, y - 2, 2, 2);
   }
 
+  // Which animation the player shows this frame: [anim, frame, facing angle].
+  function playerAnim(G, p, t) {
+    if (G.state === "dying") return ["death", Math.min(2, Math.floor(G.dying / 0.45)), p.angle];
+    if (p.dashT > 0) return ["dash", 0, p.angle];
+    if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
+    if (p.swing) return ["attack", Math.min(2, Math.floor((p.swing.t / p.swing.dur) * 3)), p.swing.ang];
+    if (p.moving) return ["walk", Math.floor(p.animT * 8), p.angle];
+    return ["idle", Math.floor(t * 1.6), p.angle];
+  }
+
   function drawPlayer(c, G, t) {
     const p = G.player;
-    const col = Art.col(p.angle);
-    for (const tr of p.trail) Art.drawKnight(c, "player", 2, tr.col, tr.x, tr.y, KS, { alpha: tr.life * 1.2 });
+    const key = G.state === "dying" ? "knight4" : "knight" + p.stage;
+    for (const tr of p.trail) Art.drawUnit(c, key, "dash", 0, tr.ang, tr.x, tr.y, 1, { alpha: tr.life * 1.4, flash: 0.5, flashColor: "#ffd59a" });
     shadow(c, p.x, p.y, 15, 5);
-    let row = 0, bob = Math.sin(t * 2) * 0.5;
-    if (p.dashT > 0) row = 2;
-    else if (p.moving) { row = Math.floor(p.animT * 7) % 2 ? 1 : 0; bob = -Math.abs(Math.sin(p.animT * 11)) * 1.6; }
-    const y = p.y + bob;
+    const [anim, fr, ang] = playerAnim(G, p, t);
     let alpha = 1;
-    if (p.inv > 0 && p.dashT <= 0 && Math.floor(t * 20) % 2) alpha = 0.6;
-    if (G.state === "dying") {
-      const k = Math.min(1, G.dying / 1.6);
-      Art.drawKnight(c, "player", row, col, p.x, y, KS, { alpha: 1 - k });
-      Art.drawKnight(c, "drowned", row, col, p.x, y, KS, { alpha: k });
-      return;
-    }
-    Art.drawKnight(c, "player", row, col, p.x, y, KS, { alpha, flash: p.flash > 0 ? 0.8 : 0, flashColor: "#ff9a9a" });
-    const cor = DL.clamp((p.corrupt - 8) / 92, 0, 1);
-    if (cor > 0) Art.drawKnight(c, "drowned", row, col, p.x, y, KS, { alpha: cor * 0.92 * alpha });
+    if (p.inv > 0 && p.dashT <= 0 && Math.floor(t * 20) % 2) alpha = 0.65;
+    Art.drawUnit(c, key, anim, fr, ang, p.x, p.y, 1, { alpha, flash: p.flash > 0 ? 0.7 : 0, flashColor: "#ff9a9a" });
+  }
+
+  function enemyAnim(e, t) {
+    if (e.state === "windup") return ["attack", 0, e.aim];
+    if (e.state === "recover") return ["attack", e.stT > 0.2 ? 1 : 2, e.aim];
+    if (e.moving) return ["walk", Math.floor(e.animT * (e.def.crawl ? 10 : 7)), e.angle];
+    return ["idle", Math.floor(t * 1.6 + e.animT), e.angle];
   }
 
   function drawEnemy(c, e, t) {
-    const d = e.def, s = KS * d.scale;
-    const col = Art.col(e.angle);
+    const d = e.def, s = d.scale;
     if (e.rise > 0) {
+      // clawing up out of the water
       const k = 1 - e.rise / 0.9;
       c.save();
-      c.beginPath(); c.rect(e.x - 40, e.y - 120, 80, 120); c.clip();
-      Art.drawKnight(c, d.variant, 2, col, e.x, e.y + (1 - k) * 60 * d.scale, s, { alpha: 0.4 + 0.6 * k });
+      c.beginPath(); c.rect(e.x - 60, e.y - 160, 120, 160); c.clip();
+      Art.drawUnit(c, e.type, "walk", Math.floor(k * 8), e.angle, e.x, e.y + (1 - k) * 34 * s, s, { alpha: 0.4 + 0.6 * k });
       c.restore();
       c.fillStyle = "rgba(60,200,210,0.5)";
-      c.beginPath(); c.ellipse(e.x, e.y, 14, 4, 0, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.ellipse(e.x, e.y, 14 * s + 4, 4, 0, 0, Math.PI * 2); c.fill();
       return;
     }
-    shadow(c, e.x, e.y, 14 * d.scale, 5 * d.scale);
-    let row = 0, bob = 0;
-    if (d.crawl) row = 2;
-    else if (e.moving) { row = Math.floor(e.animT * 6) % 2 ? 1 : 0; bob = -Math.abs(Math.sin(e.animT * 9)) * 1.2; }
+    shadow(c, e.x, e.y, 14 * s, 5 * s);
     if (e.state === "windup") {
-      // telegraph: lean back and glow
+      // telegraph the coming blow
       const k = 1 - e.stT / d.windup;
       c.save();
       c.globalCompositeOperation = "lighter";
       if (d.ranged) {
         c.strokeStyle = `rgba(90,235,245,${0.15 + 0.5 * k})`;
         c.lineWidth = 1.5;
-        c.beginPath(); c.moveTo(e.x, e.y - 22); c.lineTo(e.x + Math.cos(e.aim) * 240, e.y - 22 + Math.sin(e.aim) * 240); c.stroke();
+        c.beginPath(); c.moveTo(e.x, e.y - 30); c.lineTo(e.x + Math.cos(e.aim) * 240, e.y - 30 + Math.sin(e.aim) * 240); c.stroke();
       } else {
         c.fillStyle = `rgba(60,220,230,${0.08 + 0.22 * k})`;
         c.beginPath();
@@ -368,73 +370,35 @@
       }
       c.restore();
     }
-    const flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.25 + 0.25 * Math.sin(t * 30) : 0;
+    const flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : 0;
     const flashColor = e.flash > 0 ? "#ffffff" : "#7ff6ff";
-    const alpha = e.dormant ? 0.75 : 1;
-    // weapon props behind/around the body
-    if (e.type === "defiler") drawDefilerLantern(c, e, t);
-    Art.drawKnight(c, d.variant, row, col, e.x, e.y + bob, s, { flash, flashColor, alpha });
-    if (e.type === "archer") drawBow(c, e);
-    if (e.type === "blackguard") drawShield(c, e);
-    if (e.type === "champion") drawCrown(c, e, t);
-    if (e.hp < e.maxHp) bar(c, e.x, e.y - 72 * d.scale - 8, Math.round(26 * Math.max(1, d.scale)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
+    const [anim, fr, ang] = enemyAnim(e, t);
+    Art.drawUnit(c, e.type, anim, fr, ang, e.x, e.y, s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1 });
+    if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.crawl ? 36 : 84) * s - 4, Math.round(26 * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
     if (e.burn > 0) Art.drawFire(c, e.x + Math.sin(t * 7) * 4, e.y - 10, 0.5, t);
   }
 
+  // A soft cyan halo around the visor so the Drowned read in the dark.
   function drawEyes(c, e, t) {
-    const s = e.def.scale, a = e.angle;
-    if (Math.sin(a) < -0.45) return; // facing away
-    const x = e.x + Math.cos(a) * 3 * s, y = e.y - (e.def.crawl ? 30 : 52) * s * (KS / 0.2);
+    const s = e.def.scale;
+    const ang = e.state === "move" ? e.angle : e.aim;
+    const { dir, flip } = Art.unitDir(ang);
+    if (dir === "up") return;
+    const side = dir === "side" ? (flip ? -1 : 1) : 0;
+    const x = e.x + side * (e.def.crawl ? 17 : 7) * s;
+    const y = e.y - (e.def.crawl ? (dir === "side" ? 16 : 18) : 56) * s;
     const pulse = 0.75 + 0.25 * Math.sin(t * 5 + e.x);
-    const g = c.createRadialGradient(x, y, 0, x, y, 10 * s);
-    g.addColorStop(0, `rgba(80,235,245,${0.45 * pulse})`);
+    const r = 9 * s + 3;
+    const g = c.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(80,235,245,${0.5 * pulse})`);
     g.addColorStop(1, "rgba(80,235,245,0)");
     c.fillStyle = g;
-    c.fillRect(x - 10 * s, y - 10 * s, 20 * s, 20 * s);
-    c.fillStyle = `rgba(190,255,255,${pulse})`;
-    const gap = Math.abs(Math.cos(a)) > 0.8 ? 0 : 2.5 * s;
-    c.fillRect(x - gap - 1, y - 0.5, 2, 1.5);
-    if (gap) c.fillRect(x + gap - 1, y - 0.5, 2, 1.5);
-  }
-
-  function drawBow(c, e) {
-    const a = e.state === "windup" ? e.aim : e.angle, x = e.x + Math.cos(a) * 12, y = e.y - 26 + Math.sin(a) * 6;
-    c.strokeStyle = "#3a2a20"; c.lineWidth = 3;
-    c.beginPath(); c.arc(x, y, 12, a - 1.2, a + 1.2); c.stroke();
-    c.strokeStyle = "rgba(120,240,250,0.9)"; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(x + Math.cos(a - 1.2) * 12, y + Math.sin(a - 1.2) * 12); c.lineTo(x + Math.cos(a + 1.2) * 12, y + Math.sin(a + 1.2) * 12); c.stroke();
-  }
-  function drawShield(c, e) {
-    const a = e.angle;
-    if (Math.sin(a) < -0.3) return; // facing away: shield hidden behind the body
-    const x = e.x + Math.cos(a) * 16, y = e.y - 32;
-    c.fillStyle = "#07090a"; c.fillRect(x - 10, y - 15, 20, 30);
-    c.fillStyle = "#2c3238"; c.fillRect(x - 9, y - 14, 18, 28);
-    c.fillStyle = "#6e2a26"; c.fillRect(x - 9, y - 14, 18, 3); c.fillRect(x - 1, y - 11, 2, 25);
-    c.fillStyle = "#4f5a62"; c.fillRect(x - 7, y - 10, 2, 20);
-  }
-  function drawDefilerLantern(c, e, t) {
-    const x = e.x + 14, y = e.y - 62;
-    c.strokeStyle = "#2a2622"; c.lineWidth = 2;
-    c.beginPath(); c.moveTo(e.x + 10, e.y); c.lineTo(x, y - 4); c.stroke();
-    c.fillStyle = "#07090a"; c.fillRect(x - 5, y - 2, 10, 13);
-    c.fillStyle = "#1c5c64"; c.fillRect(x - 4, y - 1, 8, 11);
-    c.fillStyle = `rgba(140,250,255,${0.7 + 0.3 * Math.sin(t * 6 + e.x)})`; c.fillRect(x - 2, y + 1, 4, 7);
-  }
-  function drawCrown(c, e, t) {
-    const y = e.y - 118, x = e.x;
-    c.fillStyle = "#07090a";
-    for (let i = -2; i <= 2; i++) c.fillRect(x + i * 6 - 2, y - 10 + Math.abs(i) * 3, 4, 12 - Math.abs(i) * 3);
-    c.fillStyle = `rgba(120,245,255,${0.8 + 0.2 * Math.sin(t * 4)})`;
-    for (let i = -2; i <= 2; i++) c.fillRect(x + i * 6 - 1, y - 9 + Math.abs(i) * 3, 2, 9 - Math.abs(i) * 3);
+    c.fillRect(x - r, y - r, r * 2, r * 2);
   }
 
   function drawDissolve(c, f) {
-    const e = f.e, k = f.t / f.max, d = e.def;
-    c.save();
-    c.beginPath(); c.rect(e.x - 60, e.y - 200, 120, 200 - 0); c.clip();
-    Art.drawKnight(c, d.variant, d.crawl ? 2 : 0, Art.col(e.angle), e.x, e.y + k * 30 * d.scale, KS * d.scale, { alpha: 1 - k, flash: 0.6, flashColor: "#5fe6ee" });
-    c.restore();
+    const e = f.e, k = f.t / f.max;
+    Art.drawUnit(c, e.type, "death", Math.min(2, Math.floor(k * 3)), e.angle, e.x, e.y, e.def.scale, { alpha: 1 - k * k, flash: 0.3 + k * 0.5, flashColor: "#5fe6ee" });
   }
 
   function drawSlash(c, x, y, ang, arc, r, k, rgb, w, flip) {
