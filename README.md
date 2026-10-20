@@ -1,43 +1,73 @@
-# Drowned Light — Prototype v0.4
+# Drowned Light
 
 **Will you thrive in the light or drown in the darkness?**
 
-A mobile-friendly HTML5 Canvas prototype for testing a dark fantasy survival / bullet-heaven game.
+A top-down dark-fantasy survival game for the browser and phones. You are a lantern-bearing knight. By day you range out from your base camp to gather supplies. By night the darkness corrupts anyone outside the light, and the Drowned Knights (knights it has already claimed) come for you and your fire.
 
-## Run
-Open `index.html` in Chrome, or serve the folder with `python -m http.server 8000` and visit `http://localhost:8000`.
+## Play
 
-## Controls
-- Desktop: WASD or arrow keys move.
-- Mobile: hold the on-screen joystick and press DASH with your other thumb, or quickly double-tap the joystick.\n- DASH travels about 100 pixels, grants brief invulnerability, and has a 3-second cooldown.
-- Attacks auto-target nearby enemies.
-- Approach resources to gather; return to the physical base camp at (0,0) and choose UPGRADE CAMP.
+- **Online:** enable GitHub Pages for this repo (Settings → Pages → deploy from `main`, root). Then open the Pages URL on desktop or phone.
+- **Locally:** run `python3 -m http.server 8000` in this folder and open `http://localhost:8000`.
+  Opening `index.html` directly also works. Chrome blocks pixel access on `file://`, though, so the Drowned recolouring falls back to a simpler tint.
 
-## Mechanics
-- Continuous procedurally generated wilderness, a permanent home base, and a home compass
-- Day/night cycle; enemies spawn at night
-- Corruption from 0 to 400, ending the run at full corruption
-- Human firelight reverses corruption; natural bioluminescence only halts it
-- Resources, auto-combat, campfire upgrades, a Forge and Armory\n- Deposit resources while at camp. Only deposited resources and upgrades are saved in local browser storage; carried supplies are lost on death or restart.\n- Forge improves damage and attack speed, Armory increases max health.
+### Controls
 
-## Roadmap
-Replace placeholder art with original sprites; add cloud saves, all enemy classes, loadouts, camp buildings and balanced waves; prepare Android builds. Multiplayer is a later milestone.
+| | Desktop | Phone |
+|---|---|---|
+| Move | WASD / arrows | Drag anywhere on the left half |
+| Attack | automatic (nearest enemy) | automatic |
+| Dash | Space / Shift | DASH |
+| Kit ability | E / Q | ability button |
+| Place torch | F / T | TORCH |
+| Camp menu | C (at camp) | ENTER CAMP |
+| Pause | Esc / P | ❚❚ |
 
-This is an early test prototype, not a Google Play release.
+## The core loop
 
-## Illustrated player sprite atlas (pending upload)
+1. **Day: venture out.** Gather wood, stone, bloom resin and iron scrap. Rings of land get darker and richer the farther you go: *The Shallows → The Mire → Drowned Reaches → The Abyss*.
+2. **Night: stay in the light.** Outside light, **corruption** rises. It has four visible stages, and at 100% you become a Drowned Knight.
+   - **Firelight** (camp, torches, Illuminate) *reverses* corruption, heals you and refills your lantern.
+   - **Bloomlight** (Refuge Blooms, Sentinel Blooms, Mother Roots) only *halts* it. Blooms wake at night, and the Drowned come to tear them down.
+   - **Lantern oil** halves corruption in the dark until it runs dry.
+3. **Return and build.** Supplies you carry are stored automatically when you reach camp. Spend them on the Central Flame, Forge, Armory, Lanternwright, Watchtowers and Warding Stakes, or forge new kits.
+4. **Defend.** If you're at camp at night, waves march on the Central Flame. If it goes out, your home goes dark until dawn.
 
-The game now supports `assets/lantern_atlas.png` (384 × 192 px, 8 columns × 3 rows). Rows represent idle, walk and dash; columns represent down, down-right, right, up-right, up, up-left, left, down-left. The generated image is provided separately for uploading through the GitHub web interface. Until it is uploaded at this exact path, the game continues showing its older code-drawn fallback knight. This is a temporary packaging limitation, not a finished animated art asset.
+### High-risk reasons to leave the light
+- **Abyssal Pearls** surface only in darkness (the Mire and deeper). You need them for top-tier upgrades.
+- **Torches** you plant burn out, and Lantern Defilers hunt them.
+- **Mother Roots**: defend one until dawn for a big reward.
+- **Your drowned self**: when you fall, a Drowned version of you keeps everything you carried. Kill it to get your supplies back. If you die again first, they're gone.
 
-## Animation update (v0.7)
+### Kits
+- **Lantern Blade** (Kit 01): fast sword arcs. Dash becomes a damaging *Lantern Strike*. Ability **Illuminate** is a burst of firelight that damages and repels enemies and leaves a short-lived sanctuary.
+- **Pyre Censer** (Kit 02, forged at camp): slow, wide burning swings. Ability **Kindle** plants a brazier that lights and scorches.
+- Each kit's ability levels up through **Mastery** at camp.
 
-- Player's legs now alternate between the atlas idle and walking poses while moving. Idle stops on a stable frame; dash continues using the atlas dash row.
-- Automatic attacks trigger a brief rotational sword swing and bright blade arc aimed toward the nearest target. Existing auto-attack range, projectiles, and damage remain unchanged.
-- Current atlas has one walking pose per direction (not multiple stride frames), so this is an interim two-pose animation. A full leg-by-leg walking cycle and independent weapon rig need dedicated animation frames.
+### The Drowned
+Broken Squire · Drowned Footman · Shade Archer · Swarming Revenant (rises from the ground) · Lantern Defiler (hunts light sources) · Blackguard (armoured tank) · Drowned Champion (boss: summons revenants and calls up spike eruptions). Every enemy telegraphs its attack with a cyan wind-up, so you can dash out of the way.
 
-## v0.8 player animation changes
+## Code layout
 
-- Added `player_animation.js` as a dedicated visual layer rig for the 1920×1008 illustrated knight atlas.
-- Walking keeps the illustrated upper body and lantern stable while animating lower-leg areas in opposing phases, instead of flipping the whole character between two unrelated-looking poses.
-- Attack now isolates the actual illustrated blade and pivots it around the sword hand; the separate slash trail is only a supplementary effect. The knight body no longer rotates to imitate a sword swing.
-- The atlas still does not include a full hand-drawn walking sequence. This is a transitional programmatic rig, not final polished pixel animation.
+No build step, no dependencies. These are plain scripts loaded in order:
+
+| File | What it does |
+|---|---|
+| `src/core.js` | math, deterministic noise, input (keyboard + floating joystick), WebAudio sound effects |
+| `src/data.js` | **all balance numbers**: day/night lengths, zones, enemies, kits, upgrade costs |
+| `src/art.js` | loads the knight atlas, builds the recoloured Drowned variants, draws the procedural pixel sprites |
+| `src/world.js` | endless chunked wetland: ground texture, resources, blooms, collisions |
+| `src/game.js` | simulation: player, corruption, spawning, enemy AI, combat, camp economy, saving |
+| `src/render.js` | drawing, the darkness/light compositing, effects |
+| `src/ui.js` | HUD, camp menu, title, pause and death screens |
+| `src/main.js` | boot + main loop |
+
+Progress (camp, stored supplies, kits, day) saves to the browser's `localStorage`.
+
+## Art
+
+`assets/lantern_atlas.png` is the player sheet: 1920×1008, 8 columns × 3 rows of 240×336 frames.
+Columns: down, down-right, right, up-right, up, up-left, left, down-left. Rows: idle, walk, dash.
+
+The Drowned Knights are generated from this same sheet at load time. Armour is darkened and the warm lantern light turns abyssal cyan, so they are literally the player's corrupted reflection. Blooms, ruins and camp buildings are drawn in code as pixel sprites. Dedicated sprite sheets can replace any of them later.
+
+**Art that would help most next:** a multi-frame walk cycle (4–6 frames per direction), an attack swing row, and dedicated enemy sheets (archer bow, blackguard shield, champion).
