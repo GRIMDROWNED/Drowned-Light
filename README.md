@@ -7,6 +7,7 @@ A top-down dark-fantasy survival game for the browser and phones. You are a lant
 ## Play
 
 - **Online:** enable GitHub Pages for this repo (Settings → Pages → deploy from `main`, root). Then open the Pages URL on desktop or phone.
+- **Install it as an app:** on the Pages site, Chrome on desktop shows an install icon in the address bar (or ⋮ → *Cast, save and share* → *Install page as app*). Chrome on Android offers ⋮ → *Add to Home screen* / *Install app*. It launches full screen with its own icon and also starts offline. On iPhone, use Safari → Share → *Add to Home Screen*.
 - **Locally:** run `python3 -m http.server 8000` in this folder and open `http://localhost:8000`.
   Opening `index.html` directly also works. Chrome blocks pixel access on `file://`, though, so the Drowned recolouring falls back to a simpler tint.
 
@@ -79,6 +80,7 @@ No build step, no dependencies. These are plain scripts loaded in order:
 | `src/render.js` | drawing, the darkness/light compositing, effects |
 | `src/ui.js` | HUD, camp menu, title, pause and death screens |
 | `src/main.js` | boot + main loop |
+| `manifest.webmanifest`, `sw.js`, `icons/` | installable-app profile, offline cache, app icons |
 
 Progress (camp, stored supplies, kits, day) saves to the browser's `localStorage`.
 

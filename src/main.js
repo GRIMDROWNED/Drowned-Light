@@ -39,4 +39,9 @@
     requestAnimationFrame((ts) => { last = ts; frame(ts); });
   }
   boot();
+
+  // Installable app: cache the game so it also starts offline (needs https or localhost).
+  if ("serviceWorker" in navigator && /^(https:|http:\/\/localhost)/.test(location.href)) {
+    addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  }
 })(window.DL);
