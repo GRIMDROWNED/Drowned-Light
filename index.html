@@ -16,10 +16,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.9.2">
+<link rel="stylesheet" href="style.css?v=0.10.0">
 </head>
 <body>
-<div id="splash" role="img" aria-label="Drowned Games"><img src="assets/drowned-games.jpg?v=0.9.2" alt="Drowned Games"></div>
+<div id="splash" role="img" aria-label="Drowned Games"><img src="assets/drowned-games.jpg?v=0.10.0" alt="Drowned Games"></div>
 <canvas id="game" aria-label="Drowned Light game view"></canvas>
 <div id="touchzone" class="hidden"></div>
 <div id="joy" class="hidden"><div id="joyKnob"></div></div>
@@ -33,6 +33,7 @@
     <div class="row"><span class="lbl">Lantern oil</span><span id="oilText" class="val"></span></div>
     <div class="bar oil"><i id="oilFill"></i></div>
     <div id="lightState"></div>
+    <div id="kitLine"></div>
   </section>
   <div id="carried"></div>
 
@@ -68,10 +69,25 @@
     <div class="howto">
       <div><b>By day</b> venture into the wetland and gather supplies. The farther from camp, the richer the land — and the deadlier the Drowned.</div>
       <div><b>By night</b> stay in the light. Darkness corrupts you; at full corruption you become a Drowned Knight.</div>
-      <div><b>At camp</b> deposit supplies, build defenses, forge kits, and defend the Central Flame through the night.</div>
+      <div><b>At camp</b> deposit supplies, build defenses, train your kit, and defend the Central Flame through the night.</div>
     </div>
     <p class="controls-hint"><span class="desk">Move <kbd>WASD</kbd> · Dash <kbd>Space</kbd> · Ability <kbd>E</kbd> · Torch <kbd>F</kbd> · Camp <kbd>C</kbd> · Pause <kbd>Esc</kbd></span><span class="mob">Drag on the left side to move. Attacks are automatic.</span></p>
-    <p class="version">Version 0.9.2</p>
+    <p class="version">Version 0.10.0</p>
+  </div>
+</section>
+
+<section id="screenSetup" class="screen hidden">
+  <div class="setup">
+    <header class="setup-head">
+      <span id="setupStep" class="eyebrow">Step 1 of 2</span>
+      <h2 id="setupTitle">Choose your kit</h2>
+      <p id="setupHint" class="muted"></p>
+    </header>
+    <div id="setupBody" class="setup-grid"></div>
+    <footer class="setup-foot">
+      <button id="setupBack">Back</button>
+      <button id="setupNext" class="primary">Next</button>
+    </footer>
   </div>
 </section>
 
@@ -106,22 +122,23 @@
     <div id="campStash"></div>
     <nav id="campTabs">
       <button data-tab="build">Buildings</button>
-      <button data-tab="kit">Kits</button>
+      <button data-tab="kit">Kit</button>
       <button data-tab="supplies">Supplies</button>
     </nav>
     <div id="campBody"></div>
   </div>
 </section>
 
-<script src="src/core.js?v=0.9.2"></script>
-<script src="src/data.js?v=0.9.2"></script>
-<script src="src/camp.js?v=0.9.2"></script>
-<script src="src/art.js?v=0.9.2"></script>
-<script src="src/units.js?v=0.9.2"></script>
-<script src="src/world.js?v=0.9.2"></script>
-<script src="src/game.js?v=0.9.2"></script>
-<script src="src/render.js?v=0.9.2"></script>
-<script src="src/ui.js?v=0.9.2"></script>
-<script src="src/main.js?v=0.9.2"></script>
+<script src="src/core.js?v=0.10.0"></script>
+<script src="src/data.js?v=0.10.0"></script>
+<script src="src/camp.js?v=0.10.0"></script>
+<script src="src/art.js?v=0.10.0"></script>
+<script src="src/units.js?v=0.10.0"></script>
+<script src="src/world.js?v=0.10.0"></script>
+<script src="src/game.js?v=0.10.0"></script>
+<script src="src/kits.js?v=0.10.0"></script>
+<script src="src/render.js?v=0.10.0"></script>
+<script src="src/ui.js?v=0.10.0"></script>
+<script src="src/main.js?v=0.10.0"></script>
 </body>
 </html>

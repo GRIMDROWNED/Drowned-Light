@@ -34,7 +34,10 @@
     $("btnPause").addEventListener("click", () => UI.pause());
     $("campBtn").addEventListener("click", () => UI.openCamp());
 
-    $("btnBegin").addEventListener("click", () => { UI.hideScreens(); G.begin(); UI.showHud(true); });
+    $("btnBegin").addEventListener("click", () => {
+      if (!G.save.started) { UI.openSetup(); return; }
+      UI.hideScreens(); G.begin(); UI.showHud(true);
+    });
     $("btnNew").addEventListener("click", () => {
       const btn = $("btnNew");
       if (G.save.started && !btn.dataset.armed) {
@@ -45,7 +48,25 @@
       }
       delete btn.dataset.armed;
       btn.textContent = "New game";
-      UI.hideScreens(); G.newGame(); UI.showHud(true);
+      UI.openSetup();
+    });
+    $("setupBack").addEventListener("click", () => {
+      if (UI.setup.step === 2) { UI.setup.step = 1; UI.renderSetup(); return; }
+      UI.closeSetup();
+      UI.showTitle();
+    });
+    $("setupNext").addEventListener("click", () => {
+      if (UI.setup.step === 1) { UI.setup.step = 2; UI.renderSetup(); return; }
+      UI.closeSetup();
+      UI.hideScreens();
+      G.newGame(UI.setup.kit, UI.setup.diff);
+      UI.showHud(true);
+    });
+    $("setupBody").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-pick]");
+      if (!b) return;
+      UI.setup[UI.setup.step === 1 ? "kit" : "diff"] = b.dataset.pick;
+      UI.renderSetup();
     });
     $("btnRise").addEventListener("click", () => { UI.hideScreens(); G.respawn(); UI.showHud(true); });
     $("btnResume").addEventListener("click", () => UI.resume());
@@ -61,9 +82,7 @@
       if (!b || b.disabled) return;
       const [act, arg] = b.dataset.act.split(":");
       if (act === "up") G.buyUpgrade(arg);
-      else if (act === "kitBuy") G.buyKit(arg);
-      else if (act === "kitEquip") G.equipKit(arg);
-      else if (act === "mastery") G.buyMastery();
+      else if (act === "train") { const r = DL.Kits.train(); UI.justReached = r && r.milestone ? r.level : 0; }
       else if (act === "torch") G.craftTorch();
       else if (act === "rest") { G.restUntilDusk(); UI.closeCamp(); UI.toast("You rest by the fire until dusk.", "warn"); return; }
       UI.renderCamp();
@@ -79,7 +98,9 @@
 
   UI.showTitle = function () {
     const G = DL.Game;
-    $("btnBegin").textContent = G.save.started ? `Continue — Day ${G.save.day}` : "Begin";
+    $("btnBegin").innerHTML = G.save.started
+      ? `Continue — Day ${G.save.day}<span class="sub">${G.kit().name} · Level ${G.save.kitLevel} · ${G.diff().name}</span>`
+      : "Begin";
     $("btnNew").classList.toggle("hidden", !G.save.started);
     $("screenTitle").classList.remove("hidden");
   };
@@ -141,6 +162,76 @@
     $("screenDeath").classList.remove("hidden");
   };
 
+  /* ---------------- new game: choose a kit, then a difficulty ---------------- */
+  UI.setup = { step: 1, kit: "lanternBlade", diff: "dark" };
+  UI.openSetup = function () {
+    UI.setup = { step: 1, kit: "lanternBlade", diff: "dark" };
+    $("screenTitle").classList.add("hidden");
+    $("screenSetup").classList.remove("hidden");
+    UI.renderSetup();
+    const loop = (ts) => {
+      if ($("screenSetup").classList.contains("hidden")) return;
+      UI.drawPortraits(ts / 1000);
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  };
+  UI.closeSetup = function () { $("screenSetup").classList.add("hidden"); };
+
+  UI.renderSetup = function () {
+    const st = UI.setup;
+    $("setupStep").textContent = `Step ${st.step} of 2`;
+    $("setupTitle").textContent = st.step === 1 ? "Choose your kit" : "Choose your darkness";
+    $("setupHint").textContent = st.step === 1
+      ? "Your kit is yours for this whole game. Train it at camp to level 20; levels 5, 10, 15 and 20 transform it."
+      : "Difficulty shapes the land itself: how much it gives, how hard the Drowned hit, and how much light there is to hide in.";
+    $("setupBack").textContent = st.step === 1 ? "Back" : "Back to kits";
+    $("setupNext").textContent = st.step === 1 ? "Next" : `Begin as ${DL.KITS[st.kit].name}`;
+    let html = "";
+    if (st.step === 1) {
+      for (const id of DL.KIT_ORDER) {
+        const k = DL.KITS[id];
+        html += `<button class="pick kit-pick ${st.kit === id ? "on" : ""}" data-pick="${id}" aria-pressed="${st.kit === id}">
+          <canvas class="portrait" data-kit="${id}" width="88" height="108"></canvas>
+          <span class="pick-text">
+            <span class="tag">${k.tag}</span>
+            <span class="pick-name">${k.name}</span>
+            <span class="motto">${k.motto}</span>
+            <span class="roles">${k.roles.map((r) => `<i>${r}</i>`).join("")}</span>
+            <span class="pick-line"><b>${k.attack.name}</b> · <b>${k.ability.name}</b></span>
+          </span></button>`;
+      }
+      const k = DL.KITS[st.kit];
+      html += `<div class="pick-detail"><h3>${k.name}</h3><p>${k.desc}</p>
+        <p><b>${k.ability.name}:</b> ${k.ability.desc}</p>
+        <ol class="ms-list">${k.milestones.map((m, i) => `<li><span>Lv ${DL.MILESTONE_LEVELS[i]}</span><b>${m.name}</b> ${m.desc}</li>`).join("")}</ol></div>`;
+    } else {
+      DL.DIFF_ORDER.forEach((id, i) => {
+        const d = DL.DIFFICULTIES[id];
+        html += `<button class="pick diff-pick d-${id} ${st.diff === id ? "on" : ""}" data-pick="${id}" aria-pressed="${st.diff === id}">
+          <span class="pips">${[0, 1, 2, 3].map((j) => `<i class="${j <= i ? "on" : ""}"></i>`).join("")}</span>
+          <span class="pick-name">${d.name}</span>
+          <span class="motto">${d.motto}</span>
+          <ul>${d.notes.map((n) => `<li>${n}</li>`).join("")}</ul></button>`;
+      });
+    }
+    $("setupBody").className = "setup-grid step" + st.step;
+    $("setupBody").innerHTML = html;
+    UI.drawPortraits(0);
+  };
+
+  // Kit portraits: the chosen kit walks; the others stand.
+  UI.drawPortraits = function (t) {
+    for (const cv of document.querySelectorAll("canvas[data-kit]")) {
+      const g = cv.getContext("2d"), id = cv.dataset.kit, on = UI.setup.kit === id || cv.dataset.still;
+      g.clearRect(0, 0, cv.width, cv.height);
+      g.imageSmoothingEnabled = false;
+      const anim = on && !cv.dataset.still ? (Math.floor(t / 2.4) % 2 ? "attack" : "walk") : "idle";
+      const fr = anim === "attack" ? Math.floor(t * 6) % 3 : Math.floor(t * (anim === "walk" ? 8 : 1.6));
+      DL.Art.drawUnit(g, id + "1", anim, fr, Math.PI / 2, cv.width / 2, cv.height - 6, cv.width / 88);
+    }
+  };
+
   /* ---------------- camp menu ---------------- */
   UI.openCamp = function () {
     const G = DL.Game;
@@ -185,32 +276,29 @@
           <footer>${action}</footer></article>`;
       }
     } else if (UI.campTab === "kit") {
-      for (const id in DL.KITS) {
-        const k = DL.KITS[id], own = s.kits[id].owned, eq = s.kit === id;
-        let action;
-        if (eq) action = `<span class="maxed">Equipped</span>`;
-        else if (own) action = `<button data-act="kitEquip:${id}">Equip</button>`;
-        else {
-          const reqOk = Object.entries(k.req || {}).every(([r, n]) => s.up[r] >= n);
-          const reqTxt = Object.entries(k.req || {}).map(([r, n]) => `${DL.UPGRADES.find((u) => u.id === r).name} ${n}`).join(", ");
-          action = `<div class="cost">${costHtml(k.cost)}</div>` + (reqOk ? "" : `<span class="req">Needs ${reqTxt}</span>`) +
-            `<button data-act="kitBuy:${id}" ${reqOk && G.canAfford(k.cost) ? "" : "disabled"}>Forge kit</button>`;
-        }
-        const m = s.kits[id].mastery;
-        html += `<article class="card kit ${eq ? "equipped" : ""}">
-          <header><h3>${k.name}</h3><span class="tag">${k.tag}</span></header>
-          <p>${k.desc}</p>
-          <p class="effect">Ability: <b>${k.ability.name}</b> — ${k.ability.desc}<br>Mastery ${m}/${DL.MASTERY_COSTS.length}</p>
-          <footer>${action}</footer></article>`;
-      }
-      const m = G.mastery();
-      if (m < DL.MASTERY_COSTS.length) {
-        const cost = DL.MASTERY_COSTS[m];
-        html += `<article class="card">
-          <header><h3>${G.kit().ability.name} mastery</h3><span class="tag">${m} → ${m + 1}</span></header>
-          <p>Shorter cooldown, larger radius, more damage and a longer-lasting effect for your equipped kit's ability.</p>
-          <footer><div class="cost">${costHtml(cost)}</div><button data-act="mastery" ${G.canAfford(cost) ? "" : "disabled"}>Train</button></footer></article>`;
-      }
+      const k = G.kit(), L = s.kitLevel, info = DL.Kits.trainInfo(), K = DL.Kits;
+      const pos = (lvl) => ((lvl - 1) / (DL.KIT_MAX_LEVEL - 1)) * 100;
+      const track = `<div class="lvl-track" aria-label="Level ${L} of ${DL.KIT_MAX_LEVEL}"><i style="width:${pos(L)}%"></i>${DL.MILESTONE_LEVELS.map((m) => `<b class="${L >= m ? "on" : ""}" style="left:${pos(m)}%">${m}</b>`).join("")}</div>`;
+      let action;
+      if (info.max) action = `<span class="maxed">Fully trained</span>`;
+      else action = `<div class="cost">${costHtml(info.cost)}</div>` + (info.locked ? `<span class="req">Needs Central Flame ${info.need}</span>` : "") +
+        `<button data-act="train" ${info.ok ? "" : "disabled"}>Train to level ${L + 1}</button>`;
+      html += `<article class="card kit-card ${UI.justReached ? "celebrate" : ""}">
+        <header><canvas class="portrait" data-kit="${G.save.kit}" data-still="1" width="66" height="81"></canvas>
+          <div><span class="tag">${k.tag} · ${k.weapon}</span><h3>${k.name}</h3><span class="motto">${k.motto}</span></div>
+          <span class="kit-lvl">Lv <b>${L}</b></span></header>
+        ${track}
+        <p class="effect">Damage ×${K.power().toFixed(2)} · ${k.ability.name} every ${K.abilityCd().toFixed(1)}s${L < DL.KIT_MAX_LEVEL ? `<br>Each level: +5% damage, faster ability` : ""}</p>
+        <footer>${action}</footer></article>`;
+      html += `<article class="card"><header><h3>Milestones</h3><span class="tag">Levels 5 · 10 · 15 · 20</span></header>
+        <ol class="ms-list">${k.milestones.map((m, i) => {
+          const lv = DL.MILESTONE_LEVELS[i], got = L >= lv;
+          return `<li class="${got ? "got" : ""} ${UI.justReached === lv ? "new" : ""}"><span>Lv ${lv}</span><b>${m.name}</b> ${m.desc}</li>`;
+        }).join("")}</ol></article>`;
+      const d = G.diff();
+      html += `<article class="card"><header><h3>${d.name}</h3><span class="tag">Difficulty</span></header>
+        <p class="motto">${d.motto}</p><ul class="guide">${d.notes.map((n) => `<li>${n}</li>`).join("")}</ul></article>`;
+      UI.justReached = 0;
     } else {
       const st = G.stats();
       const full = s.torches >= st.torchMax;
@@ -235,6 +323,7 @@
         </ul></article>`;
     }
     $("campBody").innerHTML = html;
+    UI.drawPortraits(0);
   };
 
   /* ---------------- per-frame HUD ---------------- */
@@ -294,7 +383,8 @@
 
     const kit = G.kit();
     set($("abilityName"), "text", kit.ability.name);
-    const abFrac = p.abiCd > 0 ? p.abiCd / (kit.ability.cd * (1 - 0.15 * G.mastery())) : 0;
+    const abFrac = p.abiCd > 0 ? p.abiCd / DL.Kits.abilityCd() : 0;
+    set($("kitLine"), "text", `${kit.name} · Lv ${G.save.kitLevel} · ${G.diff().name}`);
     set($("btnAbility"), "--cd", abFrac.toFixed(3));
     set($("btnAbility"), "class", "act" + (p.oil < kit.ability.oil ? " low" : ""));
     set($("btnDash"), "--cd", (p.dashCd / 2.2).toFixed(3));

@@ -47,8 +47,15 @@
     death: [{ kneel: 4, lean: -1 }, { kneel: 8, lean: 1 }, { fallen: 1 }],
   };
   const FACING = { down: Math.PI / 2, up: -Math.PI / 2, side: 0 };
-  const IDLE_BLADE = { down: 2.0, up: 1.25, side: 1.2 };
-  const ATK_OFFSET = [-2.4, -0.15, 1.1]; // windup, strike, follow-through (relative to facing)
+  // Resting weapon angle per view, and the attack swing (windup, strike, follow-through) relative to facing.
+  const IDLE_BLADE = {
+    sword: { down: 2.0, up: 1.25, side: 1.2 },
+    pike: { down: -1.85, up: -1.3, side: -1.15 },
+    crossbow: { down: Math.PI / 2, up: -Math.PI / 2, side: 0.15 },
+    staff: { down: -Math.PI / 2, up: -Math.PI / 2, side: -Math.PI / 2 },
+  };
+  const ATK_OFFSET = { sword: [-2.4, -0.15, 1.1], pike: [0, 0, 0], crossbow: [0, 0, 0] };
+  const THRUST = { pike: [-3, 4, 1], crossbow: [0, -3, -1] }; // hand pulled back / driven forward
 
   /* ---------- pieces ---------- */
   function hemPoints(pts, xr, xl, y, n, hem, torn, seed) {
@@ -73,6 +80,37 @@
   function blade(P, S, hx, hy, ang) {
     const p = S.pal, ux = Math.cos(ang), uy = Math.sin(ang);
     const kind = S.weapon;
+    if (kind === "pike") {
+      const L = 25;
+      P.line([hx - ux * 7, hy - uy * 7, hx + ux * L, hy + uy * L], 2, p.wood);
+      const tx = hx + ux * (L + 6), ty = hy + uy * (L + 6), bx = hx + ux * (L - 1), by = hy + uy * (L - 1);
+      P.poly([tx, ty, bx - uy * 2.5, by + ux * 2.5, bx + uy * 2.5, by - ux * 2.5], p.blade);
+      P.seg(bx, by, tx, ty, p.bladeHi);
+      P.seg(bx - ux, by - uy, bx - ux * 3 - uy * 2, by - uy * 3 + ux * 2, p.gold);
+      return;
+    }
+    if (kind === "crossbow") {
+      P.line([hx - ux * 3, hy - uy * 3, hx + ux * 9, hy + uy * 9], 2, p.wood);
+      const fx = hx + ux * 8, fy = hy + uy * 8;
+      const l1x = fx - ux * 2 - uy * 6, l1y = fy - uy * 2 + ux * 6, l2x = fx - ux * 2 + uy * 6, l2y = fy - uy * 2 - ux * 6;
+      P.line([l1x, l1y, fx, fy, l2x, l2y], 2, p.metalDk);
+      P.seg(l1x, l1y, hx + ux, hy + uy, p.bladeHi);
+      P.seg(l2x, l2y, hx + ux, hy + uy, p.bladeHi);
+      P.seg(hx, hy, fx + ux * 3, fy + uy * 3, p.gold);
+      return;
+    }
+    if (kind === "staff") {
+      const top = hy - 22;
+      P.line([hx, hy + 7, hx, top + 4], 2, p.wood);
+      P.ell(hx, top, 4, 4.5, p.gold);
+      P.ell(hx, top, 2.5, 3, p.lanternFrame);
+      P.rect(hx - 1, top - 2, 3, 4, p.glow);
+      P.px(hx, top - 1, p.core);
+      P.seg(hx - 4, top + 4, hx - 2, top + 7, p.gold);
+      P.seg(hx + 4, top + 4, hx + 2, top + 7, p.gold);
+      P.rect(hx, top - 7, 1, 2, p.gold);
+      return;
+    }
     if (kind === "bow") {
       const g = P.g;
       g.strokeStyle = p.wood; g.lineWidth = 2;
@@ -104,6 +142,15 @@
       P.ell(x, y + 2, 4.5, 5.5, p.wood);
       P.ell(x, y + 2, 3, 4, p.clothDk);
       P.rect(x - 1, y + 1, 2, 2, p.metalHi);
+    } else if (S.offhand === "bastion") {
+      // the Flame Bastion's shield: planks, iron bands and a burning sigil
+      P.rect(x - 5, y - 9, 11, 18, p.wood);
+      P.seg(x - 2, y - 8, x - 2, y + 7, p.leather);
+      P.seg(x + 2, y - 8, x + 2, y + 7, p.leather);
+      P.rect(x - 5, y - 6, 11, 1, p.metalDk);
+      P.rect(x - 5, y + 5, 11, 1, p.metalDk);
+      P.rect(x - 1, y - 3, 3, 5, p.glow);
+      P.px(x, y - 2, p.core);
     } else if (S.offhand === "tower") {
       P.rect(x - 5, y - 8, 10, 16, p.metalDk);
       P.rect(x - 4, y - 7, 8, 14, p.metal);
@@ -159,12 +206,16 @@
 
     // weapon hand position + blade angle
     const F = FACING[dir];
-    let ang = IDLE_BLADE[dir], hx, hy;
-    if (pose.atk != null) ang = F + ATK_OFFSET[pose.atk];
+    const wk = IDLE_BLADE[S.weapon] ? S.weapon : "sword";
+    let ang = IDLE_BLADE[wk][dir], hx, hy;
+    if (pose.atk != null && ATK_OFFSET[wk]) ang = F + ATK_OFFSET[wk][pose.atk];
     if (dir === "down") { hx = c - tw - 2; hy = top + (pose.atk === 0 ? 3 : 10); }
     else if (dir === "up") { hx = c + tw + 2; hy = top + (pose.atk === 0 ? 3 : 10); }
     else { hx = c + 3 + (pose.atk === 1 ? 2 : 0); hy = top + (pose.atk === 0 ? 2 : 9); }
-    if (pose.dash) ang = dir === "side" ? 2.6 : ang + 0.5;
+    if (S.weapon === "crossbow" && dir === "down") { hx = c; hy = top + 8; }
+    if (THRUST[wk] && pose.atk != null) { const k = THRUST[wk][pose.atk]; hx += Math.cos(F) * k; hy += Math.sin(F) * k; }
+    if (wk === "staff" && pose.atk != null) hy -= pose.atk === 1 ? 4 : 1;
+    if (pose.dash && wk === "sword") ang = dir === "side" ? 2.6 : ang + 0.5;
 
     const legs = (shadeOuter) => {
       for (const [x0, lift] of [[c - 4 - bulk, pose.liftL || 0], [c + 1 + bulk, pose.liftR || 0]]) {
@@ -261,7 +312,7 @@
       P.poly(sm(0), p.cloth);
       P.poly([c - 6, top + 6, c - 5, top, c - 2, top - 2, c - 2, top + 5, c - 4, top + 7], p.clothMd);
       if (S.crown) crown(P, p, c - 1, ht);
-      if (S.offhand === "shield" || S.offhand === "tower") offhand(P, S, c + tw + 3, top + 6, 0);
+      if (S.offhand === "shield" || S.offhand === "tower" || S.offhand === "bastion") offhand(P, S, c + tw + 3, top + 6, 0);
       P.line([c + 1, top + 3, hx, hy], 3, p.metal);
       blade(P, S, hx, hy, ang);
       P.rect(hx - 1, hy - 1, 3, 2, p.leather);
@@ -329,16 +380,20 @@
 
   Art.buildUnits = function () {
     const sh = Art.sheets;
-    // The Lantern Knight at each corruption stage: cloth and steel darken, cyan seeps in, the lantern turns.
+    // Each kit's knight at the four corruption stages, plus its drowned self. Built the first time it's drawn.
     const stages = [
       { t: 0, drips: 0, over: {} },
       { t: 0.22, drips: 6, over: {} },
       { t: 0.5, drips: 14, over: { glow: "#e8b45a" } },
       { t: 0.8, drips: 26, over: { glow: "#5fe6ee", core: "#e2ffff", eye: "#5fe6ee" } },
     ];
-    stages.forEach((s, i) => {
-      sh["knight" + (i + 1)] = buildSheet({ pal: mixPal(KNIGHT, DROWNED, s.t, s.over), weapon: "sword", offhand: "lantern", drips: s.drips, seed: 11 });
-    });
+    for (const kit in KIT_GEAR) {
+      const gear = KIT_GEAR[kit];
+      stages.forEach((st, i) => {
+        Art.specs[kit + (i + 1)] = Object.assign({ pal: mixPal(KNIGHT, DROWNED, st.t, st.over), drips: st.drips, seed: 11 }, gear);
+      });
+      Art.specs["self_" + kit] = Object.assign({ pal: mixPal(KNIGHT, DROWNED, 0.9, { glow: "#5fe6ee", core: "#e2ffff", eye: "#8ff8ff" }), drips: 30, seed: 11 }, gear);
+    }
     const d = (over) => mixPal(DROWNED, DROWNED, 0, over);
     sh.squire = buildSheet({ pal: d({}), weapon: "shortsword", offhand: "none", torn: true, drips: 10, seed: 21 });
     sh.footman = buildSheet({ pal: d({}), weapon: "sword", offhand: "shield", drips: 12, seed: 22 });
@@ -347,7 +402,20 @@
     sh.defiler = buildSheet({ pal: d({ cloth: "#99a3a0" }), weapon: "pole", offhand: "none", torn: true, drips: 12, seed: 25 });
     sh.blackguard = buildSheet({ pal: d({ cloth: "#4a5559", clothMd: "#36424a", metal: "#2c3840", metalHi: "#55707a" }), weapon: "sword", offhand: "tower", bulk: 2, drips: 10, seed: 26 });
     sh.champion = buildSheet({ pal: d({ cloth: "#c3cbc6", clothMd: "#8d9a99", blade: "#7fa6b0" }), weapon: "greatsword", offhand: "none", bulk: 1, crown: true, drips: 22, seed: 27 });
-    sh.self = buildSheet({ pal: mixPal(KNIGHT, DROWNED, 0.9, { glow: "#5fe6ee", core: "#e2ffff", eye: "#8ff8ff" }), weapon: "sword", offhand: "lantern", drips: 30, seed: 11 });
+  };
+
+  // What each kit's knight carries (matches the kit concept sheets).
+  const KIT_GEAR = {
+    lanternBlade: { weapon: "sword", offhand: "lantern" },
+    pikeWarden: { weapon: "pike", offhand: "lantern" },
+    ashenArbalist: { weapon: "crossbow", offhand: "lantern" },
+    relicBearer: { weapon: "staff", offhand: "none" },
+    flameBastion: { weapon: "sword", offhand: "bastion", bulk: 1 },
+  };
+  Art.specs = {};
+  Art.sheet = function (key) {
+    if (!Art.sheets[key] && Art.specs[key]) Art.sheets[key] = buildSheet(Art.specs[key]);
+    return Art.sheets[key];
   };
 
   /* ---------- drawing ---------- */
@@ -363,7 +431,7 @@
 
   /* Draw a unit with its feet at (x, y). opt: alpha, flash (0..1), flashColor, clip (0..1 visible from top). */
   Art.drawUnit = function (ctx, key, anim, frame, angle, x, y, scale, opt = {}) {
-    const sheet = Art.sheets[key];
+    const sheet = Art.sheet(key);
     if (!sheet) return;
     const { dir, flip } = Art.unitDir(angle);
     const frames = sheet[dir][anim] || sheet[dir].idle;
@@ -390,5 +458,5 @@
     ctx.drawImage(img, 0, 0, FW, FH * clip, -CX * s, -GY * s, FW * s, FH * clip * s);
     ctx.restore();
   };
-  Art.animLength = (key, anim) => Art.sheets[key].down[anim].length;
+  Art.animLength = (key, anim) => Art.sheet(key).down[anim].length;
 })(window.DL);

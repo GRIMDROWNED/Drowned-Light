@@ -30,7 +30,7 @@ A top-down dark-fantasy survival game for the browser and phones. You are a lant
    - **Firelight** (camp, torches, Illuminate) *reverses* corruption, heals you and refills your lantern.
    - **Bloomlight** (Refuge Blooms, Sentinel Blooms, Mother Roots) only *halts* it. Blooms wake at night, and the Drowned come to tear them down.
    - **Lantern oil** halves corruption in the dark until it runs dry.
-3. **Return and build.** Supplies you carry are stored automatically when you reach camp. Spend them on camp structures, or forge new kits.
+3. **Return and build.** Supplies you carry are stored automatically when you reach camp. Spend them on camp structures or on training your kit.
 4. **Defend.** If you're at camp at night, waves march on the Central Flame. If it goes out, your home goes dark until dawn.
 
 ### The base camp
@@ -56,10 +56,37 @@ The camp grows through three tiers as the Central Flame levels up:
 - **Mother Roots**: defend one until dawn for a big reward.
 - **Your drowned self**: when you fall, a Drowned version of you keeps everything you carried. Kill it to get your supplies back. If you die again first, they're gone.
 
-### Kits
-- **Lantern Blade** (Kit 01): fast sword arcs. Dash becomes a damaging *Lantern Strike*. Ability **Illuminate** is a burst of firelight that damages and repels enemies and leaves a short-lived sanctuary.
-- **Pyre Censer** (Kit 02, forged at camp): slow, wide burning swings. Ability **Kindle** plants a brazier that lights and scorches.
-- Each kit's ability levels up through **Mastery** at camp.
+### Starting a game: kit and difficulty
+A new game asks you to choose a **kit** and a **difficulty**. Both stay fixed for that save.
+
+**Kits** (following the Kit 01 and Base Kits 02–05 concept sheets):
+
+| Kit | Attack | Dash | Ability | Passive |
+|---|---|---|---|---|
+| **01 Lantern Blade**: *A light still endures.* | Blade Arc (fast sword arcs) | Lantern Strike (damages what you pass through) | **Illuminate**: firelight burst and sanctuary | none |
+| **02 Pike Warden**: *Reach keeps the dark away.* | Pike Thrust (hits everything along a line, strong knockback) | plain | **Warding Sweep**: full-circle sweep, knocks arrows from the air, halves damage taken briefly | none |
+| **03 Ashen Arbalist**: *Quiet light. Farther truths.* | Piercing Bolt (long-range crossbow) | plain | **Scatter Shot**: a fan of bolts; light flares where they land | none |
+| **04 Relic Bearer**: *Lost things still shine.* | Relic Orb (seeking orbs) | plain | **Beacon Pulse**: lights the area, purges corruption, slows the Drowned, dispels arrows | wider lantern, slower oil burn |
+| **05 Flame Bastion**: *Some light burns brighter.* | Bastion Blade (heavy sword) | Shield Slam (staggers) | **Flame Bastion**: a wall of fire that blocks and burns | shield blocks 25% of damage |
+
+**Kit levels 1–20** are trained at camp (Base Camp → **Kit**) with iron, resin and, from level 10, pearls. Higher levels need a higher Central Flame. Every level adds +5% damage and a slightly faster ability.
+
+Levels **5, 10, 15 and 20** are milestones. Each one unlocks a new mechanic for that kit (see the Kit tab or `src/data.js`) and a visible change:
+- **5:** the weapon glows.
+- **10:** embers drift from the knight.
+- **15:** a ring of light at the knight's feet.
+- **20:** a crest of light above the hood.
+
+Reaching a milestone triggers a pillar of the kit's light.
+
+**Difficulties:**
+
+| | Supplies | The Drowned | Light |
+|---|---|---|---|
+| **Dim** | plentiful (×1.35 yield) | weaker (×0.7 health, ×0.65 damage), fewer | blooms ×1.6, firelight +15%, corruption ×0.65, softer nights |
+| **Dark** | standard | standard | standard |
+| **Pitch Black** | scarcer (×0.8) | ×1.35 health, ×1.25 damage, more of them | blooms ×0.65, firelight −12%, corruption ×1.3, dimmer days |
+| **Abyss** | scarce (×0.65) | ×1.75 health, ×1.5 damage, many more | blooms ×0.4, firelight −22%, corruption ×1.65, dim days; the Mire and deeper corrupt even by day |
 
 ### The Drowned
 Broken Squire · Drowned Footman · Shade Archer · Swarming Revenant (rises from the ground) · Lantern Defiler (hunts light sources) · Blackguard (armoured tank) · Drowned Champion (boss: summons revenants and calls up spike eruptions). Every enemy telegraphs its attack with a cyan wind-up, so you can dash out of the way.
@@ -71,7 +98,8 @@ No build step, no dependencies. These are plain scripts loaded in order:
 | File | What it does |
 |---|---|
 | `src/core.js` | math, deterministic noise, input (keyboard + floating joystick), WebAudio sound effects |
-| `src/data.js` | **all balance numbers**: day/night lengths, zones, enemies, kits, upgrade costs |
+| `src/data.js` | **all balance numbers**: day/night lengths, zones, enemies, kits and milestones, kit level costs, difficulties, upgrade costs |
+| `src/kits.js` | the five kits in play: attacks, dashes, abilities, passives, training and milestone effects |
 | `src/camp.js` | base camp layout per tier, palisade walls, gate pathing |
 | `src/art.js` | procedural pixel sprites for the world, camp and effects |
 | `src/units.js` | the knight and Drowned Knight sprite sheets (all animations, corruption stages) |
