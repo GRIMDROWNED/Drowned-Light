@@ -136,53 +136,29 @@ function drawKnightSprite(x,y,enemy=false,corruption=0,alpha=1,dir=2,state="idle
 // Expected PNG: assets/lantern_atlas.png, 1920x1008 (eight directions by three states, frames of 240x336).
 // The old procedural sprite remains a fallback until the image is uploaded.
 const lanternAtlas=new Image();let lanternAtlasReady=false;
-lanternAtlas.onload=()=>{lanternAtlasReady=lanternAtlas.naturalWidth===1920&&lanternAtlas.naturalHeight===1008;if(!lanternAtlasReady){console.warn("Lantern atlas dimensions do not match 1920x1008:",lanternAtlas.naturalWidth,lanternAtlas.naturalHeight);message("Sprite atlas has incorrect dimensions; using fallback knight.");}else{console.info("Lantern Knight sprite atlas loaded successfully.");}};
+const playerAnimator=(typeof PlayerAnimator==="function")?new PlayerAnimator(lanternAtlas):null;
+lanternAtlas.onload=()=>{lanternAtlasReady=lanternAtlas.naturalWidth===1920&&lanternAtlas.naturalHeight===1008;if(!lanternAtlasReady){console.warn("Lantern atlas dimensions do not match 1920x1008:",lanternAtlas.naturalWidth,lanternAtlas.naturalHeight);message("Sprite atlas has incorrect dimensions; using fallback knight.");}else{if(playerAnimator)playerAnimator.prepare();console.info("Lantern Knight sprite atlas loaded successfully.");}};
 lanternAtlas.onerror=()=>{lanternAtlasReady=false;console.warn("Lantern atlas failed to load; using fallback knight.");message("Sprite image could not load; using fallback knight.");};
-lanternAtlas.src="assets/lantern_atlas.png?v=0.7";
+lanternAtlas.src="assets/lantern_atlas.png?v=0.8";
 function knight(x,y,enemy=false){
- if(!enemy&&lanternAtlasReady){
-  // Source order: down, down-right, right, up-right, up, up-left, left, down-left.
-  // Gameplay order: right, down-right, down, down-left, left, up-left, up, up-right.
-  const map=[2,1,0,7,6,5,4,3],index=map[animation.direction]??0;
-  // The reference atlas has an idle pose and one stepping pose (not a true walk cycle).
-  // Alternate them at a readable cadence so the knight visibly lifts and plants his feet.
-  const walking=animation.state==="walk",step=walking?Math.floor(animation.walkTime*8)%2:0;
-  const stateRow=animation.state==="dash"?2:walking?step:0;
-  const bob=walking?(step===1?2:0):0;
-  ctx.save();ctx.imageSmoothingEnabled=false;
-  if(player.corrupt>=200)ctx.filter="hue-rotate(140deg) brightness(.8)";
-  if(animation.state==="dash")ctx.globalAlpha=.9;
-  // Sample slightly inside each atlas cell to avoid neighboring-frame edge pixels.
-// Keep the on-screen dimensions stable so movement and collision are unchanged.
-  const inset=0,srcX=index*240+inset,srcY=stateRow*336+inset;
-  const srcW=240-2*inset,srcH=336-2*inset;
-  if(swordSwing.active&&animation.state!=="dash"){
-    // Rotate the illustrated *whole character*, including its actual drawn sword,
-    // so the weapon is visibly moving rather than drawing a second static sword.
-    const t=Math.min(1,swordSwing.time/swordSwing.duration);
-    const rotation=(-.24+ .57*t)*(Math.sin(swordSwing.angle)<0?-1:1);
-    ctx.translate(Math.round(x),Math.round(y-17));
-    ctx.rotate(rotation);
-    ctx.drawImage(lanternAtlas,srcX,srcY,srcW,srcH,-35,-45+bob,70,94);
-  }else{
-    ctx.drawImage(lanternAtlas,srcX,srcY,srcW,srcH,Math.round(x-35),Math.round(y-62+bob),70,94);
-  }
-  ctx.restore();return;
- }
- drawKnightSprite(x,y,enemy,enemy?400:player.corrupt,1,enemy?2:animation.direction,enemy?"idle":animation.state,enemy?0:animation.walkTime);
+  if(!enemy&&lanternAtlasReady&&playerAnimator&&playerAnimator.draw(
+    ctx,x,y,animation.direction,animation.state,animation.walkTime,swordSwing,player.corrupt
+  ))return;
+  // Procedural sprite is used only if the illustrated atlas fails to load.
+  drawKnightSprite(x,y,enemy,enemy?400:player.corrupt,1,enemy?2:animation.direction,enemy?"idle":animation.state,enemy?0:animation.walkTime);
 }
-function drawSwordSlash(x,y){
+
+function drawSwordSlash(x,y) {
  if(!swordSwing.active)return;
- const t=Math.min(1,swordSwing.time/swordSwing.duration);
- // A brief sweeping blade trail to make the hit visibly readable on a phone.
- const center=swordSwing.angle, leading=center-.95+1.9*t;
+ const t=Math.max(0,Math.min(1,swordSwing.time/swordSwing.duration));
+ const a=swordSwing.angle;
  ctx.save();
  ctx.lineCap="round";
- ctx.globalAlpha=Math.sin(Math.PI*t)*.8;
- ctx.strokeStyle="#ffce80";ctx.lineWidth=6;
- ctx.beginPath();ctx.arc(x,y-14,64,leading-.65,leading+.15);ctx.stroke();
- ctx.strokeStyle="#fff2d2";ctx.lineWidth=2.5;
- ctx.beginPath();ctx.arc(x,y-14,69,leading-.38,leading+.16);ctx.stroke();
+ ctx.globalAlpha=.42*Math.sin(Math.PI*t);
+ ctx.strokeStyle="#ffc671";ctx.lineWidth=3;
+ ctx.beginPath();ctx.arc(x,y-13,35,a-1.05+1.9*t,a-.9+1.9*t);ctx.stroke();
+ ctx.strokeStyle="#fff1c6";ctx.lineWidth=1.5;
+ ctx.beginPath();ctx.arc(x,y-13,40,a-1.05+1.9*t,a-.9+1.9*t);ctx.stroke();
  ctx.restore();
 }
 function draw(){box(0,0,W,H,"#091720");const ox=W/2-player.x,oy=H/2-player.y;
