@@ -23,6 +23,8 @@
     last = ts;
     handleGlobalKeys();
     G.update(dt);
+    // Messages and the objective banner stay hidden while paused or in a menu.
+    document.body.classList.toggle("menu-open", G.state !== "play");
     DL.Render.draw(G);
     UI.update();
     requestAnimationFrame(frame);

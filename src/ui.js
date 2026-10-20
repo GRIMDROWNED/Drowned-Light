@@ -36,6 +36,10 @@
     atk.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); DL.Input.attackBtn = true; try { atk.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ } });
     for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) atk.addEventListener(ev, () => { DL.Input.attackBtn = false; });
     atk.addEventListener("contextmenu", (e) => e.preventDefault());
+    const mine = $("btnMine");
+    mine.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); DL.Input.mineBtn = true; try { mine.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ } });
+    for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) mine.addEventListener(ev, () => { DL.Input.mineBtn = false; });
+    mine.addEventListener("contextmenu", (e) => e.preventDefault());
     for (const id of ["btnView", "btnView2"]) $(id).addEventListener("click", () => { DL.View.cycle(); UI.updateViewLabel(); });
     $("btnCombat").addEventListener("click", () => {
       G.save.attackMode = G.save.attackMode === "manual" ? "auto" : "manual";
@@ -240,7 +244,7 @@
       });
       const modes = [
         ["auto", "Auto-attack", "Your knight strikes the nearest Drowned, and mines supplies you stand beside. You move, dash and use your ability."],
-        ["manual", "Manual attack", "You strike where you aim: the mouse or J on a computer, the Attack button on a phone (it leans toward nearby foes). Swing at supplies to mine them."],
+        ["manual", "Manual attack", "You strike where you aim: the mouse or J on a computer, the Attack button on a phone (it leans toward nearby foes). Mining has its own control: G or right-click, or the Mine button."],
       ];
       html += `<div class="mode-row" role="group" aria-label="Combat"><h3>Combat</h3>${modes.map(([id, name, desc]) =>
         `<button class="pick mode-pick ${st.attack === id ? "on" : ""}" data-mode="${id}" aria-pressed="${st.attack === id}"><span class="pick-name">${name}</span><span class="pick-line">${desc}</span></button>`).join("")}</div>`;
@@ -429,6 +433,7 @@
     set($("torchCount"), "text", String(G.save.torches));
     const manual = G.save.attackMode === "manual";
     set($("btnAttack"), "hidden", !manual);
+    set($("btnMine"), "class", "act small mine" + (manual ? "" : " hidden") + (G.mineTarget ? " ready" : ""));
     document.body.classList.toggle("manual", manual);
     set($("campBtn"), "hidden", !G.inCamp);
   };
