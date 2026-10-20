@@ -131,10 +131,10 @@ function drawKnightSprite(x,y,enemy=false,corruption=0,alpha=1,dir=2,state="idle
  circle(x+(swordLeft?-14:14),y+7,9,dark?"#2ac9dc18":"#ffaf2718");
 }
 // Image-based Lantern Knight: load the approved illustrated eight-view atlas.
-// Expected PNG: assets/lantern_atlas.png, 384x64 (eight frames of 48x64).
+// Expected PNG: assets/lantern_atlas.png, 384x192 (eight directions by three states, frames of 48x64).
 // The old procedural sprite remains a fallback until the image is uploaded.
 const lanternAtlas=new Image();let lanternAtlasReady=false;
-lanternAtlas.onload=()=>{lanternAtlasReady=lanternAtlas.naturalWidth===384&&lanternAtlas.naturalHeight===64;};
+lanternAtlas.onload=()=>{lanternAtlasReady=lanternAtlas.naturalWidth===384&&lanternAtlas.naturalHeight===192;};
 lanternAtlas.onerror=()=>{lanternAtlasReady=false;};
 lanternAtlas.src="assets/lantern_atlas.png";
 function knight(x,y,enemy=false){
@@ -142,11 +142,11 @@ function knight(x,y,enemy=false){
   // Source order: down, down-right, right, up-right, up, up-left, left, down-left.
   // Gameplay order: right, down-right, down, down-left, left, up-left, up, up-right.
   const map=[2,1,0,7,6,5,4,3],index=map[animation.direction]??0;
-  const bob=animation.state==="walk"?(Math.sin(animation.walkTime*16)>0?1:0):0;
+  const stateRow=animation.state==="dash"?2:animation.state==="walk"?1:0; const bob=0;
   ctx.save();ctx.imageSmoothingEnabled=false;
   if(player.corrupt>=200)ctx.filter="hue-rotate(140deg) brightness(.8)";
   if(animation.state==="dash")ctx.globalAlpha=.9;
-  ctx.drawImage(lanternAtlas,index*48,0,48,64,Math.round(x-28),Math.round(y-48+bob),56,75);
+  ctx.drawImage(lanternAtlas,index*48,stateRow*64,48,64,Math.round(x-28),Math.round(y-48+bob),56,75);
   ctx.restore();return;
  }
  drawKnightSprite(x,y,enemy,enemy?400:player.corrupt,1,enemy?2:animation.direction,enemy?"idle":animation.state,enemy?0:animation.walkTime);
