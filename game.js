@@ -130,7 +130,27 @@ function drawKnightSprite(x,y,enemy=false,corruption=0,alpha=1,dir=2,state="idle
  ctx.drawImage(spriteCanvas,Math.round(x-26),Math.round(y-48),52,62);ctx.restore();
  circle(x+(swordLeft?-14:14),y+7,9,dark?"#2ac9dc18":"#ffaf2718");
 }
-function knight(x,y,enemy=false){drawKnightSprite(x,y,enemy,enemy?400:player.corrupt,1,enemy?2:animation.direction,enemy?"idle":animation.state,enemy?0:animation.walkTime);}
+// Image-based Lantern Knight: load the approved illustrated eight-view atlas.
+// Expected PNG: assets/lantern_atlas.png, 384x64 (eight frames of 48x64).
+// The old procedural sprite remains a fallback until the image is uploaded.
+const lanternAtlas=new Image();let lanternAtlasReady=false;
+lanternAtlas.onload=()=>{lanternAtlasReady=lanternAtlas.naturalWidth===384&&lanternAtlas.naturalHeight===64;};
+lanternAtlas.onerror=()=>{lanternAtlasReady=false;};
+lanternAtlas.src="assets/lantern_atlas.png";
+function knight(x,y,enemy=false){
+ if(!enemy&&lanternAtlasReady){
+  // Source order: down, down-right, right, up-right, up, up-left, left, down-left.
+  // Gameplay order: right, down-right, down, down-left, left, up-left, up, up-right.
+  const map=[2,1,0,7,6,5,4,3],index=map[animation.direction]??0;
+  const bob=animation.state==="walk"?(Math.sin(animation.walkTime*16)>0?1:0):0;
+  ctx.save();ctx.imageSmoothingEnabled=false;
+  if(player.corrupt>=200)ctx.filter="hue-rotate(140deg) brightness(.8)";
+  if(animation.state==="dash")ctx.globalAlpha=.9;
+  ctx.drawImage(lanternAtlas,index*48,0,48,64,Math.round(x-28),Math.round(y-48+bob),56,75);
+  ctx.restore();return;
+ }
+ drawKnightSprite(x,y,enemy,enemy?400:player.corrupt,1,enemy?2:animation.direction,enemy?"idle":animation.state,enemy?0:animation.walkTime);
+}
 function draw(){box(0,0,W,H,"#091720");const ox=W/2-player.x,oy=H/2-player.y;
 let left=Math.floor((player.x-W/2)/TILE)-1,right=Math.ceil((player.x+W/2)/TILE)+1,top=Math.floor((player.y-H/2)/TILE)-1,bottom=Math.ceil((player.y+H/2)/TILE)+1;
 for(let ty=top;ty<=bottom;ty++)for(let tx=left;tx<=right;tx++){let x=tx*TILE+ox,y=ty*TILE+oy,h=hash(tx,ty);box(x,y,TILE+1,TILE+1,h<.3?"#182d37":h<.64?"#1c3330":"#273b34");if(h>.84)circle(x+22,y+19,10,"#284450");else{box(x+9,y+13,3,7,"#3b5652");box(x+34,y+29,3,4,"#3d5545");}}
