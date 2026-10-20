@@ -36,7 +36,15 @@
 
     $("btnBegin").addEventListener("click", () => { UI.hideScreens(); G.begin(); UI.showHud(true); });
     $("btnNew").addEventListener("click", () => {
-      if (G.save.started && !confirm("Start over? Your camp, upgrades and stored supplies will be lost.")) return;
+      const btn = $("btnNew");
+      if (G.save.started && !btn.dataset.armed) {
+        btn.dataset.armed = "1";
+        btn.textContent = "Tap again to erase your camp";
+        setTimeout(() => { delete btn.dataset.armed; btn.textContent = "New game"; }, 3000);
+        return;
+      }
+      delete btn.dataset.armed;
+      btn.textContent = "New game";
       UI.hideScreens(); G.newGame(); UI.showHud(true);
     });
     $("btnRise").addEventListener("click", () => { UI.hideScreens(); G.respawn(); UI.showHud(true); });
