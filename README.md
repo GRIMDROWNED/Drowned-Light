@@ -16,12 +16,14 @@ A top-down dark-fantasy survival game for the browser and phones. You are a lant
 | | Desktop | Phone |
 |---|---|---|
 | Move | WASD / arrows | Drag anywhere on the left half |
-| Attack | automatic (nearest enemy) | automatic |
+| Attack (auto mode) | automatic: the nearest Drowned, or a supply node you stand beside | automatic |
+| Attack (manual mode) | hold **J** / **K** or the left mouse button; aim with the mouse | hold **ATTACK** (aims the way you face, leaning toward nearby foes) |
 | Dash | Space / Shift | DASH |
 | Kit ability | E / Q | ability button |
 | Place torch | F / T | TORCH |
 | Camp menu | C (at camp) | ENTER CAMP |
 | Pause | Esc / P | ❚❚ |
+| View | title or pause screen → **View: Auto / Portrait / Landscape** | same |
 
 ## The core loop
 
@@ -56,8 +58,18 @@ The camp grows through three tiers as the Central Flame levels up:
 - **Mother Roots**: defend one until dawn for a big reward.
 - **Your drowned self**: when you fall, a Drowned version of you keeps everything you carried. Kill it to get your supplies back. If you die again first, they're gone.
 
-### Starting a game: kit and difficulty
-A new game asks you to choose a **kit** and a **difficulty**. Both stay fixed for that save.
+### Starting a game: kit, difficulty and combat
+A new game asks you to choose a **kit**, a **difficulty** and a **combat mode** (Auto-attack or Manual attack). All three stay fixed for that save.
+
+### Mining
+Supply nodes take several hits to break: logs 3, rock 4, iron 5, bloom sprouts 2, pearls 2. Each strike shakes and cracks the node and throws chips. The last strike shatters it into pieces of its sprite, and the supplies spill out as pickups that fly to you. In auto mode the knight mines a node you stand beside whenever no Drowned are in reach. In manual mode you swing at it.
+
+### View
+**Auto** follows the device. **Portrait** and **Landscape** lock the screen rotation in the installed app. Where a lock isn't possible:
+- a phone held the other way turns the whole game 90°;
+- a desktop window shows a portrait or landscape play area with dark bars.
+
+The setting is remembered on that device.
 
 **Kits** (following the Kit 01 and Base Kits 02–05 concept sheets):
 
@@ -109,7 +121,8 @@ No build step, no dependencies. These are plain scripts loaded in order:
 
 | File | What it does |
 |---|---|
-| `src/core.js` | math, deterministic noise, input (keyboard + floating joystick), WebAudio sound effects |
+| `src/core.js` | math, deterministic noise, input (keyboard, mouse aim, floating joystick, attack button), WebAudio sound effects |
+| `src/view.js` | Auto / Portrait / Landscape view: orientation lock, rotated stage, letterboxing |
 | `src/data.js` | **all balance numbers**: day/night lengths, zones, enemies, kits and milestones, kit level costs, difficulties, upgrade costs |
 | `src/kits.js` | the five kits in play: attacks, dashes, abilities, passives, training and milestone effects |
 | `src/camp.js` | base camp layout per tier, palisade walls, gate pathing |

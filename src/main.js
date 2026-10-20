@@ -46,6 +46,8 @@
   }
 
   async function boot() {
+    DL.View.init();
+    DL.View.lock();
     Input.init();
     DL.Render.init();
     G.init();

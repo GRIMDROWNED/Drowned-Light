@@ -18,8 +18,9 @@
 
   R.resize = function () {
     R.dpr = Math.min(devicePixelRatio || 1, 2);
-    R.W = innerWidth;
-    R.H = innerHeight;
+    const sz = DL.View.size();
+    R.W = sz.w;
+    R.H = sz.h;
     R.cv.width = Math.round(R.W * R.dpr);
     R.cv.height = Math.round(R.H * R.dpr);
     R.zoom = Math.max(0.85, Math.min(2.2, Math.min(R.W, R.H) / 460));
@@ -77,6 +78,7 @@
     const shx = (Math.random() - 0.5) * cam.shake, shy = (Math.random() - 0.5) * cam.shake;
     const vw = R.W / z, vh = R.H / z, left = cam.x - vw / 2, top = cam.y - vh / 2;
     const view = { left, top, right: left + vw, bottom: top + vh };
+    R.view = { left, top, z }; // for turning the mouse position into a world aim
     const t = G.t;
 
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -122,7 +124,7 @@
       const name = objSprite(o);
       if (name) list.push({ y: o.y, f: () => drawObject(c, G, o, name) });
     });
-    for (const pr of G.pearls) list.push({ y: pr.y, f: () => { sprite(c, "pearl", pr.x, pr.y - Math.sin(t * 3 + pr.x) * 2); } });
+    for (const pr of G.pearls) if (!pr.harvested) list.push({ y: pr.y, f: () => drawObject(c, G, pr, "pearl") });
     pushCamp(list, G, c, t);
     for (const tr of G.torches) list.push({ y: tr.y, f: () => drawTorch(c, tr, t) });
     for (const w of G.walls || []) {
@@ -144,6 +146,7 @@
     for (const it of list) it.f();
 
     /* non-glowing particles */
+    for (const f of G.effects) if (f.type === "shatter") drawShatter(c, f);
     for (const f of G.effects) {
       if (f.type !== "p") continue;
       const a = 1 - f.t / f.max;
@@ -213,6 +216,17 @@
       }
     }
     if (p && G.state !== "title") drawKitGlow(c, G, p, t);
+    if (p && G.state === "play" && G.save.attackMode === "manual") {
+      // where a manual strike will go
+      const a = p.aim != null ? p.aim : p.angle, r0 = 30, r1 = 40;
+      const x0 = p.x + Math.cos(a) * r0, y0 = p.y - 22 + Math.sin(a) * r0 * 0.75;
+      const x1 = p.x + Math.cos(a) * r1, y1 = p.y - 22 + Math.sin(a) * r1 * 0.75;
+      c.strokeStyle = `rgba(${DL.Kits.color()},0.55)`;
+      c.lineWidth = 2;
+      c.beginPath();
+      c.moveTo(x0 + Math.cos(a + 2.4) * 6, y0 + Math.sin(a + 2.4) * 6); c.lineTo(x1, y1); c.lineTo(x0 + Math.cos(a - 2.4) * 6, y0 + Math.sin(a - 2.4) * 6);
+      c.stroke();
+    }
     for (const e of G.enemies) if (e.rise <= 0) drawEyes(c, e, t);
     drawMotes(c, G, view, t);
     c.globalCompositeOperation = "source-over";
@@ -261,19 +275,56 @@
     const sh = o.type === "tree" ? 20 : o.type === "root" ? 40 : 12;
     shadow(c, o.x, o.y, sh, sh * 0.35, 0.3);
     let x = o.x;
-    if (o.hitT > 0) x += Math.sin(G.t * 80) * 2;
-    sprite(c, name, x, o.y + 2, o.flip);
-    if (o.def.bloom && !o.dead && o.hp < o.maxHp) bar(c, o.x, o.y - Art.sprites[name].h * PS - 6, 34, o.hp / o.maxHp, "#5fe6ee");
-    const g = G.player && G.player.gather;
-    if (g && g.obj === o) {
-      const k = g.t / o.def.gather;
-      c.strokeStyle = "rgba(0,0,0,0.6)";
-      c.lineWidth = 4;
-      c.beginPath(); c.arc(o.x, o.y - 26, 11, 0, Math.PI * 2); c.stroke();
-      c.strokeStyle = DL.RESOURCES[o.def.res].color;
-      c.lineWidth = 3;
-      c.beginPath(); c.arc(o.x, o.y - 26, 11, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2); c.stroke();
+    const hit = o.hitT > 0 ? o.hitT / 0.18 : 0;
+    if (hit) x += Math.sin(G.t * 80) * 2.5 * hit;
+    c.save();
+    if (hit && o.def.res) {
+      // squash on impact
+      c.translate(x, o.y);
+      c.scale(1 + 0.08 * hit, 1 - 0.1 * hit);
+      c.translate(-x, -o.y);
     }
+    sprite(c, name, x, o.y + 2, o.flip);
+    c.restore();
+    if (o.def.bloom && !o.dead && o.hp < o.maxHp) bar(c, o.x, o.y - Art.sprites[name].h * PS - 6, 34, o.hp / o.maxHp, "#5fe6ee");
+    if (o.def.hits && o.mineHp != null && o.mineHp < o.def.hits) drawCracks(c, o, name, 1 - o.mineHp / o.def.hits);
+  }
+
+  // Damage on a supply node: dark cracks in stone and iron, pale splintered chips in wood and plants.
+  function drawCracks(c, o, name, k) {
+    const s = Art.sprites[name], w = s.w * PS, h = s.h * PS;
+    const cx = o.x, cy = o.y + 2 - h * 0.45;
+    const wood = o.type === "wood" || o.type === "sprout";
+    c.strokeStyle = wood ? "rgba(214,182,130,0.9)" : "rgba(12,10,8,0.9)";
+    c.lineWidth = 2;
+    const n = Math.ceil(k * 3);
+    for (let i = 0; i < n; i++) {
+      let x = cx + (DL.hash(i, 1, o.x | 0) - 0.5) * w * 0.4, y = cy + (DL.hash(i, 2, o.y | 0) - 0.5) * h * 0.3;
+      c.beginPath(); c.moveTo(x, y);
+      for (let j = 0; j < 3; j++) {
+        x += (DL.hash(i, j + 3, o.x | 0) - 0.5) * w * 0.35;
+        y += (DL.hash(i, j + 7, o.y | 0) - 0.3) * h * 0.25;
+        c.lineTo(Math.round(x), Math.round(y));
+      }
+      c.stroke();
+    }
+  }
+
+  // A mined node breaking apart: pieces of its own sprite tumble out and fade.
+  function drawShatter(c, f) {
+    const s = Art.sprites[f.sprite];
+    if (!s) return;
+    const k = f.t / f.max;
+    c.globalAlpha = Math.max(0, 1 - k * k);
+    for (const pc of f.pieces) {
+      const x = pc.x + pc.vx * f.t, y = pc.y + pc.vy * f.t + 320 * f.t * f.t;
+      c.save();
+      c.translate(x, y);
+      c.rotate(pc.vr * f.t);
+      c.drawImage(s.c, pc.sx, pc.sy, pc.sw, pc.sh, (-pc.sw * PS) / 2, (-pc.sh * PS) / 2, pc.sw * PS, pc.sh * PS);
+      c.restore();
+    }
+    c.globalAlpha = 1;
   }
 
   function bar(c, x, y, w, k, col) {

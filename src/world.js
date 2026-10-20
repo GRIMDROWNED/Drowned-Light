@@ -88,7 +88,7 @@
     // Dawn: harvested nodes regrow and withered blooms return.
     resetDay() {
       for (const c of this.chunks.values()) for (const o of c.objects) {
-        o.harvested = false; o.dead = false; o.cd = 0;
+        o.harvested = false; o.dead = false; o.cd = 0; o.mineHp = null;
         if (o.maxHp) o.hp = o.maxHp;
       }
     },

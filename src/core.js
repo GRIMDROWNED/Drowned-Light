@@ -60,6 +60,11 @@ window.DL = window.DL || {};
     joy: { id: null, ox: 0, oy: 0, x: 0, y: 0 },
     touch: false,
 
+    // Manual attack: J / K, the left mouse button, or the on-screen Attack button (held to keep striking).
+    mouse: { x: 0, y: 0, down: false, seen: 0 },
+    attackBtn: false,
+    attacking() { return this.keys.has("j") || this.keys.has("k") || this.mouse.down || this.attackBtn; },
+
     init() {
       const keymap = {
         " ": "dash", shift: "dash", q: "ability", e: "ability",
@@ -73,7 +78,19 @@ window.DL = window.DL || {};
         if (keymap[k]) this.actions.add(keymap[k]);
       });
       addEventListener("keyup", (e) => this.keys.delete(e.key.toLowerCase()));
-      addEventListener("blur", () => this.keys.clear());
+      addEventListener("blur", () => { this.keys.clear(); this.mouse.down = false; this.attackBtn = false; });
+
+      // Mouse: aim follows the cursor; the left button attacks (when playing on the field, not on menus).
+      const onField = (e) => e.target && (e.target.id === "game" || e.target.id === "touchzone");
+      addEventListener("pointermove", (e) => {
+        if (e.pointerType !== "mouse") return;
+        const q = DL.View.toStage(e.clientX, e.clientY);
+        this.mouse.x = q.x; this.mouse.y = q.y; this.mouse.seen = performance.now();
+      });
+      addEventListener("pointerdown", (e) => {
+        if (e.pointerType === "mouse" && e.button === 0 && onField(e)) { this.mouse.down = true; this.mouse.seen = performance.now(); }
+      });
+      addEventListener("pointerup", (e) => { if (e.pointerType === "mouse") this.mouse.down = false; });
 
       // Floating joystick: touch anywhere on the left side of the screen.
       const zone = document.getElementById("touchzone");
@@ -81,7 +98,8 @@ window.DL = window.DL || {};
       const knob = document.getElementById("joyKnob");
       const R = 52;
       const move = (e) => {
-        let dx = e.clientX - this.joy.ox, dy = e.clientY - this.joy.oy;
+        const q = DL.View.toStage(e.clientX, e.clientY);
+        let dx = q.x - this.joy.ox, dy = q.y - this.joy.oy;
         const len = Math.hypot(dx, dy);
         if (len > R) { dx = (dx / len) * R; dy = (dy / len) * R; }
         this.joy.x = dx / R;
@@ -89,15 +107,16 @@ window.DL = window.DL || {};
         knob.style.transform = `translate(${dx}px,${dy}px)`;
       };
       zone.addEventListener("pointerdown", (e) => {
-        if (this.joy.id !== null) return;
+        if (this.joy.id !== null || e.pointerType === "mouse") return;
         e.preventDefault();
-        if (e.pointerType === "touch") this.touch = true;
+        this.touch = true;
         this.joy.id = e.pointerId;
-        this.joy.ox = e.clientX;
-        this.joy.oy = e.clientY;
-        zone.setPointerCapture(e.pointerId);
-        base.style.left = e.clientX + "px";
-        base.style.top = e.clientY + "px";
+        const q = DL.View.toStage(e.clientX, e.clientY);
+        this.joy.ox = q.x;
+        this.joy.oy = q.y;
+        try { zone.setPointerCapture(e.pointerId); } catch (err) { /* pointer already gone */ }
+        base.style.left = q.x + "px";
+        base.style.top = q.y + "px";
         base.classList.remove("hidden");
         move(e);
       });
@@ -194,7 +213,11 @@ window.DL = window.DL || {};
         case "torch": this.noise(0.3, 0.1, 1500); this.tone(500, 0.2, "triangle", 0.04); break;
         case "flameHit": this.noise(0.2, 0.12, 400); break;
         case "milestone": [392, 523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.7, "triangle", 0.07, 0, i * 0.11)); this.noise(0.8, 0.05, 4000, 0.3); break;
-                case "deny": this.tone(140, 0.12, "square", 0.05); break;
+                case "chop": this.noise(0.08, 0.16, 900); this.tone(160, 0.06, "square", 0.04, -40); break;
+        case "clink": this.tone(1100, 0.07, "square", 0.04, -300); this.noise(0.06, 0.12, 3200); break;
+        case "chime": this.tone(1250, 0.18, "triangle", 0.06); this.tone(1870, 0.14, "sine", 0.03, 0, 0.04); break;
+        case "shatter": this.noise(0.32, 0.18, 600); this.tone(170, 0.25, "triangle", 0.06, -80); break;
+        case "deny": this.tone(140, 0.12, "square", 0.05); break;
       }
     },
   };
