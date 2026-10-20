@@ -34,3 +34,10 @@ The game now supports `assets/lantern_atlas.png` (384 × 192 px, 8 columns × 3 
 - Player's legs now alternate between the atlas idle and walking poses while moving. Idle stops on a stable frame; dash continues using the atlas dash row.
 - Automatic attacks trigger a brief rotational sword swing and bright blade arc aimed toward the nearest target. Existing auto-attack range, projectiles, and damage remain unchanged.
 - Current atlas has one walking pose per direction (not multiple stride frames), so this is an interim two-pose animation. A full leg-by-leg walking cycle and independent weapon rig need dedicated animation frames.
+
+## v0.8 player animation changes
+
+- Added `player_animation.js` as a dedicated visual layer rig for the 1920×1008 illustrated knight atlas.
+- Walking keeps the illustrated upper body and lantern stable while animating lower-leg areas in opposing phases, instead of flipping the whole character between two unrelated-looking poses.
+- Attack now isolates the actual illustrated blade and pivots it around the sword hand; the separate slash trail is only a supplementary effect. The knight body no longer rotates to imitate a sword swing.
+- The atlas still does not include a full hand-drawn walking sequence. This is a transitional programmatic rig, not final polished pixel animation.
