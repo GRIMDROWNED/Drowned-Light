@@ -78,30 +78,119 @@
   };
 
   // Base kits. A kit = weapon + dash behaviour + signature ability.
+  /* Base kits (see the Kit 01 and Base Kits 02–05 concept sheets). A kit is chosen when a game
+     starts and kept for that save. It levels 1–20 at camp; levels 5, 10, 15 and 20 are milestones
+     that change how it plays and how it looks. `color` tints its light, trails and milestone glow. */
+  DL.KIT_MAX_LEVEL = 20;
+  DL.MILESTONE_LEVELS = [5, 10, 15, 20];
   DL.KITS = {
     lanternBlade: {
-      name: "Lantern Blade", tag: "Kit 01",
-      desc: "A faithful blade and a lantern that holds back the dark. Quick strikes, and your dash becomes a Lantern Strike that cuts through the Drowned.",
-      attack: { dmg: 12, range: 64, arc: 2.1, cd: 0.42, kb: 150, color: "255,197,106" },
-      dashDmg: 9,
+      name: "Lantern Blade", tag: "Kit 01", motto: "A light still endures.", roles: ["Balanced", "Melee", "Light"],
+      weapon: "Blade and lantern", color: "255,197,106",
+      desc: "A faithful blade and a lantern that holds back the dark. Quick sword arcs; your dash is a Lantern Strike that cuts through the Drowned.",
+      attack: { type: "arc", name: "Blade Arc", dmg: 12, range: 64, arc: 2.1, cd: 0.42, kb: 150 },
+      dash: { type: "strike", dmg: 9 },
       ability: { id: "illuminate", name: "Illuminate", oil: 15, cd: 14, radius: 150, dmg: 22, dur: 5,
-        desc: "A burst of firelight that burns and repels the Drowned, leaving a short-lived sanctuary." },
+        desc: "A burst of firelight that burns and repels the Drowned and leaves a short-lived sanctuary." },
+      milestones: [
+        { name: "Kindled Edge", desc: "Your blade glows and its strikes set the Drowned alight." },
+        { name: "Twin Arc", desc: "Every third swing sends a crescent of light flying forward." },
+        { name: "Sanctuary", desc: "Illuminate's sanctuary lasts twice as long and heals you inside it." },
+        { name: "Dawnblade", desc: "A blazing white-gold blade: wider arcs, and your Lantern Strike leaves a trail of fire." },
+      ],
     },
-    pyreCenser: {
-      name: "Pyre Censer", tag: "Kit 02",
-      desc: "A heavy censer of burning pitch. Slow, wide swings set the Drowned ablaze; Kindle plants braziers that light and scorch the night.",
-      attack: { dmg: 17, range: 72, arc: 2.8, cd: 0.72, kb: 220, burn: 5, color: "255,122,58" },
-      dashDmg: 0,
-      ability: { id: "kindle", name: "Kindle", oil: 10, cd: 16, radius: 115, dps: 9, dur: 14,
-        desc: "Plant a burning brazier: firelight that scorches any Drowned who come near." },
-      cost: { stone: 20, iron: 15, resin: 10 }, req: { forge: 1 },
+    pikeWarden: {
+      name: "Pike Warden", tag: "Kit 02", motto: "Reach keeps the dark away.", roles: ["Control", "Defense", "Frontline"],
+      weapon: "Pike and lantern", color: "255,214,140",
+      desc: "Extended reach and a stable form. Pike Thrust strikes everything along a line and drives it back.",
+      attack: { type: "thrust", name: "Pike Thrust", dmg: 15, range: 96, width: 26, cd: 0.6, kb: 240 },
+      dash: { type: "plain" },
+      ability: { id: "sweep", name: "Warding Sweep", oil: 12, cd: 11, radius: 115, dmg: 18,
+        desc: "A full circle of the pike: hurls the Drowned back, knocks arrows from the air and steadies you." },
+      milestones: [
+        { name: "Long Reach", desc: "Your pike reaches a fifth farther, its head glowing." },
+        { name: "Skewer", desc: "Thrusts pin the Drowned in place for a moment." },
+        { name: "Warding Ring", desc: "Warding Sweep leaves a ring of firelight behind." },
+        { name: "Warden's Line", desc: "Every thrust launches a spectral spear down the line." },
+      ],
+    },
+    ashenArbalist: {
+      name: "Ashen Arbalist", tag: "Kit 03", motto: "Quiet light. Farther truths.", roles: ["Ranged", "Precision", "Support"],
+      weapon: "Arbalest and lantern", color: "255,160,80",
+      desc: "Piercing shots and a steady aim. Strike the Drowned from far outside their reach.",
+      attack: { type: "bolt", name: "Piercing Bolt", dmg: 14, range: 270, cd: 0.75, pierce: 1, speed: 620 },
+      dash: { type: "plain" },
+      ability: { id: "scatter", name: "Scatter Shot", oil: 12, cd: 10, count: 7, dmg: 12,
+        desc: "A fan of bolts. Where each one lands, light flares and reveals the dark." },
+      milestones: [
+        { name: "Steady Aim", desc: "Longer range and brighter, faster bolts." },
+        { name: "Farther Truths", desc: "Bolts pierce through three of the Drowned." },
+        { name: "Flare Bolts", desc: "Every fourth bolt bursts into searing light." },
+        { name: "Volley", desc: "Each shot looses three bolts at once." },
+      ],
+    },
+    relicBearer: {
+      name: "Relic Bearer", tag: "Kit 04", motto: "Lost things still shine.", roles: ["Utility", "Area control", "Exploration"],
+      weapon: "Relic staff", color: "255,232,170",
+      desc: "An ancient staff that guides the way and bends light. Seeking orbs, a wider lantern and a slower-burning oil.",
+      attack: { type: "orb", name: "Relic Orb", dmg: 10, range: 230, cd: 0.6, speed: 300 },
+      dash: { type: "plain" },
+      ability: { id: "pulse", name: "Beacon Pulse", oil: 14, cd: 13, radius: 170, dmg: 14, purify: 20,
+        desc: "Reveal, purify, dispel: a pulse that lights the area, burns away corruption and scatters arrows." },
+      passive: { lanternR: 1.4, oilDrain: 0.7 },
+      milestones: [
+        { name: "Lost Things Shine", desc: "A guiding wisp drifts toward the nearest supplies." },
+        { name: "Twin Relics", desc: "The staff looses two orbs at a time." },
+        { name: "Purifying Pulse", desc: "Beacon Pulse also heals you and cleanses twice as much." },
+        { name: "Guiding Light", desc: "A halo of bloomlight travels with you and holds corruption at bay." },
+      ],
+    },
+    flameBastion: {
+      name: "Flame Bastion", tag: "Kit 05", motto: "Some light burns brighter.", roles: ["Tank", "Area damage", "Hold the line"],
+      weapon: "Sword and bastion shield", color: "255,120,50",
+      desc: "An unbreakable guard. The shield blunts every blow, Shield Slam staggers, and Flame Bastion raises a wall of fire.",
+      attack: { type: "arc", name: "Bastion Blade", dmg: 16, range: 56, arc: 1.8, cd: 0.62, kb: 170 },
+      dash: { type: "slam", dmg: 14, stun: 0.8 },
+      ability: { id: "wall", name: "Flame Bastion", oil: 14, cd: 15, length: 150, dps: 14, dur: 7,
+        desc: "Raise a wall of fire that blocks the Drowned, burns them and lights the night." },
+      passive: { guard: 0.25 },
+      milestones: [
+        { name: "Tempered Shield", desc: "The shield glows; it blocks 35% of every blow." },
+        { name: "Searing Wall", desc: "Flame Bastion burns hotter and stands longer." },
+        { name: "Bulwark", desc: "Shield Slam sends out a shockwave that staggers everything near." },
+        { name: "Unbreakable", desc: "Flame Bastion rises as a full ring of fire around you." },
+      ],
     },
   };
-  DL.MASTERY_COSTS = [
-    { resin: 8, iron: 5 },
-    { resin: 16, iron: 12, pearl: 1 },
-    { resin: 26, iron: 20, pearl: 4 },
-  ];
+  DL.KIT_ORDER = ["lanternBlade", "pikeWarden", "ashenArbalist", "relicBearer", "flameBastion"];
+
+  // Price to train a kit from level L to L + 1. Needs Central Flame ceil((L + 1) / 4).
+  DL.kitLevelCost = function (L) {
+    const c = { iron: Math.round(2 + 1.6 * L), resin: Math.round(1 + 0.9 * L) };
+    if (L < 8) c.stone = 3 + L;
+    if (L < 4) c.wood = 4;
+    if (L >= 9) c.pearl = Math.floor((L - 6) / 3);
+    return c;
+  };
+  DL.kitLevelFlame = (L) => Math.ceil((L + 1) / 4);
+
+  /* Difficulty: chosen with the kit when a game starts.
+     yield/density = supplies, enemyHp/enemyDmg/spawn = the Drowned, bloom/light/corrupt/darkness/dayDim = light. */
+  DL.DIFFICULTIES = {
+    dim: { name: "Dim", motto: "A pale light still lingers.",
+      yield: 1.35, density: 1.15, enemyHp: 0.7, enemyDmg: 0.65, spawn: 0.75, bloom: 1.6, light: 1.15, corrupt: 0.65, darkness: 0.82, dayDim: 0,
+      notes: ["Plentiful supplies", "Weaker, fewer Drowned", "Blooms everywhere, wider firelight", "Corruption creeps slowly"] },
+    dark: { name: "Dark", motto: "The night as it was meant to be.",
+      yield: 1, density: 1, enemyHp: 1, enemyDmg: 1, spawn: 1, bloom: 1, light: 1, corrupt: 1, darkness: 1, dayDim: 0,
+      notes: ["Standard supplies", "Standard Drowned", "Standard light", "The intended challenge"] },
+    pitch: { name: "Pitch Black", motto: "The light grows thin.",
+      yield: 0.8, density: 0.9, enemyHp: 1.35, enemyDmg: 1.25, spawn: 1.25, bloom: 0.65, light: 0.88, corrupt: 1.3, darkness: 1, dayDim: 0.08,
+      notes: ["Scarcer supplies", "Stronger, more numerous Drowned", "Fewer blooms, shorter firelight", "Corruption bites faster"] },
+    abyss: { name: "Abyss", motto: "Nothing here remembers the sun.",
+      yield: 0.65, density: 0.8, enemyHp: 1.75, enemyDmg: 1.5, spawn: 1.5, bloom: 0.4, light: 0.78, corrupt: 1.65, darkness: 1, dayDim: 0.25, dayCorrupt: true,
+      notes: ["Scarce supplies", "Brutal Drowned in great numbers", "Rare blooms, feeble firelight, dim days", "The Mire and deeper corrupt even by day"] },
+  };
+  DL.DIFF_ORDER = ["dim", "dark", "pitch", "abyss"];
 
   DL.TORCH_COST = { wood: 3, resin: 1 };
 

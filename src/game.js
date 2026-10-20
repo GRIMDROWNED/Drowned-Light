@@ -16,8 +16,9 @@
     v: 1, day: 1, nights: 0, deepest: 0, muted: false,
     stash: emptyRes(),
     up: { flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0 },
-    kits: { lanternBlade: { owned: true, mastery: 0 }, pyreCenser: { owned: false, mastery: 0 } },
     kit: "lanternBlade",
+    kitLevel: 1,
+    difficulty: "dark",
     torches: 2,
     drownedSelf: null,
     started: false,
@@ -35,6 +36,14 @@
       if (s && s.v === 1) {
         // The Lanternwright became the Workbench.
         if (s.up && s.up.lantern != null) { s.up.workbench = Math.max(s.up.workbench || 0, s.up.lantern); delete s.up.lantern; }
+        // Kits used to be bought and swapped with three mastery ranks; now one kit levels 1–20.
+        if (s.kits) {
+          const m = (s.kits[s.kit] && s.kits[s.kit].mastery) || 0;
+          s.kit = s.kit === "pyreCenser" ? "flameBastion" : s.kit;
+          s.kitLevel = s.kitLevel || 1 + 3 * m;
+          delete s.kits;
+        }
+        if (!DL.KITS[s.kit]) s.kit = "lanternBlade";
         return merge(G.defaultSave(), s);
       }
     } catch (e) { /* storage unavailable */ }
@@ -49,17 +58,17 @@
     return {
       maxHp: 100 + 25 * u.armory,
       maxOil: 60 + 25 * u.workbench,
-      lanternR: 70 + 14 * u.workbench,
+      lanternR: (70 + 14 * u.workbench) * DL.Kits.lanternMult() * G.diff().light,
       dmgMult: 1 + 0.2 * u.forge,
-      flameR: 180 + 40 * u.flame,
+      flameR: (180 + 40 * u.flame) * G.diff().light,
       flameHp: 150 + 100 * u.flame,
       torchMax: 3 + u.workbench,
       torchDur: 50 + 15 * u.workbench,
     };
   };
-  G.kit = () => DL.KITS[G.save.kit];
+  G.kit = () => DL.KITS[G.save.kit] || DL.KITS.lanternBlade;
+  G.diff = () => DL.DIFFICULTIES[G.save.difficulty] || DL.DIFFICULTIES.dark;
   G.siegeRadius = () => G.stats().flameR + 90;
-  G.mastery = () => G.save.kits[G.save.kit].mastery;
   G.stage = (c) => (c < 25 ? 1 : c < 50 ? 2 : c < 75 ? 3 : 4);
 
   /* ---------------- cycle ---------------- */
@@ -100,10 +109,13 @@
     G.startLife();
   };
 
-  G.newGame = function () {
+  G.newGame = function (kit, difficulty) {
     const muted = G.save.muted;
     G.save = G.defaultSave();
     G.save.muted = muted;
+    G.save.kit = kit;
+    G.save.difficulty = difficulty;
+    W.chunks.clear(); // the land is regenerated for the new difficulty
     G.persist();
     G.begin();
   };
@@ -120,7 +132,7 @@
     G.time = 4;
     G.enemies = []; G.projectiles = []; G.pickups = []; G.effects = []; G.texts = [];
     G.torches = []; G.lightZones = []; G.telegraphs = []; G.pearls = []; G.decals = []; G.lights = [];
-    G.blooms = [];
+    G.blooms = []; G.walls = []; G.wisp = null;
     G.flame = { kind: "flame", x: 0, y: 0, rad: 24, hp: st.flameHp, max: st.flameHp, lit: true, hitT: 0 };
     G.towerCd = [0, 0, 0];
     G.resetPylons();
@@ -178,6 +190,7 @@
     updateSpawning(dt);
     updateEnemies(dt);
     updateDefenses(dt);
+    DL.Kits.update(dt);
     updateProjectiles(dt);
     updateTelegraphs(dt);
     updatePickups(dt);
@@ -246,7 +259,7 @@
     else L.push({ x: 0, y: -8, r: 50, s: 0.5, col: "255,80,30", a: 0.4, flick: 1 });
     const lay = DL.Camp.layout(G.save.up);
     for (const q of G.pylons) {
-      if (q.lit) L.push({ x: q.x, y: q.y - 40, r: 118, s: 1, col: "255,170,80", a: 0.85, flick: 1, kind: "human" });
+      if (q.lit) L.push({ x: q.x, y: q.y - 40, r: 118 * G.diff().light, s: 1, col: "255,170,80", a: 0.85, flick: 1, kind: "human" });
     }
     if (lay.forge) L.push({ x: lay.forge.x - 4, y: lay.forge.y - 14, r: 60, s: 0.6, col: "255,120,40", a: 0.7, flick: 1 });
     if (lay.workbench) L.push({ x: lay.workbench.x + 8, y: lay.workbench.y - 26, r: 45, s: 0.5, col: "255,190,100", a: 0.5, flick: 1 });
@@ -268,7 +281,7 @@
     for (const o of G.blooms) {
       if (!o.active) continue;
       if (o.type === "sprout") { if (!o.harvested) L.push({ x: o.x + 6, y: o.y - 30, r: 46, s: 0.45, col: "80,230,240", a: 0.6 }); continue; }
-      L.push({ x: o.x, y: o.y - 24, r: o.def.light, s: 0.92, col: "80,230,240", a: 0.95, kind: "bloom", obj: o });
+      L.push({ x: o.x, y: o.y - 24, r: o.def.light * G.diff().light, s: 0.92, col: "80,230,240", a: 0.95, kind: "bloom", obj: o });
     }
     for (const pr of G.pearls) L.push({ x: pr.x, y: pr.y - 4, r: 34, s: 0.45, col: "190,160,255", a: 0.9 });
     if (p && G.state !== "title") {
@@ -281,7 +294,8 @@
       if (e.type === "defiler") L.push({ x: e.x, y: e.y - 70, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
       else if (e.def.boss) L.push({ x: e.x, y: e.y - 40, r: 60, s: 0.3, col: "70,230,240", a: 0.6 });
     }
-    for (const pr of G.projectiles) L.push({ x: pr.x, y: pr.y, r: 26, s: 0.3, col: pr.col, a: 0.8 });
+    for (const pr of G.projectiles) L.push({ x: pr.x, y: pr.y, r: pr.kind === "orb" ? 44 : 26, s: 0.3, col: pr.col, a: 0.8 });
+    if (G.walls) DL.Kits.lights(L);
     G.lights = L;
   }
 
@@ -308,7 +322,7 @@
 
   /* ---------------- player ---------------- */
   function updatePlayer(dt) {
-    const p = G.player, st = G.stats(), kit = G.kit(), inp = DL.Input.axis();
+    const p = G.player, st = G.stats(), inp = DL.Input.axis();
     p.inv = Math.max(0, p.inv - dt);
     p.dashCd = Math.max(0, p.dashCd - dt);
     p.abiCd = Math.max(0, p.abiCd - dt);
@@ -330,15 +344,7 @@
       p.x += p.dashDir.x * 440 * dt;
       p.y += p.dashDir.y * 440 * dt;
       p.trail.push({ x: p.x, y: p.y, life: 0.25, ang: p.angle });
-      if (kit.dashDmg) {
-        for (const e of G.enemies) {
-          if (e.rise > 0 || p.dashHit.has(e)) continue;
-          if (dist(p.x, p.y, e.x, e.y) < e.def.radius + 22) {
-            p.dashHit.add(e);
-            hitEnemy(e, kit.dashDmg * st.dmgMult * corruptBonus(), Math.atan2(p.dashDir.y, p.dashDir.x), 120);
-          }
-        }
-      }
+      DL.Kits.dashTick(p, st, dt);
     } else {
       const wet = W.isWater(p.x, p.y) ? 0.82 : 1;
       const spd = 150 * wet * (p.corrupt >= 75 ? 0.9 : 1);
@@ -361,29 +367,7 @@
     // Auto-attack the nearest Drowned in reach.
     p.atkCd -= dt;
     if (p.swing) { p.swing.t += dt; if (p.swing.t >= p.swing.dur) p.swing = null; }
-    if (p.atkCd <= 0 && p.dashT <= 0) {
-      const a = kit.attack;
-      let best = null, bd = a.range + 26;
-      for (const e of G.enemies) {
-        if (e.rise > 0 || e.dormant) continue;
-        const d = dist(p.x, p.y, e.x, e.y) - e.def.radius;
-        if (d < bd) { bd = d; best = e; }
-      }
-      if (best) {
-        const ang = Math.atan2(best.y - p.y, best.x - p.x);
-        p.swing = { ang, t: 0, dur: 0.2, arc: a.arc, range: a.range, col: a.color, flip: (p.swingN = (p.swingN || 0) + 1) % 2 === 1 };
-        p.atkCd = a.cd;
-        if (!p.moving) p.angle = ang;
-        sfx("swing");
-        const dmg = a.dmg * st.dmgMult * corruptBonus();
-        for (const e of G.enemies.slice()) {
-          if (e.rise > 0) continue;
-          const d = dist(p.x, p.y, e.x, e.y) - e.def.radius;
-          const ad = Math.abs(angleDiff(ang, Math.atan2(e.y - p.y, e.x - p.x)));
-          if (d <= a.range && (ad <= a.arc / 2 || d < 8)) hitEnemy(e, dmg, ang, a.kb, a.burn ? a.burn * st.dmgMult : 0);
-        }
-      }
-    }
+    if (p.atkCd <= 0 && p.dashT <= 0) DL.Kits.attack(p, st);
 
     updateGather(dt);
 
@@ -410,6 +394,7 @@
     }
   }
 
+  G.corruptBonus = corruptBonus;
   function corruptBonus() {
     const s = G.player.stage;
     return s === 3 ? 1.15 : s === 4 ? 1.3 : 1;
@@ -425,32 +410,19 @@
     p.dashCd = 2.2;
     p.inv = Math.max(p.inv, 0.3);
     p.dashHit.clear();
+    DL.Kits.dashStart(p);
     sfx("dash");
     for (let i = 0; i < 8; i++) puff(p.x, p.y, "rgba(150,140,120,0.5)", 40, 0.4);
   }
 
   function useAbility() {
-    const p = G.player, kit = G.kit(), ab = kit.ability, m = G.mastery(), st = G.stats();
+    const p = G.player, ab = G.kit().ability;
     if (p.abiCd > 0) { sfx("deny"); return; }
     if (p.oil < ab.oil) { say("Not enough lantern oil. Refill it in firelight.", "warn"); sfx("deny"); return; }
     p.oil -= ab.oil;
-    p.abiCd = ab.cd * (1 - 0.15 * m);
+    p.abiCd = DL.Kits.abilityCd();
     sfx("ability");
-    if (ab.id === "illuminate") {
-      const r = ab.radius * (1 + 0.12 * m);
-      G.effects.push({ type: "ring", x: p.x, y: p.y - 20, r0: 10, r1: r, t: 0, max: 0.45, col: "255,220,150", w: 8 });
-      for (const e of G.enemies.slice()) {
-        if (dist(p.x, p.y, e.x, e.y) < r + e.def.radius) hitEnemy(e, ab.dmg * st.dmgMult * (1 + 0.2 * m), Math.atan2(e.y - p.y, e.x - p.x), 300);
-      }
-      const dur = ab.dur * (1 + 0.25 * m);
-      G.lightZones.push({ x: p.x, y: p.y - 10, r: r * 0.85, t: dur });
-      for (let i = 0; i < 24; i++) spark(p.x, p.y - 20, "255,210,130", 220);
-    } else if (ab.id === "kindle") {
-      const x = p.x + Math.cos(p.angle) * 30, y = p.y + Math.sin(p.angle) * 30;
-      const dur = ab.dur * (1 + 0.25 * m);
-      G.torches.push({ type: "brazier", x, y, t: dur, max: dur, r: ab.radius * (1 + 0.12 * m), dps: ab.dps * st.dmgMult * (1 + 0.2 * m), hp: 60, rad: 10 });
-      for (let i = 0; i < 14; i++) spark(x, y - 10, "255,140,60", 160);
-    }
+    DL.Kits.ability(p, G.stats());
   }
 
   function placeTorch() {
@@ -459,7 +431,7 @@
     G.save.torches -= 1;
     G.persist();
     const dur = G.stats().torchDur;
-    G.torches.push({ type: "torch", x: p.x + 14, y: p.y + 4, t: dur, max: dur, r: 125, hp: 40, rad: 8 });
+    G.torches.push({ type: "torch", x: p.x + 14, y: p.y + 4, t: dur, max: dur, r: 125 * G.diff().light, hp: 40, rad: 8 });
     sfx("torch");
     say("Torch placed. It will burn for a short while.");
   }
@@ -513,7 +485,8 @@
     const p = G.player, st = G.stats(), Z = DL.ZONES[p.zi];
     const prot = G.protectionAt(p.x, p.y);
     p.protect = prot;
-    const darkness = G.night ? 1 : Z.abyss ? 0.45 : 0;
+    const D = G.diff();
+    const darkness = G.night ? 1 : Z.abyss ? 0.45 : D.dayCorrupt && p.zi >= 2 ? 0.35 : 0;
     p.exposed = false;
     if (prot === "human") {
       p.corrupt -= 10 * dt;
@@ -522,8 +495,8 @@
     } else if (prot === "bloom") {
       p.hp = Math.min(st.maxHp, p.hp + 0.6 * dt);
     } else if (darkness > 0) {
-      let rate = 2.3 * Z.corrupt * darkness;
-      if (p.oil > 0) { rate *= 0.5; p.oil = Math.max(0, p.oil - 1.1 * dt); }
+      let rate = 2.3 * Z.corrupt * darkness * D.corrupt;
+      if (p.oil > 0) { rate *= 0.5; p.oil = Math.max(0, p.oil - 1.1 * DL.Kits.oilDrain() * dt); }
       p.corrupt += rate * dt;
       p.exposed = true;
     } else {
@@ -552,7 +525,7 @@
         const a = rand(0, TAU), r = rand(280, 600), x = p.x + Math.cos(a) * r, y = p.y + Math.sin(a) * r;
         if (!G.protectionAt(x, y) && W.zoneIndex(x, y) >= 2) {
           const zi = W.zoneIndex(x, y);
-          G.pearls.push({ id: "pearl" + G.t, type: "pearl", def: DL.OBJ.pearl, x, y, zi, amount: Math.max(1, Math.round(DL.ZONES[zi].yield * 0.6)), harvested: false });
+          G.pearls.push({ id: "pearl" + G.t, type: "pearl", def: DL.OBJ.pearl, x, y, zi, amount: Math.max(1, Math.round(DL.ZONES[zi].yield * 0.6 * G.diff().yield)), harvested: false });
         }
       }
     }
@@ -567,7 +540,7 @@
       G.siegeT -= dt;
       if (G.siegeT <= 0) {
         G.siegeT = 11;
-        const n = 3 + Math.floor(G.save.day * 1.3);
+        const n = Math.round((3 + Math.floor(G.save.day * 1.3)) * G.diff().spawn);
         spawnWave(0, 0, DL.campPool(G.save.day), n, G.flame, 540, 1);
         if (G.save.day >= 5 && !G.champSpawned && G.phase() === "night") {
           G.champSpawned = true;
@@ -599,7 +572,7 @@
 
     G.spawnT -= dt;
     if (G.spawnT > 0) return;
-    G.spawnT = Math.max(1.1, (G.night ? 3.2 : 6.5) - p.zi * 0.35 - G.save.day * 0.06);
+    G.spawnT = Math.max(0.8, (G.night ? 3.2 : 6.5) - p.zi * 0.35 - G.save.day * 0.06) / G.diff().spawn;
     const shelter = G.bloomShelter(p.x, p.y);
     const type = DL.weighted(Z.pool);
     const count = type === "revenant" ? 4 + ((Math.random() * 3) | 0) : type === "squire" ? 2 + ((Math.random() * 2) | 0) : 1;
@@ -628,10 +601,11 @@
 
   function makeEnemy(type, x, y, zi, extra) {
     const def = DL.ENEMIES[type], Z = DL.ZONES[Math.max(1, zi)], day = G.save.day;
-    const hp = def.hp * Z.hp * (1 + 0.08 * (day - 1));
+    const D = G.diff();
+    const hp = def.hp * Z.hp * (1 + 0.08 * (day - 1)) * D.enemyHp;
     return Object.assign({
       type, def, x, y, kx: 0, ky: 0, hp, maxHp: hp,
-      dmg: def.dmg * Z.dmg * (1 + 0.05 * (day - 1)),
+      dmg: def.dmg * Z.dmg * (1 + 0.05 * (day - 1)) * D.enemyDmg,
       speed: def.speed * rand(0.9, 1.1), angle: Math.PI / 2, moving: false, animT: rand(0, 1),
       state: "move", stT: 0, cd: rand(0.3, 1), flash: 0, burn: 0, burnDps: 0, slow: 0,
       rise: def.crawl ? 0.9 : 0, goal: null, staked: false, summonT: 6, spikeT: 4, zi,
@@ -699,7 +673,11 @@
 
       e.cd -= dt;
       e.slow = Math.max(0, e.slow - dt);
-      if (e.state === "windup") {
+      if (e.stun > 0) {
+        e.stun -= dt; // staggered: no moving, no attacking
+        e.state = "move";
+        e.moving = false;
+      } else if (e.state === "windup") {
         e.stT -= dt;
         if (e.stT <= 0) { strike(e); e.state = "recover"; e.stT = 0.35; e.cd = e.def.cd; }
       } else if (e.state === "recover") {
@@ -851,6 +829,7 @@
   function hurtPlayer(dmg, ang) {
     const p = G.player;
     if (p.inv > 0 || p.dashT > 0 || G.state !== "play") return;
+    dmg *= DL.Kits.damageTaken(p);
     p.hp -= dmg;
     p.inv = 0.5;
     p.hurtFlash = 0.3;
@@ -879,6 +858,7 @@
     if (e.hp <= 0) kill(e, true);
   }
   G.hitEnemy = hitEnemy;
+  G.kill = (e) => kill(e, true);
 
   function kill(e, drops) {
     if (e.removed) return;
@@ -898,7 +878,8 @@
     if (!drops) return;
     for (const k in e.def.drop) {
       const ch = e.def.drop[k];
-      const n = ch >= 1 ? Math.round(ch * (1 + e.zi * 0.6) + rand(0, 2)) : Math.random() < ch ? 1 + (e.zi > 2 ? 1 : 0) : 0;
+      const raw = ch >= 1 ? ch * (1 + e.zi * 0.6) + rand(0, 2) : Math.random() < ch ? 1 + (e.zi > 2 ? 1 : 0) : 0;
+      const n = Math.floor(raw * G.diff().yield + Math.random());
       if (n > 0) dropRes(e.x, e.y, k, n);
     }
     if (e.def.boss) say(`${e.def.name} falls!`, "good");
@@ -963,18 +944,50 @@
   function updateProjectiles(dt) {
     const p = G.player;
     for (const b of G.projectiles) {
+      if (b.homing) {
+        // Relic orbs bend toward the nearest Drowned they haven't hit yet.
+        let tgt = null, bd = 280;
+        for (const e of G.enemies) {
+          if (e.rise > 0 || e.removed || b.hit.has(e)) continue;
+          const d = dist(b.x, b.y, e.x, e.y);
+          if (d < bd) { bd = d; tgt = e; }
+        }
+        if (tgt) {
+          const want = Math.atan2(tgt.y - 20 * tgt.def.scale - b.y, tgt.x - b.x), cur = Math.atan2(b.vy, b.vx);
+          const na = cur + Math.max(-6 * dt, Math.min(6 * dt, angleDiff(cur, want))), sp = Math.hypot(b.vx, b.vy);
+          b.vx = Math.cos(na) * sp; b.vy = Math.sin(na) * sp;
+        }
+      }
       b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
       if (b.hostile) {
         if (dist(b.x, b.y, p.x, p.y - 22) < 16) { hurtPlayer(b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
       } else {
         for (const e of G.enemies) {
-          if (e.rise > 0 || e.removed) continue;
-          if (dist(b.x, b.y, e.x, e.y - 20 * e.def.scale) < e.def.radius + 8) { hitEnemy(e, b.dmg, Math.atan2(b.vy, b.vx), 60); b.life = 0; break; }
+          if (e.rise > 0 || e.removed || (b.hit && b.hit.has(e))) continue;
+          if (dist(b.x, b.y, e.x, e.y - 20 * e.def.scale) < e.def.radius + (b.r || 8)) {
+            hitEnemy(e, b.dmg, Math.atan2(b.vy, b.vx), 60);
+            if (b.flare) flare(b.x, b.y, b.dmg);
+            if (b.hit) b.hit.add(e);
+            if (!b.pierce || b.pierce-- <= 0) { b.life = 0; break; }
+          }
         }
+      }
+      if (b.life <= 0 && b.lightOnEnd && !b.ended) {
+        b.ended = true;
+        G.lightZones.push({ x: b.x, y: b.y + 10, r: 60 * G.diff().light, t: 2.5 });
+        spark(b.x, b.y, b.col, 60);
       }
     }
     G.projectiles = G.projectiles.filter((b) => b.life > 0);
     G.enemies = G.enemies.filter((e) => !e.removed);
+  }
+
+  // Ashen Arbalist flare bolt: a burst of searing light.
+  function flare(x, y, dmg) {
+    G.effects.push({ type: "ring", x, y, r0: 6, r1: 58, t: 0, max: 0.35, col: "255,200,120", w: 6 });
+    for (const e of G.enemies.slice()) if (!e.removed && dist(x, y, e.x, e.y - 20) < 58 + e.def.radius) hitEnemy(e, dmg * 0.6, Math.atan2(e.y - y, e.x - x), 120);
+    G.lightZones.push({ x, y: y + 16, r: 70 * G.diff().light, t: 3 });
+    for (let i = 0; i < 10; i++) spark(x, y, "255,210,140", 140);
   }
 
   function updateTelegraphs(dt) {
@@ -1088,6 +1101,7 @@
     return true;
   };
   function pay(cost) { for (const k in cost) G.save.stash[k] -= cost[k]; }
+  G.pay = pay;
 
   G.buyUpgrade = function (id) {
     const u = DL.UPGRADES.find((x) => x.id === id), lvl = G.save.up[id];
@@ -1104,38 +1118,6 @@
     if (id === "flame" && DL.Camp.tier(G.save.up) !== DL.Camp.tier({ ...G.save.up, flame: lvl })) {
       setTimeout(() => say(`Your camp grows: ${DL.TIER_NAMES[DL.Camp.tier(G.save.up)]}.`, "good"), 300);
     }
-    G.persist();
-    sfx("build");
-    return true;
-  };
-
-  G.buyKit = function (id) {
-    const k = DL.KITS[id];
-    if (G.save.kits[id].owned) return false;
-    for (const r in k.req || {}) if (G.save.up[r] < k.req[r]) { sfx("deny"); return false; }
-    if (!G.canAfford(k.cost)) { sfx("deny"); return false; }
-    pay(k.cost);
-    G.save.kits[id].owned = true;
-    G.save.kit = id;
-    G.persist();
-    sfx("build");
-    return true;
-  };
-
-  G.equipKit = function (id) {
-    if (!G.save.kits[id].owned) return;
-    G.save.kit = id;
-    G.player.abiCd = 0;
-    G.persist();
-  };
-
-  G.buyMastery = function () {
-    const m = G.mastery();
-    if (m >= DL.MASTERY_COSTS.length) return false;
-    const cost = DL.MASTERY_COSTS[m];
-    if (!G.canAfford(cost)) { sfx("deny"); return false; }
-    pay(cost);
-    G.save.kits[G.save.kit].mastery += 1;
     G.persist();
     sfx("build");
     return true;

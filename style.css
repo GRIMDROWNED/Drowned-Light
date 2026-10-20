@@ -258,3 +258,63 @@ body.touch .controls-hint .desk { display: none; }
   #splash, #splash.out img { transition: opacity 0.3s; transform: none; }
   #splash img { animation: none; }
 }
+
+/* ---------- new game: kit + difficulty ---------- */
+#screenSetup { align-items: flex-start; background: rgba(4, 8, 10, 0.94); }
+.setup { width: min(980px, 100%); margin: max(8px, env(safe-area-inset-top)) auto 24px; display: flex; flex-direction: column; gap: 14px; }
+.setup-head h2 { margin: 2px 0 6px; text-wrap: balance; }
+.setup-head p { margin: 0; max-width: 62ch; line-height: 1.5; font-size: 13.5px; }
+.eyebrow { font: 600 11px var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+.setup-grid { display: grid; gap: 10px; }
+.setup-grid.step1 { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.setup-grid.step2 { grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); }
+.pick {
+  display: flex; gap: 12px; align-items: center; text-align: left; padding: 10px 12px; min-width: 0;
+  background: var(--panel-solid); border: 1px solid rgba(160, 132, 92, 0.3); border-radius: 12px;
+}
+.pick:hover { border-color: var(--line); }
+.pick:focus-visible, .setup-foot button:focus-visible, .card footer button:focus-visible { outline: 2px solid var(--warm); outline-offset: 2px; }
+.pick.on { border-color: var(--warm); box-shadow: 0 0 0 1px var(--warm), 0 0 24px rgba(255, 160, 70, 0.22); }
+.portrait { flex: none; image-rendering: pixelated; background: radial-gradient(circle at 50% 70%, #1d2f37, #0a1318 70%); border-radius: 10px; }
+.pick-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pick-name { font: 700 17px var(--font-title); letter-spacing: 0.04em; color: var(--ink); }
+.motto { font: italic 13px Georgia, serif; color: var(--gold); }
+.roles { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.roles i { font: 600 10px var(--font-ui); font-style: normal; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 999px; padding: 1px 7px; }
+.pick-line { font-size: 12px; color: #c3cbc8; }
+.pick-detail { grid-column: 1 / -1; background: rgba(8, 16, 21, 0.72); border-left: 2px solid var(--warm); border-radius: 4px; padding: 10px 14px; }
+.pick-detail h3 { margin: 0 0 4px; font: 700 16px var(--font-title); }
+.pick-detail p { margin: 4px 0; font-size: 13px; line-height: 1.5; color: #c9d0cd; max-width: 75ch; }
+.ms-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; font-size: 13px; line-height: 1.45; color: #c3cbc8; }
+.ms-list li { display: grid; grid-template-columns: 48px 1fr; column-gap: 8px; }
+.ms-list li span { grid-row: span 2; font: 700 11px var(--font-ui); color: var(--muted); padding-top: 2px; font-variant-numeric: tabular-nums; }
+.ms-list li b { color: var(--ink); }
+.ms-list li.got span, .ms-list li.got b { color: var(--warm); }
+.ms-list li.new { animation: msFlash 1.6s ease-out; border-radius: 6px; }
+@keyframes msFlash { 0% { background: rgba(255, 179, 90, 0.35); } 100% { background: transparent; } }
+.diff-pick { flex-direction: column; align-items: flex-start; gap: 6px; }
+.diff-pick ul { margin: 2px 0 0; padding-left: 16px; font-size: 12.5px; line-height: 1.5; color: #c3cbc8; }
+.diff-pick .pips i.on { background: var(--cold); border-color: var(--cold); box-shadow: 0 0 6px var(--cold); }
+.diff-pick.d-abyss.on { border-color: var(--cold); box-shadow: 0 0 0 1px var(--cold), 0 0 24px rgba(95, 230, 238, 0.22); }
+.setup-foot { display: flex; justify-content: space-between; gap: 10px; position: sticky; bottom: 0; padding: 10px 0 max(6px, env(safe-area-inset-bottom)); background: linear-gradient(transparent, rgba(4, 8, 10, 0.96) 35%); }
+.setup-foot button { min-height: 46px; padding: 0 18px; border-radius: 10px; background: rgba(12, 24, 30, 0.95); border: 1px solid var(--line); font: 600 14px var(--font-title); letter-spacing: 0.06em; }
+.setup-foot button.primary { background: linear-gradient(#41301c, #24180c); border-color: var(--warm); color: #ffe6c2; }
+.menu button .sub { display: block; font: 500 11px var(--font-ui); letter-spacing: 0.02em; color: var(--muted); margin-top: 2px; text-transform: none; }
+
+/* ---------- camp: kit training ---------- */
+.kit-card header { justify-content: flex-start; gap: 12px; }
+.kit-card header > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kit-lvl { margin-left: auto; font: 600 12px var(--font-ui); color: var(--muted); }
+.kit-lvl b { font: 700 26px var(--font-title); color: var(--warm); }
+.lvl-track { position: relative; height: 8px; margin: 18px 6px 14px; background: rgba(0, 0, 0, 0.55); border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.06); }
+.lvl-track i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #a5602a, var(--warm)); border-radius: 4px; }
+.lvl-track b {
+  position: absolute; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--panel-solid); border: 1px solid var(--line);
+  font: 700 9px var(--font-ui); color: var(--muted);
+}
+.lvl-track b.on { background: #3a2716; border-color: var(--warm); color: #ffe6c2; box-shadow: 0 0 10px rgba(255, 179, 90, 0.6); }
+.kit-card.celebrate { animation: kitGlow 1.6s ease-out; }
+@keyframes kitGlow { 0% { box-shadow: 0 0 0 2px var(--warm), 0 0 40px rgba(255, 179, 90, 0.6); } 100% { box-shadow: none; } }
+#kitLine { margin-top: 4px; font-size: 10.5px; color: var(--muted); letter-spacing: 0.02em; }
+@media (prefers-reduced-motion: reduce) { .kit-card.celebrate, .ms-list li.new { animation: none; } }

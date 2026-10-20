@@ -193,7 +193,8 @@ window.DL = window.DL || {};
         case "arrow": this.noise(0.12, 0.07, 3500); break;
         case "torch": this.noise(0.3, 0.1, 1500); this.tone(500, 0.2, "triangle", 0.04); break;
         case "flameHit": this.noise(0.2, 0.12, 400); break;
-        case "deny": this.tone(140, 0.12, "square", 0.05); break;
+        case "milestone": [392, 523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.7, "triangle", 0.07, 0, i * 0.11)); this.noise(0.8, 0.05, 4000, 0.3); break;
+                case "deny": this.tone(140, 0.12, "square", 0.05); break;
       }
     },
   };

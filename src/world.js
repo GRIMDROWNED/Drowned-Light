@@ -32,26 +32,34 @@
       const objs = [];
       const mx = (cx + 0.5) * CH, my = (cy + 0.5) * CH;
       const zi = Math.max(1, this.zoneIndex(mx, my));
-      const n = Math.round(DL.ZONES[zi].density * (0.7 + DL.hash(cx, cy, 5) * 0.6));
+      const D = DL.Game.diff();
+      const n = Math.round(DL.ZONES[zi].density * D.density * (0.7 + DL.hash(cx, cy, 5) * 0.6));
       for (let i = 0; i < n; i++) {
         const x = (cx + DL.hash(cx, cy, i * 3 + 1)) * CH, y = (cy + DL.hash(cx, cy, i * 3 + 2)) * CH;
         if (Math.hypot(x, y) < CAMP_CLEAR) continue;
         const ozi = Math.max(1, this.zoneIndex(x, y));
-        let type = DL.weighted(DL.SPAWN_TABLE[ozi], DL.hash(cx, cy, i * 3 + 3));
+        let type = DL.weighted(this.spawnTable(ozi, D), DL.hash(cx, cy, i * 3 + 3));
         if (this.isWater(x, y) && !["reeds", "sprout", "refuge"].includes(type)) {
           if (DL.hash(cx, cy, i * 7 + 9) < 0.5) type = "reeds"; else continue;
         }
         objs.push(this.makeObj(type, x, y, `${cx},${cy},${i}`, ozi, DL.hash(cx, cy, i * 5 + 4)));
       }
       // Rare Mother Roots in the Mire and deeper.
-      if (zi >= 2 && DL.hash(cx, cy, 77) < 0.06) objs.push(this.makeObj("root", mx, my, `${cx},${cy},root`, zi, 0.5));
+      if (zi >= 2 && DL.hash(cx, cy, 77) < 0.06 * D.bloom) objs.push(this.makeObj("root", mx, my, `${cx},${cy},root`, zi, 0.5));
       return objs;
+    },
+
+    // Difficulty shifts the mix: more or fewer blooms (light) among the supplies.
+    spawnTable(zi, D) {
+      const t = Object.assign({}, DL.SPAWN_TABLE[zi]);
+      for (const k of ["refuge", "sentinel"]) if (t[k]) t[k] *= D.bloom;
+      return t;
     },
 
     makeObj(type, x, y, id, zi, h) {
       const def = DL.OBJ[type];
       const o = { id, type, def, x, y, zi, variant: h < 0.5 ? 0 : 1, flip: h > 0.62, harvested: false, dead: false, cd: 0, hitT: 0 };
-      if (def.res) o.amount = Math.max(1, Math.round(def.base * DL.ZONES[zi].yield * (0.8 + h * 0.5)));
+      if (def.res) o.amount = Math.max(1, Math.round(def.base * DL.ZONES[zi].yield * DL.Game.diff().yield * (0.8 + h * 0.5)));
       if (def.hp) o.hp = o.maxHp = def.hp * (1 + 0.25 * (zi - 1));
       if (def.rad) o.rad = def.rad;
       return o;
