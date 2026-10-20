@@ -37,6 +37,11 @@
     for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) atk.addEventListener(ev, () => { DL.Input.attackBtn = false; });
     atk.addEventListener("contextmenu", (e) => e.preventDefault());
     for (const id of ["btnView", "btnView2"]) $(id).addEventListener("click", () => { DL.View.cycle(); UI.updateViewLabel(); });
+    $("btnCombat").addEventListener("click", () => {
+      G.save.attackMode = G.save.attackMode === "manual" ? "auto" : "manual";
+      G.persist();
+      UI.updateCombatLabel();
+    });
     $("btnPause").addEventListener("click", () => UI.pause());
     $("campBtn").addEventListener("click", () => UI.openCamp());
 
@@ -125,6 +130,7 @@
     const G = DL.Game;
     if (G.state !== "play") return;
     G.state = "pause";
+    UI.updateCombatLabel();
     $("screenPause").classList.remove("hidden");
   };
   UI.resume = function () {
@@ -132,6 +138,10 @@
     $("screenPause").classList.add("hidden");
     if (G.state === "pause") G.state = "play";
     DL.Input.clear();
+  };
+
+  UI.updateCombatLabel = function () {
+    $("btnCombat").textContent = "Combat: " + (DL.Game.save.attackMode === "manual" ? "Manual attack" : "Auto-attack");
   };
 
   UI.updateViewLabel = function () {
