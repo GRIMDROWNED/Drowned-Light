@@ -18,11 +18,14 @@
   K.abilityCd = () => G.kit().ability.cd * K.cdMult();
 
   // Training at camp: cost, Central Flame requirement, and whether it's possible.
+  // Training the next level: its cost and which camp structures it still needs.
   K.trainInfo = function () {
     const L = G.save.kitLevel;
     if (L >= DL.KIT_MAX_LEVEL) return { max: true };
-    const cost = DL.kitLevelCost(L), need = DL.kitLevelFlame(L);
-    return { cost, need, locked: G.save.up.flame < need, ok: G.save.up.flame >= need && G.canAfford(cost) };
+    const cost = DL.kitLevelCost(L), req = DL.kitLevelReq(L + 1);
+    const missing = Object.keys(req).filter((k) => G.save.up[k] < req[k])
+      .map((k) => `${DL.UPGRADES.find((u) => u.id === k).name} ${req[k]}`);
+    return { cost, req, missing, locked: missing.length > 0, ok: !missing.length && G.canAfford(cost) };
   };
   K.train = function () {
     const info = K.trainInfo();
@@ -46,10 +49,23 @@
   };
 
   /* ---------- passives ---------- */
+  // Pike Warden's Stable Form: standing still for a moment.
+  K.steady = function (p) {
+    const st = G.kit().passive && G.kit().passive.stance;
+    return !!st && !p.moving && p.dashT <= 0 && (p.stillT || 0) >= st.after;
+  };
+  // Ashen Arbalist's Quiet Light: bolts hit harder the farther they've flown.
+  K.farShotMult = function (b) {
+    if (!b.farShot) return 1;
+    const f = b.farShot, d = dist(b.ox, b.oy, b.x, b.y);
+    return 1 + f.bonus * Math.max(0, Math.min(1, (d - f.from) / (f.to - f.from)));
+  };
+
   K.damageTaken = function (p) {
     const kit = G.kit();
     let m = 1;
     if (kit.passive && kit.passive.guard) m *= 1 - (K.has(5) ? 0.35 : kit.passive.guard);
+    if (K.steady(p)) m *= 1 - kit.passive.stance.guard;
     if (p.guardT > 0) m *= 0.5;
     return m;
   };
@@ -69,7 +85,8 @@
   function shoot(p, ang, o) {
     const kit = G.kit();
     G.projectiles.push(Object.assign({
-      x: p.x + Math.cos(ang) * 14, y: p.y - 26 + Math.sin(ang) * 8,
+      x: p.x + Math.cos(ang) * 14, y: p.y - 26 + Math.sin(ang) * 8, ox: p.x, oy: p.y - 26,
+      farShot: kit.passive && kit.passive.farShot,
       vx: Math.cos(ang) * o.speed, vy: Math.sin(ang) * o.speed,
       hostile: false, col: kit.color, hit: new Set(), pierce: 0,
     }, o));
@@ -120,7 +137,7 @@
         if (e.rise > 0) continue;
         const rx = e.x - p.x, ry = e.y - p.y, along = rx * ux + ry * uy, perp = Math.abs(rx * uy - ry * ux);
         if (along > -6 && along < range + e.def.radius && perp < a.width / 2 + e.def.radius) {
-          G.hitEnemy(e, a.dmg * pw, ang, a.kb);
+          G.hitEnemy(e, a.dmg * pw * (K.steady(p) ? kit.passive.stance.dmg : 1), ang, a.kb);
           if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
         }
       }

@@ -204,6 +204,7 @@
       const k = DL.KITS[st.kit];
       html += `<div class="pick-detail"><h3>${k.name}</h3><p>${k.desc}</p>
         <p><b>${k.ability.name}:</b> ${k.ability.desc}</p>
+        <p><b>Special: ${k.special.name}.</b> ${k.special.desc}</p>
         <ol class="ms-list">${k.milestones.map((m, i) => `<li><span>Lv ${DL.MILESTONE_LEVELS[i]}</span><b>${m.name}</b> ${m.desc}</li>`).join("")}</ol></div>`;
     } else {
       DL.DIFF_ORDER.forEach((id, i) => {
@@ -261,12 +262,11 @@
         let action = "";
         if (max) action = `<span class="maxed">Complete</span>`;
         else {
-          const need = u.reqFlame(lvl + 1);
           const cost = u.costs[lvl];
-          const locked = s.up.flame < need;
-          const ok = !locked && G.canAfford(cost);
+          const lock = G.upgradeLock(u, lvl);
+          const ok = !lock && G.canAfford(cost);
           action = `<div class="cost">${costHtml(cost)}</div>` +
-            (locked ? `<span class="req">Needs Central Flame ${need}</span>` : "") +
+            (lock ? `<span class="req">${lock}</span>` : "") +
             `<button data-act="up:${u.id}" ${ok ? "" : "disabled"}>${lvl ? "Upgrade" : "Build"}</button>`;
         }
         html += `<article class="card">
@@ -281,14 +281,23 @@
       const track = `<div class="lvl-track" aria-label="Level ${L} of ${DL.KIT_MAX_LEVEL}"><i style="width:${pos(L)}%"></i>${DL.MILESTONE_LEVELS.map((m) => `<b class="${L >= m ? "on" : ""}" style="left:${pos(m)}%">${m}</b>`).join("")}</div>`;
       let action;
       if (info.max) action = `<span class="maxed">Fully trained</span>`;
-      else action = `<div class="cost">${costHtml(info.cost)}</div>` + (info.locked ? `<span class="req">Needs Central Flame ${info.need}</span>` : "") +
+      else action = `<div class="cost">${costHtml(info.cost)}</div>` +
         `<button data-act="train" ${info.ok ? "" : "disabled"}>Train to level ${L + 1}</button>`;
+      const band = DL.KIT_BANDS.find((b) => L + 1 <= b.upTo);
+      const prev = DL.KIT_BANDS[DL.KIT_BANDS.indexOf(band) - 1];
+      const reqLine = info.max ? "" : `<p class="effect">Levels ${prev ? prev.upTo + 1 : 2}–${band.upTo} need: ` +
+        Object.keys(band.req).map((k) => {
+          const got = s.up[k] >= band.req[k];
+          return `<span class="${got ? "req-ok" : "req"}">${DL.UPGRADES.find((u) => u.id === k).name} ${band.req[k]}${got ? " ✓" : ""}</span>`;
+        }).join(" · ") + "</p>";
       html += `<article class="card kit-card ${UI.justReached ? "celebrate" : ""}">
         <header><canvas class="portrait" data-kit="${G.save.kit}" data-still="1" width="66" height="81"></canvas>
           <div><span class="tag">${k.tag} · ${k.weapon}</span><h3>${k.name}</h3><span class="motto">${k.motto}</span></div>
           <span class="kit-lvl">Lv <b>${L}</b></span></header>
         ${track}
         <p class="effect">Damage ×${K.power().toFixed(2)} · ${k.ability.name} every ${K.abilityCd().toFixed(1)}s${L < DL.KIT_MAX_LEVEL ? `<br>Each level: +5% damage, faster ability` : ""}</p>
+        <p class="effect"><b>Special: ${k.special.name}.</b> ${k.special.desc}</p>
+        ${reqLine}
         <footer>${action}</footer></article>`;
       html += `<article class="card"><header><h3>Milestones</h3><span class="tag">Levels 5 · 10 · 15 · 20</span></header>
         <ol class="ms-list">${k.milestones.map((m, i) => {

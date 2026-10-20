@@ -587,6 +587,14 @@
       g.addColorStop(0, "rgba(255,255,240,1)"); g.addColorStop(0.3, "rgba(255,232,170,0.8)"); g.addColorStop(1, "rgba(255,232,170,0)");
       c.fillStyle = g; c.fillRect(w.x - 14, w.y - 14, 28, 28);
     }
+    if (DL.Kits.steady(p)) {
+      // Stable Form: braced, a firm band of light at the feet
+      c.strokeStyle = `rgba(${col},0.55)`;
+      c.lineWidth = 2;
+      c.setLineDash([5, 4]);
+      c.beginPath(); c.ellipse(p.x, p.y + 1, 19, 6, 0, 0, Math.PI * 2); c.stroke();
+      c.setLineDash([]);
+    }
     if (tier < 1) return;
     const { dir, flip } = Art.unitDir(p.swing ? p.swing.ang : p.angle);
     const side = flip ? -1 : 1;
