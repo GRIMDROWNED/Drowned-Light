@@ -1,0 +1,394 @@
+/* Drowned Light — knights painted as pixel art: the Lantern Knight, its four
+   corruption stages, and the Drowned Knights that share its silhouette.
+   Every frame is generated once at load into small canvases (a "sheet"):
+     sheet[dir][anim][frame]   dir: down | up | side (left = mirrored side)
+   Swap in hand-drawn sheets later by filling Art.sheets with the same shape. */
+"use strict";
+(function (DL) {
+  const Art = DL.Art;
+  const FW = 44, FH = 54, CX = 22, GY = 50; // frame size and foot anchor, in art pixels
+  const PS = 2;                              // world px per art pixel
+  Art.UNIT = { FW, FH, CX, GY, PS };
+
+  /* ---------- palettes ---------- */
+  const KNIGHT = {
+    cloth: "#ddd0b4", clothMd: "#b4a587", clothDk: "#7b6c56", shadow: "#141619",
+    metal: "#8d9397", metalHi: "#cdd1cf", metalDk: "#4b5157", leather: "#5b4331", boot: "#2e2722",
+    gold: "#b98a4a", eye: "#121417", blade: "#c9ced0", bladeHi: "#f4f2ea",
+    lanternFrame: "#352a20", glow: "#ffab3d", core: "#fff1c2", wood: "#5a4230", trim: "#7a2e2a",
+    drip: "#2d8f98", dripHi: "#6ff3fb", outline: "#0a0b0c",
+  };
+  const DROWNED = {
+    cloth: "#8b9796", clothMd: "#5f6d70", clothDk: "#35434a", shadow: "#06090b",
+    metal: "#3e4d57", metalHi: "#6f8c96", metalDk: "#1f2a31", leather: "#2a2a28", boot: "#151a1d",
+    gold: "#4c6a6e", eye: "#8ff8ff", blade: "#5f7a84", bladeHi: "#8ff8ff",
+    lanternFrame: "#1b2429", glow: "#4fe6f0", core: "#e2ffff", wood: "#2b2b28", trim: "#5d2a28",
+    drip: "#2aa6b1", dripHi: "#8ff8ff", outline: "#050708",
+  };
+
+  function hexToRgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function mixHex(a, b, t) {
+    const A = hexToRgb(a), B = hexToRgb(b);
+    return "#" + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, "0")).join("");
+  }
+  function mixPal(a, b, t, over = {}) {
+    const out = {};
+    for (const k in a) out[k] = mixHex(a[k], b[k], t);
+    return Object.assign(out, over);
+  }
+
+  /* ---------- animation poses ---------- */
+  const ANIMS = {
+    idle: [{}, { bob: 1, sway: 1 }],
+    walk: [{ liftL: 2, stride: 3, bob: -1, sway: 1, hem: 1 }, { stride: 0 }, { liftR: 2, stride: -3, bob: -1, sway: -1, hem: -1 }, { stride: 0 }],
+    attack: [{ atk: 0, lean: -1 }, { atk: 1, lean: 2, hem: 1 }, { atk: 2, lean: 1 }],
+    dash: [{ dash: 1, lean: 3, hem: 4, stride: 4, bob: 1 }],
+    hurt: [{ lean: -2, bob: 1, hurt: 1 }],
+    death: [{ kneel: 4, lean: -1 }, { kneel: 8, lean: 1 }, { fallen: 1 }],
+  };
+  const FACING = { down: Math.PI / 2, up: -Math.PI / 2, side: 0 };
+  const IDLE_BLADE = { down: 2.0, up: 1.25, side: 1.2 };
+  const ATK_OFFSET = [-2.4, -0.15, 1.1]; // windup, strike, follow-through (relative to facing)
+
+  /* ---------- pieces ---------- */
+  function hemPoints(pts, xr, xl, y, n, hem, torn, seed) {
+    for (let i = 1; i < n; i++) {
+      const u = i / n;
+      const x = xr + (xl - xr) * u + hem * (1 - u);
+      const cut = i % 2 ? 2 + (torn ? Math.floor(DL.hash(i, seed, 3) * 3) : 1) : 0;
+      pts.push(x, y - cut);
+    }
+  }
+
+  function lantern(P, p, x, y, sway) {
+    P.seg(x, y, x + sway, y + 3, p.metalDk);
+    const lx = Math.round(x + sway - 2), ly = y + 3;
+    P.rect(lx + 1, ly, 3, 1, p.lanternFrame);
+    P.rect(lx, ly + 1, 5, 6, p.lanternFrame);
+    P.rect(lx + 1, ly + 2, 3, 4, p.glow);
+    P.px(lx + 2, ly + 3, p.core);
+    P.rect(lx + 1, ly + 7, 3, 1, p.lanternFrame);
+  }
+
+  function blade(P, S, hx, hy, ang) {
+    const p = S.pal, ux = Math.cos(ang), uy = Math.sin(ang);
+    const kind = S.weapon;
+    if (kind === "bow") {
+      const g = P.g;
+      g.strokeStyle = p.wood; g.lineWidth = 2;
+      g.beginPath(); g.arc(hx, hy, 7, ang - 1.15, ang + 1.15); g.stroke();
+      P.seg(hx + Math.cos(ang - 1.15) * 7, hy + Math.sin(ang - 1.15) * 7, hx + Math.cos(ang + 1.15) * 7, hy + Math.sin(ang + 1.15) * 7, p.bladeHi);
+      return;
+    }
+    if (kind === "pole") {
+      P.line([hx, hy + 5, hx + 1, hy - 26], 2, p.wood);
+      P.seg(hx + 1, hy - 26, hx + 5, hy - 27, p.metalDk);
+      P.seg(hx + 5, hy - 27, hx + 5, hy - 24, p.metalDk);
+      lantern(P, p, hx + 5, hy - 25, 0);
+      return;
+    }
+    if (kind === "claws") return;
+    const len = kind === "greatsword" ? 21 : kind === "shortsword" ? 9 : 14;
+    const w = kind === "greatsword" ? 3 : 2;
+    const tx = hx + ux * len, ty = hy + uy * len;
+    P.line([hx + ux * 2, hy + uy * 2, tx, ty], w, p.blade);
+    P.seg(hx + ux * 3, hy + uy * 3, tx - ux * 2, ty - uy * 2, p.bladeHi);
+    P.line([hx - uy * 3 + ux * 2, hy + ux * 3 + uy * 2, hx + uy * 3 + ux * 2, hy - ux * 3 + uy * 2], 2, p.gold);
+    P.seg(hx, hy, hx - ux * 2, hy - uy * 2, p.leather);
+  }
+
+  function offhand(P, S, x, y, sway) {
+    const p = S.pal;
+    if (S.offhand === "lantern") lantern(P, p, x, y, sway);
+    else if (S.offhand === "shield") {
+      P.ell(x, y + 2, 4.5, 5.5, p.wood);
+      P.ell(x, y + 2, 3, 4, p.clothDk);
+      P.rect(x - 1, y + 1, 2, 2, p.metalHi);
+    } else if (S.offhand === "tower") {
+      P.rect(x - 5, y - 8, 10, 16, p.metalDk);
+      P.rect(x - 4, y - 7, 8, 14, p.metal);
+      P.rect(x - 4, y - 7, 8, 2, p.trim);
+      P.rect(x - 1, y - 5, 2, 12, p.trim);
+      P.rect(x - 3, y - 5, 1, 10, p.metalHi);
+    }
+  }
+
+  function crown(P, p, c, ht) {
+    for (let i = -2; i <= 2; i++) {
+      const h = 6 - Math.abs(i) * 2;
+      P.rect(c + i * 3 - 1, ht + 3 - h, 2, h + 2, p.metalDk);
+      P.px(c + i * 3 - 1, ht + 3 - h, p.dripHi);
+    }
+  }
+
+  function drips(P, S, c, top) {
+    if (!S.drips) return;
+    const g = P.g, p = S.pal;
+    g.globalCompositeOperation = "source-atop";
+    for (let i = 0; i < S.drips; i++) {
+      const x = Math.floor(c - 10 + DL.hash(i, 1, S.seed) * 20);
+      const y = Math.floor(top - 12 + DL.hash(i, 2, S.seed) * 36);
+      g.fillStyle = i % 3 ? p.drip : p.dripHi;
+      g.fillRect(x, y, 1, 1 + Math.floor(DL.hash(i, 3, S.seed) * 4));
+    }
+    g.globalCompositeOperation = "source-over";
+  }
+
+  /* ---------- the knight body, three views ---------- */
+  // Proportions (art px, ground up): legs 11 · torso 12 · hooded head 12.
+  function hoodFront(c, ht, top) {
+    return [c, ht, c + 3, ht + 1, c + 5, ht + 4, c + 6, ht + 8, c + 6, top + 1, c - 6, top + 1, c - 6, ht + 8, c - 5, ht + 4, c - 3, ht + 1];
+  }
+  function mantle(c, top, mw, vneck) {
+    return [c - mw, top + 5, c - mw + 1, top + 1, c - 5, top - 2, c - 2, top - 1, c, top + (vneck ? 2 : -1), c + 2, top - 1, c + 5, top - 2,
+      c + mw - 1, top + 1, c + mw, top + 4, c + mw - 2, top + 6, c + mw - 4, top + 4, c + 3, top + 6, c + 1, top + 4, c - 1, top + 6,
+      c - 3, top + 4, c - mw + 4, top + 6, c - mw + 2, top + 4];
+  }
+
+  function humanoid(P, S, dir, pose) {
+    const p = S.pal, k = pose.kneel || 0, bulk = S.bulk || 0;
+    const lean = pose.lean || 0;
+    const c = CX + (dir === "side" ? lean : 0);
+    const b = (pose.bob || 0) + k;
+    const G = GY, top = G - 23 + b, ht = top - 12;
+    const hem = pose.hem || 0, sway = pose.sway || 0;
+    const tw = (dir === "side" ? 3 : 5) + bulk;
+    const mw = 9 + bulk;
+    const legH = Math.max(2, 11 - k);
+    const lw = 3 + (bulk ? 1 : 0);
+
+    // weapon hand position + blade angle
+    const F = FACING[dir];
+    let ang = IDLE_BLADE[dir], hx, hy;
+    if (pose.atk != null) ang = F + ATK_OFFSET[pose.atk];
+    if (dir === "down") { hx = c - tw - 2; hy = top + (pose.atk === 0 ? 3 : 10); }
+    else if (dir === "up") { hx = c + tw + 2; hy = top + (pose.atk === 0 ? 3 : 10); }
+    else { hx = c + 3 + (pose.atk === 1 ? 2 : 0); hy = top + (pose.atk === 0 ? 2 : 9); }
+    if (pose.dash) ang = dir === "side" ? 2.6 : ang + 0.5;
+
+    const legs = (shadeOuter) => {
+      for (const [x0, lift] of [[c - 4 - bulk, pose.liftL || 0], [c + 1 + bulk, pose.liftR || 0]]) {
+        P.rect(x0, G - legH - 1 - lift, lw, legH - 2, p.metalDk);
+        if (shadeOuter) P.rect(x0, G - legH - 1 - lift, 1, legH - 3, p.metal);
+        P.rect(x0, G - 3 - lift, lw, 3, p.boot);
+      }
+    };
+    const backCloak = (col, seed) => {
+      const cw0 = 7 + bulk, cw1 = 11 + bulk + (S.torn ? 1 : 0);
+      const pts = [c - cw0, top, c + cw0, top, c + cw1 + hem, G - 3];
+      hemPoints(pts, c + cw1 + hem, c - cw1 - hem, G - 3, 7, 0, S.torn, seed);
+      pts.push(c - cw1 - hem, G - 3);
+      P.poly(pts, col);
+      return cw0;
+    };
+
+    if (dir === "down") {
+      backCloak(p.clothDk, 1);
+      legs(true);
+      // chest plate, belt, tabard
+      P.rect(c - tw, top, tw * 2, 12, p.metal);
+      P.rect(c - tw + 1, top + 5, 2, 4, p.metalHi);
+      P.rect(c + tw - 2, top + 5, 1, 4, p.metalDk);
+      P.rect(c - tw, top + 7, tw * 2, 1, p.metalDk);
+      P.rect(c - 1, top + 5, 2, 2, p.metalHi);
+      P.rect(c - tw, top + 9, tw * 2, 2, p.leather);
+      P.rect(c - 1, top + 9, 2, 2, p.gold);
+      P.poly([c - 3, top + 11, c + 3, top + 11, c + 3, G - 6, c + 2, G - 4, c + 1, G - 6, c, G - 3, c - 1, G - 6, c - 2, G - 4, c - 3, G - 6], p.cloth);
+      // arms (mantle covers the shoulders)
+      P.line([c - tw - 1, top + 2, hx, hy], 3, p.metal);
+      P.line([c + tw + 1, top + 2, c + tw + 2, top + 9], 3, p.metal);
+      // hood + helm
+      P.poly(hoodFront(c, ht, top), p.cloth);
+      P.poly([c + 2, ht + 1, c + 5, ht + 4, c + 6, ht + 8, c + 6, top + 1, c + 3, top + 1], p.clothMd);
+      P.rect(c - 4, ht + 4, 8, 8, p.shadow);
+      P.rect(c - 3, ht + 5, 6, 6, p.metal);
+      P.rect(c - 3, ht + 5, 1, 5, p.metalHi);
+      P.rect(c + 2, ht + 6, 1, 5, p.metalDk);
+      P.rect(c - 3, ht + 7, 6, 1, p.eye);
+      P.rect(c, ht + 7, 1, 3, p.eye);
+      // shoulder mantle drapes over everything
+      P.poly(mantle(c, top - 1, mw, true), p.clothDk);
+      P.poly(mantle(c, top + 1, mw, true), p.clothDk);
+      P.poly(mantle(c, top, mw, true), p.cloth);
+      P.poly([c + 2, top - 1, c + 5, top - 2, c + mw - 1, top + 1, c + mw, top + 4, c + mw - 2, top + 6, c + mw - 4, top + 4, c + 3, top + 4], p.clothMd);
+      if (S.crown) crown(P, p, c, ht);
+      P.rect(c + tw + 1, top + 8, 3, 2, p.leather);
+      blade(P, S, hx, hy, ang);
+      P.rect(hx - 1, hy - 1, 3, 2, p.leather);
+      offhand(P, S, c + tw + 3, top + 9, sway);
+    } else if (dir === "up") {
+      legs(false);
+      offhand(P, S, c - tw - 3, top + 9, sway);
+      const cw0 = backCloak(p.cloth, 2);
+      P.poly([c + 1, top, c + cw0, top, c + 12 + bulk + hem, G - 3, c + 3, G - 5], p.clothMd);
+      P.seg(c - 4, top + 4, c - 6, G - 6, p.clothMd);
+      P.seg(c - 1, top + 5, c - 1, G - 5, p.clothMd);
+      P.poly(hoodFront(c, ht, top), p.cloth);
+      P.poly([c, ht, c + 3, ht + 1, c + 5, ht + 4, c + 6, ht + 8, c + 6, top + 1, c + 1, top + 1], p.clothMd);
+      P.seg(c, ht + 2, c, top, p.clothDk);
+      P.poly(mantle(c, top - 1, mw, false), p.clothDk);
+      P.poly(mantle(c, top + 1, mw, false), p.clothDk);
+      P.poly(mantle(c, top, mw, false), p.cloth);
+      P.poly([c + 1, top - 1, c + 5, top - 2, c + mw - 1, top + 1, c + mw, top + 4, c + mw - 2, top + 6, c + mw - 4, top + 4, c + 2, top + 4], p.clothMd);
+      if (S.crown) crown(P, p, c, ht);
+      blade(P, S, hx, hy, ang);
+      P.rect(hx - 1, hy - 1, 3, 2, p.leather);
+    } else {
+      // side view, facing right
+      if (S.offhand === "lantern") lantern(P, p, c - 4, top + 8, -sway);
+      const cw = 12 + bulk + (S.torn ? 1 : 0) + hem;
+      const cloak = [c - 1, top, c + 2, top, c + 3, G - 6];
+      hemPoints(cloak, c + 3, c - cw, G - 3, 6, 0, S.torn, 3);
+      cloak.push(c - cw, G - 3, c - cw + 3 + Math.floor(hem / 2), top + 9, c - 5, top + 1);
+      P.poly(cloak, p.clothDk);
+      const st = pose.stride || 0;
+      P.rect(c - 2 - st, G - legH - 1, lw, legH - 2, p.metalDk);
+      P.rect(c - 2 - st, G - 3, lw + 1, 3, p.boot);
+      P.rect(c - 1 + st, G - legH - 1, lw, legH - 2, p.metal);
+      P.rect(c - 1 + st, G - 3, lw + 1, 3, p.boot);
+      P.rect(c - tw, top, tw * 2 + 1, 12, p.metal);
+      P.rect(c + tw - 1, top + 5, 1, 5, p.metalHi);
+      P.rect(c - tw, top + 9, tw * 2 + 1, 2, p.leather);
+      P.poly([c, top + 11, c + tw + 1, top + 11, c + tw, G - 6, c + 2, G - 4, c, G - 6], p.cloth);
+      P.poly([c - 1, ht, c + 2, ht + 1, c + 4, ht + 4, c + 5, ht + 8, c + 5, top + 1, c - 5, top + 1, c - 6, ht + 7, c - 4, ht + 2], p.cloth);
+      P.poly([c - 1, ht, c - 1, top + 1, c - 5, top + 1, c - 6, ht + 7, c - 4, ht + 2], p.clothMd);
+      P.rect(c + 1, ht + 4, 4, 7, p.shadow);
+      P.rect(c + 2, ht + 5, 3, 5, p.metal);
+      P.rect(c + 2, ht + 7, 3, 1, p.eye);
+      const sm = (o) => [c - 6, top + 6 + o, c - 5, top + o, c - 2, top - 2 + o, c + 3, top - 1 + o, c + 5, top + 3 + o, c + 4, top + 5 + o, c + 2, top + 4 + o, c, top + 6 + o, c - 2, top + 5 + o, c - 4, top + 7 + o];
+      P.poly(sm(-1), p.clothDk);
+      P.poly(sm(1), p.clothDk);
+      P.poly(sm(0), p.cloth);
+      P.poly([c - 6, top + 6, c - 5, top, c - 2, top - 2, c - 2, top + 5, c - 4, top + 7], p.clothMd);
+      if (S.crown) crown(P, p, c - 1, ht);
+      if (S.offhand === "shield" || S.offhand === "tower") offhand(P, S, c + tw + 3, top + 6, 0);
+      P.line([c + 1, top + 3, hx, hy], 3, p.metal);
+      blade(P, S, hx, hy, ang);
+      P.rect(hx - 1, hy - 1, 3, 2, p.leather);
+    }
+    drips(P, S, c, top);
+  }
+
+  /* ---------- the Swarming Revenant: a crawling, half-drowned body ---------- */
+  function crawler(P, S, dir, pose) {
+    const p = S.pal, G = GY, c = CX;
+    const r = pose.atk === 1 ? 4 : pose.atk === 0 ? -2 : (pose.liftL ? 2 : pose.liftR ? -1 : 0);
+    const k = pose.kneel || 0;
+    const top = G - 13 + k;
+    if (dir === "side") {
+      P.line([c - 6, G - 3, c - 11, G], 2, p.metalDk);
+      P.poly([c - 11, G, c - 9, top + 5, c - 3, top, c + 4, top + 1, c + 8, top + 6, c + 9, G - 1], p.cloth);
+      P.poly([c - 11, G, c - 9, top + 5, c - 5, top + 3, c - 4, G], p.clothMd);
+      P.poly([c + 3, top - 1, c + 11, top + 4, c + 11, G - 4, c + 3, G - 5], p.clothDk);
+      P.rect(c + 7, top + 4, 4, 4, p.shadow);
+      P.rect(c + 8, top + 5, 2, 1, p.eye);
+      P.line([c + 5, G - 4, c + 12 + r, G - 1], 2, p.metal);
+      P.seg(c + 12 + r, G - 1, c + 14 + r, G, p.bladeHi);
+    } else {
+      const face = dir === "down";
+      P.poly([c - 10, G - 1, c - 8, top + 3, c, top, c + 8, top + 3, c + 10, G - 1, c + 5, G, c, G - 2, c - 5, G], p.cloth);
+      P.poly([c + 1, top, c + 8, top + 3, c + 10, G - 1, c + 5, G, c + 2, G - 3], p.clothMd);
+      P.line([c - 6, G - 5, c - 9 - (face ? 0 : 1), G + (face ? 0 : -1) - r], 2, p.metal);
+      P.line([c + 6, G - 5, c + 9, G - 2 + r], 2, p.metal);
+      P.poly([c, top - 3, c + 5, top + 3, c + 4, top + 8, c - 4, top + 8, c - 5, top + 3], p.clothDk);
+      if (face) {
+        P.rect(c - 2, top + 3, 4, 4, p.shadow);
+        P.px(c - 1, top + 4, p.eye); P.px(c + 1, top + 4, p.eye);
+      }
+    }
+    drips(P, S, c, top + 8);
+  }
+
+  /* ---------- sheet building ---------- */
+  function fallen(src, dir) {
+    // Lay the kneeling frame on its side.
+    const c = document.createElement("canvas");
+    c.width = FW; c.height = FH;
+    const g = c.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    g.translate(CX, GY - 4);
+    g.rotate(dir === "up" ? -Math.PI / 2 : Math.PI / 2);
+    g.drawImage(src, -CX, -GY + 4);
+    return { c, w: FW, h: FH };
+  }
+
+  function buildSheet(S) {
+    const sheet = {};
+    for (const dir of ["down", "up", "side"]) {
+      sheet[dir] = {};
+      for (const anim in ANIMS) {
+        sheet[dir][anim] = [];
+        ANIMS[anim].forEach((pose) => {
+          if (pose.fallen) { sheet[dir][anim].push(fallen(sheet[dir][anim][1].c, dir)); return; }
+          sheet[dir][anim].push(Art.mk(FW, FH, (P) => (S.crawl ? crawler : humanoid)(P, S, dir, pose), S.pal.outline));
+        });
+      }
+    }
+    return sheet;
+  }
+
+  Art.buildUnits = function () {
+    const sh = Art.sheets;
+    // The Lantern Knight at each corruption stage: cloth and steel darken, cyan seeps in, the lantern turns.
+    const stages = [
+      { t: 0, drips: 0, over: {} },
+      { t: 0.22, drips: 6, over: {} },
+      { t: 0.5, drips: 14, over: { glow: "#e8b45a" } },
+      { t: 0.8, drips: 26, over: { glow: "#5fe6ee", core: "#e2ffff", eye: "#5fe6ee" } },
+    ];
+    stages.forEach((s, i) => {
+      sh["knight" + (i + 1)] = buildSheet({ pal: mixPal(KNIGHT, DROWNED, s.t, s.over), weapon: "sword", offhand: "lantern", drips: s.drips, seed: 11 });
+    });
+    const d = (over) => mixPal(DROWNED, DROWNED, 0, over);
+    sh.squire = buildSheet({ pal: d({}), weapon: "shortsword", offhand: "none", torn: true, drips: 10, seed: 21 });
+    sh.footman = buildSheet({ pal: d({}), weapon: "sword", offhand: "shield", drips: 12, seed: 22 });
+    sh.archer = buildSheet({ pal: d({ cloth: "#76827f" }), weapon: "bow", offhand: "none", torn: true, drips: 10, seed: 23 });
+    sh.revenant = buildSheet({ pal: d({ cloth: "#6f7c7b" }), weapon: "claws", crawl: true, drips: 8, seed: 24 });
+    sh.defiler = buildSheet({ pal: d({ cloth: "#99a3a0" }), weapon: "pole", offhand: "none", torn: true, drips: 12, seed: 25 });
+    sh.blackguard = buildSheet({ pal: d({ cloth: "#4a5559", clothMd: "#36424a", metal: "#2c3840", metalHi: "#55707a" }), weapon: "sword", offhand: "tower", bulk: 2, drips: 10, seed: 26 });
+    sh.champion = buildSheet({ pal: d({ cloth: "#c3cbc6", clothMd: "#8d9a99", blade: "#7fa6b0" }), weapon: "greatsword", offhand: "none", bulk: 1, crown: true, drips: 22, seed: 27 });
+    sh.self = buildSheet({ pal: mixPal(KNIGHT, DROWNED, 0.9, { glow: "#5fe6ee", core: "#e2ffff", eye: "#8ff8ff" }), weapon: "sword", offhand: "lantern", drips: 30, seed: 11 });
+  };
+
+  /* ---------- drawing ---------- */
+  Art.unitDir = function (angle) {
+    const cx = Math.cos(angle), cy = Math.sin(angle);
+    if (Math.abs(cx) > 0.72) return { dir: "side", flip: cx < 0 };
+    return { dir: cy > 0 ? "down" : "up", flip: false };
+  };
+
+  const tmp = document.createElement("canvas");
+  tmp.width = FW; tmp.height = FH;
+  const tg = tmp.getContext("2d");
+
+  /* Draw a unit with its feet at (x, y). opt: alpha, flash (0..1), flashColor, clip (0..1 visible from top). */
+  Art.drawUnit = function (ctx, key, anim, frame, angle, x, y, scale, opt = {}) {
+    const sheet = Art.sheets[key];
+    if (!sheet) return;
+    const { dir, flip } = Art.unitDir(angle);
+    const frames = sheet[dir][anim] || sheet[dir].idle;
+    const fr = frames[((frame % frames.length) + frames.length) % frames.length].c;
+    const s = PS * scale;
+    const clip = opt.clip != null ? Math.max(0, Math.min(1, opt.clip)) : 1;
+    let img = fr;
+    if (opt.flash) {
+      tg.clearRect(0, 0, FW, FH);
+      tg.globalCompositeOperation = "source-over";
+      tg.drawImage(fr, 0, 0);
+      tg.globalCompositeOperation = "source-atop";
+      tg.globalAlpha = Math.min(1, opt.flash);
+      tg.fillStyle = opt.flashColor || "#fff";
+      tg.fillRect(0, 0, FW, FH);
+      tg.globalAlpha = 1;
+      tg.globalCompositeOperation = "source-over";
+      img = tmp;
+    }
+    ctx.save();
+    if (opt.alpha != null) ctx.globalAlpha *= opt.alpha;
+    ctx.translate(Math.round(x), Math.round(y));
+    if (flip) ctx.scale(-1, 1);
+    ctx.drawImage(img, 0, 0, FW, FH * clip, -CX * s, -GY * s, FW * s, FH * clip * s);
+    ctx.restore();
+  };
+  Art.animLength = (key, anim) => Art.sheets[key].down[anim].length;
+})(window.DL);

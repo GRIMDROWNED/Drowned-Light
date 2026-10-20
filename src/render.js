@@ -2,7 +2,6 @@
 "use strict";
 (function (DL) {
   const W = DL.World, Art = DL.Art;
-  const KS = 0.22; // knight frame scale: 240×336 art → 53×74 world px
   const PS = 2;   // procedural sprite pixel size in world px
 
   const R = (DL.Render = {});
@@ -100,12 +99,8 @@
       }
     }
 
-    /* camp ground details */
-    c.strokeStyle = "rgba(90,75,55,0.35)";
-    c.lineWidth = 3;
-    c.setLineDash([6, 10]);
-    c.beginPath(); c.arc(0, 0, DL.CAMP_RADIUS, 0, Math.PI * 2); c.stroke();
-    c.setLineDash([]);
+    /* camp ground: paths, plaza, boardwalks */
+    drawCampGround(c, G);
 
     for (const d of G.decals) sprite(c, d.type, d.x, d.y, false, Math.min(1, d.t / 3));
 
@@ -254,35 +249,127 @@
     c.fillRect(Math.round(x - w / 2), Math.round(y), Math.max(0, w * k), 3);
   }
 
-  function pushCamp(list, G, c, t) {
-    const u = G.save.up;
-    list.push({ y: -52, f: () => { shadow(c, -78, -50, 26, 7); sprite(c, "tent", -78, -48); } });
-    list.push({ y: -64, f: () => { shadow(c, 70, -62, 26, 7); sprite(c, "tent", 70, -60, true); } });
-    if (u.forge) list.push({ y: 44, f: () => { shadow(c, -100, 46, 16, 5); sprite(c, "anvil", -100, 48); } });
-    if (u.armory) list.push({ y: 40, f: () => { shadow(c, 100, 42, 16, 5); sprite(c, "rack", 100, 44); } });
-    if (u.lantern) list.push({ y: -88, f: () => sprite(c, "lanternpost", 14, -86) });
-    for (let i = 0; i < u.tower; i++) {
-      const tw = G.towers[i];
-      list.push({ y: tw.y, f: () => { shadow(c, tw.x, tw.y + 2, 20, 6); sprite(c, "tower", tw.x, tw.y + 4); } });
+  /* ---------- base camp: grows through three tiers ---------- */
+  function drawCampGround(c, G) {
+    const L = DL.Camp.layout(G.save.up), R = DL.WALL_R;
+    if (L.tier === 1) {
+      c.strokeStyle = "rgba(90,75,55,0.35)";
+      c.lineWidth = 3;
+      c.setLineDash([6, 10]);
+      c.beginPath(); c.arc(0, 0, DL.CAMP_RADIUS, 0, Math.PI * 2); c.stroke();
+      c.setLineDash([]);
+      return;
     }
-    if (u.stakes) {
-      const n = 14 + u.stakes * 6;
-      for (let i = 0; i < n; i++) {
-        const a = (i / n) * Math.PI * 2, x = Math.cos(a) * 218, y = Math.sin(a) * 218;
-        list.push({ y, f: () => sprite(c, "stake", x, y + 2, i % 2 === 0) });
+    // trodden perimeter path and a flagstone plaza
+    c.strokeStyle = "rgba(66,54,40,0.6)";
+    c.lineWidth = 18;
+    c.beginPath(); c.arc(0, 0, R - 34, 0, Math.PI * 2); c.stroke();
+    c.fillStyle = "#3a342b";
+    c.beginPath(); c.ellipse(0, 4, 58, 40, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = "#2c271f";
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * Math.PI * 2;
+      c.fillRect(Math.round(Math.cos(a) * 44) - 5, Math.round(4 + Math.sin(a) * 30) - 3, 10, 6);
+    }
+    // boardwalks out to each gate (the Beacon's run on out over the marsh)
+    const reach = L.tier >= 3 ? R + 140 : R + 36;
+    for (const g of DL.Camp.GATES) {
+      const ux = Math.round(Math.cos(g)), uy = Math.round(Math.sin(g));
+      for (let r = 48, i = 0; r < reach; r += 8, i++) {
+        const x = ux * r, y = uy * r;
+        c.fillStyle = "#1e150e";
+        if (ux) c.fillRect(x - 3, y - 14, 7, 28); else c.fillRect(x - 14, y - 3, 28, 7);
+        c.fillStyle = i % 3 === 0 ? "#5a442e" : i % 2 ? "#4a3828" : "#533f2b";
+        if (ux) c.fillRect(x - 3, y - 13, 6, 26); else c.fillRect(x - 13, y - 3, 26, 6);
       }
     }
-    const f = G.flame;
-    list.push({
-      y: 2,
-      f: () => {
-        sprite(c, "firering", 0, 10);
-        const lvl = u.flame;
-        if (f.lit) Art.drawFire(c, 0, 2, 1.6 + lvl * 0.25 + (f.hitT > 0 ? -0.4 : 0), t);
-        else { c.fillStyle = "#6a2a14"; c.fillRect(-4, -2, 3, 2); c.fillRect(3, 0, 2, 2); }
-        if (f.lit && f.hp < f.max) bar(c, 0, -46 - lvl * 4, 46, f.hp / f.max, "#ffb35a");
-      },
+  }
+
+  function pushCamp(list, G, c, t) {
+    const u = G.save.up, L = DL.Camp.layout(u), R = DL.WALL_R, night = G.nightAmt;
+    const put = (y, f) => list.push({ y, f });
+    for (const tn of L.tents) put(tn.y, () => { shadow(c, tn.x, tn.y + 2, 26, 7); sprite(c, "tent", tn.x, tn.y + 4, tn.flip); });
+    for (const b of L.banners) put(b.y, () => { shadow(c, b.x, b.y + 1, 6, 2); sprite(c, "banner", b.x, b.y + 2); });
+    if (L.forge) put(L.forge.y, () => { shadow(c, L.forge.x, L.forge.y + 2, 30, 7); sprite(c, "forge", L.forge.x, L.forge.y + 4); });
+    if (L.armory) put(L.armory.y, () => {
+      shadow(c, L.armory.x, L.armory.y + 2, 26, 7);
+      if (L.tier >= 2) sprite(c, "awning", L.armory.x, L.armory.y + 4);
+      sprite(c, "rack", L.armory.x, L.armory.y + 4);
     });
+    if (L.workbench) put(L.workbench.y, () => {
+      shadow(c, L.workbench.x, L.workbench.y + 2, 26, 7);
+      if (L.tier >= 2) sprite(c, "awning", L.workbench.x, L.workbench.y + 4, true);
+      sprite(c, "workbench", L.workbench.x, L.workbench.y + 4);
+    });
+    if (L.garden) put(L.garden.y - 20, () => drawGarden(c, L.garden, u.garden, night, t));
+    for (const tw of L.towers) put(tw.y, () => { shadow(c, tw.x, tw.y + 2, 20, 6); sprite(c, "tower", tw.x, tw.y + 4); });
+    for (const q of G.pylons) put(q.y, () => {
+      shadow(c, q.x, q.y + 2, 10, 3);
+      sprite(c, "pylon", q.x, q.y + 4);
+      if (q.lit) for (const ox of [-14, 8]) {
+        c.fillStyle = "#ffab3d"; c.fillRect(q.x + ox, q.y - 82, 6, 10);
+        c.fillStyle = "#fff1c2"; c.fillRect(q.x + ox + 2, q.y - 80, 2, 5);
+      }
+      if (q.hp < q.max) bar(c, q.x, q.y - 120, 24, q.hp / q.max, "#ffb35a");
+    });
+    // barricade: stakes, then a palisade with four gates
+    if (u.stakes === 1) {
+      const n = 34;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2, x = Math.cos(a) * (R - 10), y = Math.sin(a) * (R - 10);
+        put(y, () => sprite(c, "stake", x, y + 2, i % 2 === 0));
+      }
+    } else if (u.stakes >= 2) {
+      const n = Math.ceil((Math.PI * 2 * R) / 46);
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2, x = Math.cos(a) * R, y = Math.sin(a) * R;
+        if (DL.Camp.nearestGate(x, y).arc < DL.Camp.GATE_HALF + 22) continue;
+        put(y, () => sprite(c, "palisade", x, y + 4, i % 2 === 0));
+      }
+      for (const g of DL.Camp.GATES) for (const sgn of [-1, 1]) {
+        const a = g + (sgn * (DL.Camp.GATE_HALF + 6)) / R, x = Math.cos(a) * R, y = Math.sin(a) * R;
+        put(y + 1, () => {
+          sprite(c, "gatePost", x, y + 4, sgn > 0);
+          if (u.stakes >= 3) {
+            c.fillStyle = "#2a2622"; c.fillRect(x + (sgn > 0 ? -14 : 6), y - 62, 8, 11);
+            c.fillStyle = "#ffab3d"; c.fillRect(x + (sgn > 0 ? -12 : 8), y - 60, 4, 7);
+          }
+        });
+        if (u.stakes >= 3) {
+          // spikes flanking each gate on the outside
+          for (let k = 0; k < 3; k++) {
+            const b = g + (sgn * (DL.Camp.GATE_HALF + 4 + k * 9)) / R, sx = Math.cos(b) * (R + 22), sy = Math.sin(b) * (R + 22);
+            put(sy, () => sprite(c, "stake", sx, sy + 2, k % 2 === 0));
+          }
+        }
+      }
+    }
+    // the Central Flame: stone ring → raised fire pit → iron beacon
+    const f = G.flame;
+    put(2, () => {
+      const lvl = u.flame;
+      let fy = 2;
+      if (L.tier === 1) sprite(c, "firering", 0, 10);
+      else if (L.tier === 2) { sprite(c, "firepit2", 0, 14); fy = -2; }
+      else { shadow(c, 0, 8, 40, 10, 0.45); sprite(c, "brazierBig", 0, 12); fy = -46; }
+      if (f.lit) Art.drawFire(c, 0, fy, 1.6 + lvl * 0.25 + (f.hitT > 0 ? -0.4 : 0), t);
+      else { c.fillStyle = "#6a2a14"; c.fillRect(-4, fy - 4, 3, 2); c.fillRect(3, fy - 2, 2, 2); }
+      if (f.lit && f.hp < f.max) bar(c, 0, fy - 50 - lvl * 4, 46, f.hp / f.max, "#ffb35a");
+    });
+  }
+
+  function drawGarden(c, g, lvl, night, t) {
+    sprite(c, "garden", g.x, g.y + 4);
+    const n = [0, 6, 12, 18][lvl];
+    for (let i = 0; i < n; i++) {
+      const col = i % 6, row = Math.floor(i / 6);
+      const x = g.x - 40 + col * 16 + (row % 2) * 6, y = g.y - 40 + row * 18;
+      const pulse = 0.6 + 0.4 * Math.sin(t * 2 + i);
+      c.fillStyle = "#2b3e2c"; c.fillRect(x, y - 2, 2, 8); c.fillRect(x - 3, y + 2, 3, 2); c.fillRect(x + 2, y, 3, 2);
+      c.fillStyle = night > 0.3 ? `rgba(127,246,255,${0.6 + 0.4 * pulse})` : "#1d4d55";
+      c.fillRect(x - 1, y - 6, 4, 5);
+      if (night > 0.3) { c.fillStyle = "#e9ffff"; c.fillRect(x, y - 5, 2, 2); }
+    }
   }
 
   function drawTorch(c, tr, t) {
@@ -311,54 +398,57 @@
     c.fillRect(k.x - 2, y - 2, 2, 2);
   }
 
+  // Which animation the player shows this frame: [anim, frame, facing angle].
+  function playerAnim(G, p, t) {
+    if (G.state === "dying") return ["death", Math.min(2, Math.floor(G.dying / 0.45)), p.angle];
+    if (p.dashT > 0) return ["dash", 0, p.angle];
+    if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
+    if (p.swing) return ["attack", Math.min(2, Math.floor((p.swing.t / p.swing.dur) * 3)), p.swing.ang];
+    if (p.moving) return ["walk", Math.floor(p.animT * 8), p.angle];
+    return ["idle", Math.floor(t * 1.6), p.angle];
+  }
+
   function drawPlayer(c, G, t) {
     const p = G.player;
-    const col = Art.col(p.angle);
-    for (const tr of p.trail) Art.drawKnight(c, "player", 2, tr.col, tr.x, tr.y, KS, { alpha: tr.life * 1.2 });
+    const key = G.state === "dying" ? "knight4" : "knight" + p.stage;
+    for (const tr of p.trail) Art.drawUnit(c, key, "dash", 0, tr.ang, tr.x, tr.y, 1, { alpha: tr.life * 1.4, flash: 0.5, flashColor: "#ffd59a" });
     shadow(c, p.x, p.y, 15, 5);
-    let row = 0, bob = Math.sin(t * 2) * 0.5;
-    if (p.dashT > 0) row = 2;
-    else if (p.moving) { row = Math.floor(p.animT * 7) % 2 ? 1 : 0; bob = -Math.abs(Math.sin(p.animT * 11)) * 1.6; }
-    const y = p.y + bob;
+    const [anim, fr, ang] = playerAnim(G, p, t);
     let alpha = 1;
-    if (p.inv > 0 && p.dashT <= 0 && Math.floor(t * 20) % 2) alpha = 0.6;
-    if (G.state === "dying") {
-      const k = Math.min(1, G.dying / 1.6);
-      Art.drawKnight(c, "player", row, col, p.x, y, KS, { alpha: 1 - k });
-      Art.drawKnight(c, "drowned", row, col, p.x, y, KS, { alpha: k });
-      return;
-    }
-    Art.drawKnight(c, "player", row, col, p.x, y, KS, { alpha, flash: p.flash > 0 ? 0.8 : 0, flashColor: "#ff9a9a" });
-    const cor = DL.clamp((p.corrupt - 8) / 92, 0, 1);
-    if (cor > 0) Art.drawKnight(c, "drowned", row, col, p.x, y, KS, { alpha: cor * 0.92 * alpha });
+    if (p.inv > 0 && p.dashT <= 0 && Math.floor(t * 20) % 2) alpha = 0.65;
+    Art.drawUnit(c, key, anim, fr, ang, p.x, p.y, 1, { alpha, flash: p.flash > 0 ? 0.7 : 0, flashColor: "#ff9a9a" });
+  }
+
+  function enemyAnim(e, t) {
+    if (e.state === "windup") return ["attack", 0, e.aim];
+    if (e.state === "recover") return ["attack", e.stT > 0.2 ? 1 : 2, e.aim];
+    if (e.moving) return ["walk", Math.floor(e.animT * (e.def.crawl ? 10 : 7)), e.angle];
+    return ["idle", Math.floor(t * 1.6 + e.animT), e.angle];
   }
 
   function drawEnemy(c, e, t) {
-    const d = e.def, s = KS * d.scale;
-    const col = Art.col(e.angle);
+    const d = e.def, s = d.scale;
     if (e.rise > 0) {
+      // clawing up out of the water
       const k = 1 - e.rise / 0.9;
       c.save();
-      c.beginPath(); c.rect(e.x - 40, e.y - 120, 80, 120); c.clip();
-      Art.drawKnight(c, d.variant, 2, col, e.x, e.y + (1 - k) * 60 * d.scale, s, { alpha: 0.4 + 0.6 * k });
+      c.beginPath(); c.rect(e.x - 60, e.y - 160, 120, 160); c.clip();
+      Art.drawUnit(c, e.type, "walk", Math.floor(k * 8), e.angle, e.x, e.y + (1 - k) * 34 * s, s, { alpha: 0.4 + 0.6 * k });
       c.restore();
       c.fillStyle = "rgba(60,200,210,0.5)";
-      c.beginPath(); c.ellipse(e.x, e.y, 14, 4, 0, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.ellipse(e.x, e.y, 14 * s + 4, 4, 0, 0, Math.PI * 2); c.fill();
       return;
     }
-    shadow(c, e.x, e.y, 14 * d.scale, 5 * d.scale);
-    let row = 0, bob = 0;
-    if (d.crawl) row = 2;
-    else if (e.moving) { row = Math.floor(e.animT * 6) % 2 ? 1 : 0; bob = -Math.abs(Math.sin(e.animT * 9)) * 1.2; }
+    shadow(c, e.x, e.y, 14 * s, 5 * s);
     if (e.state === "windup") {
-      // telegraph: lean back and glow
+      // telegraph the coming blow
       const k = 1 - e.stT / d.windup;
       c.save();
       c.globalCompositeOperation = "lighter";
       if (d.ranged) {
         c.strokeStyle = `rgba(90,235,245,${0.15 + 0.5 * k})`;
         c.lineWidth = 1.5;
-        c.beginPath(); c.moveTo(e.x, e.y - 22); c.lineTo(e.x + Math.cos(e.aim) * 240, e.y - 22 + Math.sin(e.aim) * 240); c.stroke();
+        c.beginPath(); c.moveTo(e.x, e.y - 30); c.lineTo(e.x + Math.cos(e.aim) * 240, e.y - 30 + Math.sin(e.aim) * 240); c.stroke();
       } else {
         c.fillStyle = `rgba(60,220,230,${0.08 + 0.22 * k})`;
         c.beginPath();
@@ -368,73 +458,35 @@
       }
       c.restore();
     }
-    const flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.25 + 0.25 * Math.sin(t * 30) : 0;
+    const flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : 0;
     const flashColor = e.flash > 0 ? "#ffffff" : "#7ff6ff";
-    const alpha = e.dormant ? 0.75 : 1;
-    // weapon props behind/around the body
-    if (e.type === "defiler") drawDefilerLantern(c, e, t);
-    Art.drawKnight(c, d.variant, row, col, e.x, e.y + bob, s, { flash, flashColor, alpha });
-    if (e.type === "archer") drawBow(c, e);
-    if (e.type === "blackguard") drawShield(c, e);
-    if (e.type === "champion") drawCrown(c, e, t);
-    if (e.hp < e.maxHp) bar(c, e.x, e.y - 72 * d.scale - 8, Math.round(26 * Math.max(1, d.scale)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
+    const [anim, fr, ang] = enemyAnim(e, t);
+    Art.drawUnit(c, e.type, anim, fr, ang, e.x, e.y, s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1 });
+    if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.crawl ? 36 : 84) * s - 4, Math.round(26 * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
     if (e.burn > 0) Art.drawFire(c, e.x + Math.sin(t * 7) * 4, e.y - 10, 0.5, t);
   }
 
+  // A soft cyan halo around the visor so the Drowned read in the dark.
   function drawEyes(c, e, t) {
-    const s = e.def.scale, a = e.angle;
-    if (Math.sin(a) < -0.45) return; // facing away
-    const x = e.x + Math.cos(a) * 3 * s, y = e.y - (e.def.crawl ? 30 : 52) * s * (KS / 0.2);
+    const s = e.def.scale;
+    const ang = e.state === "move" ? e.angle : e.aim;
+    const { dir, flip } = Art.unitDir(ang);
+    if (dir === "up") return;
+    const side = dir === "side" ? (flip ? -1 : 1) : 0;
+    const x = e.x + side * (e.def.crawl ? 17 : 7) * s;
+    const y = e.y - (e.def.crawl ? (dir === "side" ? 16 : 18) : 56) * s;
     const pulse = 0.75 + 0.25 * Math.sin(t * 5 + e.x);
-    const g = c.createRadialGradient(x, y, 0, x, y, 10 * s);
-    g.addColorStop(0, `rgba(80,235,245,${0.45 * pulse})`);
+    const r = 9 * s + 3;
+    const g = c.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(80,235,245,${0.5 * pulse})`);
     g.addColorStop(1, "rgba(80,235,245,0)");
     c.fillStyle = g;
-    c.fillRect(x - 10 * s, y - 10 * s, 20 * s, 20 * s);
-    c.fillStyle = `rgba(190,255,255,${pulse})`;
-    const gap = Math.abs(Math.cos(a)) > 0.8 ? 0 : 2.5 * s;
-    c.fillRect(x - gap - 1, y - 0.5, 2, 1.5);
-    if (gap) c.fillRect(x + gap - 1, y - 0.5, 2, 1.5);
-  }
-
-  function drawBow(c, e) {
-    const a = e.state === "windup" ? e.aim : e.angle, x = e.x + Math.cos(a) * 12, y = e.y - 26 + Math.sin(a) * 6;
-    c.strokeStyle = "#3a2a20"; c.lineWidth = 3;
-    c.beginPath(); c.arc(x, y, 12, a - 1.2, a + 1.2); c.stroke();
-    c.strokeStyle = "rgba(120,240,250,0.9)"; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(x + Math.cos(a - 1.2) * 12, y + Math.sin(a - 1.2) * 12); c.lineTo(x + Math.cos(a + 1.2) * 12, y + Math.sin(a + 1.2) * 12); c.stroke();
-  }
-  function drawShield(c, e) {
-    const a = e.angle;
-    if (Math.sin(a) < -0.3) return; // facing away: shield hidden behind the body
-    const x = e.x + Math.cos(a) * 16, y = e.y - 32;
-    c.fillStyle = "#07090a"; c.fillRect(x - 10, y - 15, 20, 30);
-    c.fillStyle = "#2c3238"; c.fillRect(x - 9, y - 14, 18, 28);
-    c.fillStyle = "#6e2a26"; c.fillRect(x - 9, y - 14, 18, 3); c.fillRect(x - 1, y - 11, 2, 25);
-    c.fillStyle = "#4f5a62"; c.fillRect(x - 7, y - 10, 2, 20);
-  }
-  function drawDefilerLantern(c, e, t) {
-    const x = e.x + 14, y = e.y - 62;
-    c.strokeStyle = "#2a2622"; c.lineWidth = 2;
-    c.beginPath(); c.moveTo(e.x + 10, e.y); c.lineTo(x, y - 4); c.stroke();
-    c.fillStyle = "#07090a"; c.fillRect(x - 5, y - 2, 10, 13);
-    c.fillStyle = "#1c5c64"; c.fillRect(x - 4, y - 1, 8, 11);
-    c.fillStyle = `rgba(140,250,255,${0.7 + 0.3 * Math.sin(t * 6 + e.x)})`; c.fillRect(x - 2, y + 1, 4, 7);
-  }
-  function drawCrown(c, e, t) {
-    const y = e.y - 118, x = e.x;
-    c.fillStyle = "#07090a";
-    for (let i = -2; i <= 2; i++) c.fillRect(x + i * 6 - 2, y - 10 + Math.abs(i) * 3, 4, 12 - Math.abs(i) * 3);
-    c.fillStyle = `rgba(120,245,255,${0.8 + 0.2 * Math.sin(t * 4)})`;
-    for (let i = -2; i <= 2; i++) c.fillRect(x + i * 6 - 1, y - 9 + Math.abs(i) * 3, 2, 9 - Math.abs(i) * 3);
+    c.fillRect(x - r, y - r, r * 2, r * 2);
   }
 
   function drawDissolve(c, f) {
-    const e = f.e, k = f.t / f.max, d = e.def;
-    c.save();
-    c.beginPath(); c.rect(e.x - 60, e.y - 200, 120, 200 - 0); c.clip();
-    Art.drawKnight(c, d.variant, d.crawl ? 2 : 0, Art.col(e.angle), e.x, e.y + k * 30 * d.scale, KS * d.scale, { alpha: 1 - k, flash: 0.6, flashColor: "#5fe6ee" });
-    c.restore();
+    const e = f.e, k = f.t / f.max;
+    Art.drawUnit(c, e.type, "death", Math.min(2, Math.floor(k * 3)), e.angle, e.x, e.y, e.def.scale, { alpha: 1 - k * k, flash: 0.3 + k * 0.5, flashColor: "#5fe6ee" });
   }
 
   function drawSlash(c, x, y, ang, arc, r, k, rgb, w, flip) {

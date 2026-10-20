@@ -7,6 +7,7 @@ A top-down dark-fantasy survival game for the browser and phones. You are a lant
 ## Play
 
 - **Online:** enable GitHub Pages for this repo (Settings → Pages → deploy from `main`, root). Then open the Pages URL on desktop or phone.
+- **Install it as an app:** on the Pages site, Chrome on desktop shows an install icon in the address bar (or ⋮ → *Cast, save and share* → *Install page as app*). Chrome on Android offers ⋮ → *Add to Home screen* / *Install app*. It launches full screen with its own icon and also starts offline. On iPhone, use Safari → Share → *Add to Home Screen*.
 - **Locally:** run `python3 -m http.server 8000` in this folder and open `http://localhost:8000`.
   Opening `index.html` directly also works. Chrome blocks pixel access on `file://`, though, so the Drowned recolouring falls back to a simpler tint.
 
@@ -29,8 +30,25 @@ A top-down dark-fantasy survival game for the browser and phones. You are a lant
    - **Firelight** (camp, torches, Illuminate) *reverses* corruption, heals you and refills your lantern.
    - **Bloomlight** (Refuge Blooms, Sentinel Blooms, Mother Roots) only *halts* it. Blooms wake at night, and the Drowned come to tear them down.
    - **Lantern oil** halves corruption in the dark until it runs dry.
-3. **Return and build.** Supplies you carry are stored automatically when you reach camp. Spend them on the Central Flame, Forge, Armory, Lanternwright, Watchtowers and Warding Stakes, or forge new kits.
+3. **Return and build.** Supplies you carry are stored automatically when you reach camp. Spend them on camp structures, or forge new kits.
 4. **Defend.** If you're at camp at night, waves march on the Central Flame. If it goes out, your home goes dark until dawn.
+
+### The base camp
+The camp grows through three tiers as the Central Flame levels up:
+- **Tier I, A Place to Rest** (Flame 1–2): a stone fire ring, a tent and a banner.
+- **Tier II, A Growing Bastion** (Flame 3–4): a raised fire pit, a flagstone plaza, boardwalks to the gates and more tents.
+- **Tier III, A Beacon in the Marsh** (Flame 5): an iron beacon brazier, more banners, and boardwalks running out over the marsh.
+
+| Structure | What it does |
+|---|---|
+| Central Flame | Camp light radius and flame strength; unlocks higher levels of everything else |
+| Forge | Weapon damage |
+| Armory | Max health |
+| Workbench | Lantern oil, torch satchel size, torch burn time |
+| Cultivation Plot | Grows Bloom Resin, stored at every dawn |
+| Watchtowers | Crossbow towers that shoot the Drowned at night |
+| Lantern Pylons | Firelight posts on the perimeter. They slow the Drowned and are hunted by Defilers, then relit at dawn |
+| Barricade & Gate | Level 1 is a stake ring. Level 2 is a palisade with four gates, so the Drowned must path through them and take stake damage. Level 3 reinforces it with gate lanterns and spikes |
 
 ### High-risk reasons to leave the light
 - **Abyssal Pearls** surface only in darkness (the Mire and deeper). You need them for top-tier upgrades.
@@ -54,20 +72,26 @@ No build step, no dependencies. These are plain scripts loaded in order:
 |---|---|
 | `src/core.js` | math, deterministic noise, input (keyboard + floating joystick), WebAudio sound effects |
 | `src/data.js` | **all balance numbers**: day/night lengths, zones, enemies, kits, upgrade costs |
-| `src/art.js` | loads the knight atlas, builds the recoloured Drowned variants, draws the procedural pixel sprites |
+| `src/camp.js` | base camp layout per tier, palisade walls, gate pathing |
+| `src/art.js` | procedural pixel sprites for the world, camp and effects |
+| `src/units.js` | the knight and Drowned Knight sprite sheets (all animations, corruption stages) |
 | `src/world.js` | endless chunked wetland: ground texture, resources, blooms, collisions |
 | `src/game.js` | simulation: player, corruption, spawning, enemy AI, combat, camp economy, saving |
 | `src/render.js` | drawing, the darkness/light compositing, effects |
 | `src/ui.js` | HUD, camp menu, title, pause and death screens |
 | `src/main.js` | boot + main loop |
+| `manifest.webmanifest`, `sw.js`, `icons/` | installable-app profile, offline cache, app icons |
 
 Progress (camp, stored supplies, kits, day) saves to the browser's `localStorage`.
 
 ## Art
 
-`assets/lantern_atlas.png` is the player sheet: 1920×1008, 8 columns × 3 rows of 240×336 frames.
-Columns: down, down-right, right, up-right, up, up-left, left, down-left. Rows: idle, walk, dash.
+The knight and every Drowned Knight are pixel sprites painted in code (`src/units.js`) at the same pixel size as the world. They follow the Lantern Knight concept sheets.
+- **Lantern Knight**: idle, 4-frame walk, 3-frame attack, dash, hurt and death, in down / up / side views (left mirrors right). There are four corruption stages: steel and cloth darken, cyan seeps in, and the lantern turns cyan.
+- **The Drowned** share the knight's hood, mantle and armour, darkened, with glowing visors and cyan drips. Each has its own gear: the squire's short sword, the footman's round shield, the archer's bow, the defiler's pole lantern, the Blackguard's tower shield and bulk, and the Champion's crown and greatsword. The revenant crawls.
 
-The Drowned Knights are generated from this same sheet at load time. Armour is darkened and the warm lantern light turns abyssal cyan, so they are literally the player's corrupted reflection. Blooms, ruins and camp buildings are drawn in code as pixel sprites. Dedicated sprite sheets can replace any of them later.
+Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite sheets can replace the generated ones later without touching the game code.
 
-**Art that would help most next:** a multi-frame walk cycle (4–6 frames per direction), an attack swing row, and dedicated enemy sheets (archer bow, blackguard shield, champion).
+`assets/lantern_atlas.png` (the earlier illustrated sheet) stays in the repo for reference but is no longer loaded.
+
+Blooms, ruins and camp buildings are also drawn in code (`src/art.js`).
