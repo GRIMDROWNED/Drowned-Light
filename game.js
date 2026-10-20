@@ -15,8 +15,21 @@ function chunk(cx,cy){let key=cx+","+cy;if(objects.has(key))return;const a=[];fo
 function startDash(){if(over||dashCooldown>0||$("upgradePanel").classList.contains("hidden")===false)return;let v=dist(joystick.x,joystick.y)>0.2?joystick:facing;let len=dist(v.x,v.y)||1;dashDir={x:v.x/len,y:v.y/len};player.boost=.24;player.invuln=Math.max(player.invuln,.2);dashCooldown=3;dashTrail=[];message("Dash!");}
 const joystick={x:0,y:0};addEventListener("keydown",e=>{keys.add(e.key.toLowerCase());if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(e.key.toLowerCase()))e.preventDefault();});addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
 const pad=$("pad"),stick=$("stick");let lastPadTap=0;function padMove(e){let r=pad.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,len=Math.max(1,dist(x,y)),m=Math.min(1,len/38);joystick.x=x/len*m;joystick.y=y/len*m;stick.style.transform="translate("+(joystick.x*36)+"px,"+(joystick.y*36)+"px)";}
-pad.addEventListener("pointerdown",e=>{pad.setPointerCapture(e.pointerId);padMove(e);if(performance.now()-lastPadTap<300)startDash();lastPadTap=performance.now();});pad.addEventListener("pointermove",e=>{if(e.buttons)padMove(e);});function padReset(){joystick.x=0;joystick.y=0;stick.style.transform="";}pad.addEventListener("pointerup",padReset);pad.addEventListener("pointercancel",padReset);
-$("dash").onclick=startDash;$("restart").onclick=reset;
+// Track joystick pointer independently so a second finger can dash without canceling movement.
+let movementPointer=null;
+pad.addEventListener("pointerdown",e=>{
+  if(movementPointer!==null)return;
+  e.preventDefault();movementPointer=e.pointerId;
+  pad.setPointerCapture(e.pointerId);padMove(e);
+  if(performance.now()-lastPadTap<300)startDash();
+  lastPadTap=performance.now();
+});
+pad.addEventListener("pointermove",e=>{if(e.pointerId===movementPointer){e.preventDefault();padMove(e);}});
+function padReset(e){if(e.pointerId!==movementPointer)return;movementPointer=null;joystick.x=0;joystick.y=0;stick.style.transform="";}
+pad.addEventListener("pointerup",padReset);pad.addEventListener("pointercancel",padReset);
+const dashButton=$("dash");
+dashButton.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();startDash();});
+dashButton.addEventListener("contextmenu",e=>e.preventDefault());$("restart").onclick=reset;
 $("upgrade").onclick=()=>{if(over||dist(player.x,player.y)>155){message("Return to the campfire to upgrade.");return;}$("upgradePanel").classList.remove("hidden");panel();};$("close").onclick=()=>$("upgradePanel").classList.add("hidden");
 const pane=$("upgradePanel").querySelector(".panel");$("buy").textContent="UPGRADE CENTRAL FLAME";
 const deposit=document.createElement("button");deposit.textContent="DEPOSIT ALL CARRIED SUPPLIES";pane.insertBefore(deposit,$("buy"));
