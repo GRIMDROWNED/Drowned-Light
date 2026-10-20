@@ -18,6 +18,7 @@ A top-down dark-fantasy survival game for the browser and phones. You are a lant
 | Move | WASD / arrows | Drag anywhere on the left half |
 | Attack (auto mode) | automatic: the nearest Drowned, or a supply node you stand beside | automatic |
 | Attack (manual mode) | hold **J** / **K** or the left mouse button; aim with the mouse | hold **ATTACK** (aims the way you face, leaning toward nearby foes) |
+| Mine (manual mode) | hold **G** or the right mouse button | hold **MINE** (lights up when supplies are in reach) |
 | Dash | Space / Shift | DASH |
 | Kit ability | E / Q | ability button |
 | Place torch | F / T | TORCH |
@@ -62,7 +63,7 @@ The camp grows through three tiers as the Central Flame levels up:
 A new game asks you to choose a **kit**, a **difficulty** and a **combat mode** (Auto-attack or Manual attack). The kit and difficulty stay fixed for that save. The combat mode can be switched any time from the pause menu.
 
 ### Mining
-Supply nodes take several hits to break: logs 3, rock 4, iron 5, bloom sprouts 2, pearls 2. Each strike shakes and cracks the node and throws chips. The last strike shatters it into pieces of its sprite, and the supplies spill out as pickups that fly to you. In auto mode the knight mines a node you stand beside whenever no Drowned are in reach. In manual mode you swing at it.
+Supply nodes take several hits to break: logs 3, rock 4, iron 5, bloom sprouts 2, pearls 2. Each strike shakes and cracks the node and throws chips. The last strike shatters it into pieces of its sprite, and the supplies spill out as pickups that fly to you. In auto mode the knight mines a node you stand beside whenever no Drowned are in reach. In manual mode mining has its own control (Mine / G / right-click), so Attack never mines by mistake.
 
 ### View
 **Auto** follows the device. **Portrait** and **Landscape** lock the screen rotation in the installed app. Where a lock isn't possible:

@@ -61,9 +61,12 @@ window.DL = window.DL || {};
     touch: false,
 
     // Manual attack: J / K, the left mouse button, or the on-screen Attack button (held to keep striking).
-    mouse: { x: 0, y: 0, down: false, seen: 0 },
+    // Manual mining has its own control: G, the right mouse button, or the on-screen Mine button.
+    mouse: { x: 0, y: 0, down: false, mine: false, seen: 0 },
     attackBtn: false,
+    mineBtn: false,
     attacking() { return this.keys.has("j") || this.keys.has("k") || this.mouse.down || this.attackBtn; },
+    mining() { return this.keys.has("g") || this.mouse.mine || this.mineBtn; },
 
     init() {
       const keymap = {
@@ -78,7 +81,7 @@ window.DL = window.DL || {};
         if (keymap[k]) this.actions.add(keymap[k]);
       });
       addEventListener("keyup", (e) => this.keys.delete(e.key.toLowerCase()));
-      addEventListener("blur", () => { this.keys.clear(); this.mouse.down = false; this.attackBtn = false; });
+      addEventListener("blur", () => { this.keys.clear(); this.mouse.down = this.mouse.mine = false; this.attackBtn = this.mineBtn = false; });
 
       // Mouse: aim follows the cursor; the left button attacks (when playing on the field, not on menus).
       const onField = (e) => e.target && (e.target.id === "game" || e.target.id === "touchzone");
@@ -88,9 +91,17 @@ window.DL = window.DL || {};
         this.mouse.x = q.x; this.mouse.y = q.y; this.mouse.seen = performance.now();
       });
       addEventListener("pointerdown", (e) => {
-        if (e.pointerType === "mouse" && e.button === 0 && onField(e)) { this.mouse.down = true; this.mouse.seen = performance.now(); }
+        if (e.pointerType !== "mouse" || !onField(e)) return;
+        if (e.button === 0) this.mouse.down = true;
+        if (e.button === 2) this.mouse.mine = true;
+        this.mouse.seen = performance.now();
       });
-      addEventListener("pointerup", (e) => { if (e.pointerType === "mouse") this.mouse.down = false; });
+      addEventListener("pointerup", (e) => {
+        if (e.pointerType !== "mouse") return;
+        if (e.button === 0) this.mouse.down = false;
+        if (e.button === 2) this.mouse.mine = false;
+      });
+      addEventListener("contextmenu", (e) => { if (onField(e)) e.preventDefault(); });
 
       // Floating joystick: touch anywhere on the left side of the screen.
       const zone = document.getElementById("touchzone");

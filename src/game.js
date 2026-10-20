@@ -368,13 +368,16 @@
     collideCamp(p, 10);
 
     // Combat and mining. Auto mode fights the nearest Drowned, or mines a supply node you stand by
-    // when none are near. Manual mode strikes where you aim (mouse, or the way you face) while held.
+    // when none are near. Manual mode keeps them apart: Attack strikes where you aim (mouse, or the
+    // way you face) and never mines; Mine works the nearest supply node in reach.
     p.atkCd -= dt;
     if (p.swing) { p.swing.t += dt; if (p.swing.t >= p.swing.dur) p.swing = null; }
     p.aim = aimAngle(p);
+    G.mineTarget = G.save.attackMode === "manual" ? nodeNear(p, 34) : null;
     if (p.atkCd <= 0 && p.dashT <= 0) {
       if (G.save.attackMode === "manual") {
-        if (DL.Input.attacking()) manualStrike(p, st);
+        if (DL.Input.attacking()) DL.Kits.attack(p, st, p.aim);
+        else if (DL.Input.mining() && G.mineTarget) mineStrike(p, G.mineTarget);
       } else if (!DL.Kits.attack(p, st)) {
         const node = nodeNear(p, 26);
         if (node) mineStrike(p, node);
@@ -468,16 +471,6 @@
     W.near(p.x, p.y, 70, check);
     for (const pr of G.pearls) check(pr);
     return best;
-  }
-
-  function manualStrike(p, st) {
-    // Swinging at a node with no Drowned close by mines it; otherwise the kit attacks.
-    const node = nodeNear(p, 34);
-    if (node && !DL.Kits.nearestEnemy(p.x, p.y, 110)) {
-      const a = Math.atan2(node.y - p.y, node.x - p.x);
-      if (Math.abs(angleDiff(p.aim, a)) < 1.0 || dist(p.x, p.y, node.x, node.y) < (node.def.r || 12) + 12) { mineStrike(p, node); return; }
-    }
-    DL.Kits.attack(p, st, p.aim);
   }
 
   function mineStrike(p, o) {
