@@ -61,15 +61,27 @@ A new game asks you to choose a **kit** and a **difficulty**. Both stay fixed fo
 
 **Kits** (following the Kit 01 and Base Kits 02–05 concept sheets):
 
-| Kit | Attack | Dash | Ability | Passive |
+| Kit | Attack | Dash | Ability | Special |
 |---|---|---|---|---|
-| **01 Lantern Blade**: *A light still endures.* | Blade Arc (fast sword arcs) | Lantern Strike (damages what you pass through) | **Illuminate**: firelight burst and sanctuary | none |
-| **02 Pike Warden**: *Reach keeps the dark away.* | Pike Thrust (hits everything along a line, strong knockback) | plain | **Warding Sweep**: full-circle sweep, knocks arrows from the air, halves damage taken briefly | none |
-| **03 Ashen Arbalist**: *Quiet light. Farther truths.* | Piercing Bolt (long-range crossbow) | plain | **Scatter Shot**: a fan of bolts; light flares where they land | none |
+| **01 Lantern Blade**: *A light still endures.* | Blade Arc (fast sword arcs) | Lantern Strike (damages what you pass through) | **Illuminate**: firelight burst and sanctuary | **Lantern Strike**: the damaging dash |
+| **02 Pike Warden**: *Reach keeps the dark away.* | Pike Thrust (hits everything along a line, strong knockback) | plain | **Warding Sweep**: full-circle sweep, knocks arrows from the air, halves damage taken briefly | **Stable Form**: standing still, take 25% less damage, no knockback, thrusts +15% |
+| **03 Ashen Arbalist**: *Quiet light. Farther truths.* | Piercing Bolt (long-range crossbow) | plain | **Scatter Shot**: a fan of bolts; light flares where they land | **Quiet Light**: bolts deal up to +35% damage the farther they fly |
 | **04 Relic Bearer**: *Lost things still shine.* | Relic Orb (seeking orbs) | plain | **Beacon Pulse**: lights the area, purges corruption, slows the Drowned, dispels arrows | wider lantern, slower oil burn |
 | **05 Flame Bastion**: *Some light burns brighter.* | Bastion Blade (heavy sword) | Shield Slam (staggers) | **Flame Bastion**: a wall of fire that blocks and burns | shield blocks 25% of damage |
 
-**Kit levels 1–20** are trained at camp (Base Camp → **Kit**) with iron, resin and, from level 10, pearls. Higher levels need a higher Central Flame. Every level adds +5% damage and a slightly faster ability.
+**Kit levels 1–20** are trained at camp (Base Camp → **Kit**) with iron, resin and, from level 10, pearls. Every level adds +5% damage and a slightly faster ability.
+
+**Pacing.** Three levers slow progress down evenly (all in `src/data.js`):
+- `COST_SCALE` (2): multiplies every building and kit-level price.
+- `FLAME_NIGHTS`: the Central Flame needs 1 / 3 / 6 / 10 nights survived for levels 2 / 3 / 4 / 5. Every other building's levels depend on the Flame.
+- `KIT_BANDS`: kit levels are locked behind camp structures:
+
+  | Kit levels | Needs |
+  |---|---|
+  | 2–5 | Forge 1 |
+  | 6–10 | Forge 2, Central Flame 3 |
+  | 11–15 | Forge 3, Armory 2, Central Flame 4 |
+  | 16–20 | Forge 4, Armory 3, Central Flame 5 |
 
 Levels **5, 10, 15 and 20** are milestones. Each one unlocks a new mechanic for that kit (see the Kit tab or `src/data.js`) and a visible change:
 - **5:** the weapon glows.

@@ -349,6 +349,7 @@
       const wet = W.isWater(p.x, p.y) ? 0.82 : 1;
       const spd = 150 * wet * (p.corrupt >= 75 ? 0.9 : 1);
       p.moving = inp.m > 0.15;
+      p.stillT = p.moving ? 0 : (p.stillT || 0) + dt;
       if (p.moving) {
         p.x += inp.x * spd * dt;
         p.y += inp.y * spd * dt;
@@ -834,7 +835,7 @@
     p.inv = 0.5;
     p.hurtFlash = 0.3;
     p.flash = 0.15;
-    p.kx += Math.cos(ang) * 160; p.ky += Math.sin(ang) * 160;
+    if (!DL.Kits.steady(p)) { p.kx += Math.cos(ang) * 160; p.ky += Math.sin(ang) * 160; }
     G.camera.shake = 7;
     sfx("hurt");
     text(p.x, p.y - 70, "-" + Math.round(dmg), "#ff6a6a");
@@ -965,7 +966,7 @@
         for (const e of G.enemies) {
           if (e.rise > 0 || e.removed || (b.hit && b.hit.has(e))) continue;
           if (dist(b.x, b.y, e.x, e.y - 20 * e.def.scale) < e.def.radius + (b.r || 8)) {
-            hitEnemy(e, b.dmg, Math.atan2(b.vy, b.vx), 60);
+            hitEnemy(e, b.dmg * DL.Kits.farShotMult(b), Math.atan2(b.vy, b.vx), 60);
             if (b.flare) flare(b.x, b.y, b.dmg);
             if (b.hit) b.hit.add(e);
             if (!b.pierce || b.pierce-- <= 0) { b.life = 0; break; }
@@ -1103,11 +1104,22 @@
   function pay(cost) { for (const k in cost) G.save.stash[k] -= cost[k]; }
   G.pay = pay;
 
+  // Why the next level of a building can't be built yet (null when it can, cost aside).
+  G.upgradeLock = function (u, lvl) {
+    const needFlame = u.reqFlame(lvl + 1);
+    if (G.save.up.flame < needFlame) return `Needs Central Flame ${needFlame}`;
+    if (u.id === "flame") {
+      const nights = DL.FLAME_NIGHTS[lvl + 1] || 0;
+      if (G.save.nights < nights) return `Needs ${nights} night${nights > 1 ? "s" : ""} survived (${G.save.nights} so far)`;
+    }
+    return null;
+  };
+
   G.buyUpgrade = function (id) {
     const u = DL.UPGRADES.find((x) => x.id === id), lvl = G.save.up[id];
     if (lvl >= u.max) return false;
     const cost = u.costs[lvl];
-    if (G.save.up.flame < u.reqFlame(lvl + 1) || !G.canAfford(cost)) { sfx("deny"); return false; }
+    if (G.upgradeLock(u, lvl) || !G.canAfford(cost)) { sfx("deny"); return false; }
     pay(cost);
     G.save.up[id] = lvl + 1;
     const st = G.stats();

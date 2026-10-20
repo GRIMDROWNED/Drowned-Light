@@ -90,6 +90,7 @@
       desc: "A faithful blade and a lantern that holds back the dark. Quick sword arcs; your dash is a Lantern Strike that cuts through the Drowned.",
       attack: { type: "arc", name: "Blade Arc", dmg: 12, range: 64, arc: 2.1, cd: 0.42, kb: 150 },
       dash: { type: "strike", dmg: 9 },
+      special: { name: "Lantern Strike", desc: "Your dash cuts through every Drowned in your path." },
       ability: { id: "illuminate", name: "Illuminate", oil: 15, cd: 14, radius: 150, dmg: 22, dur: 5,
         desc: "A burst of firelight that burns and repels the Drowned and leaves a short-lived sanctuary." },
       milestones: [
@@ -105,6 +106,8 @@
       desc: "Extended reach and a stable form. Pike Thrust strikes everything along a line and drives it back.",
       attack: { type: "thrust", name: "Pike Thrust", dmg: 15, range: 96, width: 26, cd: 0.6, kb: 240 },
       dash: { type: "plain" },
+      special: { name: "Stable Form", desc: "Plant your feet: after a moment standing still you take 25% less damage, can't be knocked back, and thrusts hit 15% harder." },
+      passive: { stance: { after: 0.35, guard: 0.25, dmg: 1.15 } },
       ability: { id: "sweep", name: "Warding Sweep", oil: 12, cd: 11, radius: 115, dmg: 18,
         desc: "A full circle of the pike: hurls the Drowned back, knocks arrows from the air and steadies you." },
       milestones: [
@@ -120,6 +123,8 @@
       desc: "Piercing shots and a steady aim. Strike the Drowned from far outside their reach.",
       attack: { type: "bolt", name: "Piercing Bolt", dmg: 14, range: 270, cd: 0.75, pierce: 1, speed: 620 },
       dash: { type: "plain" },
+      special: { name: "Quiet Light", desc: "Bolts strike harder the farther they fly: up to 35% more damage at long range." },
+      passive: { farShot: { from: 100, to: 260, bonus: 0.35 } },
       ability: { id: "scatter", name: "Scatter Shot", oil: 12, cd: 10, count: 7, dmg: 12,
         desc: "A fan of bolts. Where each one lands, light flares and reveals the dark." },
       milestones: [
@@ -138,6 +143,7 @@
       ability: { id: "pulse", name: "Beacon Pulse", oil: 14, cd: 13, radius: 170, dmg: 14, purify: 20,
         desc: "Reveal, purify, dispel: a pulse that lights the area, burns away corruption and scatters arrows." },
       passive: { lanternR: 1.4, oilDrain: 0.7 },
+      special: { name: "Wide Lantern", desc: "Your lantern reaches 40% farther and burns its oil 30% slower." },
       milestones: [
         { name: "Lost Things Shine", desc: "A guiding wisp drifts toward the nearest supplies." },
         { name: "Twin Relics", desc: "The staff looses two orbs at a time." },
@@ -154,6 +160,7 @@
       ability: { id: "wall", name: "Flame Bastion", oil: 14, cd: 15, length: 150, dps: 14, dur: 7,
         desc: "Raise a wall of fire that blocks the Drowned, burns them and lights the night." },
       passive: { guard: 0.25 },
+      special: { name: "Bastion Shield", desc: "Your shield blocks 25% of every blow." },
       milestones: [
         { name: "Tempered Shield", desc: "The shield glows; it blocks 35% of every blow." },
         { name: "Searing Wall", desc: "Flame Bastion burns hotter and stands longer." },
@@ -164,15 +171,35 @@
   };
   DL.KIT_ORDER = ["lanternBlade", "pikeWarden", "ashenArbalist", "relicBearer", "flameBastion"];
 
-  // Price to train a kit from level L to L + 1. Needs Central Flame ceil((L + 1) / 4).
+  /* ---------- pacing ----------
+     Three levers slow everything down together:
+     1. COST_SCALE multiplies every building and kit-level price.
+     2. The Central Flame needs nights survived (FLAME_NIGHTS), and every building's levels hang off the Flame.
+     3. Kit levels are locked in bands behind camp structures (KIT_BANDS). */
+  DL.COST_SCALE = 2;
+  DL.FLAME_NIGHTS = [0, 0, 1, 3, 6, 10]; // nights survived to build Central Flame level i
+  DL.KIT_BANDS = [
+    { upTo: 5, req: { forge: 1 } },
+    { upTo: 10, req: { forge: 2, flame: 3 } },
+    { upTo: 15, req: { forge: 3, armory: 2, flame: 4 } },
+    { upTo: 20, req: { forge: 4, armory: 3, flame: 5 } },
+  ];
+  const scaleCost = (c) => {
+    const out = {};
+    for (const k in c) out[k] = Math.max(1, Math.round(c[k] * DL.COST_SCALE));
+    return out;
+  };
+
+  // Price to train a kit from level L to L + 1.
   DL.kitLevelCost = function (L) {
     const c = { iron: Math.round(2 + 1.6 * L), resin: Math.round(1 + 0.9 * L) };
     if (L < 8) c.stone = 3 + L;
     if (L < 4) c.wood = 4;
     if (L >= 9) c.pearl = Math.floor((L - 6) / 3);
-    return c;
+    return scaleCost(c);
   };
-  DL.kitLevelFlame = (L) => Math.ceil((L + 1) / 4);
+  // Structures needed to train up to `target`.
+  DL.kitLevelReq = (target) => DL.KIT_BANDS.find((b) => target <= b.upTo).req;
 
   /* Difficulty: chosen with the kit when a game starts.
      yield/density = supplies, enemyHp/enemyDmg/spawn = the Drowned, bloom/light/corrupt/darkness/dayDim = light. */
@@ -193,6 +220,7 @@
   DL.DIFF_ORDER = ["dim", "dark", "pitch", "abyss"];
 
   DL.TORCH_COST = { wood: 3, resin: 1 };
+  DL.scaleCost = scaleCost;
 
   // Camp buildings. costs[level] = price to go from `level` to `level + 1`.
   // reqFlame(target) = Central Flame level needed to build that level.
@@ -233,6 +261,8 @@
       costs: [{ wood: 18 }, { wood: 36, iron: 8 }, { wood: 50, iron: 18, resin: 10 }],
       reqFlame: (t) => [0, 1, 3, 5][t] },
   ];
+
+  for (const u of DL.UPGRADES) u.costs = u.costs.map((c) => (c ? scaleCost(c) : c));
 
   // Camp siege waves get nastier each night.
   DL.campPool = function (day) {
