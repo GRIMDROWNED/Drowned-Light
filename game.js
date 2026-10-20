@@ -134,8 +134,8 @@ function drawKnightSprite(x,y,enemy=false,corruption=0,alpha=1,dir=2,state="idle
 // Expected PNG: assets/lantern_atlas.png, 384x192 (eight directions by three states, frames of 48x64).
 // The old procedural sprite remains a fallback until the image is uploaded.
 const lanternAtlas=new Image();let lanternAtlasReady=false;
-lanternAtlas.onload=()=>{lanternAtlasReady=lanternAtlas.naturalWidth===384&&lanternAtlas.naturalHeight===192;};
-lanternAtlas.onerror=()=>{lanternAtlasReady=false;};
+lanternAtlas.onload=()=>{lanternAtlasReady=lanternAtlas.naturalWidth===384&&lanternAtlas.naturalHeight===192;if(!lanternAtlasReady){console.warn("Lantern atlas dimensions do not match 384x192:",lanternAtlas.naturalWidth,lanternAtlas.naturalHeight);message("Sprite atlas has incorrect dimensions; using fallback knight.");}else{console.info("Lantern Knight sprite atlas loaded successfully.");}};
+lanternAtlas.onerror=()=>{lanternAtlasReady=false;console.warn("Lantern atlas failed to load; using fallback knight.");message("Sprite image could not load; using fallback knight.");};
 lanternAtlas.src="assets/lantern_atlas.png";
 function knight(x,y,enemy=false){
  if(!enemy&&lanternAtlasReady){
