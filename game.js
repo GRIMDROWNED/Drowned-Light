@@ -54,7 +54,55 @@ enemies=enemies.filter(e=>e.hp>0);bullets=bullets.filter(b=>b.life>0);if(player.
 $("hptext").textContent=Math.ceil(Math.max(0,player.hp))+" / "+(100+save.armory*20);$("health").style.width=Math.max(0,player.hp)/(100+save.armory*20)*100+"%";$("corrupttext").textContent=Math.floor(player.corrupt)+" / 400";$("corrupt").style.width=player.corrupt/4+"%";$("status").textContent="DAY "+(Math.floor(total/100)+1)+" · "+(night()?"NIGHT":"DAYLIGHT")+" · "+(light==="human"?"HEALING":light==="plant"?"PLANT SHELTER":night()?"EXPOSED":"SAFE");$("resources").textContent="WOOD "+player.wood+" · STONE "+player.stone+" · SHARDS "+player.shard;$("arrow").style.transform="rotate("+(Math.atan2(-player.x,player.y)*180/Math.PI)+"deg)";$("distance").textContent=Math.round(dist(player.x,player.y))+"m";noticeTime-=dt;if(noticeTime<=0)$("notification").textContent=night()?"Stay near light to avoid corruption.":"Explore for supplies before nightfall.";
 }
 function box(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h);}function circle(x,y,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();}function line(x,y,xx,yy,c,w=2){ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(xx,yy);ctx.stroke();}
-function knight(x,y,enemy=false){circle(x,y+13,14,"#0008");box(x-10,y-3,20,23,enemy?"#283942":"#b6afa0");box(x-11,y-16,22,18,enemy?"#4e5b65":"#e3d9be");box(x-4,y-9,8,4,enemy?"#46e9ef":"#121920");line(x+9,y+5,x+20,y+20,enemy?"#63c5cb":"#e1d5b6",3);if(!enemy)circle(x-12,y+6,5,"#e7a74b");}
+// Pixel-art character renderer, designed from the approved Lantern Knight concept.
+// Draw at a fixed 32x40 internal resolution, then enlarge with nearest-neighbor sampling.
+const spriteCanvas=document.createElement("canvas");spriteCanvas.width=32;spriteCanvas.height=40;
+const spriteCtx=spriteCanvas.getContext("2d");spriteCtx.imageSmoothingEnabled=false;
+function drawKnightSprite(x,y,enemy=false,corruption=0,alpha=1,phase=0){
+ const k=spriteCtx;k.clearRect(0,0,32,40);
+ const pixel=(xx,yy,ww,hh,c)=>{k.fillStyle=c;k.fillRect(xx,yy,ww,hh);};
+ const stage=enemy?4:corruption>=300?4:corruption>=200?3:corruption>=100?2:1;
+ const drowned=stage>=3,abyss=stage===4;
+ const rim=enemy?"#132731":abyss?"#12282f":drowned?"#25383d":"#4d423d";
+ const cloth=enemy?"#354c51":abyss?"#273a45":drowned?"#756f71":"#d8cbbb";
+ const shine=enemy?"#57747e":abyss?"#4b7c85":drowned?"#bbb6b0":"#fff0d8";
+ const steel=enemy?"#3e5561":drowned?"#485766":"#90959a";
+ const glow=enemy||drowned?"#44e2ef":"#ffc466";
+ // trailing ragged cloak + cowl, recognizable ivory pointed silhouette
+ pixel(9,5,15,24,rim);pixel(7,13,20,19,rim);pixel(4,23,23,7,rim);
+ pixel(3,27,5,7,rim);pixel(22,27,8,8,rim);pixel(1,31,6,4,rim);
+ pixel(6,15,18,15,cloth);pixel(4,22,22,6,cloth);pixel(3,27,6,5,cloth);
+ pixel(22,27,6,6,cloth);pixel(1,30,5,4,cloth);
+ pixel(9,2,13,17,rim);pixel(11,0,9,3,rim);pixel(12,1,7,2,shine);
+ pixel(10,4,13,13,cloth);pixel(9,9,15,6,cloth);
+ pixel(12,5,10,10,steel);pixel(14,4,6,10,shine);pixel(13,10,8,3,"#182127");
+ // peaked visor: dark cross motif
+ pixel(12,12,10,2,"#111719");pixel(15,11,4,8,"#111719");
+ pixel(13,14,3,2,"#15252a");pixel(19,14,2,2,"#15252a");
+ if(stage>=2){pixel(20,10,3,2,"#36b4c2");pixel(7,21,3,4,"#24383e");}
+ if(drowned){pixel(14,12,8,2,glow);pixel(16,12,2,8,glow);pixel(23,26,3,6,"#195e70");}
+ if(abyss){pixel(1,23,3,7,"#176b7c");pixel(26,23,4,9,"#1f7587");pixel(6,32,3,4,"#278da1");}
+ // shoulder plates, torso, belt and boots
+ pixel(7,18,6,7,steel);pixel(20,18,5,7,steel);pixel(12,18,9,11,"#4d5360");
+ pixel(14,19,5,8,steel);pixel(12,27,11,3,"#523c30");pixel(14,29,4,8,steel);
+ pixel(19,29,4,8,steel);pixel(13,36,6,3,"#282b31");pixel(20,36,6,3,"#282b31");
+ // Sword, held to lower left; outlined blade
+ pixel(7,25,3,7,"#483a30");pixel(5,28,7,2,"#bfa773");
+ pixel(4,31,3,3,"#a9b5b9");pixel(2,34,3,3,"#e7eef0");pixel(1,37,3,2,"#a6b9c3");
+ // Lantern held at right, pulsing orange unless corrupted
+ pixel(25,23,2,5,"#9b8358");pixel(24,27,5,2,"#bca77e");pixel(24,29,6,7,"#3b3127");
+ pixel(25,30,4,5,glow);pixel(24,35,6,2,"#ab8750");
+ if(!enemy&&stage<3){pixel(26,31,2,2,"#fff2b9");}
+ if(stage===4){pixel(27,31,2,3,"#b6fcff");}
+ // tiny animated stride
+ if(Math.floor(phase*8)%2===1){pixel(13,37,4,2,cloth);pixel(21,36,4,2,rim);}
+ ctx.save();ctx.globalAlpha*=alpha;ctx.imageSmoothingEnabled=false;
+ ctx.drawImage(spriteCanvas,Math.round(x-24),Math.round(y-42),48,60);
+ ctx.restore();
+ if(!enemy&&stage<3){circle(x+16,y+10,10,"#ffaf2723");circle(x+16,y+9,4,"#ffcf7555");}
+ if(enemy||stage>=3)circle(x+15,y+9,8,"#2ac9dc24");
+}
+function knight(x,y,enemy=false){drawKnightSprite(x,y,enemy,enemy?400:player.corrupt,1,total);}
 function draw(){box(0,0,W,H,"#091720");const ox=W/2-player.x,oy=H/2-player.y;
 let left=Math.floor((player.x-W/2)/TILE)-1,right=Math.ceil((player.x+W/2)/TILE)+1,top=Math.floor((player.y-H/2)/TILE)-1,bottom=Math.ceil((player.y+H/2)/TILE)+1;
 for(let ty=top;ty<=bottom;ty++)for(let tx=left;tx<=right;tx++){let x=tx*TILE+ox,y=ty*TILE+oy,h=hash(tx,ty);box(x,y,TILE+1,TILE+1,h<.3?"#182d37":h<.64?"#1c3330":"#273b34");if(h>.84)circle(x+22,y+19,10,"#284450");else{box(x+9,y+13,3,7,"#3b5652");box(x+34,y+29,3,4,"#3d5545");}}
