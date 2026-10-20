@@ -29,8 +29,25 @@ A top-down dark-fantasy survival game for the browser and phones. You are a lant
    - **Firelight** (camp, torches, Illuminate) *reverses* corruption, heals you and refills your lantern.
    - **Bloomlight** (Refuge Blooms, Sentinel Blooms, Mother Roots) only *halts* it. Blooms wake at night, and the Drowned come to tear them down.
    - **Lantern oil** halves corruption in the dark until it runs dry.
-3. **Return and build.** Supplies you carry are stored automatically when you reach camp. Spend them on the Central Flame, Forge, Armory, Lanternwright, Watchtowers and Warding Stakes, or forge new kits.
+3. **Return and build.** Supplies you carry are stored automatically when you reach camp. Spend them on camp structures, or forge new kits.
 4. **Defend.** If you're at camp at night, waves march on the Central Flame. If it goes out, your home goes dark until dawn.
+
+### The base camp
+The camp grows through three tiers as the Central Flame levels up:
+- **Tier I, A Place to Rest** (Flame 1–2): a stone fire ring, a tent and a banner.
+- **Tier II, A Growing Bastion** (Flame 3–4): a raised fire pit, a flagstone plaza, boardwalks to the gates and more tents.
+- **Tier III, A Beacon in the Marsh** (Flame 5): an iron beacon brazier, more banners, and boardwalks running out over the marsh.
+
+| Structure | What it does |
+|---|---|
+| Central Flame | Camp light radius and flame strength; unlocks higher levels of everything else |
+| Forge | Weapon damage |
+| Armory | Max health |
+| Workbench | Lantern oil, torch satchel size, torch burn time |
+| Cultivation Plot | Grows Bloom Resin, stored at every dawn |
+| Watchtowers | Crossbow towers that shoot the Drowned at night |
+| Lantern Pylons | Firelight posts on the perimeter. They slow the Drowned and are hunted by Defilers, then relit at dawn |
+| Barricade & Gate | Level 1 is a stake ring. Level 2 is a palisade with four gates, so the Drowned must path through them and take stake damage. Level 3 reinforces it with gate lanterns and spikes |
 
 ### High-risk reasons to leave the light
 - **Abyssal Pearls** surface only in darkness (the Mire and deeper). You need them for top-tier upgrades.
@@ -54,6 +71,7 @@ No build step, no dependencies. These are plain scripts loaded in order:
 |---|---|
 | `src/core.js` | math, deterministic noise, input (keyboard + floating joystick), WebAudio sound effects |
 | `src/data.js` | **all balance numbers**: day/night lengths, zones, enemies, kits, upgrade costs |
+| `src/camp.js` | base camp layout per tier, palisade walls, gate pathing |
 | `src/art.js` | procedural pixel sprites for the world, camp and effects |
 | `src/units.js` | the knight and Drowned Knight sprite sheets (all animations, corruption stages) |
 | `src/world.js` | endless chunked wetland: ground texture, resources, blooms, collisions |

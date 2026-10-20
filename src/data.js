@@ -5,7 +5,10 @@
   DL.CYCLE = { day: 80, dusk: 10, night: 75, dawn: 8 };
   DL.CYCLE.total = DL.CYCLE.day + DL.CYCLE.dusk + DL.CYCLE.night + DL.CYCLE.dawn;
 
-  DL.CAMP_RADIUS = 170; // deposit + camp menu range
+  DL.CAMP_RADIUS = 205; // deposit + camp menu range
+  DL.WALL_R = 235;      // palisade ring
+  DL.GARDEN_YIELD = [0, 4, 8, 14];
+  DL.TIER_NAMES = ["", "A Place to Rest", "A Growing Bastion", "A Beacon in the Marsh"];
 
   DL.RESOURCES = {
     wood: { name: "Wood", color: "#a07a52" },
@@ -106,7 +109,7 @@
   // reqFlame(target) = Central Flame level needed to build that level.
   DL.UPGRADES = [
     { id: "flame", name: "Central Flame", max: 5,
-      info: "Your home's light. Bigger radius, a sturdier flame, and it unlocks higher building levels.",
+      info: "The heart of the camp. A bigger light and a sturdier flame. Levels 3 and 5 grow the camp into a Bastion, then a Beacon.",
       effect: (l) => `Light radius ${180 + 40 * l} · flame strength ${150 + 100 * l}`,
       costs: [null, { wood: 10, stone: 6 }, { wood: 22, stone: 16, resin: 5 }, { wood: 34, stone: 30, iron: 10, resin: 10 },
         { wood: 48, stone: 42, iron: 22, pearl: 3 }],
@@ -119,18 +122,27 @@
       effect: (l) => `Max health ${100 + 25 * l}`,
       costs: [{ wood: 10, iron: 4 }, { wood: 20, iron: 12 }, { wood: 30, iron: 22, resin: 8 }, { wood: 44, iron: 32, pearl: 4 }],
       reqFlame: (t) => t },
-    { id: "lantern", name: "Lanternwright", max: 4, info: "A brighter, longer-burning lantern. Lantern oil halves corruption in the dark.",
-      effect: (l) => `Lantern oil ${60 + 25 * l} · torch satchel ${3 + l}`,
+    { id: "workbench", name: "Workbench", max: 4, info: "Craft lanterns and tools. A longer-burning lantern halves corruption in the dark for longer.",
+      effect: (l) => `Lantern oil ${60 + 25 * l} · torch satchel ${3 + l} · torches burn ${50 + 15 * l}s`,
       costs: [{ resin: 6, stone: 6 }, { resin: 12, iron: 6 }, { resin: 20, iron: 12, pearl: 2 }, { resin: 30, iron: 20, pearl: 5 }],
       reqFlame: (t) => t },
-    { id: "tower", name: "Watchtowers", max: 3, info: "Crossbow towers that defend the camp at night.",
+    { id: "garden", name: "Cultivation Plot", max: 3, info: "Grow bioluminescent flora inside the walls. Light from the living.",
+      effect: (l) => (l ? `Harvest ${DL.GARDEN_YIELD[l]} Bloom Resin each dawn` : "Nothing planted"),
+      costs: [{ wood: 12, resin: 6 }, { wood: 20, stone: 10, resin: 12 }, { wood: 30, resin: 20, pearl: 2 }],
+      reqFlame: (t) => t + 1 },
+    { id: "tower", name: "Watchtowers", max: 3, info: "Crossbow towers that spot and shoot the Drowned at night.",
       effect: (l) => (l ? `${l} tower${l > 1 ? "s" : ""} · bolt damage ${10 + 6 * l}` : "No towers"),
       costs: [{ wood: 24, stone: 14 }, { wood: 34, stone: 24, iron: 10 }, { wood: 48, iron: 24, pearl: 3 }],
       reqFlame: (t) => t + 1 },
-    { id: "stakes", name: "Warding Stakes", max: 3, info: "A ring of stakes that wounds and slows the Drowned as they reach camp.",
-      effect: (l) => (l ? `Ring damage ${15 * l} · slows attackers` : "No stakes"),
-      costs: [{ wood: 18 }, { wood: 32, iron: 8 }, { wood: 48, iron: 18, resin: 10 }],
-      reqFlame: (t) => t },
+    { id: "pylon", name: "Lantern Pylons", max: 3, info: "Firelight on the perimeter. Guides the way and slows the encroaching Drowned — but Defilers hunt them.",
+      effect: (l) => (l ? `${2 * l} pylons light the walls` : "No pylons"),
+      costs: [{ wood: 16, stone: 10, resin: 4 }, { wood: 24, iron: 10, resin: 8 }, { stone: 30, iron: 18, pearl: 2 }],
+      reqFlame: (t) => t + 1 },
+    { id: "stakes", name: "Barricade & Gate", max: 3, info: "Keep the darkness out. Walls force the Drowned through four gates, where stakes wound them.",
+      effect: (l) => ["No defenses", "A ring of stakes · 15 damage to attackers", "Palisade with four gates · 25 damage at the gates",
+        "Reinforced palisade · 40 damage at the gates, attackers slowed"][l],
+      costs: [{ wood: 18 }, { wood: 36, iron: 8 }, { wood: 50, iron: 18, resin: 10 }],
+      reqFlame: (t) => [0, 1, 3, 5][t] },
   ];
 
   // Camp siege waves get nastier each night.

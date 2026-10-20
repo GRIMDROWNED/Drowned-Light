@@ -99,12 +99,8 @@
       }
     }
 
-    /* camp ground details */
-    c.strokeStyle = "rgba(90,75,55,0.35)";
-    c.lineWidth = 3;
-    c.setLineDash([6, 10]);
-    c.beginPath(); c.arc(0, 0, DL.CAMP_RADIUS, 0, Math.PI * 2); c.stroke();
-    c.setLineDash([]);
+    /* camp ground: paths, plaza, boardwalks */
+    drawCampGround(c, G);
 
     for (const d of G.decals) sprite(c, d.type, d.x, d.y, false, Math.min(1, d.t / 3));
 
@@ -253,35 +249,127 @@
     c.fillRect(Math.round(x - w / 2), Math.round(y), Math.max(0, w * k), 3);
   }
 
-  function pushCamp(list, G, c, t) {
-    const u = G.save.up;
-    list.push({ y: -52, f: () => { shadow(c, -78, -50, 26, 7); sprite(c, "tent", -78, -48); } });
-    list.push({ y: -64, f: () => { shadow(c, 70, -62, 26, 7); sprite(c, "tent", 70, -60, true); } });
-    if (u.forge) list.push({ y: 44, f: () => { shadow(c, -100, 46, 16, 5); sprite(c, "anvil", -100, 48); } });
-    if (u.armory) list.push({ y: 40, f: () => { shadow(c, 100, 42, 16, 5); sprite(c, "rack", 100, 44); } });
-    if (u.lantern) list.push({ y: -88, f: () => sprite(c, "lanternpost", 14, -86) });
-    for (let i = 0; i < u.tower; i++) {
-      const tw = G.towers[i];
-      list.push({ y: tw.y, f: () => { shadow(c, tw.x, tw.y + 2, 20, 6); sprite(c, "tower", tw.x, tw.y + 4); } });
+  /* ---------- base camp: grows through three tiers ---------- */
+  function drawCampGround(c, G) {
+    const L = DL.Camp.layout(G.save.up), R = DL.WALL_R;
+    if (L.tier === 1) {
+      c.strokeStyle = "rgba(90,75,55,0.35)";
+      c.lineWidth = 3;
+      c.setLineDash([6, 10]);
+      c.beginPath(); c.arc(0, 0, DL.CAMP_RADIUS, 0, Math.PI * 2); c.stroke();
+      c.setLineDash([]);
+      return;
     }
-    if (u.stakes) {
-      const n = 14 + u.stakes * 6;
-      for (let i = 0; i < n; i++) {
-        const a = (i / n) * Math.PI * 2, x = Math.cos(a) * 218, y = Math.sin(a) * 218;
-        list.push({ y, f: () => sprite(c, "stake", x, y + 2, i % 2 === 0) });
+    // trodden perimeter path and a flagstone plaza
+    c.strokeStyle = "rgba(66,54,40,0.6)";
+    c.lineWidth = 18;
+    c.beginPath(); c.arc(0, 0, R - 34, 0, Math.PI * 2); c.stroke();
+    c.fillStyle = "#3a342b";
+    c.beginPath(); c.ellipse(0, 4, 58, 40, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = "#2c271f";
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * Math.PI * 2;
+      c.fillRect(Math.round(Math.cos(a) * 44) - 5, Math.round(4 + Math.sin(a) * 30) - 3, 10, 6);
+    }
+    // boardwalks out to each gate (the Beacon's run on out over the marsh)
+    const reach = L.tier >= 3 ? R + 140 : R + 36;
+    for (const g of DL.Camp.GATES) {
+      const ux = Math.round(Math.cos(g)), uy = Math.round(Math.sin(g));
+      for (let r = 48, i = 0; r < reach; r += 8, i++) {
+        const x = ux * r, y = uy * r;
+        c.fillStyle = "#1e150e";
+        if (ux) c.fillRect(x - 3, y - 14, 7, 28); else c.fillRect(x - 14, y - 3, 28, 7);
+        c.fillStyle = i % 3 === 0 ? "#5a442e" : i % 2 ? "#4a3828" : "#533f2b";
+        if (ux) c.fillRect(x - 3, y - 13, 6, 26); else c.fillRect(x - 13, y - 3, 26, 6);
       }
     }
-    const f = G.flame;
-    list.push({
-      y: 2,
-      f: () => {
-        sprite(c, "firering", 0, 10);
-        const lvl = u.flame;
-        if (f.lit) Art.drawFire(c, 0, 2, 1.6 + lvl * 0.25 + (f.hitT > 0 ? -0.4 : 0), t);
-        else { c.fillStyle = "#6a2a14"; c.fillRect(-4, -2, 3, 2); c.fillRect(3, 0, 2, 2); }
-        if (f.lit && f.hp < f.max) bar(c, 0, -46 - lvl * 4, 46, f.hp / f.max, "#ffb35a");
-      },
+  }
+
+  function pushCamp(list, G, c, t) {
+    const u = G.save.up, L = DL.Camp.layout(u), R = DL.WALL_R, night = G.nightAmt;
+    const put = (y, f) => list.push({ y, f });
+    for (const tn of L.tents) put(tn.y, () => { shadow(c, tn.x, tn.y + 2, 26, 7); sprite(c, "tent", tn.x, tn.y + 4, tn.flip); });
+    for (const b of L.banners) put(b.y, () => { shadow(c, b.x, b.y + 1, 6, 2); sprite(c, "banner", b.x, b.y + 2); });
+    if (L.forge) put(L.forge.y, () => { shadow(c, L.forge.x, L.forge.y + 2, 30, 7); sprite(c, "forge", L.forge.x, L.forge.y + 4); });
+    if (L.armory) put(L.armory.y, () => {
+      shadow(c, L.armory.x, L.armory.y + 2, 26, 7);
+      if (L.tier >= 2) sprite(c, "awning", L.armory.x, L.armory.y + 4);
+      sprite(c, "rack", L.armory.x, L.armory.y + 4);
     });
+    if (L.workbench) put(L.workbench.y, () => {
+      shadow(c, L.workbench.x, L.workbench.y + 2, 26, 7);
+      if (L.tier >= 2) sprite(c, "awning", L.workbench.x, L.workbench.y + 4, true);
+      sprite(c, "workbench", L.workbench.x, L.workbench.y + 4);
+    });
+    if (L.garden) put(L.garden.y - 20, () => drawGarden(c, L.garden, u.garden, night, t));
+    for (const tw of L.towers) put(tw.y, () => { shadow(c, tw.x, tw.y + 2, 20, 6); sprite(c, "tower", tw.x, tw.y + 4); });
+    for (const q of G.pylons) put(q.y, () => {
+      shadow(c, q.x, q.y + 2, 10, 3);
+      sprite(c, "pylon", q.x, q.y + 4);
+      if (q.lit) for (const ox of [-14, 8]) {
+        c.fillStyle = "#ffab3d"; c.fillRect(q.x + ox, q.y - 82, 6, 10);
+        c.fillStyle = "#fff1c2"; c.fillRect(q.x + ox + 2, q.y - 80, 2, 5);
+      }
+      if (q.hp < q.max) bar(c, q.x, q.y - 120, 24, q.hp / q.max, "#ffb35a");
+    });
+    // barricade: stakes, then a palisade with four gates
+    if (u.stakes === 1) {
+      const n = 34;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2, x = Math.cos(a) * (R - 10), y = Math.sin(a) * (R - 10);
+        put(y, () => sprite(c, "stake", x, y + 2, i % 2 === 0));
+      }
+    } else if (u.stakes >= 2) {
+      const n = Math.ceil((Math.PI * 2 * R) / 46);
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2, x = Math.cos(a) * R, y = Math.sin(a) * R;
+        if (DL.Camp.nearestGate(x, y).arc < DL.Camp.GATE_HALF + 22) continue;
+        put(y, () => sprite(c, "palisade", x, y + 4, i % 2 === 0));
+      }
+      for (const g of DL.Camp.GATES) for (const sgn of [-1, 1]) {
+        const a = g + (sgn * (DL.Camp.GATE_HALF + 6)) / R, x = Math.cos(a) * R, y = Math.sin(a) * R;
+        put(y + 1, () => {
+          sprite(c, "gatePost", x, y + 4, sgn > 0);
+          if (u.stakes >= 3) {
+            c.fillStyle = "#2a2622"; c.fillRect(x + (sgn > 0 ? -14 : 6), y - 62, 8, 11);
+            c.fillStyle = "#ffab3d"; c.fillRect(x + (sgn > 0 ? -12 : 8), y - 60, 4, 7);
+          }
+        });
+        if (u.stakes >= 3) {
+          // spikes flanking each gate on the outside
+          for (let k = 0; k < 3; k++) {
+            const b = g + (sgn * (DL.Camp.GATE_HALF + 4 + k * 9)) / R, sx = Math.cos(b) * (R + 22), sy = Math.sin(b) * (R + 22);
+            put(sy, () => sprite(c, "stake", sx, sy + 2, k % 2 === 0));
+          }
+        }
+      }
+    }
+    // the Central Flame: stone ring → raised fire pit → iron beacon
+    const f = G.flame;
+    put(2, () => {
+      const lvl = u.flame;
+      let fy = 2;
+      if (L.tier === 1) sprite(c, "firering", 0, 10);
+      else if (L.tier === 2) { sprite(c, "firepit2", 0, 14); fy = -2; }
+      else { shadow(c, 0, 8, 40, 10, 0.45); sprite(c, "brazierBig", 0, 12); fy = -46; }
+      if (f.lit) Art.drawFire(c, 0, fy, 1.6 + lvl * 0.25 + (f.hitT > 0 ? -0.4 : 0), t);
+      else { c.fillStyle = "#6a2a14"; c.fillRect(-4, fy - 4, 3, 2); c.fillRect(3, fy - 2, 2, 2); }
+      if (f.lit && f.hp < f.max) bar(c, 0, fy - 50 - lvl * 4, 46, f.hp / f.max, "#ffb35a");
+    });
+  }
+
+  function drawGarden(c, g, lvl, night, t) {
+    sprite(c, "garden", g.x, g.y + 4);
+    const n = [0, 6, 12, 18][lvl];
+    for (let i = 0; i < n; i++) {
+      const col = i % 6, row = Math.floor(i / 6);
+      const x = g.x - 40 + col * 16 + (row % 2) * 6, y = g.y - 40 + row * 18;
+      const pulse = 0.6 + 0.4 * Math.sin(t * 2 + i);
+      c.fillStyle = "#2b3e2c"; c.fillRect(x, y - 2, 2, 8); c.fillRect(x - 3, y + 2, 3, 2); c.fillRect(x + 2, y, 3, 2);
+      c.fillStyle = night > 0.3 ? `rgba(127,246,255,${0.6 + 0.4 * pulse})` : "#1d4d55";
+      c.fillRect(x - 1, y - 6, 4, 5);
+      if (night > 0.3) { c.fillStyle = "#e9ffff"; c.fillRect(x, y - 5, 2, 2); }
+    }
   }
 
   function drawTorch(c, tr, t) {

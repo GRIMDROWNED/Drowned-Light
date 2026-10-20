@@ -273,6 +273,94 @@
       P.line([12, 19, 26, 19], 2, C.iron); P.line([19, 15, 19, 23], 1, C.ironHi);
     });
 
+    /* ---- base camp (see the Base Camp concept sheet) ---- */
+    const sigil = "#e0913a", bannerCloth = "#2a2f36", bannerTrim = "#7a5a3a";
+    S.banner = mk(16, 46, (P) => {
+      P.rect(7, 0, 2, 46, C.wood); P.rect(7, 0, 1, 46, C.woodHi);
+      P.rect(1, 3, 14, 2, C.wood);
+      P.poly([2, 5, 14, 5, 14, 30, 12, 27, 10, 32, 8, 27, 6, 32, 4, 27, 2, 30], bannerCloth);
+      P.rect(2, 5, 12, 1, bannerTrim);
+      P.rect(6, 10, 4, 1, sigil); P.rect(5, 11, 1, 6, sigil); P.rect(10, 11, 1, 6, sigil); P.rect(6, 17, 4, 1, sigil);
+      P.rect(7, 8, 2, 13, sigil);
+      P.rect(5, 43, 6, 3, C.stoneDk);
+    });
+
+    S.firepit2 = mk(50, 28, (P) => {
+      for (let ring = 0; ring < 2; ring++) for (let i = 0; i < 14; i++) {
+        const a = (i / 14) * Math.PI * 2;
+        P.ell(25 + Math.cos(a) * (19 - ring * 2), 15 + Math.sin(a) * (9 - ring) - ring * 3, 3.4, 2.6, (i + ring) % 2 ? C.stoneDk : C.stone);
+      }
+      P.ell(25, 14, 11, 5, "#1a120c");
+      P.line([14, 17, 36, 10], 3, C.wood); P.line([15, 10, 35, 17], 3, C.woodHi);
+    });
+
+    S.brazierBig = mk(46, 40, (P) => {
+      P.poly([8, 39, 12, 26, 34, 26, 38, 39], C.stone);
+      P.rect(12, 26, 22, 2, C.stoneHi); P.rect(10, 34, 26, 1, C.stoneDk);
+      P.poly([3, 12, 43, 12, 37, 26, 9, 26], "#3a3e42");
+      P.rect(3, 12, 40, 2, "#7a8086");
+      P.rect(8, 17, 30, 1, "#2a2d30");
+      for (const x of [9, 19, 29]) P.rect(x, 15, 2, 9, "#565c62");
+      P.rect(6, 9, 34, 3, "#1a120c");
+    });
+
+    S.forge = mk(44, 42, (P) => {
+      P.rect(20, 0, 9, 16, C.stoneDk); P.rect(20, 0, 9, 2, C.stone); P.rect(22, 3, 2, 10, C.stone);
+      P.poly([3, 41, 4, 14, 33, 14, 34, 41], C.stone);
+      P.rect(4, 14, 30, 2, C.stoneHi);
+      for (let y = 20; y < 40; y += 6) P.rect(4, y, 30, 1, C.stoneDk);
+      P.poly([9, 38, 9, 27, 13, 23, 22, 23, 26, 27, 26, 38], "#1a0e08");
+      P.rect(11, 30, 13, 8, "#ff8a2a"); P.rect(13, 32, 9, 5, "#ffd27a");
+      P.rect(34, 30, 8, 3, "#3e4246"); P.rect(34, 30, 8, 1, "#70767c"); P.rect(36, 33, 4, 8, C.root);
+    });
+
+    S.awning = mk(48, 36, (P) => {
+      P.rect(4, 8, 2, 28, C.wood); P.rect(42, 8, 2, 28, C.wood);
+      P.poly([1, 10, 8, 2, 40, 2, 47, 10], C.cloth);
+      P.poly([24, 2, 40, 2, 47, 10, 30, 10], C.clothDk);
+      for (let x = 1; x < 47; x += 6) P.poly([x, 10, x + 6, 10, x + 3, 14], x % 12 === 1 ? C.cloth : C.clothDk);
+    });
+
+    S.workbench = mk(36, 30, (P) => {
+      P.rect(4, 16, 2, 13, C.wood); P.rect(30, 16, 2, 13, C.wood);
+      P.rect(2, 13, 32, 4, C.wood); P.rect(2, 13, 32, 1, C.woodEnd);
+      P.rect(10, 22, 16, 7, C.root); P.rect(10, 22, 16, 1, C.rootHi); P.rect(17, 22, 1, 7, C.barkDk);
+      P.line([6, 12, 12, 9], 2, C.iron); P.rect(5, 10, 3, 3, C.ironHi);
+      P.rect(14, 11, 7, 2, C.woodHi); P.rect(15, 10, 1, 1, C.iron);
+      P.rect(25, 5, 5, 8, "#2a2622"); P.rect(26, 7, 3, 5, "#ffcf7a"); P.rect(27, 8, 1, 3, "#fff3c4"); P.rect(27, 3, 1, 2, C.iron);
+    });
+
+    S.garden = mk(56, 36, (P) => {
+      P.rect(3, 8, 50, 26, "#24180f");
+      for (let y = 12; y < 34; y += 5) P.rect(5, y, 46, 2, "#3a2a1c");
+      for (const x of [2, 18, 36, 52]) { P.rect(x, 4, 2, 31, C.wood); P.rect(x, 4, 1, 2, C.woodEnd); }
+      P.rect(2, 7, 52, 1, C.woodHi); P.rect(2, 20, 52, 1, C.wood); P.rect(2, 33, 52, 1, C.wood);
+    });
+
+    S.pylon = mk(18, 56, (P) => {
+      P.rect(7, 4, 4, 48, C.wood); P.rect(7, 4, 1, 48, C.woodHi);
+      P.rect(1, 6, 16, 2, C.wood); P.rect(8, 1, 2, 4, C.iron);
+      P.seg(3, 8, 3, 11, C.iron); P.seg(14, 8, 14, 11, C.iron);
+      for (const x of [1, 12]) { P.rect(x, 11, 5, 7, "#2a2622"); P.rect(x + 1, 12, 3, 5, "#3b2d20"); }
+      P.ell(9, 52, 6, 3, C.stoneDk); P.rect(4, 50, 10, 3, C.stone);
+    });
+
+    S.palisade = mk(28, 32, (P) => {
+      for (let i = 0; i < 5; i++) {
+        const x = i * 5 + 1, top = 3 + (i % 2) * 2;
+        P.poly([x, 32, x, top + 3, x + 2, top, x + 4, top + 3, x + 4, 32], i % 2 ? C.wood : "#4e3a29");
+        P.rect(x, top + 3, 1, 28 - top, C.woodHi);
+      }
+      P.rect(0, 13, 28, 2, C.barkDk); P.rect(0, 24, 28, 2, C.barkDk);
+    });
+
+    S.gatePost = mk(14, 50, (P) => {
+      P.poly([2, 50, 2, 6, 7, 0, 12, 6, 12, 50], C.wood);
+      P.rect(3, 6, 2, 44, C.woodHi);
+      P.rect(2, 14, 10, 2, C.iron); P.rect(2, 36, 10, 2, C.iron);
+      P.rect(11, 18, 3, 1, C.iron);
+    });
+
     S.stake = mk(8, 18, (P) => {
       P.poly([2, 17, 2, 5, 4, 0, 6, 5, 6, 17], C.wood); P.rect(2, 5, 1, 12, C.woodHi);
     });

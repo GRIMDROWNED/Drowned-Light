@@ -15,7 +15,7 @@
   G.defaultSave = () => ({
     v: 1, day: 1, nights: 0, deepest: 0, muted: false,
     stash: emptyRes(),
-    up: { flame: 1, forge: 0, armory: 0, lantern: 0, tower: 0, stakes: 0 },
+    up: { flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0 },
     kits: { lanternBlade: { owned: true, mastery: 0 }, pyreCenser: { owned: false, mastery: 0 } },
     kit: "lanternBlade",
     torches: 2,
@@ -32,7 +32,11 @@
   G.load = function () {
     try {
       const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-      if (s && s.v === 1) return merge(G.defaultSave(), s);
+      if (s && s.v === 1) {
+        // The Lanternwright became the Workbench.
+        if (s.up && s.up.lantern != null) { s.up.workbench = Math.max(s.up.workbench || 0, s.up.lantern); delete s.up.lantern; }
+        return merge(G.defaultSave(), s);
+      }
     } catch (e) { /* storage unavailable */ }
     return G.defaultSave();
   };
@@ -44,12 +48,13 @@
     const u = G.save.up;
     return {
       maxHp: 100 + 25 * u.armory,
-      maxOil: 60 + 25 * u.lantern,
-      lanternR: 70 + 14 * u.lantern,
+      maxOil: 60 + 25 * u.workbench,
+      lanternR: 70 + 14 * u.workbench,
       dmgMult: 1 + 0.2 * u.forge,
       flameR: 180 + 40 * u.flame,
       flameHp: 150 + 100 * u.flame,
-      torchMax: 3 + u.lantern,
+      torchMax: 3 + u.workbench,
+      torchDur: 50 + 15 * u.workbench,
     };
   };
   G.kit = () => DL.KITS[G.save.kit];
@@ -117,13 +122,19 @@
     G.torches = []; G.lightZones = []; G.telegraphs = []; G.pearls = []; G.decals = []; G.lights = [];
     G.blooms = [];
     G.flame = { kind: "flame", x: 0, y: 0, rad: 24, hp: st.flameHp, max: st.flameHp, lit: true, hitT: 0 };
-    G.towers = [{ x: -150, y: -30, cd: 0 }, { x: 150, y: -30, cd: 0 }, { x: 0, y: 150, cd: 0 }];
+    G.towerCd = [0, 0, 0];
+    G.resetPylons();
     G.siegeT = 5; G.spawnT = 3; G.pearlT = 2; G.rootEvent = null; G.selfEnemy = null; G.champSpawned = false;
     G.dying = 0;
     G.camera = { x: 0, y: 70, shake: 0 };
     G.nightAmt = 0; G.night = false;
     W.resetDay();
     G.state = "play";
+  };
+
+  // Pylon state (lit, health) for the current layout.
+  G.resetPylons = function () {
+    G.pylons = DL.Camp.layout(G.save.up).pylons.map((q) => ({ kind: "pylon", x: q.x, y: q.y, rad: 8, hp: 80, max: 80, lit: true, hitT: 0 }));
   };
 
   G.respawn = function () {
@@ -200,6 +211,12 @@
     }
     G.flame.lit = true;
     G.flame.hp = G.flame.max;
+    for (const q of G.pylons) { q.lit = true; q.hp = q.max; }
+    const gy = DL.GARDEN_YIELD[G.save.up.garden];
+    if (gy) {
+      G.save.stash.resin += gy;
+      setTimeout(() => say(`The Cultivation Plot yielded ${gy} Bloom Resin.`, "good"), 1600);
+    }
     G.persist();
   }
 
@@ -227,7 +244,19 @@
     const L = [], st = G.stats(), p = G.player;
     if (G.flame.lit) L.push({ x: 0, y: -8, r: st.flameR, s: 1, col: "255,150,60", a: 1, flick: 1, kind: "human" });
     else L.push({ x: 0, y: -8, r: 50, s: 0.5, col: "255,80,30", a: 0.4, flick: 1 });
-    if (G.save.up.lantern > 0) L.push({ x: 14, y: -110, r: 55, s: 0.6, col: "255,190,100", a: 0.5, flick: 1 });
+    const lay = DL.Camp.layout(G.save.up);
+    for (const q of G.pylons) {
+      if (q.lit) L.push({ x: q.x, y: q.y - 40, r: 118, s: 1, col: "255,170,80", a: 0.85, flick: 1, kind: "human" });
+    }
+    if (lay.forge) L.push({ x: lay.forge.x - 4, y: lay.forge.y - 14, r: 60, s: 0.6, col: "255,120,40", a: 0.7, flick: 1 });
+    if (lay.workbench) L.push({ x: lay.workbench.x + 8, y: lay.workbench.y - 26, r: 45, s: 0.5, col: "255,190,100", a: 0.5, flick: 1 });
+    if (lay.garden && G.nightAmt > 0.3) L.push({ x: lay.garden.x, y: lay.garden.y - 12, r: 60 + 12 * G.save.up.garden, s: 0.6, col: "80,230,240", a: 0.8 });
+    if (G.save.up.stakes >= 3) {
+      for (const g of DL.Camp.GATES) for (const sgn of [-1, 1]) {
+        const a = g + (sgn * (DL.Camp.GATE_HALF + 6)) / DL.WALL_R;
+        L.push({ x: Math.cos(a) * DL.WALL_R, y: Math.sin(a) * DL.WALL_R - 40, r: 50, s: 0.5, col: "255,180,90", a: 0.6, flick: 1 });
+      }
+    }
     for (const t of G.torches) {
       const f = t.t < 8 ? t.t / 8 : 1;
       L.push({ x: t.x, y: t.y - 18, r: t.r * (0.45 + 0.55 * f), s: 1, col: t.type === "brazier" ? "255,110,40" : "255,165,80", a: f, flick: 1, kind: "human" });
@@ -429,7 +458,8 @@
     if (G.save.torches <= 0) { say("No torches left — craft more at camp.", "warn"); sfx("deny"); return; }
     G.save.torches -= 1;
     G.persist();
-    G.torches.push({ type: "torch", x: p.x + 14, y: p.y + 4, t: 50, max: 50, r: 125, hp: 40, rad: 8 });
+    const dur = G.stats().torchDur;
+    G.torches.push({ type: "torch", x: p.x + 14, y: p.y + 4, t: dur, max: dur, r: 125, hp: 40, rad: 8 });
     sfx("torch");
     say("Torch placed. It will burn for a short while.");
   }
@@ -467,16 +497,11 @@
     if (o.type === "pearl") G.pearls = G.pearls.filter((x) => x !== o);
   }
 
-  // Camp tents and buildings are solid.
-  G.campSolids = function () {
-    const u = G.save.up, s = [{ x: -78, y: -52, r: 18 }, { x: 70, y: -64, r: 18 }, { x: 0, y: 0, r: 16 }];
-    if (u.forge) s.push({ x: -100, y: 44, r: 10 });
-    if (u.armory) s.push({ x: 100, y: 40, r: 10 });
-    for (let i = 0; i < u.tower; i++) s.push({ x: G.towers[i].x, y: G.towers[i].y, r: 14 });
-    return s;
-  };
+  // Camp tents and buildings are solid, and the palisade only opens at its gates.
+  G.campSolids = () => DL.Camp.layout(G.save.up).solids;
   function collideCamp(ent, r) {
-    if (Math.hypot(ent.x, ent.y) > 260) return;
+    if (Math.hypot(ent.x, ent.y) > 280) return;
+    DL.Camp.collideWall(ent, r, G.save.up);
     for (const s of G.campSolids()) {
       const dx = ent.x - s.x, dy = ent.y - s.y, d = Math.hypot(dx, dy), m = s.r + r;
       if (d < m && d > 0.01) { ent.x = s.x + (dx / d) * m; ent.y = s.y + (dy / d) * m; }
@@ -617,7 +642,7 @@
   /* ---------------- enemies ---------------- */
   function goalValid(g) {
     if (!g) return false;
-    if (g.kind === "flame") return g.lit;
+    if (g.kind === "flame" || g.kind === "pylon") return g.lit;
     if (g.type === "torch" || g.type === "brazier") return G.torches.includes(g);
     return !g.dead && g.active !== false;
   }
@@ -625,6 +650,7 @@
     let best = null, bd = R;
     const consider = (o) => { const d = dist(x, y, o.x, o.y); if (d < bd) { bd = d; best = o; } };
     if (G.flame.lit) consider(G.flame);
+    for (const q of G.pylons) if (q.lit) consider(q);
     for (const t of G.torches) consider(t);
     for (const o of G.blooms) if (o.def.bloom && o.active) consider(o);
     return best;
@@ -684,9 +710,12 @@
         if (e.def.ranged && !goal) { if (d < e.def.keep - 30) want = -1; else if (d < e.def.range) want = 0; }
         else if (d < reach * 0.8) want = 0;
         const spd = e.speed * (humanLightAt(e.x, e.y) ? 0.72 : 1) * (e.slow > 0 ? 0.6 : 1);
-        e.x += (dx / d) * spd * want * dt;
-        e.y += (dy / d) * spd * want * dt;
-        e.angle = Math.atan2(dy, dx);
+        // Walls in the way: head for the nearest gate first.
+        const wp = want === 1 ? DL.Camp.route(e.x, e.y, tx, ty, G.save.up) : null;
+        const mx = wp ? wp.x - e.x : dx, my = wp ? wp.y - e.y : dy, md = Math.hypot(mx, my) || 1;
+        e.x += (mx / md) * spd * want * dt;
+        e.y += (my / md) * spd * want * dt;
+        e.angle = Math.atan2(my, mx);
         e.moving = want !== 0;
         if (d <= reach && e.cd <= 0) {
           e.state = "windup";
@@ -702,13 +731,13 @@
       const decay = Math.pow(0.004, dt);
       e.kx *= decay; e.ky *= decay;
 
-      // Warding stakes
+      // Barricade: stakes wound attackers as they cross the perimeter (at the gates once walls stand).
       const lv = G.save.up.stakes;
       if (lv > 0) {
         const dc = Math.hypot(e.x, e.y);
-        if (dc < 238) {
-          e.slow = Math.max(e.slow, 0.2);
-          if (!e.staked && dc > 190) { e.staked = true; hitEnemy(e, 15 * lv, Math.atan2(e.y, e.x), 160); if (e.hp <= 0) continue; }
+        if (dc < DL.WALL_R + 4) {
+          e.slow = Math.max(e.slow, lv >= 3 ? 0.4 : 0.2);
+          if (!e.staked && dc > DL.WALL_R - 40) { e.staked = true; hitEnemy(e, [0, 15, 25, 40][lv], Math.atan2(e.y, e.x), 160); if (e.hp <= 0) continue; }
         }
       }
     }
@@ -786,6 +815,17 @@
         o.lit = false; o.hp = 0;
         say("The Central Flame has gone out! Hold on until dawn.", "danger");
         for (let i = 0; i < 30; i++) puff(0, -10, "rgba(40,40,40,0.7)", 80, 1.2);
+      }
+      return;
+    }
+    if (o.kind === "pylon") {
+      o.hp -= amt;
+      o.hitT = 0.2;
+      for (let i = 0; i < 4; i++) spark(o.x, o.y - 40, "255,160,70", 80);
+      if (o.hp <= 0 && o.lit) {
+        o.lit = false; o.hp = 0;
+        say("A Lantern Pylon has been snuffed out.", "warn");
+        for (let i = 0; i < 12; i++) puff(o.x, o.y - 40, "rgba(40,40,40,0.7)", 50, 1);
       }
       return;
     }
@@ -891,13 +931,12 @@
   function updateDefenses(dt) {
     const lv = G.save.up.tower;
     if (G.night) {
-      for (let i = 0; i < lv; i++) {
-        const t = G.towers[i];
-        t.cd -= dt;
-        if (t.cd > 0) continue;
-        const e = nearestEnemy(t.x, t.y, 290);
-        if (e) { t.cd = 1.1; shoot(t.x, t.y - 46, e, 520, 10 + 6 * lv, "255,190,110", "bolt"); }
-      }
+      DL.Camp.layout(G.save.up).towers.forEach((t, i) => {
+        G.towerCd[i] -= dt;
+        if (G.towerCd[i] > 0) return;
+        const e = nearestEnemy(t.x, t.y, 300);
+        if (e) { G.towerCd[i] = 1.1; shoot(t.x, t.y - 56, e, 520, 10 + 6 * lv, "255,190,110", "bolt"); }
+      });
     }
     for (const o of G.blooms) {
       if (o.type !== "sentinel" || !o.active) continue;
@@ -1060,7 +1099,11 @@
     const st = G.stats();
     if (id === "flame") { G.flame.max = st.flameHp; G.flame.hp = st.flameHp; G.flame.lit = true; }
     if (id === "armory") G.player.hp += 25;
-    if (id === "lantern") G.player.oil = st.maxOil;
+    if (id === "workbench") G.player.oil = st.maxOil;
+    if (id === "pylon") G.resetPylons();
+    if (id === "flame" && DL.Camp.tier(G.save.up) !== DL.Camp.tier({ ...G.save.up, flame: lvl })) {
+      setTimeout(() => say(`Your camp grows: ${DL.TIER_NAMES[DL.Camp.tier(G.save.up)]}.`, "good"), 300);
+    }
     G.persist();
     sfx("build");
     return true;
