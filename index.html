@@ -1,1 +1,116 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#09131c"><title>Drowned Light — Prototype 0.1</title><link rel="stylesheet" href="style.css"></head><body><canvas id="game" aria-label="Drowned Light game"></canvas><div id="hud"><div class="title">DROWNED LIGHT <small>PROTOTYPE 0.8</small></div><div class="meter-label">HEALTH <span id="hptext">100 / 100</span></div><div class="meter"><div id="health"></div></div><div class="meter-label">CORRUPTION <span id="corrupttext">0 / 400</span></div><div class="meter"><div id="corrupt"></div></div><div id="status">DAY 1 • DAYLIGHT</div><div id="resources">WOOD 0 · STONE 0 · SHARDS 0</div><div id="notification">Gather supplies by approaching them. Return to the campfire to upgrade.</div></div><div id="compass"><span id="arrow">↑</span><span>HOME</span><small id="distance">0m</small></div><div id="actions"><button id="upgrade">UPGRADE CAMP</button><button id="restart">RESTART</button></div><div id="upgradePanel" class="hidden"><div class="panel"><h2>BASE CAMP</h2><p>Spend resources to make your home stronger.</p><div id="upgradeInfo"></div><button id="buy">UPGRADE CENTRAL FLAME</button><button id="close">CLOSE</button></div></div><div id="touch"><div id="pad"><div id="stick"></div></div><button id="dash">DASH</button></div><script src="player_animation.js?v=0.8"></script><script src="game.js?v=0.8"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#05090c">
+<meta name="description" content="Drowned Light — will you thrive in the light or drown in the darkness?">
+<title>Drowned Light</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game" aria-label="Drowned Light game view"></canvas>
+<div id="touchzone" class="hidden"></div>
+<div id="joy" class="hidden"><div id="joyKnob"></div></div>
+
+<div id="hud" class="hidden">
+  <section id="vitals" class="panel">
+    <div class="row"><span class="lbl">Health</span><span id="hpText" class="val"></span></div>
+    <div class="bar hp"><i id="hpFill"></i></div>
+    <div class="row"><span class="lbl">Corruption</span><span id="corText" class="val"></span></div>
+    <div class="bar cor"><i id="corFill"></i><b style="left:25%"></b><b style="left:50%"></b><b style="left:75%"></b></div>
+    <div class="row"><span class="lbl">Lantern oil</span><span id="oilText" class="val"></span></div>
+    <div class="bar oil"><i id="oilFill"></i></div>
+    <div id="lightState"></div>
+  </section>
+  <div id="carried"></div>
+
+  <section id="nav" class="panel">
+    <div id="clock"><span id="phaseIcon" class="sun"></span><div><div id="dayText"></div><div id="phaseText"></div></div></div>
+    <div id="zoneText"></div>
+    <div class="compass"><span id="homeArrow" class="arrow warm">➤</span><span id="homeDist"></span></div>
+    <div id="selfNav" class="compass hidden"><span id="selfArrow" class="arrow cold">➤</span><span id="selfDist"></span></div>
+  </section>
+  <button id="btnPause" aria-label="Pause">❚❚</button>
+
+  <div id="objective" class="hidden"></div>
+  <div id="toasts" aria-live="polite"></div>
+
+  <button id="campBtn" class="hidden">Enter camp <kbd>C</kbd></button>
+
+  <div id="buttons">
+    <button id="btnTorch" class="act small" aria-label="Place torch"><span>Torch</span><b id="torchCount">0</b><kbd>F</kbd></button>
+    <button id="btnAbility" class="act"><span id="abilityName">Illuminate</span><kbd>E</kbd></button>
+    <button id="btnDash" class="act big"><span>Dash</span><kbd>Space</kbd></button>
+  </div>
+</div>
+
+<section id="screenTitle" class="screen hidden">
+  <div class="title-card">
+    <h1>Drowned <span>Light</span></h1>
+    <p class="tagline">Will you thrive in the light or drown in the darkness?</p>
+    <div class="menu">
+      <button id="btnBegin" class="primary">Begin</button>
+      <button id="btnNew" class="hidden">New game</button>
+      <button id="btnSound">Sound: on</button>
+    </div>
+    <div class="howto">
+      <div><b>By day</b> venture into the wetland and gather supplies. The farther from camp, the richer the land — and the deadlier the Drowned.</div>
+      <div><b>By night</b> stay in the light. Darkness corrupts you; at full corruption you become a Drowned Knight.</div>
+      <div><b>At camp</b> deposit supplies, build defenses, forge kits, and defend the Central Flame through the night.</div>
+    </div>
+    <p class="controls-hint"><span class="desk">Move <kbd>WASD</kbd> · Dash <kbd>Space</kbd> · Ability <kbd>E</kbd> · Torch <kbd>F</kbd> · Camp <kbd>C</kbd> · Pause <kbd>Esc</kbd></span><span class="mob">Drag on the left side to move. Attacks are automatic.</span></p>
+  </div>
+</section>
+
+<section id="screenPause" class="screen hidden">
+  <div class="title-card small">
+    <h2>Paused</h2>
+    <div class="menu">
+      <button id="btnResume" class="primary">Resume</button>
+      <button id="btnSound2">Sound: on</button>
+      <button id="btnQuit">Return to title</button>
+    </div>
+    <p class="muted">Camp upgrades and stored supplies save automatically.</p>
+  </div>
+</section>
+
+<section id="screenDeath" class="screen hidden">
+  <div class="title-card death">
+    <h2 id="deathTitle">You have drowned</h2>
+    <p id="deathCause"></p>
+    <div id="deathLost"></div>
+    <p id="deathStats" class="muted"></p>
+    <div class="menu"><button id="btnRise" class="primary">Rise at camp</button></div>
+  </div>
+</section>
+
+<section id="screenCamp" class="screen hidden">
+  <div class="camp">
+    <header class="camp-head">
+      <div><h2>Base Camp</h2><span id="campDay" class="muted"></span></div>
+      <button id="campClose" aria-label="Close camp">Close</button>
+    </header>
+    <div id="campStash"></div>
+    <nav id="campTabs">
+      <button data-tab="build">Buildings</button>
+      <button data-tab="kit">Kits</button>
+      <button data-tab="supplies">Supplies</button>
+    </nav>
+    <div id="campBody"></div>
+  </div>
+</section>
+
+<script src="src/core.js"></script>
+<script src="src/data.js"></script>
+<script src="src/art.js"></script>
+<script src="src/world.js"></script>
+<script src="src/game.js"></script>
+<script src="src/render.js"></script>
+<script src="src/ui.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>
