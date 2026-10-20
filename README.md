@@ -59,7 +59,7 @@ The camp grows through three tiers as the Central Flame levels up:
 - **Your drowned self**: when you fall, a Drowned version of you keeps everything you carried. Kill it to get your supplies back. If you die again first, they're gone.
 
 ### Starting a game: kit, difficulty and combat
-A new game asks you to choose a **kit**, a **difficulty** and a **combat mode** (Auto-attack or Manual attack). All three stay fixed for that save.
+A new game asks you to choose a **kit**, a **difficulty** and a **combat mode** (Auto-attack or Manual attack). The kit and difficulty stay fixed for that save. The combat mode can be switched any time from the pause menu.
 
 ### Mining
 Supply nodes take several hits to break: logs 3, rock 4, iron 5, bloom sprouts 2, pearls 2. Each strike shakes and cracks the node and throws chips. The last strike shatters it into pieces of its sprite, and the supplies spill out as pickups that fly to you. In auto mode the knight mines a node you stand beside whenever no Drowned are in reach. In manual mode you swing at it.
