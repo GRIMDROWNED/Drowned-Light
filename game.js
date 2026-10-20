@@ -134,7 +134,7 @@ function drawKnightSprite(x,y,enemy=false,corruption=0,alpha=1,dir=2,state="idle
 // Expected PNG: assets/lantern_atlas.png, 384x192 (eight directions by three states, frames of 48x64).
 // The old procedural sprite remains a fallback until the image is uploaded.
 const lanternAtlas=new Image();let lanternAtlasReady=false;
-lanternAtlas.onload=()=>{lanternAtlasReady=lanternAtlas.naturalWidth===384&&lanternAtlas.naturalHeight===192;if(!lanternAtlasReady){console.warn("Lantern atlas dimensions do not match 384x192:",lanternAtlas.naturalWidth,lanternAtlas.naturalHeight);message("Sprite atlas has incorrect dimensions; using fallback knight.");}else{console.info("Lantern Knight sprite atlas loaded successfully.");}};
+lanternAtlas.onload=()=>{lanternAtlasReady=lanternAtlas.naturalWidth===1920&&lanternAtlas.naturalHeight===1008;if(!lanternAtlasReady){console.warn("Lantern atlas dimensions do not match 1920x1008:",lanternAtlas.naturalWidth,lanternAtlas.naturalHeight);message("Sprite atlas has incorrect dimensions; using fallback knight.");}else{console.info("Lantern Knight sprite atlas loaded successfully.");}};
 lanternAtlas.onerror=()=>{lanternAtlasReady=false;console.warn("Lantern atlas failed to load; using fallback knight.");message("Sprite image could not load; using fallback knight.");};
 lanternAtlas.src="assets/lantern_atlas.png";
 function knight(x,y,enemy=false){
@@ -148,9 +148,9 @@ function knight(x,y,enemy=false){
   if(animation.state==="dash")ctx.globalAlpha=.9;
   // Sample slightly inside each atlas cell to avoid neighboring-frame edge pixels.
 // Keep the on-screen dimensions stable so movement and collision are unchanged.
-  const inset=1,srcX=index*48+inset,srcY=stateRow*64+inset;
-  const srcW=48-2*inset,srcH=64-2*inset;
-  ctx.drawImage(lanternAtlas,srcX,srcY,srcW,srcH,Math.round(x-28),Math.round(y-48+bob),56,75);
+  const inset=0,srcX=index*240+inset,srcY=stateRow*336+inset;
+  const srcW=240-2*inset,srcH=336-2*inset;
+  ctx.drawImage(lanternAtlas,srcX,srcY,srcW,srcH,Math.round(x-35),Math.round(y-62+bob),70,94);
   ctx.restore();return;
  }
  drawKnightSprite(x,y,enemy,enemy?400:player.corrupt,1,enemy?2:animation.direction,enemy?"idle":animation.state,enemy?0:animation.walkTime);
