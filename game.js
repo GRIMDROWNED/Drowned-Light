@@ -8,8 +8,9 @@ const dist=(x,y)=>Math.hypot(x,y);let player,enemies,bullets,level,clock,total,s
 const SAVEKEY="drowned-light-v04";let save={level:1,wood:0,stone:0,shard:0,forge:0,armory:0};try{Object.assign(save,JSON.parse(localStorage.getItem(SAVEKEY)||"{}"));}catch(e){}
 function persist(){try{localStorage.setItem(SAVEKEY,JSON.stringify(save));}catch(e){}}
 let dashDir={x:0,y:1},dashTrail=[],facing={x:0,y:-1},dashCooldown=0;let animation={direction:2,state:"idle",walkTime:0};
+let swordSwing={active:false,time:0,duration:.34,angle:0};
 function message(t){$("notification").textContent=t;noticeTime=5;}
-function reset(){player={x:0,y:70,hp:100+save.armory*20,corrupt:0,wood:0,stone:0,shard:0,boost:0,invuln:0};enemies=[];bullets=[];level=save.level;dashCooldown=0;dashTrail=[];facing={x:0,y:1};animation={direction:2,state:"idle",walkTime:0};clock=0;total=0;spawn=0;attack=0;over=false;objects.clear();collected.clear();$("upgradePanel").classList.add("hidden");message("Explore by day. Seek light at night. Defend your camp.");}
+function reset(){player={x:0,y:70,hp:100+save.armory*20,corrupt:0,wood:0,stone:0,shard:0,boost:0,invuln:0};enemies=[];bullets=[];level=save.level;dashCooldown=0;dashTrail=[];facing={x:0,y:1};animation={direction:2,state:"idle",walkTime:0};swordSwing={active:false,time:0,duration:.34,angle:0};clock=0;total=0;spawn=0;attack=0;over=false;objects.clear();collected.clear();$("upgradePanel").classList.add("hidden");message("Explore by day. Seek light at night. Defend your camp.");}
 function night(){return clock>=50;}
 function chunk(cx,cy){let key=cx+","+cy;if(objects.has(key))return;const a=[];for(let i=0;i<14;i++){const x=(cx*CHUNK+hash(cx,cy,i*2)*CHUNK)*TILE,y=(cy*CHUNK+hash(cx,cy,i*2+1)*CHUNK)*TILE;if(dist(x,y)<135)continue;const n=hash(cx*71+i,cy*53-i),type=n<.31?"wood":n<.57?"stone":n<.75?"shard":n<.88?"plant":"tree";const id=key+":"+i;a.push({x,y,type,id,alive:!collected.has(id)});}objects.set(key,a);}
 function startDash(){if(over||dashCooldown>0||$("upgradePanel").classList.contains("hidden")===false)return;let v=dist(joystick.x,joystick.y)>0.2?joystick:facing;let len=dist(v.x,v.y)||1;dashDir={x:v.x/len,y:v.y/len};player.boost=.24;player.invuln=Math.max(player.invuln,.2);dashCooldown=3;dashTrail=[];facing={...dashDir};animation.direction=direction8(dashDir.x,dashDir.y);animation.state="dash";message("Dash!");}
@@ -49,7 +50,8 @@ if(light==="human")player.corrupt=Math.max(0,player.corrupt-16*dt);else if(night
 if(player.corrupt>=400){over=true;message("DROWNED IN DARKNESS — RESTART TO TRY AGAIN.");}
 if(night()){spawn-=dt;if(spawn<=0&&enemies.length<70){spawn=Math.max(.35,1.5-(clock-50)*.016);let a=Math.random()*6.283,r=300+Math.random()*130,depth=dist(player.x,player.y);enemies.push({x:player.x+Math.cos(a)*r,y:player.y+Math.sin(a)*r,hp:2+Math.floor(depth/900),speed:32+Math.min(45,depth/80)});}}else for(const e of enemies)e.hp-=dt*2;
 for(const e of enemies){let d=dist(player.x-e.x,player.y-e.y)||1;e.x+=(player.x-e.x)/d*e.speed*dt;e.y+=(player.y-e.y)/d*e.speed*dt;if(d<20&&player.invuln<=0){player.hp-=8;player.invuln=.7;}}
-attack-=dt;if(attack<=0){let target=null,best=145;for(const e of enemies){let d=dist(e.x-player.x,e.y-player.y);if(d<best){best=d;target=e;}}if(target){attack=Math.max(.22,.55-save.forge*.04);bullets.push({x:player.x,y:player.y,vx:(target.x-player.x)/best*350,vy:(target.y-player.y)/best*350,life:.75});}}
+if(swordSwing.active){swordSwing.time+=dt;if(swordSwing.time>=swordSwing.duration)swordSwing.active=false;}
+attack-=dt;if(attack<=0){let target=null,best=145;for(const e of enemies){let d=dist(e.x-player.x,e.y-player.y);if(d<best){best=d;target=e;}}if(target){attack=Math.max(.22,.55-save.forge*.04);swordSwing={active:true,time:0,duration:Math.min(.30,Math.max(.18,attack*.7)),angle:Math.atan2(target.y-player.y,target.x-player.x)};bullets.push({x:player.x,y:player.y,vx:(target.x-player.x)/best*350,vy:(target.y-player.y)/best*350,life:.75});}}
 for(const b of bullets){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;for(const e of enemies)if(dist(e.x-b.x,e.y-b.y)<16){e.hp-=2+save.forge;b.life=0;break;}}
 enemies=enemies.filter(e=>e.hp>0);bullets=bullets.filter(b=>b.life>0);if(player.hp<=0){over=true;message("THE KNIGHT HAS FALLEN — RESTART TO TRY AGAIN.");}
 $("hptext").textContent=Math.ceil(Math.max(0,player.hp))+" / "+(100+save.armory*20);$("health").style.width=Math.max(0,player.hp)/(100+save.armory*20)*100+"%";$("corrupttext").textContent=Math.floor(player.corrupt)+" / 400";$("corrupt").style.width=player.corrupt/4+"%";$("status").textContent="DAY "+(Math.floor(total/100)+1)+" · "+(night()?"NIGHT":"DAYLIGHT")+" · "+(light==="human"?"HEALING":light==="plant"?"PLANT SHELTER":night()?"EXPOSED":"SAFE");$("resources").textContent="WOOD "+player.wood+" · STONE "+player.stone+" · SHARDS "+player.shard;$("arrow").style.transform="rotate("+(Math.atan2(-player.x,player.y)*180/Math.PI)+"deg)";$("distance").textContent=Math.round(dist(player.x,player.y))+"m";noticeTime-=dt;if(noticeTime<=0)$("notification").textContent=night()?"Stay near light to avoid corruption.":"Explore for supplies before nightfall.";
@@ -131,18 +133,22 @@ function drawKnightSprite(x,y,enemy=false,corruption=0,alpha=1,dir=2,state="idle
  circle(x+(swordLeft?-14:14),y+7,9,dark?"#2ac9dc18":"#ffaf2718");
 }
 // Image-based Lantern Knight: load the approved illustrated eight-view atlas.
-// Expected PNG: assets/lantern_atlas.png, 384x192 (eight directions by three states, frames of 48x64).
+// Expected PNG: assets/lantern_atlas.png, 1920x1008 (eight directions by three states, frames of 240x336).
 // The old procedural sprite remains a fallback until the image is uploaded.
 const lanternAtlas=new Image();let lanternAtlasReady=false;
 lanternAtlas.onload=()=>{lanternAtlasReady=lanternAtlas.naturalWidth===1920&&lanternAtlas.naturalHeight===1008;if(!lanternAtlasReady){console.warn("Lantern atlas dimensions do not match 1920x1008:",lanternAtlas.naturalWidth,lanternAtlas.naturalHeight);message("Sprite atlas has incorrect dimensions; using fallback knight.");}else{console.info("Lantern Knight sprite atlas loaded successfully.");}};
 lanternAtlas.onerror=()=>{lanternAtlasReady=false;console.warn("Lantern atlas failed to load; using fallback knight.");message("Sprite image could not load; using fallback knight.");};
-lanternAtlas.src="assets/lantern_atlas.png";
+lanternAtlas.src="assets/lantern_atlas.png?v=0.7";
 function knight(x,y,enemy=false){
  if(!enemy&&lanternAtlasReady){
   // Source order: down, down-right, right, up-right, up, up-left, left, down-left.
   // Gameplay order: right, down-right, down, down-left, left, up-left, up, up-right.
   const map=[2,1,0,7,6,5,4,3],index=map[animation.direction]??0;
-  const stateRow=animation.state==="dash"?2:animation.state==="walk"?1:0; const bob=0;
+  // The reference atlas has an idle pose and one stepping pose (not a true walk cycle).
+  // Alternate them at a readable cadence so the knight visibly lifts and plants his feet.
+  const walking=animation.state==="walk",step=walking?Math.floor(animation.walkTime*8)%2:0;
+  const stateRow=animation.state==="dash"?2:walking?step:0;
+  const bob=walking?(step===1?2:0):0;
   ctx.save();ctx.imageSmoothingEnabled=false;
   if(player.corrupt>=200)ctx.filter="hue-rotate(140deg) brightness(.8)";
   if(animation.state==="dash")ctx.globalAlpha=.9;
@@ -150,10 +156,34 @@ function knight(x,y,enemy=false){
 // Keep the on-screen dimensions stable so movement and collision are unchanged.
   const inset=0,srcX=index*240+inset,srcY=stateRow*336+inset;
   const srcW=240-2*inset,srcH=336-2*inset;
-  ctx.drawImage(lanternAtlas,srcX,srcY,srcW,srcH,Math.round(x-35),Math.round(y-62+bob),70,94);
+  if(swordSwing.active&&animation.state!=="dash"){
+    // Rotate the illustrated *whole character*, including its actual drawn sword,
+    // so the weapon is visibly moving rather than drawing a second static sword.
+    const t=Math.min(1,swordSwing.time/swordSwing.duration);
+    const rotation=(-.24+ .57*t)*(Math.sin(swordSwing.angle)<0?-1:1);
+    ctx.translate(Math.round(x),Math.round(y-17));
+    ctx.rotate(rotation);
+    ctx.drawImage(lanternAtlas,srcX,srcY,srcW,srcH,-35,-45+bob,70,94);
+  }else{
+    ctx.drawImage(lanternAtlas,srcX,srcY,srcW,srcH,Math.round(x-35),Math.round(y-62+bob),70,94);
+  }
   ctx.restore();return;
  }
  drawKnightSprite(x,y,enemy,enemy?400:player.corrupt,1,enemy?2:animation.direction,enemy?"idle":animation.state,enemy?0:animation.walkTime);
+}
+function drawSwordSlash(x,y){
+ if(!swordSwing.active)return;
+ const t=Math.min(1,swordSwing.time/swordSwing.duration);
+ // A brief sweeping blade trail to make the hit visibly readable on a phone.
+ const center=swordSwing.angle, leading=center-.95+1.9*t;
+ ctx.save();
+ ctx.lineCap="round";
+ ctx.globalAlpha=Math.sin(Math.PI*t)*.8;
+ ctx.strokeStyle="#ffce80";ctx.lineWidth=6;
+ ctx.beginPath();ctx.arc(x,y-14,64,leading-.65,leading+.15);ctx.stroke();
+ ctx.strokeStyle="#fff2d2";ctx.lineWidth=2.5;
+ ctx.beginPath();ctx.arc(x,y-14,69,leading-.38,leading+.16);ctx.stroke();
+ ctx.restore();
 }
 function draw(){box(0,0,W,H,"#091720");const ox=W/2-player.x,oy=H/2-player.y;
 let left=Math.floor((player.x-W/2)/TILE)-1,right=Math.ceil((player.x+W/2)/TILE)+1,top=Math.floor((player.y-H/2)/TILE)-1,bottom=Math.ceil((player.y+H/2)/TILE)+1;
@@ -171,6 +201,6 @@ if(tier>=3){hut(-30,-113,60,34);hut(-28,83,58,32);for(let i=-2;i<=2;i++){box(x-1
 if(tier>=4){for(const [a,b] of [[-130,-115],[118,-115],[-130,114],[118,114]]){box(x+a,y+b,22,42,"#868e89");box(x+a-5,y+b-10,32,13,"#bac0b2");torch(a+10,b-13);}for(let i=-2;i<=2;i++){line(x-130,y+i*28,x-147,y+i*28,"#b08e62",3);line(x+132,y+i*28,x+149,y+i*28,"#b08e62",3);}}
 circle(x,y,17+tier*3,"#b66e26");circle(x,y-7,10+tier*3,"#ffbc69");circle(x,y-12,5+tier*2,"#ffe7af");
 ctx.fillStyle="#f2d299";ctx.font="11px Georgia";ctx.textAlign="center";ctx.fillText("HOME BASE · LV "+level+" · TIER "+tier,x,y-(tier>=3?145:tier>=2?100:62));
-for(const e of enemies)knight(e.x+ox,e.y+oy,true);for(const t of dashTrail){ctx.save();ctx.globalAlpha=Math.min(.35,t.life*1.3);knight(t.x+ox,t.y+oy);ctx.restore();}for(const b of bullets)circle(b.x+ox,b.y+oy,5,"#ffd486");knight(W/2,H/2);if(player.corrupt>=100)circle(W/2,H/2,24,"#1db7d01e");if(player.invuln>0)circle(W/2,H/2,20,"#e6313122");if(night())box(0,0,W,H,"#01071326");if(over){box(W/2-160,H/2-42,320,90,"#07131bef");ctx.fillStyle="#edc48d";ctx.font="bold 21px Georgia";ctx.fillText(player.corrupt>=400?"DROWNED IN DARKNESS":"THE KNIGHT HAS FALLEN",W/2,H/2);ctx.font="13px sans-serif";ctx.fillText("Press RESTART",W/2,H/2+23);}}
+for(const e of enemies)knight(e.x+ox,e.y+oy,true);for(const t of dashTrail){ctx.save();ctx.globalAlpha=Math.min(.35,t.life*1.3);knight(t.x+ox,t.y+oy);ctx.restore();}for(const b of bullets)circle(b.x+ox,b.y+oy,5,"#ffd486");knight(W/2,H/2);drawSwordSlash(W/2,H/2);if(player.corrupt>=100)circle(W/2,H/2,24,"#1db7d01e");if(player.invuln>0)circle(W/2,H/2,20,"#e6313122");if(night())box(0,0,W,H,"#01071326");if(over){box(W/2-160,H/2-42,320,90,"#07131bef");ctx.fillStyle="#edc48d";ctx.font="bold 21px Georgia";ctx.fillText(player.corrupt>=400?"DROWNED IN DARKNESS":"THE KNIGHT HAS FALLEN",W/2,H/2);ctx.font="13px sans-serif";ctx.fillText("Press RESTART",W/2,H/2+23);}}
 let last=performance.now();function frame(now){let dt=Math.min(.045,(now-last)/1000);last=now;if(!over&&$("upgradePanel").classList.contains("hidden"))update(dt);draw();requestAnimationFrame(frame);}reset();requestAnimationFrame(frame);
 })();
