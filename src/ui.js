@@ -31,6 +31,12 @@
     press("btnDash", () => DL.Input.trigger("dash"));
     press("btnAbility", () => DL.Input.trigger("ability"));
     press("btnTorch", () => DL.Input.trigger("torch"));
+    // Manual Attack button: strikes for as long as it's held.
+    const atk = $("btnAttack");
+    atk.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); DL.Input.attackBtn = true; try { atk.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ } });
+    for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) atk.addEventListener(ev, () => { DL.Input.attackBtn = false; });
+    atk.addEventListener("contextmenu", (e) => e.preventDefault());
+    for (const id of ["btnView", "btnView2"]) $(id).addEventListener("click", () => { DL.View.cycle(); UI.updateViewLabel(); });
     $("btnPause").addEventListener("click", () => UI.pause());
     $("campBtn").addEventListener("click", () => UI.openCamp());
 
@@ -59,10 +65,12 @@
       if (UI.setup.step === 1) { UI.setup.step = 2; UI.renderSetup(); return; }
       UI.closeSetup();
       UI.hideScreens();
-      G.newGame(UI.setup.kit, UI.setup.diff);
+      G.newGame(UI.setup.kit, UI.setup.diff, UI.setup.attack);
       UI.showHud(true);
     });
     $("setupBody").addEventListener("click", (e) => {
+      const m = e.target.closest("button[data-mode]");
+      if (m) { UI.setup.attack = m.dataset.mode; UI.renderSetup(); return; }
       const b = e.target.closest("button[data-pick]");
       if (!b) return;
       UI.setup[UI.setup.step === 1 ? "kit" : "diff"] = b.dataset.pick;
@@ -94,6 +102,7 @@
     document.addEventListener("visibilitychange", () => { if (document.hidden && G.state === "play") UI.pause(); });
     if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
     UI.updateSoundLabel();
+    UI.updateViewLabel();
   };
 
   UI.showTitle = function () {
@@ -123,6 +132,10 @@
     $("screenPause").classList.add("hidden");
     if (G.state === "pause") G.state = "play";
     DL.Input.clear();
+  };
+
+  UI.updateViewLabel = function () {
+    for (const id of ["btnView", "btnView2"]) $(id).textContent = "View: " + DL.View.LABELS[DL.View.mode];
   };
 
   UI.toggleSound = function () {
@@ -163,9 +176,9 @@
   };
 
   /* ---------------- new game: choose a kit, then a difficulty ---------------- */
-  UI.setup = { step: 1, kit: "lanternBlade", diff: "dark" };
+  UI.setup = { step: 1, kit: "lanternBlade", diff: "dark", attack: "auto" };
   UI.openSetup = function () {
-    UI.setup = { step: 1, kit: "lanternBlade", diff: "dark" };
+    UI.setup = { step: 1, kit: "lanternBlade", diff: "dark", attack: "auto" };
     $("screenTitle").classList.add("hidden");
     $("screenSetup").classList.remove("hidden");
     UI.renderSetup();
@@ -184,7 +197,7 @@
     $("setupTitle").textContent = st.step === 1 ? "Choose your kit" : "Choose your darkness";
     $("setupHint").textContent = st.step === 1
       ? "Your kit is yours for this whole game. Train it at camp to level 20; levels 5, 10, 15 and 20 transform it."
-      : "Difficulty shapes the land itself: how much it gives, how hard the Drowned hit, and how much light there is to hide in.";
+      : "Difficulty shapes the land itself: how much it gives, how hard the Drowned hit, and how much light there is to hide in. Then choose how you fight.";
     $("setupBack").textContent = st.step === 1 ? "Back" : "Back to kits";
     $("setupNext").textContent = st.step === 1 ? "Next" : `Begin as ${DL.KITS[st.kit].name}`;
     let html = "";
@@ -215,6 +228,12 @@
           <span class="motto">${d.motto}</span>
           <ul>${d.notes.map((n) => `<li>${n}</li>`).join("")}</ul></button>`;
       });
+      const modes = [
+        ["auto", "Auto-attack", "Your knight strikes the nearest Drowned, and mines supplies you stand beside. You move, dash and use your ability."],
+        ["manual", "Manual attack", "You strike where you aim: the mouse or J on a computer, the Attack button on a phone (it leans toward nearby foes). Swing at supplies to mine them."],
+      ];
+      html += `<div class="mode-row" role="group" aria-label="Combat"><h3>Combat</h3>${modes.map(([id, name, desc]) =>
+        `<button class="pick mode-pick ${st.attack === id ? "on" : ""}" data-mode="${id}" aria-pressed="${st.attack === id}"><span class="pick-name">${name}</span><span class="pick-line">${desc}</span></button>`).join("")}</div>`;
     }
     $("setupBody").className = "setup-grid step" + st.step;
     $("setupBody").innerHTML = html;
@@ -398,6 +417,9 @@
     set($("btnAbility"), "class", "act" + (p.oil < kit.ability.oil ? " low" : ""));
     set($("btnDash"), "--cd", (p.dashCd / 2.2).toFixed(3));
     set($("torchCount"), "text", String(G.save.torches));
+    const manual = G.save.attackMode === "manual";
+    set($("btnAttack"), "hidden", !manual);
+    document.body.classList.toggle("manual", manual);
     set($("campBtn"), "hidden", !G.inCamp);
   };
 })(window.DL);

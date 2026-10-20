@@ -19,7 +19,13 @@ html, body {
   margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
   font-family: var(--font-ui); -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
 }
-canvas#game { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; touch-action: none; }
+/* The stage holds the whole game; it can be rotated or boxed by the View setting (src/view.js).
+   A transformed stage also becomes the frame for every position: fixed element inside it. */
+#stage { position: fixed; inset: 0; overflow: hidden; background: var(--bg); }
+#stage.rot { inset: auto; top: 0; left: 0; width: 100vh; width: 100dvh; height: 100vw; transform-origin: top left; transform: translateX(100vw) rotate(90deg); }
+#stage.box-portrait { left: 50%; right: auto; width: min(100vw, calc(100vh * 9 / 16)); transform: translateX(-50%); border-inline: 1px solid var(--line); }
+#stage.box-landscape { top: 50%; bottom: auto; height: min(100vh, calc(100vw * 9 / 16)); transform: translateY(-50%); border-block: 1px solid var(--line); }
+canvas#game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 .hidden { display: none !important; }
 button { font: inherit; color: inherit; cursor: pointer; }
 kbd {
@@ -148,6 +154,8 @@ body.touch kbd { display: none; }
 .act.big { width: 88px; height: 88px; border-color: rgba(214, 176, 122, 0.7); font-size: 12px; }
 .act.small { width: 60px; height: 60px; font-size: 10px; }
 .act b { font-size: 14px; color: var(--warm); }
+.act.attack { border-color: rgba(255, 179, 90, 0.85); background: radial-gradient(circle at 50% 35%, #4a3420, #1c130b); color: #ffe6c2; }
+body.manual .act.big:not(.attack) { width: 70px; height: 70px; font-size: 11px; border-color: var(--line); }
 #btnAbility { font-size: 9.5px; letter-spacing: 0; border-color: rgba(255, 210, 140, 0.7); box-shadow: 0 0 14px rgba(255, 190, 110, 0.25); }
 #btnAbility.low { border-color: var(--line); box-shadow: none; opacity: 0.7; }
 .act:active { transform: scale(0.94); }
@@ -320,3 +328,9 @@ body.touch .controls-hint .desk { display: none; }
 @keyframes kitGlow { 0% { box-shadow: 0 0 0 2px var(--warm), 0 0 40px rgba(255, 179, 90, 0.6); } 100% { box-shadow: none; } }
 #kitLine { margin-top: 4px; font-size: 10.5px; color: var(--muted); letter-spacing: 0.02em; }
 @media (prefers-reduced-motion: reduce) { .kit-card.celebrate, .ms-list li.new { animation: none; } }
+
+/* combat choice on the difficulty step */
+.mode-row { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; margin-top: 6px; }
+.mode-row h3 { grid-column: 1 / -1; margin: 4px 0 0; font: 700 16px var(--font-title); letter-spacing: 0.05em; }
+.mode-pick { flex-direction: column; align-items: flex-start; gap: 4px; }
+.mode-pick .pick-line { line-height: 1.45; }

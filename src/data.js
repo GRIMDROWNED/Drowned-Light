@@ -41,17 +41,17 @@
     { tree: 2, wood: 2, stone: 3, iron: 5, sprout: 4, refuge: 1, sentinel: 1.5, reeds: 1, grave: 2.5, pillar: 2.5 },
   ];
 
-  // World objects. `solid` = collision radius. `bloom` objects glow at night and shelter you.
+  // World objects. `solid` = collision radius, `hits` = strikes to mine it. `bloom` objects glow at night and shelter you.
   DL.OBJ = {
     tree: { sprite: "tree", solid: 9 },
     pillar: { sprite: "pillar", solid: 9 },
     grave: { sprite: "grave" },
     reeds: { sprite: "reeds" },
-    wood: { sprite: "driftwood", res: "wood", base: 3, gather: 0.7, r: 14 },
-    stone: { sprite: "rock", res: "stone", base: 3, gather: 0.9, r: 12, solid: 7 },
-    iron: { sprite: "ironpile", res: "iron", base: 2, gather: 1.1, r: 14 },
-    sprout: { sprite: "sprout", res: "resin", base: 2, gather: 0.8, r: 10 },
-    pearl: { sprite: "pearl", res: "pearl", base: 1, gather: 0.5, r: 8 },
+    wood: { sprite: "driftwood", res: "wood", base: 3, hits: 3, r: 14 },
+    stone: { sprite: "rock", res: "stone", base: 3, hits: 4, r: 12, solid: 7 },
+    iron: { sprite: "ironpile", res: "iron", base: 2, hits: 5, r: 14 },
+    sprout: { sprite: "sprout", res: "resin", base: 2, hits: 2, r: 10 },
+    pearl: { sprite: "pearl", res: "pearl", base: 1, hits: 2, r: 8 },
     refuge: { sprite: "refuge", bloom: true, light: 125, hp: 70, rad: 14, name: "Refuge Bloom" },
     sentinel: { sprite: "sentinel", bloom: true, light: 95, hp: 100, rad: 14, turret: true, name: "Sentinel Bloom" },
     root: { sprite: "root", bloom: true, light: 200, hp: 480, rad: 30, solid: 20, name: "Mother Root" },

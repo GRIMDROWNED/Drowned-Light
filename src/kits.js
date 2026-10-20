@@ -102,16 +102,36 @@
   }
 
   /* ---------- auto-attack ---------- */
-  K.attack = function (p, st) {
-    const kit = G.kit(), a = kit.attack, pw = K.power() * st.dmgMult * G.corruptBonus();
-    const id = G.save.kit;
+  // Manual aim gets a gentle assist: the nearest Drowned within ~35° of the aim, if any.
+  function assisted(p, aim, R) {
+    let best = null, bd = R;
+    for (const e of G.enemies) {
+      if (e.rise > 0 || e.dormant || e.removed) continue;
+      const d = dist(p.x, p.y, e.x, e.y) - e.def.radius;
+      if (d < bd && Math.abs(angleDiff(aim, Math.atan2(e.y - p.y, e.x - p.x))) < 0.6) { bd = d; best = e; }
+    }
+    return best;
+  }
+  K.reach = function () {
+    const a = G.kit().attack, id = G.save.kit;
     let range = a.range;
     if (id === "pikeWarden" && K.has(5)) range *= 1.2;
     if (id === "ashenArbalist" && K.has(5)) range *= 1.15;
     if (id === "lanternBlade" && K.has(20)) range *= 1.1;
-    const target = nearest(p.x, p.y, range + 26);
-    if (!target) return false;
-    const ang = Math.atan2(target.y - p.y, target.x - p.x);
+    return range;
+  };
+  K.nearestEnemy = nearest;
+
+  /* Strike with the kit's weapon. Auto mode (aim undefined) only strikes when a Drowned is in reach;
+     manual mode strikes toward `aim` every time, hitting whatever is there. */
+  K.attack = function (p, st, aim) {
+    const kit = G.kit(), a = kit.attack, pw = K.power() * st.dmgMult * G.corruptBonus();
+    const id = G.save.kit;
+    const range = K.reach();
+    const manual = aim != null;
+    const target = manual ? assisted(p, aim, range + 40) : nearest(p.x, p.y, range + 26);
+    if (!target && !manual) return false;
+    const ang = target ? Math.atan2(target.y - p.y, target.x - p.x) : aim;
     p.attackN = (p.attackN || 0) + 1;
     if (!p.moving) p.angle = ang;
     const swing = { ang, t: 0, dur: 0.2, col: kit.color, kind: a.type, range, flip: p.attackN % 2 === 1, arc: a.arc };
@@ -145,7 +165,7 @@
       sfx("swing");
     } else if (a.type === "bolt") {
       const count = K.has(20) ? 3 : 1;
-      const aim = Math.atan2(target.y - 20 * target.def.scale - (p.y - 26), target.x - p.x);
+      const aim = target ? Math.atan2(target.y - 20 * target.def.scale - (p.y - 26), target.x - p.x) : ang;
       for (let i = 0; i < count; i++) {
         const off = (i - (count - 1) / 2) * 0.14;
         const flare = K.has(15) && p.attackN % 4 === 0 && i === 0;

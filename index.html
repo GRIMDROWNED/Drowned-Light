@@ -16,10 +16,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.10.1">
+<link rel="stylesheet" href="style.css?v=0.11.0">
 </head>
 <body>
-<div id="splash" role="img" aria-label="Drowned Games"><img src="assets/drowned-games.jpg?v=0.10.1" alt="Drowned Games"></div>
+<div id="splash" role="img" aria-label="Drowned Games"><img src="assets/drowned-games.jpg?v=0.11.0" alt="Drowned Games"></div>
+<div id="stage">
 <canvas id="game" aria-label="Drowned Light game view"></canvas>
 <div id="touchzone" class="hidden"></div>
 <div id="joy" class="hidden"><div id="joyKnob"></div></div>
@@ -54,6 +55,7 @@
     <button id="btnTorch" class="act small" aria-label="Place torch"><span>Torch</span><b id="torchCount">0</b><kbd>F</kbd></button>
     <button id="btnAbility" class="act"><span id="abilityName">Illuminate</span><kbd>E</kbd></button>
     <button id="btnDash" class="act big"><span>Dash</span><kbd>Space</kbd></button>
+    <button id="btnAttack" class="act big attack hidden"><span>Attack</span><kbd>J</kbd></button>
   </div>
 </div>
 
@@ -65,14 +67,15 @@
       <button id="btnBegin" class="primary">Begin</button>
       <button id="btnNew" class="hidden">New game</button>
       <button id="btnSound">Sound: on</button>
+      <button id="btnView" class="view-btn">View: Auto</button>
     </div>
     <div class="howto">
       <div><b>By day</b> venture into the wetland and gather supplies. The farther from camp, the richer the land — and the deadlier the Drowned.</div>
       <div><b>By night</b> stay in the light. Darkness corrupts you; at full corruption you become a Drowned Knight.</div>
       <div><b>At camp</b> deposit supplies, build defenses, train your kit, and defend the Central Flame through the night.</div>
     </div>
-    <p class="controls-hint"><span class="desk">Move <kbd>WASD</kbd> · Dash <kbd>Space</kbd> · Ability <kbd>E</kbd> · Torch <kbd>F</kbd> · Camp <kbd>C</kbd> · Pause <kbd>Esc</kbd></span><span class="mob">Drag on the left side to move. Attacks are automatic.</span></p>
-    <p class="version">Version 0.10.1</p>
+    <p class="controls-hint"><span class="desk">Move <kbd>WASD</kbd> · Attack (manual) <kbd>J</kbd> or click · Dash <kbd>Space</kbd> · Ability <kbd>E</kbd> · Torch <kbd>F</kbd> · Camp <kbd>C</kbd> · Pause <kbd>Esc</kbd></span><span class="mob">Drag on the left side to move. Attacks are automatic.</span></p>
+    <p class="version">Version 0.11.0</p>
   </div>
 </section>
 
@@ -97,6 +100,7 @@
     <div class="menu">
       <button id="btnResume" class="primary">Resume</button>
       <button id="btnSound2">Sound: on</button>
+      <button id="btnView2" class="view-btn">View: Auto</button>
       <button id="btnQuit">Return to title</button>
     </div>
     <p class="muted">Camp upgrades and stored supplies save automatically.</p>
@@ -128,17 +132,19 @@
     <div id="campBody"></div>
   </div>
 </section>
+</div>
 
-<script src="src/core.js?v=0.10.1"></script>
-<script src="src/data.js?v=0.10.1"></script>
-<script src="src/camp.js?v=0.10.1"></script>
-<script src="src/art.js?v=0.10.1"></script>
-<script src="src/units.js?v=0.10.1"></script>
-<script src="src/world.js?v=0.10.1"></script>
-<script src="src/game.js?v=0.10.1"></script>
-<script src="src/kits.js?v=0.10.1"></script>
-<script src="src/render.js?v=0.10.1"></script>
-<script src="src/ui.js?v=0.10.1"></script>
-<script src="src/main.js?v=0.10.1"></script>
+<script src="src/core.js?v=0.11.0"></script>
+<script src="src/view.js?v=0.11.0"></script>
+<script src="src/data.js?v=0.11.0"></script>
+<script src="src/camp.js?v=0.11.0"></script>
+<script src="src/art.js?v=0.11.0"></script>
+<script src="src/units.js?v=0.11.0"></script>
+<script src="src/world.js?v=0.11.0"></script>
+<script src="src/game.js?v=0.11.0"></script>
+<script src="src/kits.js?v=0.11.0"></script>
+<script src="src/render.js?v=0.11.0"></script>
+<script src="src/ui.js?v=0.11.0"></script>
+<script src="src/main.js?v=0.11.0"></script>
 </body>
 </html>

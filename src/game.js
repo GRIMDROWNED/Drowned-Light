@@ -19,6 +19,7 @@
     kit: "lanternBlade",
     kitLevel: 1,
     difficulty: "dark",
+    attackMode: "auto",
     torches: 2,
     drownedSelf: null,
     started: false,
@@ -109,12 +110,13 @@
     G.startLife();
   };
 
-  G.newGame = function (kit, difficulty) {
+  G.newGame = function (kit, difficulty, attackMode) {
     const muted = G.save.muted;
     G.save = G.defaultSave();
     G.save.muted = muted;
     G.save.kit = kit;
     G.save.difficulty = difficulty;
+    G.save.attackMode = attackMode === "manual" ? "manual" : "auto";
     W.chunks.clear(); // the land is regenerated for the new difficulty
     G.persist();
     G.begin();
@@ -127,12 +129,12 @@
       angle: Math.PI / 2, moving: false, animT: 0,
       dashT: 0, dashCd: 0, dashDir: { x: 0, y: 1 }, dashHit: new Set(), trail: [],
       inv: 0, atkCd: 0, swing: null, abiCd: 0, flash: 0, hurtFlash: 0,
-      carried: emptyRes(), gather: null, protect: null, stage: 1, zi: 0,
+      carried: emptyRes(), protect: null, stage: 1, zi: 0, aim: Math.PI / 2,
     };
     G.time = 4;
     G.enemies = []; G.projectiles = []; G.pickups = []; G.effects = []; G.texts = [];
     G.torches = []; G.lightZones = []; G.telegraphs = []; G.pearls = []; G.decals = []; G.lights = [];
-    G.blooms = []; G.walls = []; G.wisp = null;
+    G.blooms = []; G.walls = []; G.wisp = null; G.hitNodes = [];
     G.flame = { kind: "flame", x: 0, y: 0, rad: 24, hp: st.flameHp, max: st.flameHp, lit: true, hitT: 0 };
     G.towerCd = [0, 0, 0];
     G.resetPylons();
@@ -365,12 +367,21 @@
     W.collide(p, 10);
     collideCamp(p, 10);
 
-    // Auto-attack the nearest Drowned in reach.
+    // Combat and mining. Auto mode fights the nearest Drowned, or mines a supply node you stand by
+    // when none are near. Manual mode strikes where you aim (mouse, or the way you face) while held.
     p.atkCd -= dt;
     if (p.swing) { p.swing.t += dt; if (p.swing.t >= p.swing.dur) p.swing = null; }
-    if (p.atkCd <= 0 && p.dashT <= 0) DL.Kits.attack(p, st);
-
-    updateGather(dt);
+    p.aim = aimAngle(p);
+    if (p.atkCd <= 0 && p.dashT <= 0) {
+      if (G.save.attackMode === "manual") {
+        if (DL.Input.attacking()) manualStrike(p, st);
+      } else if (!DL.Kits.attack(p, st)) {
+        const node = nodeNear(p, 26);
+        if (node) mineStrike(p, node);
+      }
+    }
+    for (const o of G.hitNodes) o.hitT = Math.max(0, o.hitT - dt);
+    G.hitNodes = G.hitNodes.filter((o) => o.hitT > 0);
 
     // Deposit carried supplies at camp.
     const inCamp = Math.hypot(p.x, p.y) < DL.CAMP_RADIUS;
@@ -437,36 +448,69 @@
     say("Torch placed. It will burn for a short while.");
   }
 
-  function updateGather(dt) {
-    const p = G.player;
-    if (p.gather) {
-      const o = p.gather.obj;
-      if (o.harvested || dist(p.x, p.y, o.x, o.y) > (o.def.r || 12) + 34) { p.gather = null; return; }
-      p.gather.t += dt;
-      if (p.gather.t >= o.def.gather) {
-        harvest(o);
-        p.gather = null;
-      }
-      return;
+  // Manual aim: toward the mouse when one is in use, otherwise the way the knight faces.
+  function aimAngle(p) {
+    const m = DL.Input.mouse, v = DL.Render.view;
+    if (G.save.attackMode === "manual" && v && performance.now() - m.seen < 4000 && !DL.Input.touch) {
+      return Math.atan2(v.top + m.y / v.z - (p.y - 24), v.left + m.x / v.z - p.x);
     }
-    let best = null, bd = 1e9;
-    const check = (o) => {
-      if (!o.def.res || o.harvested) return;
-      const d = dist(p.x, p.y, o.x, o.y);
-      if (d < (o.def.r || 12) + 24 && d < bd) { bd = d; best = o; }
-    };
-    W.near(p.x, p.y, 60, check);
-    for (const pr of G.pearls) check(pr);
-    if (best) p.gather = { obj: best, t: 0 };
+    return p.angle;
   }
 
-  function harvest(o) {
-    const p = G.player, res = o.def.res;
+  /* ---------------- mining ---------------- */
+  function nodeNear(p, R) {
+    let best = null, bd = 1e9;
+    const check = (o) => {
+      if (!o.def.hits || o.harvested) return;
+      const d = dist(p.x, p.y, o.x, o.y);
+      if (d < (o.def.r || 12) + R && d < bd) { bd = d; best = o; }
+    };
+    W.near(p.x, p.y, 70, check);
+    for (const pr of G.pearls) check(pr);
+    return best;
+  }
+
+  function manualStrike(p, st) {
+    // Swinging at a node with no Drowned close by mines it; otherwise the kit attacks.
+    const node = nodeNear(p, 34);
+    if (node && !DL.Kits.nearestEnemy(p.x, p.y, 110)) {
+      const a = Math.atan2(node.y - p.y, node.x - p.x);
+      if (Math.abs(angleDiff(p.aim, a)) < 1.0 || dist(p.x, p.y, node.x, node.y) < (node.def.r || 12) + 12) { mineStrike(p, node); return; }
+    }
+    DL.Kits.attack(p, st, p.aim);
+  }
+
+  function mineStrike(p, o) {
+    const kit = G.kit(), ang = Math.atan2(o.y - 6 - p.y, o.x - p.x);
+    p.attackN = (p.attackN || 0) + 1;
+    p.swing = { ang, t: 0, dur: 0.2, col: "255,236,200", kind: kit.attack.type === "thrust" ? "thrust" : "arc", range: 44, arc: 1.3, flip: p.attackN % 2 === 1 };
+    p.atkCd = 0.5;
+    if (!p.moving) p.angle = ang;
+    o.mineHp = (o.mineHp == null ? o.def.hits : o.mineHp) - 1;
+    o.hitT = 0.18;
+    if (!G.hitNodes.includes(o)) G.hitNodes.push(o);
+    const col = DL.RESOURCES[o.def.res].color, ix = o.x - Math.cos(ang) * 6, iy = o.y - 12;
+    for (let i = 0; i < 6; i++) puff(ix, iy, col, 90, 0.45, -60);
+    if (o.type === "sprout" || o.type === "pearl") { for (let i = 0; i < 5; i++) spark(ix, iy, o.type === "pearl" ? "190,160,255" : "80,230,240", 90); sfx("chime"); }
+    else sfx(o.type === "wood" ? "chop" : "clink");
+    if (o.mineHp <= 0) shatter(o);
+  }
+
+  const NODE_SPRITE = { wood: "driftwood", stone: "rock", iron: "ironpile", pearl: "pearl" };
+  function shatter(o) {
     o.harvested = true;
-    p.carried[res] += o.amount;
-    text(o.x, o.y - 30, `+${o.amount} ${DL.RESOURCES[res].name}`, DL.RESOURCES[res].color);
-    sfx("pickup");
-    for (let i = 0; i < 8; i++) puff(o.x, o.y - 6, DL.RESOURCES[res].color, 60, 0.5);
+    const name = NODE_SPRITE[o.type] || (o.active ? "sproutOn" : "sproutOff");
+    const s = DL.Art.sprites[name], PS = 2, w = s.w * PS, h = s.h * PS, pieces = [];
+    const cols = 3, rows = 2, pw = Math.ceil(s.w / cols), ph = Math.ceil(s.h / rows);
+    for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) {
+      const sx = gx * pw, sy = gy * ph, cx = o.x - w / 2 + (sx + pw / 2) * PS, cy = o.y + 2 - h + (sy + ph / 2) * PS;
+      pieces.push({ sx, sy, sw: Math.min(pw, s.w - sx), sh: Math.min(ph, s.h - sy), x: cx, y: cy, vx: (cx - o.x) * 3 + rand(-30, 30), vy: -rand(70, 150), vr: rand(-7, 7) });
+    }
+    G.effects.push({ type: "shatter", sprite: name, pieces, t: 0, max: 0.75 });
+    for (let i = 0; i < 10; i++) puff(o.x, o.y - 4, "rgba(120,110,95,0.55)", 70, 0.7);
+    sfx("shatter");
+    G.camera.shake = Math.max(G.camera.shake, 2);
+    dropRes(o.x, o.y - 6, o.def.res, o.amount);
     if (o.type === "pearl") G.pearls = G.pearls.filter((x) => x !== o);
   }
 
