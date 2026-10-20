@@ -82,6 +82,8 @@ No build step, no dependencies. These are plain scripts loaded in order:
 | `src/main.js` | boot + main loop |
 | `manifest.webmanifest`, `sw.js`, `icons/` | installable-app profile, offline cache, app icons |
 
+**Releasing an update:** bump the version in `sw.js` (`VERSION`) and the `?v=` stamps in `index.html` together. Installed copies then fetch the new files and reload themselves the next time they're opened online.
+
 Progress (camp, stored supplies, kits, day) saves to the browser's `localStorage`.
 
 ## Art
