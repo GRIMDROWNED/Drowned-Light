@@ -24,3 +24,7 @@ Open `index.html` in Chrome, or serve the folder with `python -m http.server 800
 Replace placeholder art with original sprites; add cloud saves, all enemy classes, loadouts, camp buildings and balanced waves; prepare Android builds. Multiplayer is a later milestone.
 
 This is an early test prototype, not a Google Play release.
+
+## Illustrated player sprite atlas (pending upload)
+
+The game now supports `assets/lantern_atlas.png` (384 × 192 px, 8 columns × 3 rows). Rows represent idle, walk and dash; columns represent down, down-right, right, up-right, up, up-left, left, down-left. The generated image is provided separately for uploading through the GitHub web interface. Until it is uploaded at this exact path, the game continues showing its older code-drawn fallback knight. This is a temporary packaging limitation, not a finished animated art asset.
