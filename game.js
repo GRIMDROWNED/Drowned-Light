@@ -146,7 +146,11 @@ function knight(x,y,enemy=false){
   ctx.save();ctx.imageSmoothingEnabled=false;
   if(player.corrupt>=200)ctx.filter="hue-rotate(140deg) brightness(.8)";
   if(animation.state==="dash")ctx.globalAlpha=.9;
-  ctx.drawImage(lanternAtlas,index*48,stateRow*64,48,64,Math.round(x-28),Math.round(y-48+bob),56,75);
+  // Sample slightly inside each atlas cell to avoid neighboring-frame edge pixels.
+// Keep the on-screen dimensions stable so movement and collision are unchanged.
+  const inset=1,srcX=index*48+inset,srcY=stateRow*64+inset;
+  const srcW=48-2*inset,srcH=64-2*inset;
+  ctx.drawImage(lanternAtlas,srcX,srcY,srcW,srcH,Math.round(x-28),Math.round(y-48+bob),56,75);
   ctx.restore();return;
  }
  drawKnightSprite(x,y,enemy,enemy?400:player.corrupt,1,enemy?2:animation.direction,enemy?"idle":animation.state,enemy?0:animation.walkTime);
