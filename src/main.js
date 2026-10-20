@@ -42,6 +42,15 @@
 
   // Installable app: cache the game so it also starts offline (needs https or localhost).
   if ("serviceWorker" in navigator && /^(https:|http:\/\/localhost)/.test(location.href)) {
-    addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    addEventListener("load", () => navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(() => {}));
+    // When a newer version takes over an already-running app, reload once to pick it up.
+    if (navigator.serviceWorker.controller) {
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (reloaded) return;
+        reloaded = true;
+        location.reload();
+      });
+    }
   }
 })(window.DL);
