@@ -28,3 +28,9 @@ This is an early test prototype, not a Google Play release.
 ## Illustrated player sprite atlas (pending upload)
 
 The game now supports `assets/lantern_atlas.png` (384 × 192 px, 8 columns × 3 rows). Rows represent idle, walk and dash; columns represent down, down-right, right, up-right, up, up-left, left, down-left. The generated image is provided separately for uploading through the GitHub web interface. Until it is uploaded at this exact path, the game continues showing its older code-drawn fallback knight. This is a temporary packaging limitation, not a finished animated art asset.
+
+## Animation update (v0.7)
+
+- Player's legs now alternate between the atlas idle and walking poses while moving. Idle stops on a stable frame; dash continues using the atlas dash row.
+- Automatic attacks trigger a brief rotational sword swing and bright blade arc aimed toward the nearest target. Existing auto-attack range, projectiles, and damage remain unchanged.
+- Current atlas has one walking pose per direction (not multiple stride frames), so this is an interim two-pose animation. A full leg-by-leg walking cycle and independent weapon rig need dedicated animation frames.
