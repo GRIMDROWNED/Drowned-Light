@@ -239,3 +239,22 @@ body.touch .controls-hint .desk { display: none; }
   .act.small { width: 54px; height: 54px; }
   #campBtn { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 96px); }
 }
+
+/* ---------- studio splash (Drowned Games) ---------- */
+#splash {
+  --paper: #fffcf3;
+  position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  background: var(--paper); cursor: pointer; transition: opacity 0.9s ease;
+}
+#splash img {
+  display: block; width: auto; height: auto; max-width: min(78vw, 520px); max-height: 78vh;
+  animation: splashSink 1.1s ease-out both;
+}
+#splash.out { opacity: 0; pointer-events: none; }
+#splash.out img { transform: translateY(14px); transition: transform 0.9s ease-in; }
+@keyframes splashSink { from { opacity: 0; transform: translateY(-14px); } }
+@media (prefers-reduced-motion: reduce) {
+  #splash, #splash.out img { transition: opacity 0.3s; transform: none; }
+  #splash img { animation: none; }
+}

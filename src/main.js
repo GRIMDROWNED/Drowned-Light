@@ -28,6 +28,23 @@
     requestAnimationFrame(frame);
   }
 
+  // Studio splash: shown from the first paint, held briefly, then fades into the title.
+  const splashShown = performance.now();
+  const SPLASH_MS = 2400;
+  let splashGone = false;
+  function hideSplash() {
+    const el = document.getElementById("splash");
+    if (!el || splashGone) return;
+    splashGone = true;
+    el.classList.add("out");
+    setTimeout(() => el.remove(), 1000);
+  }
+  const splashEl = document.getElementById("splash");
+  if (splashEl) {
+    splashEl.addEventListener("pointerdown", hideSplash);
+    addEventListener("keydown", hideSplash, { once: true });
+  }
+
   async function boot() {
     Input.init();
     DL.Render.init();
@@ -37,6 +54,7 @@
     document.body.classList.add("ready");
     UI.showTitle();
     requestAnimationFrame((ts) => { last = ts; frame(ts); });
+    setTimeout(hideSplash, Math.max(0, SPLASH_MS - (performance.now() - splashShown)));
   }
   boot();
 
