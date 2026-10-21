@@ -142,6 +142,7 @@
     }
     for (const f of G.effects) if (f.type === "dissolve") list.push({ y: f.e.y, f: () => drawDissolve(c, f) });
     if (G.player && G.state !== "dead") list.push({ y: G.player.y, f: () => drawPlayer(c, G, t) });
+    if (G.ally) list.push({ y: G.ally.y, f: () => drawAlly(c, G, t) });
     list.sort((a, b) => a.y - b.y);
     for (const it of list) it.f();
 
@@ -163,6 +164,12 @@
     /* glowing things drawn above the darkness */
     c.globalCompositeOperation = "lighter";
     for (const b of G.projectiles) drawProjectile(c, b);
+    for (const b of G.netProjectiles || []) drawProjectile(c, b);
+    if (G.ally) for (const q of G.ally.proj) drawProjectile(c, { x: q[0], y: q[1], vx: q[2], vy: q[3], kind: q[4], col: q[5], hostile: false, life: 1 });
+    if (G.ally && G.ally.swing && !G.ally.down) {
+      const s = G.ally.swing, a = G.ally, k = Math.min(1, s.t / s.dur);
+      if (s.kind === "arc") drawSlash(c, a.x, a.y - 24, s.ang, s.arc, s.range, k, s.col, 9, s.flip);
+    }
     for (const f of G.effects) {
       if (f.type === "spark") {
         const a = 1 - f.t / f.max;
@@ -501,7 +508,31 @@
     const [anim, fr, ang] = playerAnim(G, p, t);
     let alpha = 1;
     if (p.inv > 0 && p.dashT <= 0 && Math.floor(t * 20) % 2) alpha = 0.65;
+    if (p.downT > 0) { Art.drawUnit(c, key, "death", 2, ang, p.x, p.y, 1, { alpha: 0.5 }); return; }
     Art.drawUnit(c, key, anim, fr, ang, p.x, p.y, 1, { alpha, flash: p.flash > 0 ? 0.7 : 0, flashColor: "#ff9a9a" });
+  }
+
+  // The co-op friend: their own kit and corruption, animated from what their device reports.
+  function drawAlly(c, G, t) {
+    const a = G.ally, key = a.kit + (a.stage || 1);
+    shadow(c, a.x, a.y, 15, 5);
+    if (a.down) { Art.drawUnit(c, key, "death", 2, a.angle, a.x, a.y, 1, { alpha: 0.5 }); }
+    else {
+      let anim = "idle", fr = Math.floor(t * 1.6), ang = a.angle;
+      if (a.dashT > 0) anim = "dash";
+      else if (a.swing) { anim = "attack"; fr = Math.min(2, Math.floor((a.swing.t / a.swing.dur) * 3)); ang = a.swing.ang; }
+      else if (a.moving) { anim = "walk"; fr = Math.floor(a.animT * 8); }
+      Art.drawUnit(c, key, anim, fr, ang, a.x, a.y, 1);
+    }
+    // name tag + health
+    const label = DL.Net.role === "guest" ? "Host" : "Friend";
+    c.font = "700 9px Inter, system-ui, sans-serif";
+    c.textAlign = "center";
+    c.fillStyle = "rgba(0,0,0,0.6)";
+    c.fillText(label, a.x + 1, a.y - 87);
+    c.fillStyle = "#ffe6c2";
+    c.fillText(label, a.x, a.y - 88);
+    if (!a.down) bar(c, a.x, a.y - 84, 26, Math.max(0, a.hp) / (a.maxHp || 100), "#c8484e");
   }
 
   const unitKey = (e) => (e.isSelf ? "self_" + DL.Game.save.kit : e.type);

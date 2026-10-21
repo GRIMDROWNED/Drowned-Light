@@ -16,10 +16,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.11.3">
+<link rel="stylesheet" href="style.css?v=0.12.0">
 </head>
 <body>
-<div id="splash" role="img" aria-label="Drowned Games"><img src="assets/drowned-games.jpg?v=0.11.3" alt="Drowned Games"></div>
+<div id="splash" role="img" aria-label="Drowned Games"><img src="assets/drowned-games.jpg?v=0.12.0" alt="Drowned Games"></div>
 <div id="stage">
 <canvas id="game" aria-label="Drowned Light game view"></canvas>
 <div id="touchzone" class="hidden"></div>
@@ -41,6 +41,7 @@
   <section id="nav" class="panel">
     <div id="clock"><span id="phaseIcon" class="sun"></span><div><div id="dayText"></div><div id="phaseText"></div></div></div>
     <div id="zoneText"></div>
+    <div id="coopChip" class="hidden"></div>
     <div class="compass"><span id="homeArrow" class="arrow warm">➤</span><span id="homeDist"></span></div>
     <div id="selfNav" class="compass hidden"><span id="selfArrow" class="arrow cold">➤</span><span id="selfDist"></span></div>
   </section>
@@ -67,6 +68,7 @@
     <div class="menu">
       <button id="btnBegin" class="primary">Begin</button>
       <button id="btnNew" class="hidden">New game</button>
+      <button id="btnCoop">Play with a friend</button>
       <button id="btnSound">Sound: on</button>
       <button id="btnView" class="view-btn">View: Auto</button>
     </div>
@@ -76,7 +78,7 @@
       <div><b>At camp</b> deposit supplies, build defenses, train your kit, and defend the Central Flame through the night.</div>
     </div>
     <p class="controls-hint"><span class="desk">Move <kbd>WASD</kbd> · Attack (manual) <kbd>J</kbd> or click · Mine (manual) <kbd>G</kbd> or right-click · Dash <kbd>Space</kbd> · Ability <kbd>E</kbd> · Torch <kbd>F</kbd> · Camp <kbd>C</kbd> · Pause <kbd>Esc</kbd></span><span class="mob">Drag on the left side to move. Attacks are automatic.</span></p>
-    <p class="version">Version 0.11.3</p>
+    <p class="version">Version 0.12.0</p>
   </div>
 </section>
 
@@ -95,6 +97,36 @@
   </div>
 </section>
 
+<section id="screenCoop" class="screen hidden">
+  <div class="title-card coop">
+    <h2>Play with a friend</h2>
+    <p class="muted">Online co-op for two. You share the host's world, camp and stash; each of you brings your own kit.</p>
+    <div class="coop-grid">
+      <div class="coop-card">
+        <h3>Host</h3>
+        <p id="coopHostInfo"></p>
+        <button id="btnHost" class="primary">Host my world</button>
+        <div id="coopCode" class="hidden">
+          <span class="eyebrow">Room code</span>
+          <strong id="coopCodeText"></strong>
+          <button id="btnCoopStart" class="primary">Start playing</button>
+          <p class="muted">Your friend can join any time while you play.</p>
+        </div>
+      </div>
+      <div class="coop-card">
+        <h3>Join</h3>
+        <p id="coopJoinInfo"></p>
+        <label for="coopInput" class="sr">Room code</label>
+        <input id="coopInput" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ROOM CODE">
+        <button id="btnJoin">Join</button>
+      </div>
+    </div>
+    <p id="coopStatus" class="muted" aria-live="polite"></p>
+    <p class="muted fine">Connecting uses the free PeerJS service to find each other; the game itself then runs directly between your devices. Some strict networks (schools, offices) block this.</p>
+    <div class="menu"><button id="btnCoopBack">Back</button></div>
+  </div>
+</section>
+
 <section id="screenPause" class="screen hidden">
   <div class="title-card small">
     <h2>Paused</h2>
@@ -103,6 +135,7 @@
       <button id="btnSound2">Sound: on</button>
       <button id="btnCombat">Combat: Auto-attack</button>
       <button id="btnView2" class="view-btn">View: Auto</button>
+      <button id="btnLeaveCoop" class="hidden">Leave co-op</button>
       <button id="btnQuit">Return to title</button>
     </div>
     <p class="muted">Camp upgrades and stored supplies save automatically.</p>
@@ -136,17 +169,18 @@
 </section>
 </div>
 
-<script src="src/core.js?v=0.11.3"></script>
-<script src="src/view.js?v=0.11.3"></script>
-<script src="src/data.js?v=0.11.3"></script>
-<script src="src/camp.js?v=0.11.3"></script>
-<script src="src/art.js?v=0.11.3"></script>
-<script src="src/units.js?v=0.11.3"></script>
-<script src="src/world.js?v=0.11.3"></script>
-<script src="src/game.js?v=0.11.3"></script>
-<script src="src/kits.js?v=0.11.3"></script>
-<script src="src/render.js?v=0.11.3"></script>
-<script src="src/ui.js?v=0.11.3"></script>
-<script src="src/main.js?v=0.11.3"></script>
+<script src="src/core.js?v=0.12.0"></script>
+<script src="src/view.js?v=0.12.0"></script>
+<script src="src/data.js?v=0.12.0"></script>
+<script src="src/camp.js?v=0.12.0"></script>
+<script src="src/art.js?v=0.12.0"></script>
+<script src="src/units.js?v=0.12.0"></script>
+<script src="src/world.js?v=0.12.0"></script>
+<script src="src/game.js?v=0.12.0"></script>
+<script src="src/kits.js?v=0.12.0"></script>
+<script src="src/net.js?v=0.12.0"></script>
+<script src="src/render.js?v=0.12.0"></script>
+<script src="src/ui.js?v=0.12.0"></script>
+<script src="src/main.js?v=0.12.0"></script>
 </body>
 </html>

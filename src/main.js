@@ -19,15 +19,16 @@
 
   let last = 0;
   function frame(ts) {
+    requestAnimationFrame(frame); // scheduled first, so one bad frame can't stop the game
     const dt = Math.min(0.05, (ts - last) / 1000 || 0);
     last = ts;
     handleGlobalKeys();
     G.update(dt);
+    DL.Net.tick(dt);
     // Messages and the objective banner stay hidden while paused or in a menu.
     document.body.classList.toggle("menu-open", G.state !== "play");
     DL.Render.draw(G);
     UI.update();
-    requestAnimationFrame(frame);
   }
 
   // Studio splash: shown from the first paint, held briefly, then fades into the title.

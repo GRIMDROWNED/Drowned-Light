@@ -9,7 +9,9 @@
   const sfx = (n) => DL.Sound.play(n);
   const emptyRes = () => ({ wood: 0, stone: 0, resin: 0, iron: 0, pearl: 0 });
 
-  const G = (DL.Game = { state: "title", t: 0, time: 0, nightAmt: 0, night: false });
+  const G = (DL.Game = { state: "title", t: 0, time: 0, nightAmt: 0, night: false, ally: null, eid: 0, pid: 0, dirty: new Set() });
+  // Co-op: the guest's device plays inside the host's world and never saves it.
+  G.isGuest = () => !!(DL.Net && DL.Net.role === "guest");
 
   /* ---------------- save ---------------- */
   G.defaultSave = () => ({
@@ -51,6 +53,7 @@
     return G.defaultSave();
   };
   G.persist = function () {
+    if (G.isGuest()) return;
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(G.save)); } catch (e) { /* ignore */ }
   };
 
@@ -174,6 +177,7 @@
       return;
     }
     if (G.state !== "play") return;
+    if (G.isGuest()) { guestUpdate(dt); return; }
 
     const wasNight = G.night;
     G.time += dt;
@@ -200,6 +204,48 @@
     updateEffects(dt);
     updateCamera(dt);
   };
+
+  // The guest runs only its own knight; the host's snapshots move the world (src/net.js).
+  function guestUpdate(dt) {
+    const wasNight = G.night;
+    G.time = (G.time + dt) % CYC.total;
+    G.nightAmt = nightAmount(G.time);
+    G.night = G.nightAmt >= 0.5;
+    if (G.night && !wasNight) { sfx("night"); say("Night falls. Stay in the light — or the darkness will take you.", "warn"); }
+    if (!G.night && wasNight) { sfx("dawn"); say("Dawn breaks. The Drowned retreat from the sun.", "good"); }
+    collectBlooms();
+    buildLights();
+    const p = G.player;
+    if (p.downT > 0) {
+      p.downT -= dt;
+      if (p.downT <= 0) guestRise();
+    } else {
+      updatePlayer(dt);
+      if (G.state === "play") updateCorruption(dt);
+    }
+    DL.Net.smooth(dt);
+    DL.Kits.update(dt);
+    updateProjectiles(dt);
+    updateEffects(dt);
+    updateCamera(dt);
+  }
+
+  // A guest who falls isn't drowned: they rise again at the camp after a few seconds.
+  function guestDown() {
+    const p = G.player;
+    p.downT = 5;
+    p.hp = 0;
+    p.carried = emptyRes();
+    sfx("death");
+    for (let i = 0; i < 30; i++) puff(p.x + rand(-12, 12), p.y - rand(0, 60), "rgba(60,220,230,0.7)", 50, 1.4, -30);
+    say("You have fallen. You'll rise at the camp in a moment — whatever you carried is lost.", "danger");
+  }
+  function guestRise() {
+    const p = G.player, st = G.stats();
+    Object.assign(p, { x: 20, y: 70, hp: st.maxHp, corrupt: 0, oil: st.maxOil, downT: 0, inv: 1.5 });
+    G.camera.x = p.x; G.camera.y = p.y;
+    say("You rise beside the Central Flame.", "good");
+  }
 
   function onNightfall() {
     sfx("night");
@@ -292,6 +338,7 @@
     } else if (p) {
       L.push({ x: p.x, y: p.y - 28, r: 80, s: 0.8, col: "255,180,90", a: 0.75, flick: 1 });
     }
+    if (G.ally && !G.ally.down) L.push({ x: G.ally.x, y: G.ally.y - 28, r: 80, s: 0.8, col: "255,180,90", a: 0.7, flick: 1 });
     for (const e of G.enemies) {
       if (e.type === "defiler") L.push({ x: e.x, y: e.y - 70, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
       else if (e.def.boss) L.push({ x: e.x, y: e.y - 40, r: 60, s: 0.3, col: "70,230,240", a: 0.6 });
@@ -391,14 +438,15 @@
     G.inCamp = inCamp;
     if (inCamp && DL.RES_KEYS.some((k) => p.carried[k] > 0)) {
       const parts = [];
-      for (const k of DL.RES_KEYS) if (p.carried[k]) { parts.push(`${p.carried[k]} ${DL.RESOURCES[k].name}`); G.save.stash[k] += p.carried[k]; p.carried[k] = 0; }
+      if (G.isGuest()) DL.Net.event({ t: "deposit", res: { ...p.carried } });
+      for (const k of DL.RES_KEYS) if (p.carried[k]) { parts.push(`${p.carried[k]} ${DL.RESOURCES[k].name}`); if (!G.isGuest()) G.save.stash[k] += p.carried[k]; p.carried[k] = 0; }
       G.persist();
       sfx("pickup");
-      say("Stored at camp: " + parts.join(", "), "good");
+      say((G.isGuest() ? "Stored at your friend's camp: " : "Stored at camp: ") + parts.join(", "), "good");
     }
 
     // Your drowned self waits where you fell.
-    const ds = G.save.drownedSelf;
+    const ds = G.isGuest() ? null : G.save.drownedSelf;
     if (ds && !G.selfEnemy && dist(p.x, p.y, ds.x, ds.y) < 900) {
       const e = makeEnemy("self", ds.x, ds.y, Math.max(1, W.zoneIndex(ds.x, ds.y)), { isSelf: true, dormant: true });
       G.enemies.push(e);
@@ -504,9 +552,18 @@
     for (let i = 0; i < 10; i++) puff(o.x, o.y - 4, "rgba(120,110,95,0.55)", 70, 0.7);
     sfx("shatter");
     G.camera.shake = Math.max(G.camera.shake, 2);
-    dropRes(o.x, o.y - 6, o.def.res, o.amount);
+    if (G.isGuest()) {
+      const p = G.player;
+      p.carried[o.def.res] += o.amount;
+      text(p.x, p.y - 70, `+${o.amount} ${DL.RESOURCES[o.def.res].name}`, DL.RESOURCES[o.def.res].color);
+      DL.Net.event({ t: "mined", id: o.id });
+    } else {
+      dropRes(o.x, o.y - 6, o.def.res, o.amount);
+      G.dirty.add(o);
+    }
     if (o.type === "pearl") G.pearls = G.pearls.filter((x) => x !== o);
   }
+  G.shatter = shatter;
 
   // Camp tents and buildings are solid, and the palisade only opens at its gates.
   G.campSolids = () => DL.Camp.layout(G.save.up).solids;
@@ -553,7 +610,10 @@
 
   /* ---------------- spawning ---------------- */
   function updateSpawning(dt) {
-    const p = G.player, Z = DL.ZONES[Math.max(1, p.zi)], dCamp = Math.hypot(p.x, p.y);
+    const a = G.ally;
+    const p = a && !a.down && dist(a.x, a.y, G.player.x, G.player.y) > 500 && Math.random() < 0.5
+      ? { x: a.x, y: a.y, zi: W.zoneIndex(a.x, a.y) } : G.player;
+    const Z = DL.ZONES[Math.max(1, p.zi)], dCamp = Math.hypot(p.x, p.y);
     const active = G.night || (Z.abyss && G.nightAmt < 0.5);
 
     // Abyssal pearls surface only in darkness.
@@ -643,7 +703,7 @@
     const D = G.diff();
     const hp = def.hp * Z.hp * (1 + 0.08 * (day - 1)) * D.enemyHp;
     return Object.assign({
-      type, def, x, y, kx: 0, ky: 0, hp, maxHp: hp,
+      id: ++G.eid, type, def, x, y, kx: 0, ky: 0, hp, maxHp: hp,
       dmg: def.dmg * Z.dmg * (1 + 0.05 * (day - 1)) * D.enemyDmg,
       speed: def.speed * rand(0.9, 1.1), angle: Math.PI / 2, moving: false, animT: rand(0, 1),
       state: "move", stT: 0, cd: rand(0.3, 1), flash: 0, burn: 0, burnDps: 0, slow: 0,
@@ -669,9 +729,20 @@
     return best;
   }
 
+  // Each Drowned hunts whichever knight is nearer (host or co-op friend).
+  function targetFor(e) {
+    const p = G.player, a = G.ally;
+    if (!a || a.down) return p;
+    return dist(e.x, e.y, a.x, a.y) < dist(e.x, e.y, p.x, p.y) ? a : p;
+  }
+  function hurtKnight(k, dmg, ang) {
+    if (k === G.ally) DL.Net.hurtAlly(dmg, ang);
+    else hurtPlayer(dmg, ang);
+  }
+
   function updateEnemies(dt) {
-    const p = G.player;
     for (const e of G.enemies) {
+      const p = targetFor(e);
       e.flash = Math.max(0, e.flash - dt);
       e.animT += dt;
       if (e.rise > 0) {
@@ -739,6 +810,7 @@
           e.stT = e.def.windup;
           e.aim = e.angle;
           e.aimGoal = goal;
+          e.tgt = p;
           e.moving = false;
         }
         if (e.type === "champion") champion(e, dt, dp);
@@ -776,8 +848,10 @@
           b.x += (dx / d) * push * (ma / tot); b.y += (dy / d) * push * (ma / tot);
         }
       }
-      const dx = a.x - p.x, dy = a.y - p.y, d = Math.hypot(dx, dy) || 0.01, min = a.def.radius + 9;
-      if (d < min) { a.x = p.x + (dx / d) * min; a.y = p.y + (dy / d) * min; }
+      for (const k of G.ally && !G.ally.down ? [G.player, G.ally] : [G.player]) {
+        const dx = a.x - k.x, dy = a.y - k.y, d = Math.hypot(dx, dy) || 0.01, min = a.def.radius + 9;
+        if (d < min) { a.x = k.x + (dx / d) * min; a.y = k.y + (dy / d) * min; }
+      }
       W.collide(a, a.def.radius * 0.6);
       collideCamp(a, a.def.radius * 0.6);
     }
@@ -796,7 +870,7 @@
     e.spikeT -= dt;
     if (e.spikeT <= 0 && dp < 420) {
       e.spikeT = 5.5;
-      const p = G.player;
+      const p = targetFor(e);
       for (let i = 0; i < 3; i++) {
         const a = rand(0, TAU), r = i ? rand(30, 70) : 0;
         G.telegraphs.push({ x: p.x + Math.cos(a) * r, y: p.y + Math.sin(a) * r, r: 34, t: 0, delay: 0.9, dmg: e.dmg * 0.8 });
@@ -805,7 +879,7 @@
   }
 
   function strike(e) {
-    const p = G.player;
+    const p = e.tgt || G.player;
     if (e.def.ranged && !e.aimGoal) {
       const a = Math.atan2(p.y - e.y, p.x - e.x) * 0.3 + e.aim * 0.7;
       G.projectiles.push({ x: e.x, y: e.y - 22, vx: Math.cos(a) * 330, vy: Math.sin(a) * 330, life: 1.4, dmg: e.dmg, hostile: true, kind: "arrow", col: "90,235,245" });
@@ -820,7 +894,7 @@
     }
     const d = dist(e.x, e.y, p.x, p.y);
     const ad = Math.abs(angleDiff(e.aim, Math.atan2(p.y - e.y, p.x - e.x)));
-    if (d <= e.def.range + 16 && ad < 1.25) hurtPlayer(e.dmg, e.aim);
+    if (d <= e.def.range + 16 && ad < 1.25) hurtKnight(p, e.dmg, e.aim);
   }
 
   function damageLight(o, amt) {
@@ -848,6 +922,7 @@
     }
     o.hp -= amt;
     o.hitT = 0.2;
+    if (o.def) G.dirty.add(o);
     for (let i = 0; i < 4; i++) spark(o.x, o.y - 20, o.type === "torch" || o.type === "brazier" ? "255,160,70" : "80,230,240", 80);
     if (o.hp <= 0) {
       if (o.type === "torch" || o.type === "brazier") collapseTorch(o);
@@ -880,10 +955,20 @@
     if (p.hp <= 0) die("wounds");
   }
 
-  function hitEnemy(e, dmg, ang, kb, burn) {
+  function hitEnemy(e, dmg, ang, kb, burn, remote) {
     if (e.removed) return;
-    const crit = Math.random() < 0.12;
-    let d = dmg * (crit ? 1.6 : 1) * (1 - (e.def.armor || 0));
+    const crit = !remote && Math.random() < 0.12;
+    let d = dmg * (crit ? 1.6 : 1);
+    if (G.isGuest()) {
+      // Show the hit now; the host owns the Drowned and applies it.
+      DL.Net.event({ t: "hit", id: e.id, dmg: d, ang, kb, burn: burn || 0 });
+      e.flash = 0.12;
+      sfx("hit");
+      text(e.x + rand(-8, 8), e.y - 40 * e.def.scale - 20, Math.round(d * (1 - (e.def.armor || 0))) + (crit ? "!" : ""), crit ? "#ffe08a" : "#f3e6cf", crit ? 1.3 : 1);
+      for (let i = 0; i < 4; i++) puff(e.x, e.y - 24 * e.def.scale, "rgba(70,210,220,0.7)", 90, 0.35);
+      return;
+    }
+    d *= 1 - (e.def.armor || 0);
     e.hp -= d;
     e.flash = 0.12;
     if (e.dormant) e.dormant = false;
@@ -891,16 +976,18 @@
     e.kx += (Math.cos(ang) * kb) / m;
     e.ky += (Math.sin(ang) * kb) / m;
     if (burn) { e.burn = 3; e.burnDps = burn; }
-    sfx("hit");
-    text(e.x + rand(-8, 8), e.y - 40 * e.def.scale - 20, Math.round(d) + (crit ? "!" : ""), crit ? "#ffe08a" : "#f3e6cf", crit ? 1.3 : 1);
+    if (!remote) {
+      sfx("hit");
+      text(e.x + rand(-8, 8), e.y - 40 * e.def.scale - 20, Math.round(d) + (crit ? "!" : ""), crit ? "#ffe08a" : "#f3e6cf", crit ? 1.3 : 1);
+    }
     for (let i = 0; i < 4; i++) puff(e.x, e.y - 24 * e.def.scale, "rgba(70,210,220,0.7)", 90, 0.35);
     if (e.hp <= 0) kill(e, true);
   }
   G.hitEnemy = hitEnemy;
-  G.kill = (e) => kill(e, true);
+  G.kill = (e) => { if (!G.isGuest()) kill(e, true); };
 
   function kill(e, drops) {
-    if (e.removed) return;
+    if (e.removed || G.isGuest()) return;
     e.removed = true;
     sfx("kill");
     G.effects.push({ type: "dissolve", e, t: 0, max: 0.6 });
@@ -929,7 +1016,7 @@
     for (let i = 0; i < chunks; i++) {
       const amt = Math.floor(n / chunks) + (i < n % chunks ? 1 : 0);
       const a = rand(0, TAU), s = rand(40, 110);
-      G.pickups.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, res, amt, t: 0 });
+      G.pickups.push({ id: ++G.pid, x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, res, amt, t: 0 });
     }
   }
 
@@ -1000,6 +1087,7 @@
       b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
       if (b.hostile) {
         if (dist(b.x, b.y, p.x, p.y - 22) < 16) { hurtPlayer(b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
+        else if (G.ally && !G.ally.down && dist(b.x, b.y, G.ally.x, G.ally.y - 22) < 16) { DL.Net.hurtAlly(b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
       } else {
         for (const e of G.enemies) {
           if (e.rise > 0 || e.removed || (b.hit && b.hit.has(e))) continue;
@@ -1036,6 +1124,8 @@
       if (t.t >= t.delay && !t.done) {
         t.done = true;
         if (dist(t.x, t.y, p.x, p.y) < t.r + 6) hurtPlayer(t.dmg, Math.atan2(p.y - t.y, p.x - t.x));
+        const a = G.ally;
+        if (a && !a.down && dist(t.x, t.y, a.x, a.y) < t.r + 6) DL.Net.hurtAlly(t.dmg, Math.atan2(a.y - t.y, a.x - t.x));
         for (let i = 0; i < 10; i++) spark(t.x + rand(-t.r, t.r) * 0.6, t.y + rand(-t.r, t.r) * 0.3, "90,235,245", 120);
         G.effects.push({ type: "spikes", x: t.x, y: t.y, r: t.r, t: 0, max: 0.5 });
       }
@@ -1044,15 +1134,19 @@
   }
 
   function updatePickups(dt) {
-    const p = G.player;
     for (const k of G.pickups) {
       k.t += dt;
+      const a = G.ally && !G.ally.down ? G.ally : null;
+      const p = a && dist(k.x, k.y, a.x, a.y) < dist(k.x, k.y, G.player.x, G.player.y) ? a : G.player;
       const d = dist(k.x, k.y, p.x, p.y - 10);
       if (k.t > 0.45 && d < 95) {
         const s = 420;
         k.x += ((p.x - k.x) / d) * s * dt;
         k.y += ((p.y - 10 - k.y) / d) * s * dt;
-        if (d < 16) {
+        if (d < 16 && p === G.ally) {
+          k.done = true;
+          DL.Net.send({ t: "gain", res: k.res, amt: k.amt });
+        } else if (d < 16) {
           k.done = true;
           p.carried[k.res] += k.amt;
           text(p.x, p.y - 70, `+${k.amt} ${DL.RESOURCES[k.res].name}`, DL.RESOURCES[k.res].color);
@@ -1094,6 +1188,10 @@
   }
   G.spark = spark;
   G.puff = puff;
+  G.text = text;
+  G.hurtPlayer = hurtPlayer;
+  G.dropRes = dropRes;
+  G.nightAmount = nightAmount;
 
   function updateEffects(dt) {
     for (const f of G.effects) {
@@ -1118,6 +1216,7 @@
   function die(cause) {
     const p = G.player;
     if (G.state !== "play") return;
+    if (G.isGuest()) { if (!(p.downT > 0)) guestDown(); return; }
     G.state = "dying";
     G.dying = 0;
     sfx("death");
