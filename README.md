@@ -186,7 +186,8 @@ Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite 
 
 **Hand-drawn art** (`src/sprites.js`) replaces coded art with PNG files in `assets/sprites/`. The art is being redone piece by piece from AI renders: one pose per image on a flat magenta background, made from prompts in the project's art-prompts file.
 - **Lantern Blade knight**: front, back and side poses, a 4-frame walk, a 3-frame attack, dash, hurt and death. The frames are cut at twice the art resolution (`res: 2`) so the detail survives. Corruption stages and the drowned self are tinted from the same frames. Other kits are still coded.
-- Everything else (the Drowned, plants, camp and world) is coded until its new art arrives. Set `ENABLED = false` in `src/sprites.js` to use coded art everywhere.
+- **Mire Stalker** (squire): the 12 poses from the enemy prompt (three views, a 4-frame side walk, three attack frames, hurt and death), also at `res: 2`.
+- Everything else (the other Drowned, plants, camp and world) is coded until its new art arrives. Set `ENABLED = false` in `src/sprites.js` to use coded art everywhere.
 
 `tools/cut_ai_sprites.py <folder>` cuts the AI renders: it keys out the magenta, shrinks every pose of a character by the same factor, limits the palette and adds an outline (Python with Pillow, NumPy and SciPy). `tools/cut_concept_sprites.py` is the older cutter for the concept sheets. To add or redraw art:
 1. Draw one PNG per frame at art-pixel size (a knight is about 36 px tall), facing right for side views. Free editors: [Piskel](https://www.piskelapp.com) or [LibreSprite](https://libresprite.github.io).
