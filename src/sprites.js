@@ -41,7 +41,10 @@
 
   // An 8-frame walk cut from one sheet (tools/cut_ai_sprites.py SHEETS), and a stepping pose to match its length.
   const WALK8 = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => "side/walk" + i);
-  const BOB8 = (p) => [p, p, p + "@bob", p + "@bob", p, p, p + "@bob", p + "@bob"];
+  // Front and back walks are 4 frames from one sheet, each shown twice to match the side walk's length.
+  const WALK4x2 = (p) => [1, 1, 2, 2, 3, 3, 4, 4].map((i) => p + i);
+
+  const sheetFeet = (files, xy) => Object.fromEntries(files.map((f) => [f, xy]));
 
   // The knight has his own walk, dash, hurt and death frames; down and up views borrow the side ones for dash, hurt and death.
   const KNIGHT_SIDE = { dash: ["side/dash"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] };
@@ -52,10 +55,11 @@
       res: 2,
       views: motion({
         side: Object.assign({ walk: WALK8 }, KNIGHT_SIDE),
-        down: Object.assign({ walk: BOB8("front") }, KNIGHT_SIDE),
-        up: Object.assign({ walk: BOB8("back") }, KNIGHT_SIDE),
+        down: Object.assign({ walk: WALK4x2("walkF") }, KNIGHT_SIDE),
+        up: Object.assign({ walk: WALK4x2("walkB") }, KNIGHT_SIDE),
       }),
-      feet: Object.fromEntries(WALK8.map((f) => [f, [32, 82]])), // the walk sheet's shared foot point
+      // each walk sheet's shared foot point, as printed by tools/cut_ai_sprites.py
+      feet: Object.assign(sheetFeet(WALK8, [32, 82]), sheetFeet(WALK4x2("walkF"), [34, 82]), sheetFeet(WALK4x2("walkB"), [33, 82])),
     },
     twelve("squire"),
     twelve("archer"),

@@ -69,11 +69,16 @@ SETS = {
         '10_attack_followthrough.png', '11_hurt_recoil.png', '12_death.png'])),
 }
 
-# Animation sheets: character -> [(sheet, columns, rows, height of the first frame's figure, output prefix)].
+# Animation sheets: character -> [(sheet, columns, rows, height of the first frame's figure, output prefix[, row])].
+# With a row, only that row of the sheet is cut (a sheet holding two views).
 # Frames come out on one shared canvas (numbered prefix1, prefix2, ...); put the printed foot point
 # in that unit's `feet` in src/sprites.js.
 SHEETS = {
-    'lantern-knight': [('knight-walk-side-sheet.png', 4, 2, 78, 'side/walk')],
+    'lantern-knight': [
+        ('knight-walk-side-sheet.png', 4, 2, 78, 'side/walk'),
+        ('knight-walk-frontback-sheet.png', 4, 2, 80, 'walkF', 0),
+        ('knight-walk-frontback-sheet.png', 4, 2, 80, 'walkB', 1),
+    ],
 }
 
 only = sys.argv[2:]  # optional character names to cut
@@ -99,10 +104,14 @@ for name, (folder, ref, target, fringe, files) in SETS.items():
 for name, sheets in SHEETS.items():
     if only and name not in only: continue
     folder = SETS[name][0]
-    for sheet, cols, rows, height, prefix in sheets:
+    for sheet, cols, rows, height, prefix, *row in sheets:
         p = os.path.join(SRC, sheet)
         if not os.path.exists(p): continue
-        frames, feet = cut_sheet(Image.open(p), cols, rows, height)
+        img = Image.open(p)
+        if row:
+            h = img.height // rows
+            img, rows = img.crop((0, row[0] * h, img.width, (row[0] + 1) * h)), 1
+        frames, feet = cut_sheet(img, cols, rows, height)
         for i, im in enumerate(frames):
             dst = os.path.join(OUT, folder, prefix + str(i + 1) + '.png')
             os.makedirs(os.path.dirname(dst), exist_ok=True)
