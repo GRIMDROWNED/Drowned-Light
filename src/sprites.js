@@ -54,6 +54,11 @@
   const WALK4x2 = (p) => [1, 1, 2, 2, 3, 3, 4, 4].map((i) => p + i);
 
   const sheetFeet = (files, xy) => Object.fromEntries(files.map((f) => [f, xy]));
+  const WALK_FRONT = WALK4x2("walkF").map((f) => f + "@-");
+  const WALK_BACK = WALK4x2("walkB").map((f) => f + "@-");
+  // The shared foot point of each walk sheet (side, front, back), as printed by tools/cut_ai_sprites.py.
+  const walkFeet = (side, front, back) =>
+    Object.assign(sheetFeet([1, 2, 3, 4].map((i) => "side/walk" + i), side), sheetFeet(WALK4x2("walkF"), front), sheetFeet(WALK4x2("walkB"), back));
 
   // The knight has his own walk, dash, hurt and death frames; down and up views borrow the side ones for dash, hurt and death.
   const KNIGHT_SIDE = { dash: ["side/dash"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] };
@@ -64,13 +69,16 @@
       res: 2,
       views: motion({
         side: Object.assign({ walk: WALK4 }, KNIGHT_SIDE),
-        down: Object.assign({ walk: WALK4x2("walkF").map((f) => f + "@-") }, KNIGHT_SIDE),
-        up: Object.assign({ walk: WALK4x2("walkB").map((f) => f + "@-") }, KNIGHT_SIDE),
+        down: Object.assign({ walk: WALK_FRONT }, KNIGHT_SIDE),
+        up: Object.assign({ walk: WALK_BACK }, KNIGHT_SIDE),
       }),
-      // each walk sheet's shared foot point, as printed by tools/cut_ai_sprites.py
-      feet: Object.assign(sheetFeet([1, 2, 3, 4].map((i) => "side/walk" + i), [44, 80]), sheetFeet(WALK4x2("walkF"), [35, 82]), sheetFeet(WALK4x2("walkB"), [30, 82])),
+      feet: walkFeet([44, 80], [35, 82], [30, 82]),
     },
-    twelve("squire"),
+    Object.assign(drowned("squire", motion({
+      side: Object.assign({ walk: WALK4 }, POSES_SIDE),
+      down: Object.assign({ walk: WALK_FRONT }, POSES_SIDE),
+      up: Object.assign({ walk: WALK_BACK }, POSES_SIDE),
+    }), 2), { feet: walkFeet([46, 86], [38, 86], [37, 84]) }),
     twelve("archer"),
     // Two walk frames so far: the side pose fills the passing steps.
     drowned("footman", motion({
