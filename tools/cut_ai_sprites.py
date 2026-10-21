@@ -52,6 +52,21 @@ SETS = {
         'drowned-wretch/b_hurt.png': ('side/hurt', {'height': 74, 'fringe': 1}),
         'drowned-wretch/b_death.png': ('side/death', {'height': 38, 'fringe': 1}),
     }),
+    'tide-archer': ('drowned/archer', 'tide-archer/01_front.png', 80, 2, {
+        'tide-archer/01_front.png': 'front',
+        'tide-archer/02_back.png': 'back',
+        'tide-archer/03_right.png': 'right',
+        'tide-archer/04_walk.png': 'side/walk1',
+        'tide-archer/05_walk.png': 'side/walk2',
+        'tide-archer/06_walk.png': 'side/walk3',
+        # cells of a 3x2 sheet (sheet2.png), rendered at a smaller scale
+        'tide-archer/07_walk.png': ('side/walk4', {'height': 78, 'fringe': 1}),
+        'tide-archer/08_attack_draw.png': ('attackA', {'height': 91, 'fringe': 1}),
+        'tide-archer/09_attack_release.png': ('attackB', {'height': 82, 'fringe': 1}),
+        'tide-archer/10_attack_lower.png': ('attackC', {'height': 80, 'fringe': 1}),
+        'tide-archer/11_hurt.png': ('side/hurt', {'height': 73, 'fringe': 1}),
+        'tide-archer/12_death.png': ('side/death', {'height': 42, 'fringe': 1}),
+    }),
     'mire-stalker': ('drowned/squire', 'mire-stalker/01_idle_front.png', 80, 1, twelve('mire-stalker', [
         '01_idle_front.png', '02_idle_back.png', '03_idle_right.png', '04_walk_left_forward.png', '05_walk_passing_a.png',
         '06_walk_right_forward.png', '07_walk_passing_b.png', '08_attack_windup.png', '09_attack_midstrike.png',

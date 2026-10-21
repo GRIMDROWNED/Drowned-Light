@@ -53,6 +53,7 @@
       }),
     },
     twelve("squire"),
+    twelve("archer"),
     // Two walk frames so far: the side pose fills the passing steps.
     drowned("footman", motion({
       side: { walk: ["side/walk1", "right", "side/walk3", "right"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] },
