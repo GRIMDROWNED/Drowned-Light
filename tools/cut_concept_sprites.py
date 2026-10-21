@@ -23,23 +23,32 @@ def dim(img, k=0.45):
     rgb = (rgb + (l - rgb) * 0.8) * (1 - k * (rgb.max(-1, keepdims=True) - rgb.min(-1, keepdims=True)) / 255 - 0.15)
     a[..., :3] = np.clip(rgb, 0, 255); return Image.fromarray(a.astype('uint8'))
 
-# Lantern Knight front and back (Kit 01 sheet, top-down gameplay view)
-kit = Image.open(os.path.join(SRC, 'kit01-lantern-knight-sheet.png'))
-for name, box in {'front': (520, 385, 655, 555), 'back': (655, 385, 795, 555), 'walk34': (795, 385, 935, 555), 'lunge34': (935, 385, 1095, 555)}.items():
-    save(cut(kit, box, 37, thr=40, cool=3, peel=10, nearest=True), 'lantern-knight/' + ('down/' if name != 'back' else 'up/') + name)
+# Motion sheets: the large 8-direction poses (front, right, back) and three of the six attack frames.
+MOTION = {  # concept sheet -> (sprite folder, height in art pixels)
+    'lantern-knight': ('lantern-knight', 37), 'drowned-wretch': ('drowned/footman', 36), 'mire-stalker': ('drowned/squire', 34),
+    'tide-archer': ('drowned/archer', 36), 'lantern-reaver': ('drowned/defiler', 37), 'bone-bulwark': ('drowned/blackguard', 40),
+    'drowned-sovereign': ('drowned/champion', 42),
+}
+POSE = dict(thr=18, sat_keep=30, nearest=True, close=3, max_hole=500)
+ATTACK = dict(thr=26, sat_keep=30, nearest=True, close=3, max_hole=300)
+AX = [20, 130, 240, 355, 465, 580, 700]  # attack frame columns
+for sheet, (folder, h) in MOTION.items():
+    im = Image.open(os.path.join(SRC, 'motion-' + sheet + '.png'))
+    y0, y1 = (217, 340) if sheet == 'drowned-sovereign' else (230, 340)
+    for name, (xa, xb) in {'front': (482, 592), 'right': (721, 832), 'back': (962, 1074)}.items():
+        save(cut(im, (xa, y0, xb, y1), h, **POSE), folder + '/' + name)
+    for name, i in (('attackA', 1), ('attackB', 2), ('attackC', 4)):
+        save(cut(im, (AX[i] + (14 if i == 4 else 9), 646, AX[i + 1] - 6, 762), h, **ATTACK), folder + '/' + name)
 
-# Drowned Knights: each column has a 2x2 block of top-down sprites
-en = Image.open(os.path.join(SRC, 'drowned-knights-enemy-sheet.png'))
-cols = {'squire': (5, 187, 34), 'footman': (192, 375, 36), 'archer': (380, 558, 36), 'revenant': (562, 735, 28), 'blackguard': (916, 1094, 38)}
-for k, (x0, x1, h) in cols.items():
-    xm = (x0 + x1) // 2
-    for j, (ya, yb) in enumerate([(608, 693), (693, 788)]):
-        for i, (xa, xb) in enumerate([(x0, xm), (xm, x1)]):
-            if k == 'revenant' and (j, i) == (0, 1): continue  # a cluster of small ones
-            save(cut(en, (xa, ya, xb, yb), h, keep_frac=0.25), f'drowned/{k}/{j}{i}')
-for j, (ya, yb) in enumerate([(608, 693), (693, 788)]):
-    save(cut(en, (740, ya, 912, yb), 38), f'drowned/defiler/{j}')
-save(cut(en, (1100, 605, 1310, 790), 40), 'drowned/champion/0')
+# Swarming Revenant: six single revenants from the idle column, two from the attack row
+rev = Image.open(os.path.join(SRC, 'motion-swarming-revenant.png'))
+R = dict(thr=18, sat_keep=30, nearest=True, close=3, max_hole=300, keep_frac=0.3)
+k = 0
+for (y0, y1) in [(258, 330), (336, 408), (418, 500)]:
+    for (x0, x1) in [(478, 565), (565, 655)]:
+        save(cut(rev, (x0, y0, x1, y1), 26, **R), f'drowned/revenant/r{k}'); k += 1
+for name, (x0, x1) in (('attackA', (130, 235)), ('attackB', (235, 340))):
+    save(cut(rev, (x0, 640, x1, 760), 26, **dict(R, thr=26)), 'drowned/revenant/' + name)
 
 # Bioluminescent plants
 pl = Image.open(os.path.join(SRC, 'bioluminescent-plants-sheet.png'))
@@ -54,6 +63,25 @@ save(cut(pl, (795, 728, 898, 835), 30, **P), 'plants/sproutOn')
 sprout = cut(pl, (720, 728, 795, 835), 28, **P)
 save(sprout, 'plants/sproutOff'); save(dim(sprout, 0.7), 'plants/sproutBare')
 save(cut(pl, (912, 578, 1108, 705), 52, **P), 'plants/husk')
+
+# Structures & Plants sheet: camp structures in their small state cells, and resource nodes
+st = Image.open(os.path.join(SRC, 'structures-plants-sheet.png'))
+T = dict(thr=38, sat_keep=40, nearest=True, close=2, max_hole=200)
+save(cut(st, (251, 540, 287, 582), 22, **T), 'camp/firering')        # campfire, out (the game draws the flame)
+save(cut(st, (754, 524, 792, 620), 64, **T), 'camp/tower')           # beacon tower, lit
+save(cut(st, (1009, 524, 1047, 620), 34, **T), 'camp/palisade')      # barricade, intact
+save(cut(st, (1309, 524, 1347, 620), 56, **T), 'camp/pylon')         # light post, standing
+save(cut(st, (26, 902, 98, 1003), 26, **T), 'world/driftwood')
+save(cut(st, (258, 904, 332, 1003), 30, **T), 'world/rock')
+
+# Environment sheet: trees, reeds and ruins
+env = Image.open(os.path.join(SRC, 'environment-sheet.png'))
+E = dict(thr=38, sat_keep=40, nearest=True, close=2, max_hole=150)
+save(cut(env, (893, 572, 958, 657), 66, **E), 'world/tree0')
+save(cut(env, (800, 574, 890, 655), 62, **E), 'world/tree1')
+save(cut(env, (588, 576, 623, 613), 18, **E), 'world/reeds')
+save(cut(env, (1028, 563, 1067, 657), 46, **E), 'world/pillar')
+save(cut(env, (1170, 568, 1212, 657), 22, **E), 'world/grave')
 
 # Camp (Base Camp sheet, key structures row)
 cp = Image.open(os.path.join(SRC, 'base-camp-sheet.png'))

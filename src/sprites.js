@@ -14,59 +14,42 @@
   // Kit knights: [how far toward the drowned palette, lantern turns cyan] per corruption stage, as in src/units.js.
   const KNIGHT_STAGES = { lanternBlade1: [0, false], lanternBlade2: [0.22, false], lanternBlade3: [0.5, false], lanternBlade4: [0.8, true], self_lanternBlade: [0.9, true] };
 
-  // An enemy's frames from its concept poses: [idle, step A, step B, wind-up, strike, hurt], the same in every view.
-  function drowned(type, [idle, a, b, wind, strike, hurt]) {
-    const v = {
-      idle: [idle], walk: [a, a + "@bob", b, b + "@bob"], attack: [wind, strike, strike],
-      dash: [a], hurt: [hurt], death: [hurt, hurt, hurt + "@fall"],
-    };
-    return { path: "assets/sprites/drowned/" + type + "/", keys: { [type]: [0, false] }, views: { down: v, up: v, side: v } };
+  // A unit from its motion sheet: a pose per view (front, back, right) and three attack frames shared by every view.
+  // A single pose walks by stepping ("@bob") and dies by falling ("@fall").
+  function motion(extra = {}) {
+    const atk = ["attackA", "attackB", "attackC"], views = {};
+    for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]]) {
+      views[dir] = Object.assign({
+        idle: [p], walk: [p, p + "@bob", p, p + "@bob"], attack: atk,
+        dash: [p], hurt: [p], death: [p, p, p + "@fall"],
+      }, extra[dir]);
+    }
+    return views;
   }
+  const drowned = (type, views) => ({ path: "assets/sprites/drowned/" + type + "/", keys: { [type]: [0, false] }, views: views || motion() });
 
+  // The knight's side view keeps the walk, dash, hurt and death frames from the Lantern Knight sprite sheet.
+  const KNIGHT_SIDE = { dash: ["side/dash"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] };
   const UNITS = [
     {
       path: "assets/sprites/lantern-knight/",
       keys: KNIGHT_STAGES,
-      views: {
-        side: {
-          idle: ["side/idle"],
-          walk: ["side/walk1", "side/walk2", "side/walk3", "side/walk2"],
-          attack: ["side/attack1", "side/attack2", "side/attack2"],
-          dash: ["side/dash"],
-          hurt: ["side/hurt"],
-          death: ["side/hurt", "side/death", "side/death"],
-        },
-        down: {
-          idle: ["down/front"],
-          walk: ["down/front", "down/front@bob", "down/walk34", "down/walk34@bob"],
-          attack: ["down/walk34", "down/lunge34", "down/lunge34"],
-          dash: ["side/dash"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"],
-        },
-        up: {
-          idle: ["up/back"],
-          walk: ["up/back", "up/back@bob", "up/back", "up/back@bob"],
-          attack: ["up/back", "up/back@bob", "up/back@bob"],
-          dash: ["side/dash"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"],
-        },
-      },
+      views: motion({
+        side: Object.assign({ walk: ["side/walk1", "side/walk2", "side/walk3", "side/walk2"] }, KNIGHT_SIDE),
+        down: KNIGHT_SIDE,
+        up: KNIGHT_SIDE,
+      }),
       feet: {
-        "side/idle": [14, 38], "side/walk1": [15, 37], "side/walk2": [12, 37], "side/walk3": [15, 36],
-        "side/attack1": [16, 36], "side/attack2": [22, 39], "side/dash": [20, 36], "side/hurt": [15, 34], "side/death": [25, 37],
+        "side/walk1": [15, 37], "side/walk2": [12, 37], "side/walk3": [15, 36],
+        "side/dash": [20, 36], "side/hurt": [15, 34], "side/death": [25, 37],
       },
     },
-    drowned("squire", ["00", "00", "01", "10", "11", "01"]),
-    drowned("footman", ["00", "00", "01", "00", "01", "00"]),
-    drowned("archer", ["00", "00", "10", "10", "01", "00"]),
-    drowned("revenant", ["00", "00", "10", "10", "11", "00"]),
-    drowned("defiler", ["0", "0", "1", "0", "1", "1"]),
-    drowned("blackguard", ["00", "00", "10", "10", "11", "01"]),
-    drowned("champion", ["0", "0", "0", "0", "0", "0"]),
+    drowned("squire"), drowned("footman"), drowned("archer"), drowned("defiler"), drowned("blackguard"), drowned("champion"),
+    drowned("revenant", (() => {
+      const v = { idle: ["r0"], walk: ["r0", "r1", "r2", "r3"], attack: ["attackA", "attackB", "attackB"], dash: ["r4"], hurt: ["r5"], death: ["r5", "r5", "r5@fall"] };
+      return { down: v, up: v, side: v };
+    })()),
   ];
-  // The footman's side view has its own poses on the concept sheet.
-  UNITS[2].views.side = {
-    idle: ["10"], walk: ["10", "10@bob", "11", "11@bob"], attack: ["10", "11", "11"],
-    dash: ["10"], hurt: ["11"], death: ["11", "11", "11@fall"],
-  };
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
   const PROPS = {
@@ -76,6 +59,9 @@
       rootOn: "plants/rootOn", rootOff: "plants/rootOff", sproutOn: "plants/sproutOn", sproutOff: "plants/sproutOff",
       sproutBare: "plants/sproutBare", husk: "plants/husk",
       rack: "camp/rack", workbench: "camp/workbench", garden: "camp/garden",
+      firering: "camp/firering", tower: "camp/tower", palisade: "camp/palisade", pylon: "camp/pylon",
+      tree0: "world/tree0", tree1: "world/tree1", reeds: "world/reeds", pillar: "world/pillar", grave: "world/grave",
+      driftwood: "world/driftwood", rock: "world/rock",
     },
     // The armory and workbench concept art have their own canopies, so the coded awning is hidden once they load.
     hide: { awning: ["rack", "workbench"] },

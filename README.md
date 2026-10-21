@@ -176,11 +176,12 @@ The knight and every Drowned Knight are pixel sprites painted in code (`src/unit
 
 Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite sheets can replace the generated ones later without touching the game code.
 
-**Hand-drawn art** (`src/sprites.js`) replaces coded art with PNG files in `assets/sprites/`, cut from the concept sheets:
-- **Lantern Blade knight**: side, front and back views. Corruption stages and the drowned self are tinted from the same frames. Other kits are still coded.
-- **All seven Drowned Knights**, from their top-down concept poses.
+**Hand-drawn art** (`src/sprites.js`) replaces coded art with PNG files in `assets/sprites/`, cut from the concept and motion sheets:
+- **Lantern Blade knight**: front, back and side poses and the attack swing from the motion sheet, plus walk, dash, hurt and death from the sprite sheet. Corruption stages and the drowned self are tinted from the same frames. Other kits are still coded.
+- **Drowned Knights**, each from its motion sheet: Mire Stalker (squire), Drowned Wretch (footman), Tide Archer (archer), Swarming Revenant (revenant), Lantern Reaver (defiler), Bone Bulwark (blackguard) and Drowned Sovereign (champion).
 - **Blooms**: Refuge, Sentinel, Mother Root, Mire Sprout and Fading Husk, lit and unlit.
-- **Camp**: armory, workbench and cultivation plot. The other buildings, the world props and the ground are still coded, because their concept cards include too much scenery to cut out cleanly.
+- **Camp**: fire ring, watchtower, palisade, lantern pylon, armory, workbench and cultivation plot. The tents, banners, forge, gate and tier 2–3 fire pits are still coded.
+- **World**: trees, reeds, pillars, graves, driftwood and rock. Iron scrap, pearls and the ground are still coded.
 
 `tools/cut_concept_sprites.py` recreates the cut-out PNGs from the concept sheets (Python with Pillow, NumPy and SciPy). To add or redraw art:
 1. Draw one PNG per frame at art-pixel size (a knight is about 36 px tall), facing right for side views. Free editors: [Piskel](https://www.piskelapp.com) or [LibreSprite](https://libresprite.github.io).
