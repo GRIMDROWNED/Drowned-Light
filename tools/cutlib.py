@@ -68,7 +68,7 @@ def contact(ims, path, scale=4, bgc=(22, 32, 38, 255)):
     c.resize((W * scale, H * scale), Image.NEAREST).save(path)
 
 
-def cut_keyed(img, k, key=(255, 0, 255), tol=120, fringe=3, colors=32, outline=(10, 11, 12)):
+def cut_keyed(img, k, key=(255, 0, 255), tol=120, fringe=3, colors=32, outline=(10, 11, 12), recolor=None):
     """Cut a sprite off a flat key-colour background (AI renders): drop pixels near the key,
     peel the tinted fringe, keep the main shapes, then shrink by k."""
     a = np.asarray(img.convert('RGB')).astype(int)
@@ -84,5 +84,45 @@ def cut_keyed(img, k, key=(255, 0, 255), tol=120, fringe=3, colors=32, outline=(
     ys, xs = np.where(fg)
     y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
     rgba = np.zeros((y1 - y0, x1 - x0, 4), 'uint8')
-    rgba[..., :3] = a[y0:y1, x0:x1]; rgba[..., 3] = fg[y0:y1, x0:x1] * 255
+    rgba[..., :3] = a[y0:y1, x0:x1] * fg[y0:y1, x0:x1, None]; rgba[..., 3] = fg[y0:y1, x0:x1] * 255
+    if recolor: rgba[..., :3] = recolor(rgba[..., :3].astype(float)).clip(0, 255)
     return shrink(rgba, k, colors, outline)
+
+
+def drowned_tint(a):
+    """Turn a Lantern Knight render into a drowned one: red cloth to teal-black, steel, cloak and
+    leather faded, darker and colder; cyan glow kept."""
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    lum = (r + g + b) / 3
+    cyan = (b > r + 40) & (g > r + 30)
+    red = (r > g + 45) & (r > b + 35) & ~cyan
+    out = a.copy()
+    for i, m in enumerate((0.3, 0.48, 0.52)):
+        out[..., i][red] = lum[red] * m
+    rest = ~cyan & ~red
+    for i, m in enumerate((0.74, 0.76, 0.78)):
+        out[..., i][rest] = (a[..., i][rest] * 0.5 + lum[rest] * 0.5) * m
+    return out
+
+
+def match_colors(ref_img, key=(255, 0, 255), tol=120):
+    """A recolor function that moves a render's colours (outside the cyan glow) to the mean and spread
+    of a reference render's, after turning red cloth neutral. Used to fit one batch to another."""
+    a = np.asarray(ref_img.convert('RGB')).astype(float)
+    fg = np.sqrt(((a - np.array(key)) ** 2).sum(-1)) > tol
+    def body(x):
+        r, g, b = x[..., 0], x[..., 1], x[..., 2]
+        return ~((b > r + 40) & (g > r + 30))
+    ref = a[fg & body(a)]
+    mu, sd = ref.mean(0), ref.std(0)
+    def recolor(x):
+        x = x.copy()
+        r, g, b = x[..., 0], x[..., 1], x[..., 2]
+        red = (r > g + 45) & (r > b + 35)
+        lum = x.mean(-1)
+        x[red] = lum[red][:, None] * np.array([0.9, 0.85, 0.8])
+        m = body(x) & (x.sum(-1) > 0)
+        v = x[m]
+        x[m] = (v - v.mean(0)) / (v.std(0) + 1e-6) * sd + mu
+        return x
+    return recolor

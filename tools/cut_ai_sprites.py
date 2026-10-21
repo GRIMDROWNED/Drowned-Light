@@ -5,12 +5,16 @@ so poses keep their relative size."""
 import os, sys
 from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
-from cutlib import cut_keyed, contact
+from cutlib import cut_keyed, contact, match_colors
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files/art-prompts/returned'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites')
 
 # character: (output folder, reference image, target height of the reference pose in file px, fringe px to peel, {source: output name})
+# An output name can be (name, options) for an image from a different batch:
+#   height: its own target height in file px (when it was rendered at another scale)
+#   match: recolour it to match another returned image (when the batch came out in other colours)
+#   fringe: its own fringe
 # Sprites are cut at 2 file px per art pixel (res: 2 in src/sprites.js), so 80 px is 40 art px.
 TWELVE = ['front', 'back', 'right', 'side/walk1', 'side/walk2', 'side/walk3', 'side/walk4',
           'attackA', 'attackB', 'attackC', 'side/hurt', 'side/death']  # the 12-pose enemy prompt, in order
@@ -34,6 +38,20 @@ SETS = {
         'knight-hurt.png': 'side/hurt',
         'knight-death.png': 'side/death',
     }),
+    'drowned-wretch': ('drowned/footman', 'drowned-wretch/01_front.png', 80, 3, {
+        # first batch: the knight's design, recoloured to match the second batch
+        'drowned-wretch/01_front.png': ('front', {'match': 'drowned-wretch/b_walk.png'}),
+        'drowned-wretch/02_back.png': ('back', {'match': 'drowned-wretch/b_walk.png'}),
+        'drowned-wretch/walk_c.png': ('right', {'match': 'drowned-wretch/b_walk.png'}),
+        'drowned-wretch/walk_a.png': ('side/walk1', {'match': 'drowned-wretch/b_walk.png'}),
+        'drowned-wretch/walk_b.png': ('side/walk3', {'match': 'drowned-wretch/b_walk.png'}),
+        # second batch: cropped at one scale, already in the concept colours
+        'drowned-wretch/b_attackA.png': ('attackA', {'height': 77, 'fringe': 1}),
+        'drowned-wretch/b_attackB.png': ('attackB', {'height': 56, 'fringe': 1}),
+        'drowned-wretch/b_attackC.png': ('attackC', {'height': 67, 'fringe': 1}),
+        'drowned-wretch/b_hurt.png': ('side/hurt', {'height': 74, 'fringe': 1}),
+        'drowned-wretch/b_death.png': ('side/death', {'height': 38, 'fringe': 1}),
+    }),
     'mire-stalker': ('drowned/squire', 'mire-stalker/01_idle_front.png', 80, 1, twelve('mire-stalker', [
         '01_idle_front.png', '02_idle_back.png', '03_idle_right.png', '04_walk_left_forward.png', '05_walk_passing_a.png',
         '06_walk_right_forward.png', '07_walk_passing_b.png', '08_attack_windup.png', '09_attack_midstrike.png',
@@ -48,7 +66,11 @@ for name, (folder, ref, target, fringe, files) in SETS.items():
     for src, out in files.items():
         p = os.path.join(SRC, src)
         if not os.path.exists(p): continue
-        im = cut_keyed(Image.open(p), k, fringe=fringe)
+        out, opt = out if isinstance(out, tuple) else (out, {})
+        img, fr = Image.open(p), opt.get('fringe', fringe)
+        kk = opt['height'] / (cut_keyed(img, 1, fringe=fr).height - 2) if 'height' in opt else k
+        rc = match_colors(Image.open(os.path.join(SRC, opt['match']))) if 'match' in opt else None
+        im = cut_keyed(img, kk, fringe=fr, colors=64 if rc else 32, recolor=rc)
         dst = os.path.join(OUT, folder, out + '.png')
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         im.save(dst)

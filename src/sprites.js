@@ -53,6 +53,11 @@
       }),
     },
     twelve("squire"),
+    // Two walk frames so far: the side pose fills the passing steps.
+    drowned("footman", motion({
+      side: { walk: ["side/walk1", "right", "side/walk3", "right"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] },
+      down: POSES_SIDE, up: POSES_SIDE,
+    }), 2),
   ];
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
