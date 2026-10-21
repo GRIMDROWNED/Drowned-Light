@@ -5,7 +5,7 @@ so poses keep their relative size."""
 import os, sys
 from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
-from cutlib import cut_keyed, cut_sheet, contact, match_colors, mirror_legs, recolor_frames
+from cutlib import cut_keyed, cut_sheet, contact, match_colors, mirror_legs, recolor_frames, split_grid
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files/art-prompts/returned'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites')
@@ -30,6 +30,8 @@ TWELVE_FILES = [n + '.png' for n in sorted(POSES_A + POSES_B)]
 GRIDS = {
     'swarming-revenant/poses-a.png': (3, 2, POSES_A),
     'swarming-revenant/poses-b.png': (3, 2, POSES_B),
+    'lantern-reaver/poses-a.png': (3, 2, POSES_A),
+    'lantern-reaver/poses-b.png': (3, 2, POSES_B),
 }
 
 SETS = {
@@ -78,6 +80,7 @@ SETS = {
         '06_walk_right_forward.png', '07_walk_passing_b.png', '08_attack_windup.png', '09_attack_midstrike.png',
         '10_attack_followthrough.png', '11_hurt_recoil.png', '12_death.png'])),
     'swarming-revenant': ('drowned/revenant', 'swarming-revenant/01_front.png', 76, 1, twelve('swarming-revenant', TWELVE_FILES)),
+    'lantern-reaver': ('drowned/defiler', 'lantern-reaver/01_front.png', 82, 1, twelve('lantern-reaver', TWELVE_FILES)),
 }
 
 # Animation sheets: character -> [(sheet, columns, rows, height of the first frame's figure, output prefix[, row])].
@@ -110,6 +113,11 @@ SHEETS = {
         ('swarming-revenant/walk-front-4.png', 4, 1, 78, 'walkF'),
         ('swarming-revenant/walk-back-4.png', 4, 1, 80, 'walkB'),
     ],
+    'lantern-reaver': [
+        ('lantern-reaver/walk-side-4.png', 4, 1, 79, 'side/walk'),
+        ('lantern-reaver/walk-front-4.png', 4, 1, 84, 'walkF'),
+        ('lantern-reaver/walk-back-4.png', 4, 1, 85, 'walkB'),
+    ],
 }
 
 # Walk sheets the AI drew out of order or stepping with one foot only: the frames (1-based) to keep,
@@ -125,15 +133,15 @@ only = sys.argv[2:]  # optional character names to cut
 for sheet, (cols, rows, names) in GRIDS.items():
     p = os.path.join(SRC, sheet)
     if not os.path.exists(p): continue
-    img = Image.open(p).convert('RGB')
-    cw, ch = img.width // cols, img.height // rows
-    for i, n in enumerate(names):
-        img.crop((i % cols * cw, i // cols * ch, (i % cols + 1) * cw, (i // cols + 1) * ch)).save(os.path.join(os.path.dirname(p), n + '.png'))
+    for n, cell in zip(names, split_grid(Image.open(p), cols, rows)):
+        cell.save(os.path.join(os.path.dirname(p), n + '.png'))
     walks = sorted(n for n in names if 'walk' in n)
     if walks:
-        strip = Image.new('RGB', (cw * len(walks), ch), (255, 0, 255))
-        for i, n in enumerate(walks):
-            strip.paste(Image.open(os.path.join(os.path.dirname(p), n + '.png')), (i * cw, 0))
+        cells = [Image.open(os.path.join(os.path.dirname(p), n + '.png')) for n in walks]
+        cw, ch = max(c.width for c in cells), max(c.height for c in cells)
+        strip = Image.new('RGB', (cw * len(cells), ch), (255, 0, 255))
+        for i, c in enumerate(cells):
+            strip.paste(c, (i * cw + (cw - c.width) // 2, ch - c.height))
         strip.save(os.path.join(os.path.dirname(p), 'walk-side-4.png'))
 for name, (folder, ref, target, fringe, files) in SETS.items():
     if only and name not in only: continue

@@ -189,3 +189,28 @@ def recolor_frames(frames, recolor):
         a[..., :3] = np.clip(recolor(rgb), 0, 255)
         out.append(Image.fromarray(a.astype(np.uint8)))
     return out
+
+
+def split_grid(img, cols, rows, key=(255, 0, 255), tol=120):
+    """Split a sheet of cols x rows poses into one image per pose. Each connected blob of figure pixels
+    goes to the cell holding its centre, so a cloak or blade that pokes over a cell edge stays with its
+    pose. Returns images in reading order, each the poses' bounding box (plus a margin) on magenta."""
+    a = np.asarray(img.convert('RGB')).astype(int)
+    fg = np.sqrt(((a - np.array(key)) ** 2).sum(-1)) > tol
+    lab, n = ndimage.label(fg)
+    cw, ch = a.shape[1] / cols, a.shape[0] / rows
+    owner = np.zeros(n + 1, int) - 1
+    sizes = ndimage.sum(fg, lab, range(1, n + 1))
+    for i, (cy, cx) in enumerate(ndimage.center_of_mass(fg, lab, range(1, n + 1))):
+        if sizes[i] >= 20:  # specks of noise belong to no pose
+            owner[i + 1] = min(int(cy // ch), rows - 1) * cols + min(int(cx // cw), cols - 1)
+    out = []
+    for c in range(cols * rows):
+        m = owner[lab] == c
+        m[lab == 0] = False
+        ys, xs = np.where(m)
+        y0, y1, x0, x1 = max(ys.min() - 8, 0), ys.max() + 9, max(xs.min() - 8, 0), xs.max() + 9
+        cell = np.zeros((y1 - y0, x1 - x0, 3), 'uint8') + np.array(key, 'uint8')
+        cell[m[y0:y1, x0:x1]] = a[y0:y1, x0:x1][m[y0:y1, x0:x1]]
+        out.append(Image.fromarray(cell))
+    return out
