@@ -59,7 +59,7 @@
         up: Object.assign({ walk: WALK4x2("walkB") }, KNIGHT_SIDE),
       }),
       // each walk sheet's shared foot point, as printed by tools/cut_ai_sprites.py
-      feet: Object.assign(sheetFeet(WALK8, [32, 82]), sheetFeet(WALK4x2("walkF"), [34, 82]), sheetFeet(WALK4x2("walkB"), [33, 82])),
+      feet: Object.assign(sheetFeet(WALK8, [36, 81]), sheetFeet(WALK4x2("walkF"), [35, 82]), sheetFeet(WALK4x2("walkB"), [30, 82])),
     },
     twelve("squire"),
     twelve("archer"),
