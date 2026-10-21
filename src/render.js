@@ -529,7 +529,7 @@
     if (p.dashT > 0) return ["dash", 0, p.angle];
     if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
     if (p.swing) return ["attack", Math.min(2, Math.floor((p.swing.t / p.swing.dur) * 3)), p.swing.ang];
-    if (p.moving) return ["walk", Math.floor(p.animT * walkRate(G.save.kit + p.stage, 8)), p.angle];
+    if (p.moving) return ["walk", Math.floor(p.animT * walkRate(G.save.kit + p.stage, 6)), p.angle];
     return ["idle", Math.floor(t * 1.6), p.angle];
   }
 
@@ -554,7 +554,7 @@
       let anim = "idle", fr = Math.floor(t * 1.6), ang = a.angle;
       if (a.dashT > 0) anim = "dash";
       else if (a.swing) { anim = "attack"; fr = Math.min(2, Math.floor((a.swing.t / a.swing.dur) * 3)); ang = a.swing.ang; }
-      else if (a.moving) { anim = "walk"; fr = Math.floor(a.animT * walkRate(key, 8)); }
+      else if (a.moving) { anim = "walk"; fr = Math.floor(a.animT * walkRate(key, 6)); }
       Art.drawUnit(c, key, anim, fr, ang, a.x, a.y, 1);
     }
     // name tag + health
@@ -573,7 +573,7 @@
   function enemyAnim(e, t) {
     if (e.state === "windup") return ["attack", 0, e.aim];
     if (e.state === "recover") return ["attack", e.stT > 0.2 ? 1 : 2, e.aim];
-    if (e.moving) return ["walk", Math.floor(e.animT * walkRate(unitKey(e), e.def.crawl ? 10 : 7)), e.angle];
+    if (e.moving) return ["walk", Math.floor(e.animT * walkRate(unitKey(e), e.def.crawl ? 8 : 5.5)), e.angle];
     return ["idle", Math.floor(t * 1.6 + e.animT), e.angle];
   }
 
