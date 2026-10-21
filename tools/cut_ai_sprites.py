@@ -77,13 +77,13 @@ SHEETS = {
     'lantern-knight': [
         ('knight-walk-side-4.png', 4, 1, 78, 'side/walk'),
         ('knight-walk-front-4.png', 4, 1, 80, 'walkF'),
-        ('knight-walk-frontback-sheet.png', 4, 2, 80, 'walkB', 1),
+        ('knight-walk-back-4.png', 4, 1, 80, 'walkB'),
     ],
 }
 
-# Walk sheets where the AI stepped with the same foot in every frame: keep these frames (1-based)
-# and add a copy of each with the legs mirrored, so the cycle steps with both feet.
-MIRROR_LEGS = {('lantern-knight', 'walkF'): [1, 3]}
+# Walk sheets the AI drew out of order or stepping with one foot only: the frames (1-based) to keep,
+# in play order; a negative number is that frame with its legs mirrored, giving the other foot's step.
+FRAME_ORDER = {('lantern-knight', 'walkF'): [1, 3, -1, -3], ('lantern-knight', 'walkB'): [2, 1, 4, -1]}
 
 only = sys.argv[2:]  # optional character names to cut
 for name, (folder, ref, target, fringe, files) in SETS.items():
@@ -116,10 +116,9 @@ for name, sheets in SHEETS.items():
             h = img.height // rows
             img, rows = img.crop((0, row[0] * h, img.width, (row[0] + 1) * h)), 1
         frames, feet = cut_sheet(img, cols, rows, height)
-        keep = MIRROR_LEGS.get((name, prefix))
-        if keep:
-            frames = [frames[i - 1] for i in keep]
-            frames += [mirror_legs(f) for f in frames]
+        order = FRAME_ORDER.get((name, prefix))
+        if order:
+            frames = [frames[i - 1] if i > 0 else mirror_legs(frames[-i - 1]) for i in order]
         for i, im in enumerate(frames):
             dst = os.path.join(OUT, folder, prefix + str(i + 1) + '.png')
             os.makedirs(os.path.dirname(dst), exist_ok=True)
