@@ -85,6 +85,7 @@
     walking("archer", [44, 83], [35, 90], [33, 88]),
     walking("revenant", [54, 79], [38, 80], [41, 82]),
     walking("defiler", [54, 84], [38, 86], [40, 87]),
+    walking("blackguard", [61, 87], [36, 88], [32, 87]),
     walking("footman", [56, 78], [36, 84], [37, 83]),
   ];
 
