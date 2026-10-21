@@ -5,7 +5,7 @@ so poses keep their relative size."""
 import os, sys
 from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
-from cutlib import cut_keyed, cut_sheet, contact, match_colors
+from cutlib import cut_keyed, cut_sheet, contact, match_colors, mirror_legs
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files/art-prompts/returned'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites')
@@ -76,10 +76,14 @@ SETS = {
 SHEETS = {
     'lantern-knight': [
         ('knight-walk-side-4.png', 4, 1, 78, 'side/walk'),
-        ('knight-walk-frontback-sheet.png', 4, 2, 80, 'walkF', 0),
+        ('knight-walk-front-4.png', 4, 1, 80, 'walkF'),
         ('knight-walk-frontback-sheet.png', 4, 2, 80, 'walkB', 1),
     ],
 }
+
+# Walk sheets where the AI stepped with the same foot in every frame: keep these frames (1-based)
+# and add a copy of each with the legs mirrored, so the cycle steps with both feet.
+MIRROR_LEGS = {('lantern-knight', 'walkF'): [1, 3]}
 
 only = sys.argv[2:]  # optional character names to cut
 for name, (folder, ref, target, fringe, files) in SETS.items():
@@ -112,6 +116,10 @@ for name, sheets in SHEETS.items():
             h = img.height // rows
             img, rows = img.crop((0, row[0] * h, img.width, (row[0] + 1) * h)), 1
         frames, feet = cut_sheet(img, cols, rows, height)
+        keep = MIRROR_LEGS.get((name, prefix))
+        if keep:
+            frames = [frames[i - 1] for i in keep]
+            frames += [mirror_legs(f) for f in frames]
         for i, im in enumerate(frames):
             dst = os.path.join(OUT, folder, prefix + str(i + 1) + '.png')
             os.makedirs(os.path.dirname(dst), exist_ok=True)

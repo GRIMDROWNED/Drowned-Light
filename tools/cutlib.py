@@ -164,3 +164,16 @@ def match_colors(ref_img, key=(255, 0, 255), tol=120):
         x[m] = (v - v.mean(0)) / (v.std(0) + 1e-6) * sd + mu
         return x
     return recolor
+
+
+def mirror_legs(im, legs=0.32, half=9):
+    """Make the other foot's step from a front or back walk frame: flip the lowest `legs` share of the
+    figure left to right inside a strip `half` px either side of the feet's centre."""
+    xs = np.where(np.asarray(im)[-8:, :, 3].max(axis=0) > 0)[0]
+    cx = round((xs.min() + xs.max() + 1) / 2)
+    out = im.copy()
+    top = im.height - round(im.height * legs)
+    box = (cx - half, top, cx + half, im.height)
+    out.paste((0, 0, 0, 0), box)
+    out.alpha_composite(im.crop(box).transpose(Image.FLIP_LEFT_RIGHT), box[:2])
+    return out
