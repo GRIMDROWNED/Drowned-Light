@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 from scipy import ndimage
 
-def cut(img, box, height, cool=0, thr=30, colors=24, keep_frac=0.06, sat_keep=40, outline=(10, 11, 12), erode=0, clear=(), peel=0, peel_lum=55, peel_warm=True, nearest=False, grab=False, close=0, max_hole=None):
+def cut(img, box, height, cool=0, thr=30, colors=24, keep_frac=0.06, sat_keep=40, outline=(10, 11, 12), erode=0, clear=(), peel=0, peel_lum=55, peel_warm=True, nearest=False, close=0, max_hole=None):
     a = np.asarray(img.crop(box).convert('RGB')).astype(int)
     for (x0, y0, x1, y1) in clear:  # wipe neighbouring art inside the crop
         a[y0:y1, x0:x1] = [11, 15, 15]
@@ -16,15 +16,6 @@ def cut(img, box, height, cool=0, thr=30, colors=24, keep_frac=0.06, sat_keep=40
     lab, n = ndimage.label(dark)
     border = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))) - {0}
     bg = np.isin(lab, list(border))
-    if grab:  # refine with GrabCut: the dark border-connected pixels seed the backdrop, bright ones the sprite
-        import cv2
-        m = np.where(lum < 22, cv2.GC_PR_BGD, cv2.GC_PR_FGD).astype('uint8')
-        m[bg & (lum < 13)] = cv2.GC_BGD
-        m[(lum > 95) | (sat > 120)] = cv2.GC_FGD
-        m[[0, -1], :] = cv2.GC_BGD; m[:, [0, -1]] = cv2.GC_BGD
-        bm, fm = np.zeros((1, 65), float), np.zeros((1, 65), float)
-        cv2.grabCut(np.ascontiguousarray(a[..., ::-1].astype('uint8')), m, None, bm, fm, 6, cv2.GC_INIT_WITH_MASK)
-        bg = (m == cv2.GC_BGD) | (m == cv2.GC_PR_BGD)
     fg = ~bg
     if close:  # bridge the black gaps inside armour so the fill below keeps it
         fg = ndimage.binary_closing(np.pad(fg, close), iterations=close)[close:-close, close:-close]
