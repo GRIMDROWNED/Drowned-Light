@@ -62,6 +62,20 @@ The camp grows through three tiers as the Central Flame levels up:
 ### Starting a game: kit, difficulty and combat
 A new game asks you to choose a **kit**, a **difficulty** and a **combat mode** (Auto-attack or Manual attack). The kit and difficulty stay fixed for that save. The combat mode can be switched any time from the pause menu.
 
+### Co-op (online, 2 players)
+Title screen → **Play with a friend**.
+- **Host:** needs a game of their own. **Host my world** opens a room with a 5-character code. Share the code, then **Start playing**. The friend can join any time.
+- **Join:** type the code. You play in the host's world (their camp, difficulty, day and stash) as **your own kit and level**. Nothing in your own save changes.
+
+What's shared:
+- The Drowned hunt whichever knight is nearer, and night waves and pearls also turn up near a friend who wanders off.
+- Supplies the guest mines or picks up are theirs to carry, and go into the host's stash when they reach camp.
+- Lights, torches and Flame Bastion walls the guest raises are real for both players.
+
+Only the host can build and train at camp. A guest who falls rises again at camp a few seconds later and loses what they carried; there's no drowned self for guests. Leave from the pause menu.
+
+**How it works:** the host's device runs the world and sends snapshots about 15 times a second. The guest's device runs its own knight and reports hits, mining and deposits (`src/net.js`). The free public PeerJS server introduces the two devices, and the game data then goes directly between them over WebRTC. The PeerJS library is loaded only when co-op is used, so solo play still works offline. Some strict networks (schools, offices, some mobile carriers) block direct connections.
+
 ### Mining
 Supply nodes take several hits to break: logs 3, rock 4, iron 5, bloom sprouts 2, pearls 2. Each strike shakes and cracks the node and throws chips. The last strike shatters it into pieces of its sprite, and the supplies spill out as pickups that fly to you. In auto mode the knight mines a node you stand beside whenever no Drowned are in reach. In manual mode mining has its own control (Mine / G / right-click), so Attack never mines by mistake.
 
@@ -124,6 +138,7 @@ No build step, no dependencies. These are plain scripts loaded in order:
 |---|---|
 | `src/core.js` | math, deterministic noise, input (keyboard, mouse aim, floating joystick, attack button), WebAudio sound effects |
 | `src/view.js` | Auto / Portrait / Landscape view: orientation lock, rotated stage, letterboxing |
+| `src/net.js` | online co-op: rooms, host snapshots, guest state and events (PeerJS) |
 | `src/data.js` | **all balance numbers**: day/night lengths, zones, enemies, kits and milestones, kit level costs, difficulties, upgrade costs |
 | `src/kits.js` | the five kits in play: attacks, dashes, abilities, passives, training and milestone effects |
 | `src/camp.js` | base camp layout per tier, palisade walls, gate pathing |

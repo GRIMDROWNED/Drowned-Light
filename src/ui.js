@@ -115,10 +115,35 @@
     });
     $("btnRise").addEventListener("click", () => { UI.hideScreens(); G.respawn(); UI.showHud(true); });
     $("btnResume").addEventListener("click", () => UI.resume());
-    $("btnQuit").addEventListener("click", () => {
-      UI.hideScreens(); UI.showHud(false);
-      G.init();
+    $("btnQuit").addEventListener("click", () => { DL.Net.leave(true); UI.toTitle(); });
+
+    /* co-op */
+    $("btnCoop").addEventListener("click", () => UI.openCoop());
+    $("btnCoopBack").addEventListener("click", () => {
+      if (DL.Net.role === "host" && G.state === "title") DL.Net.leave(true);
+      $("screenCoop").classList.add("hidden");
       UI.showTitle();
+    });
+    $("btnHost").addEventListener("click", async () => {
+      $("btnHost").disabled = true;
+      const ok = await DL.Net.host();
+      $("btnHost").disabled = false;
+      if (!ok) return;
+      $("btnHost").classList.add("hidden");
+      $("coopCodeText").textContent = DL.Net.code;
+      $("coopCode").classList.remove("hidden");
+    });
+    $("btnCoopStart").addEventListener("click", () => { UI.hideScreens(); G.begin(); UI.showHud(true); });
+    $("btnJoin").addEventListener("click", async () => {
+      $("btnJoin").disabled = true;
+      await DL.Net.join($("coopInput").value);
+      $("btnJoin").disabled = false;
+    });
+    $("coopInput").addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Enter") $("btnJoin").click(); });
+    $("btnLeaveCoop").addEventListener("click", () => {
+      const guest = DL.Net.role === "guest";
+      DL.Net.leave();
+      if (guest) UI.toTitle(); else UI.resume();
     });
     for (const id of ["btnSound", "btnSound2"]) $(id).addEventListener("click", () => UI.toggleSound());
     $("campClose").addEventListener("click", () => UI.closeCamp());
@@ -158,9 +183,36 @@
     $("touchzone").classList.toggle("hidden", !on);
   };
 
+  UI.toTitle = function () {
+    UI.hideScreens();
+    UI.showHud(false);
+    DL.Game.init();
+    UI.showTitle();
+  };
+
+  UI.openCoop = function () {
+    const G = DL.Game;
+    $("screenTitle").classList.add("hidden");
+    $("screenCoop").classList.remove("hidden");
+    const hosting = DL.Net.role === "host";
+    $("btnHost").classList.toggle("hidden", hosting);
+    $("coopCode").classList.toggle("hidden", !hosting);
+    if (G.save.started) {
+      $("coopHostInfo").textContent = `Your world: day ${G.save.day}, ${G.kit().name} level ${G.save.kitLevel}, ${G.diff().name}. You keep all progress.`;
+      $("btnHost").disabled = false;
+    } else {
+      $("coopHostInfo").textContent = "Start a game of your own first; your friend joins your world.";
+      $("btnHost").disabled = true;
+    }
+    $("coopJoinInfo").textContent = `You'll join as your ${G.kit().name} (level ${G.save.kitLevel}). Nothing in your own save changes.`;
+    UI.coopStatus("");
+  };
+  UI.coopStatus = function (msg) { $("coopStatus").textContent = msg || ""; };
+
   UI.pause = function () {
     const G = DL.Game;
     if (G.state !== "play") return;
+    $("btnLeaveCoop").classList.toggle("hidden", !DL.Net.role);
     G.state = "pause";
     UI.updateCombatLabel();
     $("screenPause").classList.remove("hidden");
@@ -298,6 +350,7 @@
   UI.openCamp = function () {
     const G = DL.Game;
     if (G.state !== "play" || !G.inCamp) return;
+    if (G.isGuest()) { UI.toast("Only the host builds at camp. Whatever you carry here goes into their stash."); return; }
     G.state = "camp";
     UI.renderCamp();
     $("screenCamp").classList.remove("hidden");
@@ -430,6 +483,10 @@
     set($("clock"), "--prog", String(G.time / DL.CYCLE.total));
 
     set($("zoneText"), "text", DL.ZONES[p.zi].name);
+    const N = DL.Net;
+    const coopText = !N.role ? "" : N.role === "guest" ? "Co-op · your friend's world" : G.ally ? `Co-op · friend joined · room ${N.code}` : `Room ${N.code} · waiting for a friend`;
+    set($("coopChip"), "text", coopText);
+    set($("coopChip"), "hidden", !coopText);
     const d = Math.hypot(p.x, p.y);
     set($("homeArrow"), "transform", `rotate(${(Math.atan2(-p.y, -p.x) * 180) / Math.PI}deg)`);
     set($("homeDist"), "text", d < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`);
@@ -445,7 +502,8 @@
 
     // objective banner
     let obj = "";
-    if (!G.flame.lit) obj = "The Central Flame is out — survive until dawn";
+    if (G.isGuest() && G.hostState && G.hostState !== "play") obj = G.hostState === "dead" || G.hostState === "dying" ? "Your friend has fallen — waiting for them to rise" : "Your friend has paused the game";
+    else if (!G.flame.lit) obj = "The Central Flame is out — survive until dawn";
     else if (G.night && Math.hypot(p.x, p.y) < G.siegeRadius()) obj = `Defend the camp · Flame ${Math.ceil(G.flame.hp)} / ${G.flame.max}`;
     else if (G.rootEvent && !G.rootEvent.obj.dead && Math.hypot(p.x - G.rootEvent.obj.x, p.y - G.rootEvent.obj.y) < 650) obj = `Defend the Mother Root until dawn · ${Math.ceil(G.rootEvent.obj.hp)} / ${Math.round(G.rootEvent.obj.maxHp)}`;
     set($("objective"), "text", obj);
