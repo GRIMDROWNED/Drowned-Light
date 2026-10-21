@@ -454,6 +454,7 @@
   // Manual aim: toward the mouse when one is in use, otherwise the way the knight faces.
   function aimAngle(p) {
     const m = DL.Input.mouse, v = DL.Render.view;
+    if (DL.Input.attackAim != null) return DL.Input.attackAim; // dragging the Attack button
     if (G.save.attackMode === "manual" && v && performance.now() - m.seen < 4000 && !DL.Input.touch) {
       return Math.atan2(v.top + m.y / v.z - (p.y - 24), v.left + m.x / v.z - p.x);
     }

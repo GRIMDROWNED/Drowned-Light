@@ -64,6 +64,7 @@ window.DL = window.DL || {};
     // Manual mining has its own control: G, the right mouse button, or the on-screen Mine button.
     mouse: { x: 0, y: 0, down: false, mine: false, seen: 0 },
     attackBtn: false,
+    attackAim: null, // angle set by dragging on the Attack button (an aiming stick); null = not aiming
     mineBtn: false,
     attacking() { return this.keys.has("j") || this.keys.has("k") || this.mouse.down || this.attackBtn; },
     mining() { return this.keys.has("g") || this.mouse.mine || this.mineBtn; },
@@ -81,7 +82,7 @@ window.DL = window.DL || {};
         if (keymap[k]) this.actions.add(keymap[k]);
       });
       addEventListener("keyup", (e) => this.keys.delete(e.key.toLowerCase()));
-      addEventListener("blur", () => { this.keys.clear(); this.mouse.down = this.mouse.mine = false; this.attackBtn = this.mineBtn = false; });
+      addEventListener("blur", () => { this.keys.clear(); this.mouse.down = this.mouse.mine = false; this.attackBtn = this.mineBtn = false; this.attackAim = null; });
 
       // Mouse: aim follows the cursor; the left button attacks (when playing on the field, not on menus).
       const onField = (e) => e.target && (e.target.id === "game" || e.target.id === "touchzone");

@@ -32,9 +32,37 @@
     press("btnAbility", () => DL.Input.trigger("ability"));
     press("btnTorch", () => DL.Input.trigger("torch"));
     // Manual Attack button: strikes for as long as it's held.
-    const atk = $("btnAttack");
-    atk.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); DL.Input.attackBtn = true; try { atk.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ } });
-    for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) atk.addEventListener(ev, () => { DL.Input.attackBtn = false; });
+    // The Attack button doubles as an aiming stick: press to strike, drag to aim
+    // (so you can back away while striking the other way). A plain press strikes the way you face.
+    const atk = $("btnAttack"), atkKnob = $("attackKnob");
+    let atkOrigin = null, atkId = null;
+    const atkMove = (e) => {
+      if (e.pointerId !== atkId || !atkOrigin) return;
+      const q = DL.View.toStage(e.clientX, e.clientY);
+      let dx = q.x - atkOrigin.x, dy = q.y - atkOrigin.y;
+      const len = Math.hypot(dx, dy), R = 28;
+      if (len > 12) DL.Input.attackAim = Math.atan2(dy, dx);
+      if (len > R) { dx = (dx / len) * R; dy = (dy / len) * R; }
+      atkKnob.style.transform = `translate(${dx}px,${dy}px)`;
+      atk.classList.toggle("aiming", len > 12);
+    };
+    const atkEnd = (e) => {
+      if (e.pointerId !== atkId) return;
+      atkId = null; atkOrigin = null;
+      DL.Input.attackBtn = false;
+      DL.Input.attackAim = null;
+      atkKnob.style.transform = "";
+      atk.classList.remove("aiming");
+    };
+    atk.addEventListener("pointerdown", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      atkId = e.pointerId;
+      atkOrigin = DL.View.toStage(e.clientX, e.clientY);
+      DL.Input.attackBtn = true;
+      try { atk.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    });
+    atk.addEventListener("pointermove", atkMove);
+    for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) atk.addEventListener(ev, atkEnd);
     atk.addEventListener("contextmenu", (e) => e.preventDefault());
     const mine = $("btnMine");
     mine.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); DL.Input.mineBtn = true; try { mine.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ } });
@@ -244,7 +272,7 @@
       });
       const modes = [
         ["auto", "Auto-attack", "Your knight strikes the nearest Drowned, and mines supplies you stand beside. You move, dash and use your ability."],
-        ["manual", "Manual attack", "You strike where you aim: the mouse or J on a computer, the Attack button on a phone (it leans toward nearby foes). Mining has its own control: G or right-click, or the Mine button."],
+        ["manual", "Manual attack", "You strike where you aim: the mouse or J on a computer, the Attack button on a phone: drag on it to aim, even while retreating. Mining has its own control: G or right-click, or the Mine button."],
       ];
       html += `<div class="mode-row" role="group" aria-label="Combat"><h3>Combat</h3>${modes.map(([id, name, desc]) =>
         `<button class="pick mode-pick ${st.attack === id ? "on" : ""}" data-mode="${id}" aria-pressed="${st.attack === id}"><span class="pick-name">${name}</span><span class="pick-line">${desc}</span></button>`).join("")}</div>`;

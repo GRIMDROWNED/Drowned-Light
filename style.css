@@ -341,3 +341,12 @@ body.menu-open #toasts, body.menu-open #objective { visibility: hidden; }
 /* manual mode: Mine sits above Attack and lights up when supplies are in reach */
 .act.mine { position: absolute; right: 12px; bottom: calc(100% + 10px); border-color: rgba(154, 157, 158, 0.6); }
 .act.mine.ready { border-color: #d8d2c4; color: #fff; box-shadow: 0 0 16px rgba(230, 220, 200, 0.45); }
+
+/* Attack button as an aiming stick: a knob follows your thumb while you drag */
+.act.attack { overflow: visible; }
+#attackKnob {
+  position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%;
+  border: 2px solid rgba(255, 220, 170, 0.0); pointer-events: none; transition: border-color 0.12s;
+}
+.act.attack.aiming #attackKnob { border-color: rgba(255, 220, 170, 0.9); background: rgba(255, 179, 90, 0.35); box-shadow: 0 0 12px rgba(255, 179, 90, 0.6); }
+.act.attack.aiming span { opacity: 0.35; }
