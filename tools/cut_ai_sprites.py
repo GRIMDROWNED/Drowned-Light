@@ -84,11 +84,18 @@ SHEETS = {
         ('mire-stalker/walk-front-4.png', 4, 1, 82, 'walkF'),
         ('mire-stalker/walk-back-4.png', 4, 1, 81, 'walkB'),
     ],
+    'drowned-wretch': [
+        ('drowned-wretch/walk-side-4.png', 4, 1, 76, 'side/walk'),
+        ('drowned-wretch/walk-front-4.png', 4, 1, 82, 'walkF'),
+        ('drowned-wretch/walk-back-4.png', 4, 1, 81, 'walkB'),
+    ],
 }
 
 # Walk sheets the AI drew out of order or stepping with one foot only: the frames (1-based) to keep,
 # in play order; a negative number is that frame with its legs mirrored, giving the other foot's step.
-FRAME_ORDER = {('lantern-knight', 'walkB'): [2, 1, 4, -1], ('mire-stalker', 'walkB'): [1, 2, 3, -2]}
+FRAME_ORDER = {('lantern-knight', 'walkB'): [2, 1, 4, -1], ('mire-stalker', 'walkB'): [1, 2, 3, -2],
+               # the lantern is missing from frames 1 and 3
+               ('drowned-wretch', 'walkB'): [2, 2, 4, 4]}
 
 only = sys.argv[2:]  # optional character names to cut
 for name, (folder, ref, target, fringe, files) in SETS.items():

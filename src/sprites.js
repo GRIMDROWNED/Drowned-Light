@@ -60,6 +60,13 @@
   const walkFeet = (side, front, back) =>
     Object.assign(sheetFeet([1, 2, 3, 4].map((i) => "side/walk" + i), side), sheetFeet(WALK4x2("walkF"), front), sheetFeet(WALK4x2("walkB"), back));
 
+  // An enemy with the 12 poses plus 4-pose walk sheets for all three views.
+  const walking = (type, side, front, back) => Object.assign(drowned(type, motion({
+    side: Object.assign({ walk: WALK4 }, POSES_SIDE),
+    down: Object.assign({ walk: WALK_FRONT }, POSES_SIDE),
+    up: Object.assign({ walk: WALK_BACK }, POSES_SIDE),
+  }), 2), { feet: walkFeet(side, front, back) });
+
   // The knight has his own walk, dash, hurt and death frames; down and up views borrow the side ones for dash, hurt and death.
   const KNIGHT_SIDE = { dash: ["side/dash"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] };
   const UNITS = [
@@ -74,17 +81,9 @@
       }),
       feet: walkFeet([44, 80], [35, 82], [30, 82]),
     },
-    Object.assign(drowned("squire", motion({
-      side: Object.assign({ walk: WALK4 }, POSES_SIDE),
-      down: Object.assign({ walk: WALK_FRONT }, POSES_SIDE),
-      up: Object.assign({ walk: WALK_BACK }, POSES_SIDE),
-    }), 2), { feet: walkFeet([46, 86], [38, 86], [37, 84]) }),
+    walking("squire", [46, 86], [38, 86], [37, 84]),
     twelve("archer"),
-    // Two walk frames so far: the side pose fills the passing steps.
-    drowned("footman", motion({
-      side: { walk: ["side/walk1", "right", "side/walk3", "right"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] },
-      down: POSES_SIDE, up: POSES_SIDE,
-    }), 2),
+    walking("footman", [56, 78], [36, 84], [37, 83]),
   ];
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
