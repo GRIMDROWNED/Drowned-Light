@@ -50,12 +50,12 @@ The camp grows through three tiers as the Central Flame levels up:
 | Workbench | Lantern oil, torch satchel size, torch burn time |
 | Cultivation Plot | Grows Bloom Resin, stored at every dawn |
 | Watchtowers | Crossbow towers that shoot the Drowned at night |
-| Lantern Pylons | Firelight posts on the perimeter. They slow the Drowned and are hunted by Defilers, then relit at dawn |
+| Lantern Pylons | Firelight posts on the perimeter. They slow the Drowned and are hunted by Lantern Reavers, then relit at dawn |
 | Barricade & Gate | Level 1 is a stake ring. Level 2 is a palisade with four gates, so the Drowned must path through them and take stake damage. Level 3 reinforces it with gate lanterns and spikes |
 
 ### High-risk reasons to leave the light
 - **Abyssal Pearls** surface only in darkness (the Mire and deeper). You need them for top-tier upgrades.
-- **Torches** you plant burn out, and Lantern Defilers hunt them.
+- **Torches** you plant burn out, and Lantern Reavers snuff them out.
 - **Mother Roots**: defend one until dawn for a big reward.
 - **Your drowned self**: when you fall, a Drowned version of you keeps everything you carried. Kill it to get your supplies back. If you die again first, they're gone.
 
@@ -140,7 +140,15 @@ Reaching a milestone triggers a pillar of the kit's light.
 | **Abyss** | scarce (×0.65) | ×1.75 health, ×1.5 damage, many more | blooms ×0.4, firelight −22%, corruption ×1.65, dim days; the Mire and deeper corrupt even by day |
 
 ### The Drowned
-Broken Squire · Drowned Footman · Shade Archer · Swarming Revenant (rises from the ground) · Lantern Defiler (hunts light sources) · Blackguard (armoured tank) · Drowned Champion (boss: summons revenants and calls up spike eruptions). Every enemy telegraphs its attack with a cyan wind-up, so you can dash out of the way.
+Every enemy telegraphs its attack with a cyan wind-up, so you can dash out of the way.
+- **Mire Stalker**: fast and frail. Weaves from side to side, leaps in to strike, then falls back and comes again.
+- **Drowned Wretch**: the common melee Drowned. Each hit also adds 4% corruption.
+- **Tide Archer**: keeps its distance. Every other shot is a spread of three arrows.
+- **Swarming Revenant**: claws up out of the ground and closes in from all sides.
+- **Lantern Reaver**: hunts light sources, and torches near it burn down five times as fast. Leaps at you when close.
+- **Bone Bulwark**: armoured tank. Its shield blocks 70% of blows from the front, Drowned near it take 25% less damage, and it braces and charges down a straight lane.
+- **Marsh Hexbearer**: a caster that stays at range. It throws slow orbs that add corruption, pools corruption under you every third cast (standing in a pool wounds and corrupts you), teleports away when you get close, and calls up revenants.
+- **Drowned Sovereign** (boss): rallies nearby Drowned (faster, harder hits), summons revenants, and alternates spike eruptions with shockwave lanes. Below half health it bursts with corruption and grows faster.
 
 ## Code layout
 
@@ -156,6 +164,7 @@ No build step, no dependencies. These are plain scripts loaded in order:
 | `src/camp.js` | base camp layout per tier, palisade walls, gate pathing |
 | `src/art.js` | procedural pixel sprites for the world, camp and effects |
 | `src/units.js` | the knight and Drowned Knight sprite sheets (all animations, corruption stages) |
+| `src/sprites.js` | loads hand-drawn PNG art over the coded sprites and sheets |
 | `src/world.js` | endless chunked wetland: ground texture, resources, blooms, collisions |
 | `src/game.js` | simulation: player, corruption, spawning, enemy AI, combat, camp economy, saving |
 | `src/render.js` | drawing, the darkness/light compositing, effects |
@@ -171,9 +180,23 @@ Progress (camp, stored supplies, kits, day) saves to the browser's `localStorage
 
 The knight and every Drowned Knight are pixel sprites painted in code (`src/units.js`) at the same pixel size as the world. They follow the Lantern Knight concept sheets.
 - **Lantern Knight**: idle, 4-frame walk, 3-frame attack, dash, hurt and death, in down / up / side views (left mirrors right). There are four corruption stages: steel and cloth darken, cyan seeps in, and the lantern turns cyan.
-- **The Drowned** share the knight's hood, mantle and armour, darkened, with glowing visors and cyan drips. Each has its own gear: the squire's short sword, the footman's round shield, the archer's bow, the defiler's pole lantern, the Blackguard's tower shield and bulk, and the Champion's crown and greatsword. The revenant crawls.
+- **The Drowned** share the knight's hood, mantle and armour, darkened, with glowing visors and cyan drips. Their coded sheets are now only a fallback for the PNG art below.
 
 Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite sheets can replace the generated ones later without touching the game code.
+
+**Hand-drawn art** (`src/sprites.js`) replaces coded art with PNG files in `assets/sprites/`, cut from the concept and motion sheets:
+- **Lantern Blade knight**: front, back and side poses and the attack swing from the motion sheet, plus walk, dash, hurt and death from the sprite sheet. Corruption stages and the drowned self are tinted from the same frames. Other kits are still coded.
+- **Drowned Knights**, each from its motion sheet: Mire Stalker (squire), Drowned Wretch (footman), Tide Archer (archer), Swarming Revenant (revenant), Lantern Reaver (defiler), Bone Bulwark (blackguard), Marsh Hexbearer (hexbearer) and Drowned Sovereign (champion).
+- **Blooms**: Refuge, Sentinel, Mother Root, Mire Sprout and Fading Husk, lit and unlit.
+- **Camp**: fire ring, watchtower, palisade, lantern pylon, armory, workbench and cultivation plot. The tents, banners, forge, gate and tier 2–3 fire pits are still coded.
+- **World**: trees, reeds, pillars, graves, driftwood and rock. Iron scrap, pearls and the ground are still coded.
+
+`tools/cut_concept_sprites.py` recreates the cut-out PNGs from the concept sheets (Python with Pillow, NumPy and SciPy). To add or redraw art:
+1. Draw one PNG per frame at art-pixel size (a knight is about 36 px tall), facing right for side views. Free editors: [Piskel](https://www.piskelapp.com) or [LibreSprite](https://libresprite.github.io).
+2. Put it under `assets/sprites/` and list it in `src/sprites.js` (`UNITS` for animated units, `PROPS` for world and camp sprites).
+3. Add the file to the sprite list in `sw.js` so the installed app has it offline.
+
+A file that's missing or fails to load just keeps the coded frames.
 
 `assets/lantern_atlas.png` (the earlier illustrated sheet) stays in the repo for reference but is no longer loaded.
 

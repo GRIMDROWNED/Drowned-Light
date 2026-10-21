@@ -116,6 +116,15 @@
       c.beginPath(); c.ellipse(tg.x, tg.y, tg.r * k, tg.r * 0.55 * k, 0, 0, Math.PI * 2); c.fill();
     }
 
+    /* Hexbearer corruption pools */
+    for (const q of G.hexPools || []) {
+      const k = Math.min(1, q.t / 0.6) * Math.min(1, (q.life - q.t) / 0.8), pulse = 0.85 + 0.15 * Math.sin(t * 4 + q.x);
+      c.fillStyle = `rgba(20,120,130,${0.32 * k})`;
+      c.strokeStyle = `rgba(90,235,245,${0.55 * k})`;
+      c.lineWidth = 2;
+      c.beginPath(); c.ellipse(q.x, q.y, q.r * pulse, q.r * 0.55 * pulse, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+    }
+
     /* y-sorted scene */
     const list = [];
     const m = 120;

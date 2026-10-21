@@ -401,6 +401,7 @@
     sh.revenant = buildSheet({ pal: d({ cloth: "#6f7c7b" }), weapon: "claws", crawl: true, drips: 8, seed: 24 });
     sh.defiler = buildSheet({ pal: d({ cloth: "#99a3a0" }), weapon: "pole", offhand: "none", torn: true, drips: 12, seed: 25 });
     sh.blackguard = buildSheet({ pal: d({ cloth: "#4a5559", clothMd: "#36424a", metal: "#2c3840", metalHi: "#55707a" }), weapon: "sword", offhand: "tower", bulk: 2, drips: 10, seed: 26 });
+    sh.hexbearer = buildSheet({ pal: d({ cloth: "#8d9896" }), weapon: "staff", offhand: "lantern", torn: true, drips: 14, seed: 28 });
     sh.champion = buildSheet({ pal: d({ cloth: "#c3cbc6", clothMd: "#8d9a99", blade: "#7fa6b0" }), weapon: "greatsword", offhand: "none", bulk: 1, crown: true, drips: 22, seed: 27 });
   };
 
@@ -414,7 +415,7 @@
   };
   Art.specs = {};
   Art.sheet = function (key) {
-    if (!Art.sheets[key] && Art.specs[key]) Art.sheets[key] = buildSheet(Art.specs[key]);
+    if (!Art.sheets[key] && Art.specs[key]) Art.sheets[key] = Art.applyFrames(key, buildSheet(Art.specs[key]));
     return Art.sheets[key];
   };
 
@@ -426,7 +427,6 @@
   };
 
   const tmp = document.createElement("canvas");
-  tmp.width = FW; tmp.height = FH;
   const tg = tmp.getContext("2d");
 
   /* Draw a unit with its feet at (x, y). opt: alpha, flash (0..1), flashColor, clip (0..1 visible from top). */
@@ -435,18 +435,21 @@
     if (!sheet) return;
     const { dir, flip } = Art.unitDir(angle);
     const frames = sheet[dir][anim] || sheet[dir].idle;
-    const fr = frames[((frame % frames.length) + frames.length) % frames.length].c;
+    const f = frames[((frame % frames.length) + frames.length) % frames.length];
+    // Coded frames share one size and foot anchor; loaded PNG frames carry their own.
+    const fr = f.c, w = f.w, h = f.h, ax = f.ax != null ? f.ax : CX, ay = f.ay != null ? f.ay : GY;
     const s = PS * scale;
     const clip = opt.clip != null ? Math.max(0, Math.min(1, opt.clip)) : 1;
     let img = fr;
     if (opt.flash) {
-      tg.clearRect(0, 0, FW, FH);
+      if (tmp.width !== w || tmp.height !== h) { tmp.width = w; tmp.height = h; }
+      tg.clearRect(0, 0, w, h);
       tg.globalCompositeOperation = "source-over";
       tg.drawImage(fr, 0, 0);
       tg.globalCompositeOperation = "source-atop";
       tg.globalAlpha = Math.min(1, opt.flash);
       tg.fillStyle = opt.flashColor || "#fff";
-      tg.fillRect(0, 0, FW, FH);
+      tg.fillRect(0, 0, w, h);
       tg.globalAlpha = 1;
       tg.globalCompositeOperation = "source-over";
       img = tmp;
@@ -455,7 +458,7 @@
     if (opt.alpha != null) ctx.globalAlpha *= opt.alpha;
     ctx.translate(Math.round(x), Math.round(y));
     if (flip) ctx.scale(-1, 1);
-    ctx.drawImage(img, 0, 0, FW, FH * clip, -CX * s, -GY * s, FW * s, FH * clip * s);
+    ctx.drawImage(img, 0, 0, w, h * clip, -ax * s, -ay * s, w * s, h * clip * s);
     ctx.restore();
   };
   Art.animLength = (key, anim) => Art.sheet(key).down[anim].length;

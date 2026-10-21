@@ -7,7 +7,7 @@
   Art.load = function () {
     buildSprites();
     Art.buildUnits();
-    return Promise.resolve();
+    return Art.loadFrames();
   };
 
   /* ---------------- Procedural pixel sprites ----------------

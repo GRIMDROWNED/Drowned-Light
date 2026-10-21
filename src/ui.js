@@ -486,7 +486,7 @@
       const full = s.torches >= st.torchMax;
       html += `<article class="card">
         <header><h3>Torches</h3><span class="tag">${s.torches} / ${st.torchMax}</span></header>
-        <p>Plant firelight anywhere. Torches reverse corruption like the camp fire, but burn out after a while — and Lantern Defilers hunt them.</p>
+        <p>Plant firelight anywhere. Torches reverse corruption like the camp fire, but burn out after a while — and Lantern Reavers snuff them out.</p>
         <footer><div class="cost">${costHtml(DL.TORCH_COST)}</div><button data-act="torch" ${!full && G.canAfford(DL.TORCH_COST) ? "" : "disabled"}>${full ? "Satchel full" : "Craft"}</button></footer></article>`;
       const day = G.phase() === "day", guest = G.isGuest();
       html += `<article class="card">

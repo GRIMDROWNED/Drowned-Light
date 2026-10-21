@@ -25,11 +25,11 @@
     { name: "The Shallows", r: 380, corrupt: 1, hp: 1, dmg: 1, yield: 1, density: 9, dim: 0,
       pool: { squire: 5, footman: 3, revenant: 1 } },
     { name: "The Mire", r: 1300, corrupt: 1.25, hp: 1.35, dmg: 1.2, yield: 1.6, density: 11, dim: 0.08,
-      pool: { squire: 4, footman: 4, archer: 3, revenant: 2, defiler: 2 } },
+      pool: { squire: 4, footman: 4, archer: 3, revenant: 2, defiler: 2, hexbearer: 1 } },
     { name: "Drowned Reaches", r: 2600, corrupt: 1.55, hp: 1.8, dmg: 1.45, yield: 2.3, density: 13, dim: 0.2,
-      pool: { squire: 3, footman: 4, archer: 3, revenant: 3, defiler: 3, blackguard: 2, champion: 0.15 } },
+      pool: { squire: 3, footman: 4, archer: 3, revenant: 3, defiler: 3, blackguard: 2, hexbearer: 2, champion: 0.15 } },
     { name: "The Abyss", r: 4000, corrupt: 2, hp: 2.4, dmg: 1.75, yield: 3.2, density: 14, dim: 0.5, abyss: true,
-      pool: { footman: 3, archer: 3, revenant: 3, defiler: 3, blackguard: 3, champion: 0.5 } },
+      pool: { footman: 3, archer: 3, revenant: 3, defiler: 3, blackguard: 3, hexbearer: 3, champion: 0.5 } },
   ];
 
   // What grows where (weights), per zone index.
@@ -59,20 +59,22 @@
 
   // Every Drowned Knight wears the player's armour, corrupted. Sprites: src/units.js, keyed by type.
   DL.ENEMIES = {
-    squire: { name: "Broken Squire", hp: 16, speed: 92, dmg: 6, range: 30, windup: 0.32, cd: 1.0, scale: 0.78,
-      radius: 10, mass: 0.7, drop: { iron: 0.15 } },
-    footman: { name: "Drowned Footman", hp: 34, speed: 58, dmg: 11, range: 36, windup: 0.45, cd: 1.4, scale: 1,
-      radius: 13, mass: 1, drop: { iron: 0.4 } },
-    archer: { name: "Shade Archer", hp: 22, speed: 64, dmg: 9, range: 230, windup: 0.7, cd: 2.3, scale: 0.95,
-      radius: 12, mass: 0.9, ranged: true, keep: 170, drop: { iron: 0.3 } },
+    squire: { name: "Mire Stalker", hp: 16, speed: 92, dmg: 6, range: 30, windup: 0.32, cd: 1.0, scale: 0.78,
+      radius: 10, mass: 0.7, zigzag: true, lunge: 380, retreat: 0.7, drop: { iron: 0.15 } },
+    footman: { name: "Drowned Wretch", hp: 34, speed: 58, dmg: 11, range: 36, windup: 0.45, cd: 1.4, scale: 1,
+      radius: 13, mass: 1, corruptHit: 4, drop: { iron: 0.4 } },
+    archer: { name: "Tide Archer", hp: 22, speed: 64, dmg: 9, range: 230, windup: 0.7, cd: 2.3, scale: 0.95,
+      radius: 12, mass: 0.9, ranged: true, keep: 170, spread: 3, drop: { iron: 0.3 } },
     revenant: { name: "Swarming Revenant", hp: 9, speed: 104, dmg: 5, range: 24, windup: 0.25, cd: 0.9, scale: 0.85,
-      radius: 8, mass: 0.4, crawl: true, drop: { resin: 0.1 } },
-    defiler: { name: "Lantern Defiler", hp: 44, speed: 52, dmg: 12, range: 40, windup: 0.6, cd: 1.6, scale: 1.05,
-      radius: 13, mass: 1.2, targetsLight: true, lightDmg: 26, drop: { resin: 0.6, iron: 0.3 } },
-    blackguard: { name: "Blackguard", hp: 140, speed: 40, dmg: 20, range: 44, windup: 0.75, cd: 2.0, scale: 1.15,
-      radius: 18, mass: 3.5, armor: 0.35, drop: { iron: 1 } },
-    champion: { name: "Drowned Champion", hp: 520, speed: 56, dmg: 28, range: 70, windup: 0.8, cd: 2.2, scale: 1.5,
-      radius: 24, mass: 8, armor: 0.2, boss: true, drop: { iron: 1, pearl: 1 } },
+      radius: 8, mass: 0.4, crawl: true, surround: true, drop: { resin: 0.1 } },
+    defiler: { name: "Lantern Reaver", hp: 44, speed: 52, dmg: 12, range: 40, windup: 0.6, cd: 1.6, scale: 1.05,
+      radius: 13, mass: 1.2, targetsLight: true, lightDmg: 26, snuff: 90, lunge: 340, drop: { resin: 0.6, iron: 0.3 } },
+    blackguard: { name: "Bone Bulwark", hp: 140, speed: 40, dmg: 20, range: 44, windup: 0.75, cd: 2.0, scale: 1.15,
+      radius: 18, mass: 3.5, armor: 0.35, shield: 0.7, guard: 110, charge: true, drop: { iron: 1 } },
+    champion: { name: "Drowned Sovereign", hp: 520, speed: 56, dmg: 28, range: 70, windup: 0.8, cd: 2.2, scale: 1.5,
+      radius: 24, mass: 8, armor: 0.2, boss: true, aura: 170, drop: { iron: 1, pearl: 1 } },
+    hexbearer: { name: "Marsh Hexbearer", hp: 38, speed: 50, dmg: 8, range: 250, windup: 0.9, cd: 2.6, scale: 1.05,
+      radius: 13, mass: 1.1, ranged: true, keep: 200, caster: true, drop: { resin: 0.7, pearl: 0.05 } },
     self: { name: "Your Drowned Self", hp: 200, speed: 70, dmg: 15, range: 44, windup: 0.5, cd: 1.3, scale: 1.05,
       radius: 14, mass: 2, boss: true, drop: {} },
   };
@@ -251,7 +253,7 @@
       effect: (l) => (l ? `${l} tower${l > 1 ? "s" : ""} · bolt damage ${10 + 6 * l}` : "No towers"),
       costs: [{ wood: 24, stone: 14 }, { wood: 34, stone: 24, iron: 10 }, { wood: 48, iron: 24, pearl: 3 }],
       reqFlame: (t) => t + 1 },
-    { id: "pylon", name: "Lantern Pylons", max: 3, info: "Firelight on the perimeter. Guides the way and slows the encroaching Drowned — but Defilers hunt them.",
+    { id: "pylon", name: "Lantern Pylons", max: 3, info: "Firelight on the perimeter. Guides the way and slows the encroaching Drowned — but Lantern Reavers hunt them.",
       effect: (l) => (l ? `${2 * l} pylons light the walls` : "No pylons"),
       costs: [{ wood: 16, stone: 10, resin: 4 }, { wood: 24, iron: 10, resin: 8 }, { stone: 30, iron: 18, pearl: 2 }],
       reqFlame: (t) => t + 1 },
@@ -270,6 +272,7 @@
     if (day >= 2) p.archer = 2;
     if (day >= 3) { p.defiler = 2; p.revenant = 2; }
     if (day >= 4) p.blackguard = 1;
+    if (day >= 5) p.hexbearer = 1;
     return p;
   };
 })(window.DL);
