@@ -209,7 +209,8 @@ def split_grid(img, cols, rows, key=(255, 0, 255), tol=120):
         m = owner[lab] == c
         m[lab == 0] = False
         ys, xs = np.where(m)
-        y0, y1, x0, x1 = max(ys.min() - 8, 0), ys.max() + 9, max(xs.min() - 8, 0), xs.max() + 9
+        y0, y1 = max(ys.min() - 8, 0), min(ys.max() + 9, a.shape[0])
+        x0, x1 = max(xs.min() - 8, 0), min(xs.max() + 9, a.shape[1])
         cell = np.zeros((y1 - y0, x1 - x0, 3), 'uint8') + np.array(key, 'uint8')
         cell[m[y0:y1, x0:x1]] = a[y0:y1, x0:x1][m[y0:y1, x0:x1]]
         out.append(Image.fromarray(cell))
