@@ -30,7 +30,14 @@
     }
     return views;
   }
-  const drowned = (type, views) => ({ path: "assets/sprites/drowned/" + type + "/", keys: { [type]: [0, false] }, views: views || motion() });
+  const drowned = (type, views, res) => ({ path: "assets/sprites/drowned/" + type + "/", keys: { [type]: [0, false] }, views: views || motion(), res });
+
+  // The 12 poses from the enemy prompt: three views, a side walk, three attack frames, hurt and death.
+  const POSES_SIDE = { hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] };
+  const twelve = (type) => drowned(type, motion({
+    side: Object.assign({ walk: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"] }, POSES_SIDE),
+    down: POSES_SIDE, up: POSES_SIDE,
+  }), 2);
 
   // The knight has his own walk, dash, hurt and death frames; down and up views borrow the side ones for dash, hurt and death.
   const KNIGHT_SIDE = { dash: ["side/dash"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] };
@@ -45,6 +52,7 @@
         up: KNIGHT_SIDE,
       }),
     },
+    twelve("squire"),
   ];
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
