@@ -36,6 +36,8 @@ GRIDS = {
     'bone-bulwark/poses-b.png': (3, 2, POSES_B),
     'marsh-hexbearer/poses-a.png': (3, 2, POSES_A),
     'marsh-hexbearer/poses-b.png': (3, 2, POSES_B),
+    'drowned-sovereign/poses-a.png': (3, 2, POSES_A),
+    'drowned-sovereign/poses-b.png': (3, 2, POSES_B),
 }
 
 SETS = {
@@ -88,6 +90,8 @@ SETS = {
     'bone-bulwark': ('drowned/blackguard', 'bone-bulwark/01_front.png', 84, 1, twelve('bone-bulwark', TWELVE_FILES)),
     # its staff stands above the hood, so the reference pose is taller than the others
     'marsh-hexbearer': ('drowned/hexbearer', 'marsh-hexbearer/01_front.png', 92, 1, twelve('marsh-hexbearer', TWELVE_FILES)),
+    # the boss is drawn 1.5x bigger, so it is cut at 3 file px per art pixel (res: 3) to stay sharp
+    'drowned-sovereign': ('drowned/champion', 'drowned-sovereign/01_front.png', 128, 1, twelve('drowned-sovereign', TWELVE_FILES)),
 }
 
 # Animation sheets: character -> [(sheet, columns, rows, height of the first frame's figure, output prefix[, row])].
@@ -134,6 +138,11 @@ SHEETS = {
         ('marsh-hexbearer/walk-side-4.png', 4, 1, 89, 'side/walk'),
         ('marsh-hexbearer/walk-front-4.png', 4, 1, 93, 'walkF'),
         ('marsh-hexbearer/walk-back-4.png', 4, 1, 91, 'walkB'),
+    ],
+    'drowned-sovereign': [
+        ('drowned-sovereign/walk-side-4.png', 4, 1, 125, 'side/walk'),
+        ('drowned-sovereign/walk-front-4.png', 4, 1, 127, 'walkF'),
+        ('drowned-sovereign/walk-back-4.png', 4, 1, 129, 'walkB'),
     ],
 }
 
