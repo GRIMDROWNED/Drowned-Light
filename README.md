@@ -188,6 +188,7 @@ Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite 
 - **Lantern Blade knight**: front, back and side poses, a 4-frame walk, a 3-frame attack, dash, hurt and death. The frames are cut at twice the art resolution (`res: 2`) so the detail survives. Corruption stages and the drowned self are tinted from the same frames. Other kits are still coded.
 - **Mire Stalker** (squire): the 12 poses from the enemy prompt (three views, a 4-frame side walk, three attack frames, hurt and death), also at `res: 2`.
 - **Drowned Wretch** (footman): two batches of renders. The first batch came out as the knight with cyan details, so `match_colors` in `tools/cutlib.py` recolours it to match the second.
+- **Tide Archer** (archer): the 12 poses. Six of them came as cells of one 3×2 sheet, cut into frames before cutting.
 - Everything else (the other Drowned, plants, camp and world) is coded until its new art arrives. Set `ENABLED = false` in `src/sprites.js` to use coded art everywhere.
 
 `tools/cut_ai_sprites.py <folder>` cuts the AI renders: it keys out the magenta, shrinks every pose of a character by the same factor, limits the palette and adds an outline (Python with Pillow, NumPy and SciPy). `tools/cut_concept_sprites.py` is the older cutter for the concept sheets. To add or redraw art:
