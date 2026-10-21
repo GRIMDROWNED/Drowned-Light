@@ -2,7 +2,7 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.14";
+const VERSION = "0.15.15";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
@@ -10,7 +10,7 @@ const FILES = [
   "src/world.js", "src/game.js", "src/kits.js", "src/net.js", "src/render.js", "src/ui.js", "src/main.js",
   "icons/icon-192.png", "icons/icon-512.png", "icons/favicon-32.png", "assets/drowned-games.jpg",
   ...Object.entries({
-    "drowned/archer/": ["attackA", "attackB", "attackC", "back", "front", "right"],
+    "drowned/archer/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "drowned/archer/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "drowned/footman/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "drowned/footman/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],

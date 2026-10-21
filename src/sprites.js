@@ -82,7 +82,7 @@
       feet: walkFeet([44, 80], [35, 82], [30, 82]),
     },
     walking("squire", [46, 86], [38, 86], [37, 84]),
-    twelve("archer"),
+    walking("archer", [44, 83], [35, 90], [33, 88]),
     walking("footman", [56, 78], [36, 84], [37, 83]),
   ];
 
