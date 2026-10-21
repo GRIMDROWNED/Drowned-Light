@@ -156,6 +156,7 @@ No build step, no dependencies. These are plain scripts loaded in order:
 | `src/camp.js` | base camp layout per tier, palisade walls, gate pathing |
 | `src/art.js` | procedural pixel sprites for the world, camp and effects |
 | `src/units.js` | the knight and Drowned Knight sprite sheets (all animations, corruption stages) |
+| `src/sprites.js` | loads hand-drawn PNG frames over the coded sheets |
 | `src/world.js` | endless chunked wetland: ground texture, resources, blooms, collisions |
 | `src/game.js` | simulation: player, corruption, spawning, enemy AI, combat, camp economy, saving |
 | `src/render.js` | drawing, the darkness/light compositing, effects |
@@ -174,6 +175,13 @@ The knight and every Drowned Knight are pixel sprites painted in code (`src/unit
 - **The Drowned** share the knight's hood, mantle and armour, darkened, with glowing visors and cyan drips. Each has its own gear: the squire's short sword, the footman's round shield, the archer's bow, the defiler's pole lantern, the Blackguard's tower shield and bulk, and the Champion's crown and greatsword. The revenant crawls.
 
 Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite sheets can replace the generated ones later without touching the game code.
+
+**Hand-drawn frames** (`src/sprites.js`) replace coded frames with PNG files. The Lantern Blade knight's side view (idle, walk, attack, dash, hurt, death) now comes from `assets/sprites/lantern-knight/side/`, cut from the Lantern Knight sprite concept sheet. Its corruption stages are tinted from the same frames, and the up and down views are still coded. To add or redraw art:
+1. Draw one PNG per frame at art-pixel size (the knight is about 36 px tall), facing right for side views. Free editors: [Piskel](https://www.piskelapp.com) or [LibreSprite](https://libresprite.github.io).
+2. Put it under `assets/sprites/<set>/<view>/` and list it in that set in `src/sprites.js`, with its foot point in `feet`.
+3. Add the file to the `FILES` list in `sw.js` so the installed app has it offline.
+
+A file that's missing or fails to load just keeps the coded frames.
 
 `assets/lantern_atlas.png` (the earlier illustrated sheet) stays in the repo for reference but is no longer loaded.
 
