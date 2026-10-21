@@ -520,13 +520,16 @@
     c.fillRect(k.x - 2, y - 2, 2, 2);
   }
 
+  // Walk frames per second: `rate` is for a 4-frame walk, and longer walks play faster so a stride takes as long.
+  const walkRate = (key, rate) => (rate * Art.animLength(key, "walk")) / 4;
+
   // Which animation the player shows this frame: [anim, frame, facing angle].
   function playerAnim(G, p, t) {
     if (G.state === "dying") return ["death", Math.min(2, Math.floor(G.dying / 0.45)), p.angle];
     if (p.dashT > 0) return ["dash", 0, p.angle];
     if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
     if (p.swing) return ["attack", Math.min(2, Math.floor((p.swing.t / p.swing.dur) * 3)), p.swing.ang];
-    if (p.moving) return ["walk", Math.floor(p.animT * 8), p.angle];
+    if (p.moving) return ["walk", Math.floor(p.animT * walkRate(G.save.kit + p.stage, 8)), p.angle];
     return ["idle", Math.floor(t * 1.6), p.angle];
   }
 
@@ -551,7 +554,7 @@
       let anim = "idle", fr = Math.floor(t * 1.6), ang = a.angle;
       if (a.dashT > 0) anim = "dash";
       else if (a.swing) { anim = "attack"; fr = Math.min(2, Math.floor((a.swing.t / a.swing.dur) * 3)); ang = a.swing.ang; }
-      else if (a.moving) { anim = "walk"; fr = Math.floor(a.animT * 8); }
+      else if (a.moving) { anim = "walk"; fr = Math.floor(a.animT * walkRate(key, 8)); }
       Art.drawUnit(c, key, anim, fr, ang, a.x, a.y, 1);
     }
     // name tag + health
@@ -570,7 +573,7 @@
   function enemyAnim(e, t) {
     if (e.state === "windup") return ["attack", 0, e.aim];
     if (e.state === "recover") return ["attack", e.stT > 0.2 ? 1 : 2, e.aim];
-    if (e.moving) return ["walk", Math.floor(e.animT * (e.def.crawl ? 10 : 7)), e.angle];
+    if (e.moving) return ["walk", Math.floor(e.animT * walkRate(unitKey(e), e.def.crawl ? 10 : 7)), e.angle];
     return ["idle", Math.floor(t * 1.6 + e.animT), e.angle];
   }
 
