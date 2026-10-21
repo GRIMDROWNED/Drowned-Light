@@ -5,7 +5,7 @@ so poses keep their relative size."""
 import os, sys
 from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
-from cutlib import cut_keyed, cut_sheet, contact, match_colors, mirror_legs
+from cutlib import cut_keyed, cut_sheet, contact, match_colors, mirror_legs, recolor_frames
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files/art-prompts/returned'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites')
@@ -89,6 +89,11 @@ SHEETS = {
         ('drowned-wretch/walk-front-4.png', 4, 1, 82, 'walkF'),
         ('drowned-wretch/walk-back-4.png', 4, 1, 81, 'walkB'),
     ],
+    'tide-archer': [
+        ('tide-archer/walk-side-4.png', 4, 1, 79, 'side/walk'),
+        ('tide-archer/walk-front-4.png', 4, 1, 88, 'walkF'),
+        ('tide-archer/walk-back-4.png', 4, 1, 86, 'walkB'),
+    ],
 }
 
 # Walk sheets the AI drew out of order or stepping with one foot only: the frames (1-based) to keep,
@@ -96,6 +101,9 @@ SHEETS = {
 FRAME_ORDER = {('lantern-knight', 'walkB'): [2, 1, 4, -1], ('mire-stalker', 'walkB'): [1, 2, 3, -2],
                # the lantern is missing from frames 1 and 3
                ('drowned-wretch', 'walkB'): [2, 2, 4, 4]}
+
+# Walk sheets rendered in other colours than the character's first batch: recolour to this image.
+SHEET_MATCH = {'tide-archer': 'tide-archer/01_front.png'}
 
 only = sys.argv[2:]  # optional character names to cut
 for name, (folder, ref, target, fringe, files) in SETS.items():
@@ -128,6 +136,8 @@ for name, sheets in SHEETS.items():
             h = img.height // rows
             img, rows = img.crop((0, row[0] * h, img.width, (row[0] + 1) * h)), 1
         frames, feet = cut_sheet(img, cols, rows, height)
+        if name in SHEET_MATCH:
+            frames = recolor_frames(frames, match_colors(Image.open(os.path.join(SRC, SHEET_MATCH[name]))))
         order = FRAME_ORDER.get((name, prefix))
         if order:
             frames = [frames[i - 1] if i > 0 else mirror_legs(frames[-i - 1]) for i in order]

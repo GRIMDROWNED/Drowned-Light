@@ -177,3 +177,15 @@ def mirror_legs(im, legs=0.32, half=9):
     out.paste((0, 0, 0, 0), box)
     out.alpha_composite(im.crop(box).transpose(Image.FLIP_LEFT_RIGHT), box[:2])
     return out
+
+
+def recolor_frames(frames, recolor):
+    """Apply a match_colors recolor to already cut RGBA frames, leaving transparent pixels alone."""
+    out = []
+    for im in frames:
+        a = np.asarray(im.convert('RGBA')).astype(float)
+        rgb = a[..., :3].copy()
+        rgb[a[..., 3] == 0] = 0
+        a[..., :3] = np.clip(recolor(rgb), 0, 255)
+        out.append(Image.fromarray(a.astype(np.uint8)))
+    return out
