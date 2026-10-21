@@ -3,7 +3,8 @@
    camp sprites (src/art.js). Anything not listed keeps its coded art, and a file that
    fails to load is skipped.
    One PNG per frame at art-pixel size (1 px = 1 art pixel, shown ×2 in game), facing
-   right for side views. Frame entries are paths under the set's folder, with optional
+   right for side views. A set with `res: 2` has two file pixels per art pixel (drawn 1:1 on
+   screen) for finer detail. Frame entries are paths under the set's folder, with optional
    suffixes: "@bob" draws the frame one pixel lower (a step), "@fall" lays it on its side.
    `feet` gives a file's foot point [x, y] in its own pixels; without it the feet are
    guessed from the lowest opaque pixels near the middle of the bottom of the sprite. */
@@ -11,8 +12,8 @@
 (function (DL) {
   const Art = DL.Art;
 
-  // Off for now: the cut-out art is still rough, so the game uses the coded sprites. Set to true to load the PNGs again.
-  const ENABLED = false;
+  // Set to false to go back to the coded sprites everywhere.
+  const ENABLED = true;
 
   // Kit knights: [how far toward the drowned palette, lantern turns cyan] per corruption stage, as in src/units.js.
   const KNIGHT_STAGES = { lanternBlade1: [0, false], lanternBlade2: [0.22, false], lanternBlade3: [0.5, false], lanternBlade4: [0.8, true], self_lanternBlade: [0.9, true] };
@@ -31,41 +32,25 @@
   }
   const drowned = (type, views) => ({ path: "assets/sprites/drowned/" + type + "/", keys: { [type]: [0, false] }, views: views || motion() });
 
-  // The knight's side view keeps the walk, dash, hurt and death frames from the Lantern Knight sprite sheet.
+  // The knight has his own walk, dash, hurt and death frames; down and up views borrow the side ones for dash, hurt and death.
   const KNIGHT_SIDE = { dash: ["side/dash"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] };
   const UNITS = [
     {
       path: "assets/sprites/lantern-knight/",
       keys: KNIGHT_STAGES,
+      res: 2,
       views: motion({
-        side: Object.assign({ walk: ["side/walk1", "side/walk2", "side/walk3", "side/walk2"] }, KNIGHT_SIDE),
+        side: Object.assign({ walk: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"] }, KNIGHT_SIDE),
         down: KNIGHT_SIDE,
         up: KNIGHT_SIDE,
       }),
-      feet: {
-        "side/walk1": [15, 37], "side/walk2": [12, 37], "side/walk3": [15, 36],
-        "side/dash": [20, 36], "side/hurt": [15, 34], "side/death": [25, 37],
-      },
     },
-    drowned("squire"), drowned("footman"), drowned("archer"), drowned("defiler"), drowned("blackguard"), drowned("champion"), drowned("hexbearer"),
-    drowned("revenant", (() => {
-      const v = { idle: ["r0"], walk: ["r0", "r1", "r2", "r3"], attack: ["attackA", "attackB", "attackB"], dash: ["r4"], hurt: ["r5"], death: ["r5", "r5", "r5@fall"] };
-      return { down: v, up: v, side: v };
-    })()),
   ];
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
   const PROPS = {
     path: "assets/sprites/",
-    files: {
-      refugeOn: "plants/refugeOn", refugeOff: "plants/refugeOff", sentinelOn: "plants/sentinelOn", sentinelOff: "plants/sentinelOff",
-      rootOn: "plants/rootOn", rootOff: "plants/rootOff", sproutOn: "plants/sproutOn", sproutOff: "plants/sproutOff",
-      sproutBare: "plants/sproutBare", husk: "plants/husk",
-      rack: "camp/rack", workbench: "camp/workbench", garden: "camp/garden",
-      firering: "camp/firering", tower: "camp/tower", palisade: "camp/palisade", pylon: "camp/pylon",
-      tree0: "world/tree0", tree1: "world/tree1", reeds: "world/reeds", pillar: "world/pillar", grave: "world/grave",
-      driftwood: "world/driftwood", rock: "world/rock",
-    },
+    files: {},
     // The armory and workbench concept art have their own canopies, so the coded awning is hidden once they load.
     hide: { awning: ["rack", "workbench"] },
   };
@@ -100,14 +85,14 @@
 
   // A frame variant: "bob" one pixel lower, "fall" rotated onto its side.
   function variant(fr, mod) {
-    if (mod === "bob") return { c: fr.c, w: fr.w, h: fr.h, ax: fr.ax, ay: fr.ay - 1 };
+    if (mod === "bob") return { c: fr.c, w: fr.w, h: fr.h, ax: fr.ax, ay: fr.ay - (fr.res || 1), res: fr.res };
     const c = document.createElement("canvas");
     c.width = fr.h; c.height = fr.w;
     const g = c.getContext("2d");
     g.translate(fr.h, 0);
     g.rotate(Math.PI / 2);
     g.drawImage(fr.c, 0, 0);
-    return { c, w: fr.h, h: fr.w, ax: Math.round(fr.h / 2), ay: fr.w };
+    return { c, w: fr.h, h: fr.w, ax: Math.round(fr.h / 2), ay: fr.w, res: fr.res };
   }
 
   // Shift a frame toward the drowned look: darker, colder steel and cloth, optionally a cyan lantern.
@@ -130,7 +115,7 @@
       p[i] = r; p[i + 1] = gr; p[i + 2] = b;
     }
     g.putImageData(d, 0, 0);
-    return { c, w: fr.w, h: fr.h, ax: fr.ax, ay: fr.ay };
+    return { c, w: fr.w, h: fr.h, ax: fr.ax, ay: fr.ay, res: fr.res };
   }
 
   const fileOf = (entry) => entry.split("@")[0];
@@ -145,6 +130,8 @@
     for (const name in PROPS.files) urls.add(PROPS.path + PROPS.files[name] + ".png");
     return Promise.all([...urls].map((u) => loadImage(u).then((img) => { if (img) images[u] = toFrame(img); })))
       .then(() => {
+        for (const set of UNITS) if (set.res) for (const dir in set.views) for (const anim in set.views[dir])
+          for (const e of set.views[dir][anim]) { const f = images[set.path + fileOf(e) + ".png"]; if (f) f.res = set.res; }
         for (const set of UNITS) for (const file in set.feet || {}) {
           const f = images[set.path + file + ".png"];
           if (f) [f.ax, f.ay] = set.feet[file];
