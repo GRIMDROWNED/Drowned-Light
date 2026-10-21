@@ -1,29 +1,52 @@
-/* Drowned Light — hand-drawn sprite frames loaded from PNG files.
-   Each set replaces some views of a coded sheet (src/units.js); anything a set
-   doesn't list keeps its coded frames, and a file that fails to load is skipped.
-   One PNG per frame, drawn at art-pixel size (1 px = 1 art pixel, shown ×2 in game),
-   facing right for the side view. `feet` gives each file's foot point [x, y] in its
-   own pixels, so frames of different sizes line up; without it the feet are guessed
-   from the lowest opaque rows. */
+/* Drowned Light — hand-drawn sprites loaded from PNG files over the coded art.
+   UNITS replace views of a coded unit sheet (src/units.js); PROPS replace world and
+   camp sprites (src/art.js). Anything not listed keeps its coded art, and a file that
+   fails to load is skipped.
+   One PNG per frame at art-pixel size (1 px = 1 art pixel, shown ×2 in game), facing
+   right for side views. Frame entries are paths under the set's folder, with optional
+   suffixes: "@bob" draws the frame one pixel lower (a step), "@fall" lays it on its side.
+   `feet` gives a file's foot point [x, y] in its own pixels; without it the feet are
+   guessed from the lowest opaque pixels near the middle of the bottom of the sprite. */
 "use strict";
 (function (DL) {
   const Art = DL.Art;
 
-  // Corruption stages, matching the coded knight: how far toward the drowned palette, and whether the lantern turns cyan.
-  const STAGES = { 1: [0, false], 2: [0.22, false], 3: [0.5, false], 4: [0.8, true] };
+  // Kit knights: [how far toward the drowned palette, lantern turns cyan] per corruption stage, as in src/units.js.
+  const KNIGHT_STAGES = { lanternBlade1: [0, false], lanternBlade2: [0.22, false], lanternBlade3: [0.5, false], lanternBlade4: [0.8, true], self_lanternBlade: [0.9, true] };
 
-  const SETS = [
+  // An enemy's frames from its concept poses: [idle, step A, step B, wind-up, strike, hurt], the same in every view.
+  function drowned(type, [idle, a, b, wind, strike, hurt]) {
+    const v = {
+      idle: [idle], walk: [a, a + "@bob", b, b + "@bob"], attack: [wind, strike, strike],
+      dash: [a], hurt: [hurt], death: [hurt, hurt, hurt + "@fall"],
+    };
+    return { path: "assets/sprites/drowned/" + type + "/", keys: { [type]: [0, false] }, views: { down: v, up: v, side: v } };
+  }
+
+  const UNITS = [
     {
-      kit: "lanternBlade",
       path: "assets/sprites/lantern-knight/",
+      keys: KNIGHT_STAGES,
       views: {
         side: {
-          idle: ["idle"],
-          walk: ["walk1", "walk2", "walk3", "walk2"],
-          attack: ["attack1", "attack2", "attack2"],
-          dash: ["dash"],
-          hurt: ["hurt"],
-          death: ["hurt", "death", "death"],
+          idle: ["side/idle"],
+          walk: ["side/walk1", "side/walk2", "side/walk3", "side/walk2"],
+          attack: ["side/attack1", "side/attack2", "side/attack2"],
+          dash: ["side/dash"],
+          hurt: ["side/hurt"],
+          death: ["side/hurt", "side/death", "side/death"],
+        },
+        down: {
+          idle: ["down/front"],
+          walk: ["down/front", "down/front@bob", "down/walk34", "down/walk34@bob"],
+          attack: ["down/walk34", "down/lunge34", "down/lunge34"],
+          dash: ["side/dash"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"],
+        },
+        up: {
+          idle: ["up/back"],
+          walk: ["up/back", "up/back@bob", "up/back", "up/back@bob"],
+          attack: ["up/back", "up/back@bob", "up/back@bob"],
+          dash: ["side/dash"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"],
         },
       },
       feet: {
@@ -31,9 +54,34 @@
         "side/attack1": [16, 36], "side/attack2": [22, 39], "side/dash": [20, 36], "side/hurt": [15, 34], "side/death": [25, 37],
       },
     },
+    drowned("squire", ["00", "00", "01", "10", "11", "01"]),
+    drowned("footman", ["00", "00", "01", "00", "01", "00"]),
+    drowned("archer", ["00", "00", "10", "10", "01", "00"]),
+    drowned("revenant", ["00", "00", "10", "10", "11", "00"]),
+    drowned("defiler", ["0", "0", "1", "0", "1", "1"]),
+    drowned("blackguard", ["00", "00", "10", "10", "11", "01"]),
+    drowned("champion", ["0", "0", "0", "0", "0", "0"]),
   ];
+  // The footman's side view has its own poses on the concept sheet.
+  UNITS[2].views.side = {
+    idle: ["10"], walk: ["10", "10@bob", "11", "11@bob"], attack: ["10", "11", "11"],
+    dash: ["10"], hurt: ["11"], death: ["11", "11", "11@fall"],
+  };
 
-  const images = {}; // url -> frame { c, w, h, ax, ay }, filled by Art.loadFrames
+  // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
+  const PROPS = {
+    path: "assets/sprites/",
+    files: {
+      refugeOn: "plants/refugeOn", refugeOff: "plants/refugeOff", sentinelOn: "plants/sentinelOn", sentinelOff: "plants/sentinelOff",
+      rootOn: "plants/rootOn", rootOff: "plants/rootOff", sproutOn: "plants/sproutOn", sproutOff: "plants/sproutOff",
+      sproutBare: "plants/sproutBare", husk: "plants/husk",
+      rack: "camp/rack", workbench: "camp/workbench", garden: "camp/garden",
+    },
+    // The armory and workbench concept art have their own canopies, so the coded awning is hidden once they load.
+    hide: { awning: ["rack", "workbench"] },
+  };
+
+  const images = {}; // url -> frame { c, w, h, ax, ay }
 
   function loadImage(url) {
     return new Promise((resolve) => {
@@ -49,13 +97,28 @@
     c.width = img.width; c.height = img.height;
     const g = c.getContext("2d");
     g.drawImage(img, 0, 0);
-    const p = g.getImageData(0, 0, c.width, c.height).data;
-    const op = (x, y) => p[(y * c.width + x) * 4 + 3] > 0;
-    let ay = c.height - 1;
-    while (ay > 0 && ![...Array(c.width).keys()].some((x) => op(x, ay))) ay--;
+    const w = c.width, h = c.height, p = g.getImageData(0, 0, w, h).data;
+    const op = (x, y) => p[(y * w + x) * 4 + 3] > 0;
+    // Centre of the bottom quarter, then the lowest opaque pixel near that centre (skips a blade tip off to one side).
     let sx = 0, n = 0;
-    for (let y = Math.max(0, ay - 3); y <= ay; y++) for (let x = 0; x < c.width; x++) if (op(x, y)) { sx += x; n++; }
-    return { c, w: c.width, h: c.height, ax: n ? Math.round(sx / n) : c.width >> 1, ay: ay + 1 };
+    for (let y = Math.floor(h * 0.75); y < h; y++) for (let x = 0; x < w; x++) if (op(x, y)) { sx += x; n++; }
+    const ax = n ? Math.round(sx / n) : w >> 1, reach = Math.max(3, Math.round(w * 0.2));
+    const near = (y) => { for (let x = Math.max(0, ax - reach); x <= Math.min(w - 1, ax + reach); x++) if (op(x, y)) return true; return false; };
+    let ay = h - 1;
+    while (ay > 0 && !near(ay)) ay--;
+    return { c, w, h, ax, ay: ay + 1 };
+  }
+
+  // A frame variant: "bob" one pixel lower, "fall" rotated onto its side.
+  function variant(fr, mod) {
+    if (mod === "bob") return { c: fr.c, w: fr.w, h: fr.h, ax: fr.ax, ay: fr.ay - 1 };
+    const c = document.createElement("canvas");
+    c.width = fr.h; c.height = fr.w;
+    const g = c.getContext("2d");
+    g.translate(fr.h, 0);
+    g.rotate(Math.PI / 2);
+    g.drawImage(fr.c, 0, 0);
+    return { c, w: fr.h, h: fr.w, ax: Math.round(fr.h / 2), ay: fr.w };
   }
 
   // Shift a frame toward the drowned look: darker, colder steel and cloth, optionally a cyan lantern.
@@ -81,29 +144,45 @@
     return { c, w: fr.w, h: fr.h, ax: fr.ax, ay: fr.ay };
   }
 
+  const fileOf = (entry) => entry.split("@")[0];
+  const propImage = (name) => images[PROPS.path + PROPS.files[name] + ".png"];
+
+  // Load every listed file, then swap the loaded art into the sprites and sheets already built.
   Art.loadFrames = function () {
     const urls = new Set();
-    for (const set of SETS) for (const dir in set.views) for (const anim in set.views[dir])
-      for (const name of set.views[dir][anim]) urls.add(set.path + dir + "/" + name + ".png");
+    for (const set of UNITS) for (const dir in set.views) for (const anim in set.views[dir])
+      for (const e of set.views[dir][anim]) urls.add(set.path + fileOf(e) + ".png");
+    for (const name in PROPS.files) urls.add(PROPS.path + PROPS.files[name] + ".png");
     return Promise.all([...urls].map((u) => loadImage(u).then((img) => { if (img) images[u] = toFrame(img); })))
       .then(() => {
-        for (const set of SETS) for (const file in set.feet || {}) {
+        for (const set of UNITS) for (const file in set.feet || {}) {
           const f = images[set.path + file + ".png"];
           if (f) [f.ax, f.ay] = set.feet[file];
         }
+        for (const name in PROPS.files) {
+          const f = propImage(name);
+          if (f) Art.sprites[name] = { c: f.c, w: f.w, h: f.h };
+        }
+        for (const name in PROPS.hide)
+          if (PROPS.hide[name].every(propImage)) {
+            const c = document.createElement("canvas");
+            c.width = c.height = 1;
+            Art.sprites[name] = { c, w: 0, h: 0 };
+          }
+        for (const key in Art.sheets) Art.applyFrames(key, Art.sheets[key]);
       });
   };
 
-  // Called whenever a coded sheet is built: swap in any loaded frames for that sheet's key.
+  // Called whenever a coded sheet is built (and for the ones built before loading): swap in loaded frames.
   Art.applyFrames = function (key, sheet) {
-    for (const set of SETS) {
-      let t = 0, cyan = false;
-      if (key === "self_" + set.kit) { t = 0.9; cyan = true; }
-      else if (key.startsWith(set.kit) && STAGES[key.slice(set.kit.length)]) [t, cyan] = STAGES[key.slice(set.kit.length)];
-      else continue;
+    for (const set of UNITS) {
+      if (!set.keys[key]) continue;
+      const [t, cyan] = set.keys[key];
       for (const dir in set.views) for (const anim in set.views[dir]) {
-        const names = set.views[dir][anim];
-        const frames = names.map((n) => images[set.path + dir + "/" + n + ".png"]);
+        const frames = set.views[dir][anim].map((e) => {
+          const f = images[set.path + fileOf(e) + ".png"], mod = e.split("@")[1];
+          return f && (mod ? variant(f, mod) : f);
+        });
         if (frames.every(Boolean)) sheet[dir][anim] = frames.map((f) => corrupt(f, t, cyan));
       }
     }

@@ -9,7 +9,20 @@ const FILES = [
   "src/core.js", "src/view.js", "src/data.js", "src/camp.js", "src/art.js", "src/units.js", "src/sprites.js",
   "src/world.js", "src/game.js", "src/kits.js", "src/net.js", "src/render.js", "src/ui.js", "src/main.js",
   "icons/icon-192.png", "icons/icon-512.png", "icons/favicon-32.png", "assets/drowned-games.jpg",
-  ...["idle", "walk1", "walk2", "walk3", "attack1", "attack2", "dash", "hurt", "death"].map((n) => "assets/sprites/lantern-knight/side/" + n + ".png"),
+  ...Object.entries({
+    "camp/": ["garden", "rack", "workbench"],
+    "drowned/archer/": ["00", "01", "10", "11"],
+    "drowned/blackguard/": ["00", "01", "10", "11"],
+    "drowned/champion/": ["0"],
+    "drowned/defiler/": ["0", "1"],
+    "drowned/footman/": ["00", "01", "10", "11"],
+    "drowned/revenant/": ["00", "10", "11"],
+    "drowned/squire/": ["00", "01", "10", "11"],
+    "lantern-knight/down/": ["front", "lunge34", "walk34"],
+    "lantern-knight/side/": ["attack1", "attack2", "dash", "death", "hurt", "idle", "walk1", "walk2", "walk3"],
+    "lantern-knight/up/": ["back"],
+    "plants/": ["husk", "refugeOff", "refugeOn", "rootOff", "rootOn", "sentinelOff", "sentinelOn", "sproutBare", "sproutOff", "sproutOn"],
+  }).flatMap(([dir, names]) => names.map((n) => "assets/sprites/" + dir + n + ".png")),
 ].map((f) => (/\.(js|css|jpg)$/.test(f) ? f + "?v=" + VERSION : f));
 
 self.addEventListener("install", (e) => {
