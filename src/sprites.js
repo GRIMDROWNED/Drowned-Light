@@ -24,11 +24,20 @@
     const atk = ["attackA", "attackB", "attackC"], views = {};
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]]) {
       views[dir] = Object.assign({
-        idle: [p], walk: [p, p + "@bob", p, p + "@bob"], attack: atk,
+        idle: [p], walk: [p, p, p, p], attack: atk,
         dash: [p], hurt: [p], death: [p, p, p + "@fall"],
       }, extra[dir]);
+      views[dir].walk = stepped(views[dir].walk);
     }
     return views;
+  }
+
+  // Every walk is 8 frames, with the feet lifted in turn on top of the drawn frames ("@L2" lifts the
+  // left half of the legs 2 art px), since the rendered walk frames barely move the legs.
+  const STEP = ["L2", "L1", "", "R1", "R2", "R1", "", "L1"];
+  function stepped(frames) {
+    const f8 = frames.length === 4 ? frames.flatMap((f) => [f, f]) : frames;
+    return f8.map((f, i) => (STEP[i] && !f.includes("@") ? f + "@" + STEP[i] : f));
   }
   const drowned = (type, views, res) => ({ path: "assets/sprites/drowned/" + type + "/", keys: { [type]: [0, false] }, views: views || motion(), res });
 
@@ -106,8 +115,9 @@
     return { c, w, h, ax, ay: ay + 1 };
   }
 
-  // A frame variant: "bob" one pixel lower, "fall" rotated onto its side.
+  // A frame variant: "bob" one pixel lower, "fall" rotated onto its side, "L1"/"R2"... one foot lifted.
   function variant(fr, mod) {
+    if (mod[0] === "L" || mod[0] === "R") return lift(fr, mod[0] === "R", +mod.slice(1));
     if (mod === "bob") return { c: fr.c, w: fr.w, h: fr.h, ax: fr.ax, ay: fr.ay - (fr.res || 1), res: fr.res };
     const c = document.createElement("canvas");
     c.width = fr.h; c.height = fr.w;
@@ -116,6 +126,19 @@
     g.rotate(Math.PI / 2);
     g.drawImage(fr.c, 0, 0);
     return { c, w: fr.h, h: fr.w, ax: Math.round(fr.h / 2), ay: fr.w, res: fr.res };
+  }
+
+  // Lift one half of the legs (left or right of the foot point) by n art px; the rest of the frame stays.
+  function lift(fr, right, n) {
+    const res = fr.res || 1, dy = n * res, legs = Math.round(fr.h * 0.2), y0 = fr.ay - legs;
+    const x0 = right ? fr.ax : 0, w = right ? fr.w - fr.ax : fr.ax;
+    const c = document.createElement("canvas");
+    c.width = fr.w; c.height = fr.h;
+    const g = c.getContext("2d");
+    g.drawImage(fr.c, 0, 0);
+    g.clearRect(x0, y0, w, legs);
+    g.drawImage(fr.c, x0, y0, w, legs, x0, y0 - dy, w, legs);
+    return { c, w: fr.w, h: fr.h, ax: fr.ax, ay: fr.ay, res };
   }
 
   // Shift a frame toward the drowned look: darker, colder steel and cloth, optionally a cyan lantern.
