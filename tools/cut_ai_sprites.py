@@ -75,7 +75,7 @@ SETS = {
 # in that unit's `feet` in src/sprites.js.
 SHEETS = {
     'lantern-knight': [
-        ('knight-walk-side-sheet.png', 4, 2, 78, 'side/walk'),
+        ('knight-walk-side-4.png', 4, 1, 78, 'side/walk'),
         ('knight-walk-frontback-sheet.png', 4, 2, 80, 'walkF', 0),
         ('knight-walk-frontback-sheet.png', 4, 2, 80, 'walkB', 1),
     ],
