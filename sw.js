@@ -16,6 +16,7 @@ const FILES = [
     "drowned/champion/": ["attackA", "attackB", "attackC", "back", "front", "right"],
     "drowned/defiler/": ["attackA", "attackB", "attackC", "back", "front", "right"],
     "drowned/footman/": ["attackA", "attackB", "attackC", "back", "front", "right"],
+    "drowned/hexbearer/": ["attackA", "attackB", "attackC", "back", "front", "right"],
     "drowned/revenant/": ["attackA", "attackB", "r0", "r1", "r2", "r3", "r4", "r5"],
     "drowned/squire/": ["attackA", "attackB", "attackC", "back", "front", "right"],
     "lantern-knight/": ["attackA", "attackB", "attackC", "back", "front", "right"],

@@ -173,7 +173,7 @@
     };
     G.time = 4;
     G.enemies = []; G.projectiles = []; G.pickups = []; G.effects = []; G.texts = [];
-    G.torches = []; G.lightZones = []; G.telegraphs = []; G.pearls = []; G.decals = []; G.lights = [];
+    G.torches = []; G.lightZones = []; G.telegraphs = []; G.hexPools = []; G.pearls = []; G.decals = []; G.lights = [];
     G.blooms = []; G.walls = []; G.wisp = null; G.hitNodes = [];
     G.flame = { kind: "flame", x: 0, y: 0, rad: 24, hp: st.flameHp, max: st.flameHp, lit: true, hitT: 0 };
     G.towerCd = [0, 0, 0];
@@ -238,6 +238,7 @@
     DL.Kits.update(dt);
     updateProjectiles(dt);
     updateTelegraphs(dt);
+    updateHexPools(dt);
     updatePickups(dt);
     updateLightsources(dt);
     updateEffects(dt);
@@ -690,7 +691,7 @@
           G.champSpawned = true;
           const a = rand(0, TAU);
           G.enemies.push(makeEnemy("champion", Math.cos(a) * 560, Math.sin(a) * 560, 2, { goal: G.flame }));
-          say("A Drowned Champion marches on your camp!", "danger");
+          say("The Drowned Sovereign marches on your camp!", "danger");
         }
       }
       return;
@@ -822,12 +823,15 @@
         goal = dp < 150 ? null : e.goal;
       } else e.goal = null;
       if (goal && !goalValid(goal)) goal = null;
-      const tx = goal ? goal.x : p.x, ty = goal ? goal.y : p.y;
+      let tx = goal ? goal.x : p.x, ty = goal ? goal.y : p.y;
+      if (e.def.surround && !goal && dp > 70) { tx += Math.cos(e.id * 2.4) * 36; ty += Math.sin(e.id * 2.4) * 36; } // revenants close in from all sides
       const dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy) || 1;
       const reach = e.def.range + (goal ? goal.rad || 12 : 10);
 
       e.cd -= dt;
       e.slow = Math.max(0, e.slow - dt);
+      e.rallied = Math.max(0, (e.rallied || 0) - dt);
+      behave(e, dt, p, dp);
       if (e.stun > 0) {
         e.stun -= dt; // staggered: no moving, no attacking
         e.state = "move";
@@ -837,15 +841,31 @@
         if (e.stT <= 0) { strike(e); e.state = "recover"; e.stT = 0.35; e.cd = e.def.cd; }
       } else if (e.state === "recover") {
         e.stT -= dt;
-        if (e.stT <= 0) e.state = "move";
+        if (e.stT <= 0) { e.state = "move"; if (e.def.retreat) e.retreatT = e.def.retreat; }
+      } else if (e.chargeT > 0) {
+        // Bone Bulwark: brace, then rush straight down the lane it picked
+        e.chargeT -= dt;
+        e.moving = e.chargeT < 0.85;
+        if (e.moving) {
+          e.x += Math.cos(e.chargeAng) * e.speed * 3.4 * dt;
+          e.y += Math.sin(e.chargeAng) * e.speed * 3.4 * dt;
+          if (Math.random() < 0.5) puff(e.x, e.y, "rgba(60,200,210,0.5)", 40, 0.4);
+          if (dp < e.def.radius + 18) { hurtKnight(p, e.dmg * 0.8, e.chargeAng); e.chargeT = 0; e.cd = e.def.cd; }
+        }
       } else {
         let want = 1;
         if (e.def.ranged && !goal) { if (d < e.def.keep - 30) want = -1; else if (d < e.def.range) want = 0; }
         else if (d < reach * 0.8) want = 0;
-        const spd = e.speed * (humanLightAt(e.x, e.y) ? 0.72 : 1) * (e.slow > 0 ? 0.6 : 1);
+        if (e.retreatT > 0) { e.retreatT -= dt; want = -1; } // Mire Stalker falls back after a strike, then comes again
+        const spd = e.speed * (humanLightAt(e.x, e.y) ? 0.72 : 1) * (e.slow > 0 ? 0.6 : 1) * (e.rallied > 0 ? 1.2 : 1);
         // Walls in the way: head for the nearest gate first.
         const wp = want === 1 ? DL.Camp.route(e.x, e.y, tx, ty, G.save.up) : null;
-        const mx = wp ? wp.x - e.x : dx, my = wp ? wp.y - e.y : dy, md = Math.hypot(mx, my) || 1;
+        let mx = wp ? wp.x - e.x : dx, my = wp ? wp.y - e.y : dy;
+        if (e.def.zigzag && want === 1 && !wp && d > 80) { // weave from side to side on the way in
+          const w = Math.sin(e.animT * 5 + e.id) * 0.9, ox = mx;
+          mx -= my * w; my += ox * w;
+        }
+        const md = Math.hypot(mx, my) || 1;
         e.x += (mx / md) * spd * want * dt;
         e.y += (my / md) * spd * want * dt;
         e.angle = Math.atan2(my, mx);
@@ -857,6 +877,17 @@
           e.aimGoal = goal;
           e.tgt = p;
           e.moving = false;
+        }
+        if (e.def.lunge && e.cd <= 0 && (e.lungeCd || 0) <= 0 && d > reach && d < reach + 110) {
+          // a sudden leap that closes the gap before the blow
+          e.kx += (dx / d) * e.def.lunge; e.ky += (dy / d) * e.def.lunge;
+          e.lungeCd = 2.6;
+          for (let i = 0; i < 5; i++) puff(e.x, e.y - 10, "rgba(60,200,210,0.5)", 60, 0.4);
+        }
+        if (e.def.charge && !goal && e.cd <= 0 && (e.chargeCd || 0) <= 0 && dp > 130 && dp < 300) {
+          e.chargeT = 1.25; e.chargeCd = 7;
+          e.chargeAng = Math.atan2(p.y - e.y, p.x - e.x);
+          e.angle = e.chargeAng;
         }
         if (e.type === "champion") champion(e, dt, dp);
       }
@@ -903,10 +934,57 @@
     G.enemies = G.enemies.filter((e) => !e.removed);
   }
 
+  // Per-type behaviour from the motion sheets that runs whatever the Drowned is doing.
+  function behave(e, dt, p, dp) {
+    const d = e.def;
+    if (e.lungeCd > 0) e.lungeCd -= dt;
+    if (e.chargeCd > 0) e.chargeCd -= dt;
+    if (d.snuff) {
+      // Lantern Reaver: torches near it gutter and die
+      for (const t of G.torches) if (dist(e.x, e.y, t.x, t.y) < d.snuff) {
+        t.t -= dt * 5;
+        if (Math.random() < 0.2) spark(t.x, t.y - 16, "80,230,240", 40);
+      }
+    }
+    if (d.aura) {
+      // Drowned Sovereign: nearby Drowned move and strike harder
+      for (const a of G.enemies) if (a !== e && dist(e.x, e.y, a.x, a.y) < d.aura) a.rallied = 0.3;
+    }
+    if (d.caster) hexbearer(e, dt, p, dp);
+  }
+
+  function hexbearer(e, dt, p, dp) {
+    e.blinkCd = (e.blinkCd || 0) - dt;
+    if (dp < 100 && e.blinkCd <= 0 && e.state !== "windup") {
+      // a short teleport away from the knight
+      for (let i = 0; i < 10; i++) puff(e.x, e.y - rand(0, 40), "rgba(80,230,240,0.6)", 60, 0.6);
+      const a = Math.atan2(e.y - p.y, e.x - p.x) + rand(-0.8, 0.8);
+      e.x += Math.cos(a) * 150; e.y += Math.sin(a) * 150;
+      W.collide(e, e.def.radius * 0.6);
+      for (let i = 0; i < 10; i++) puff(e.x, e.y - rand(0, 40), "rgba(80,230,240,0.6)", 60, 0.6);
+      e.blinkCd = 5;
+    }
+    e.callT = (e.callT == null ? 8 : e.callT) - dt;
+    if (e.callT <= 0 && dp < 500) {
+      // calls a drowned fragment up out of the mud
+      e.callT = 12;
+      const a = rand(0, TAU);
+      G.enemies.push(makeEnemy("revenant", e.x + Math.cos(a) * 50, e.y + Math.sin(a) * 50, e.zi));
+    }
+  }
+
   function champion(e, dt, dp) {
+    if (!e.phase2 && e.hp < e.maxHp * 0.5) {
+      // phase two: a burst of corruption, then faster and more summons
+      e.phase2 = true;
+      e.speed *= 1.25;
+      e.summonT = 1.5;
+      G.telegraphs.push({ x: e.x, y: e.y, r: 130, t: 0, delay: 0.9, dmg: e.dmg });
+      say("The Sovereign unleashes the deep!", "danger");
+    }
     e.summonT -= dt;
     if (e.summonT <= 0) {
-      e.summonT = 9;
+      e.summonT = e.phase2 ? 6 : 9;
       for (let i = 0; i < 3; i++) {
         const a = rand(0, TAU);
         G.enemies.push(makeEnemy("revenant", e.x + Math.cos(a) * 60, e.y + Math.sin(a) * 60, e.zi, { goal: e.goal }));
@@ -916,6 +994,12 @@
     if (e.spikeT <= 0 && dp < 420) {
       e.spikeT = 5.5;
       const p = targetFor(e);
+      if ((e.spikeN = (e.spikeN || 0) + 1) % 2 === 0) {
+        // a shockwave lane rolling out toward the knight
+        const a = Math.atan2(p.y - e.y, p.x - e.x);
+        for (let i = 1; i <= 7; i++) G.telegraphs.push({ x: e.x + Math.cos(a) * 42 * i, y: e.y + Math.sin(a) * 42 * i, r: 26, t: 0, delay: 0.6 + 0.1 * i, dmg: e.dmg * 0.7 });
+        return;
+      }
       for (let i = 0; i < 3; i++) {
         const a = rand(0, TAU), r = i ? rand(30, 70) : 0;
         G.telegraphs.push({ x: p.x + Math.cos(a) * r, y: p.y + Math.sin(a) * r, r: 34, t: 0, delay: 0.9, dmg: e.dmg * 0.8 });
@@ -925,9 +1009,24 @@
 
   function strike(e) {
     const p = e.tgt || G.player;
+    const dmg = e.dmg * (e.rallied > 0 ? 1.2 : 1);
+    if (e.def.caster && !e.aimGoal) {
+      // Marsh Hexbearer: every third cast pools corruption under the knight, otherwise a slow orb
+      if ((e.casts = (e.casts || 0) + 1) % 3 === 0) G.hexPools.push({ x: p.x, y: p.y, r: 46, t: 0, life: 6 });
+      else {
+        const a = Math.atan2(p.y - e.y, p.x - e.x);
+        G.projectiles.push({ x: e.x, y: e.y - 30, vx: Math.cos(a) * 170, vy: Math.sin(a) * 170, life: 2.6, dmg, hostile: true, corrupt: 6, kind: "orb", col: "90,235,245", r: 10 });
+      }
+      sfx("whisper");
+      return;
+    }
     if (e.def.ranged && !e.aimGoal) {
-      const a = Math.atan2(p.y - e.y, p.x - e.x) * 0.3 + e.aim * 0.7;
-      G.projectiles.push({ x: e.x, y: e.y - 22, vx: Math.cos(a) * 330, vy: Math.sin(a) * 330, life: 1.4, dmg: e.dmg, hostile: true, kind: "arrow", col: "90,235,245" });
+      const base = Math.atan2(p.y - e.y, p.x - e.x) * 0.3 + e.aim * 0.7;
+      const n = e.def.spread && (e.shots = (e.shots || 0) + 1) % 2 === 0 ? e.def.spread : 1; // every other shot fans out
+      for (let i = 0; i < n; i++) {
+        const a = base + (i - (n - 1) / 2) * 0.22;
+        G.projectiles.push({ x: e.x, y: e.y - 22, vx: Math.cos(a) * 330, vy: Math.sin(a) * 330, life: 1.4, dmg, hostile: true, kind: "arrow", col: "90,235,245" });
+      }
       sfx("arrow");
       return;
     }
@@ -939,7 +1038,12 @@
     }
     const d = dist(e.x, e.y, p.x, p.y);
     const ad = Math.abs(angleDiff(e.aim, Math.atan2(p.y - e.y, p.x - e.x)));
-    if (d <= e.def.range + 16 && ad < 1.25) hurtKnight(p, e.dmg, e.aim);
+    if (d <= e.def.range + 16 && ad < 1.25) {
+      const hp = p.hp;
+      hurtKnight(p, dmg, e.aim);
+      // Drowned Wretch: its touch seeps corruption into you
+      if (e.def.corruptHit && p === G.player && p.hp < hp) p.corrupt = clamp(p.corrupt + e.def.corruptHit, 0, 100);
+    }
   }
 
   function damageLight(o, amt) {
@@ -1013,6 +1117,12 @@
       for (let i = 0; i < 4; i++) puff(e.x, e.y - 24 * e.def.scale, "rgba(70,210,220,0.7)", 90, 0.35);
       return;
     }
+    if (e.def.shield && Math.abs(angleDiff(ang + Math.PI, e.angle)) < 1.1) {
+      // Bone Bulwark: blows from the front land on the shield
+      d *= 1 - e.def.shield;
+      if (!remote) text(e.x, e.y - 40 * e.def.scale - 34, "Blocked", "#9fdfe6", 0.9);
+      for (let i = 0; i < 4; i++) spark(e.x + Math.cos(e.angle) * 14, e.y - 24, "200,230,235", 90);
+    } else if (!e.def.shield && G.enemies.some((b) => b.def.guard && !b.removed && dist(b.x, b.y, e.x, e.y) < b.def.guard)) d *= 0.75; // guarded by a Bulwark
     d *= 1 - (e.def.armor || 0);
     e.hp -= d;
     e.flash = 0.12;
@@ -1131,7 +1241,12 @@
       }
       b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
       if (b.hostile) {
-        if (dist(b.x, b.y, p.x, p.y - 22) < 16) { hurtPlayer(b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
+        if (dist(b.x, b.y, p.x, p.y - 22) < 16) {
+          const hp = p.hp;
+          hurtPlayer(b.dmg, Math.atan2(b.vy, b.vx));
+          if (b.corrupt && p.hp < hp) p.corrupt = clamp(p.corrupt + b.corrupt, 0, 100);
+          b.life = 0;
+        }
         else if (G.ally && !G.ally.down && dist(b.x, b.y, G.ally.x, G.ally.y - 22) < 16) { DL.Net.hurtAlly(b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
       } else {
         for (const e of G.enemies) {
@@ -1176,6 +1291,25 @@
       }
     }
     G.telegraphs = G.telegraphs.filter((t) => t.t < t.delay + 0.05);
+  }
+
+  // Marsh Hexbearer corruption pools: standing in one wounds you and feeds the corruption.
+  function updateHexPools(dt) {
+    const p = G.player, a = G.ally;
+    const inside = (k, q) => Math.hypot(k.x - q.x, (k.y - q.y) / 0.55) < q.r;
+    for (const q of G.hexPools) {
+      q.t += dt;
+      if (q.t < 0.6) continue; // forming
+      if (G.state === "play" && inside(p, q)) {
+        p.corrupt = clamp(p.corrupt + 4 * dt, 0, 100);
+        p.hp -= 3 * dt;
+        if (p.hp <= 0) { die("wounds"); return; }
+      }
+      q.tick = (q.tick || 0) - dt;
+      if (a && !a.down && inside(a, q) && q.tick <= 0) { q.tick = 0.5; DL.Net.hurtAlly(2, 0); }
+      if (Math.random() < 0.15) puff(q.x + rand(-q.r, q.r) * 0.7, q.y + rand(-q.r, q.r) * 0.35, "rgba(60,220,230,0.5)", 20, 0.8, -20);
+    }
+    G.hexPools = G.hexPools.filter((q) => q.t < q.life);
   }
 
   function updatePickups(dt) {

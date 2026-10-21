@@ -27,18 +27,20 @@ def dim(img, k=0.45):
 MOTION = {  # concept sheet -> (sprite folder, height in art pixels)
     'lantern-knight': ('lantern-knight', 37), 'drowned-wretch': ('drowned/footman', 36), 'mire-stalker': ('drowned/squire', 34),
     'tide-archer': ('drowned/archer', 36), 'lantern-reaver': ('drowned/defiler', 37), 'bone-bulwark': ('drowned/blackguard', 40),
-    'drowned-sovereign': ('drowned/champion', 42),
+    'drowned-sovereign': ('drowned/champion', 42), 'marsh-hexbearer': ('drowned/hexbearer', 38),
 }
 POSE = dict(thr=18, sat_keep=30, nearest=True, close=3, max_hole=500)
 ATTACK = dict(thr=26, sat_keep=30, nearest=True, close=3, max_hole=300)
 AX = [20, 130, 240, 355, 465, 580, 700]  # attack frame columns
+AXH = [25, 135, 240, 350, 460, 570, 685]  # the Hexbearer's spell-casting row sits a little lower and to the right
 for sheet, (folder, h) in MOTION.items():
     im = Image.open(os.path.join(SRC, 'motion-' + sheet + '.png'))
     y0, y1 = (217, 340) if sheet == 'drowned-sovereign' else (230, 340)
     for name, (xa, xb) in {'front': (482, 592), 'right': (721, 832), 'back': (962, 1074)}.items():
         save(cut(im, (xa, y0, xb, y1), h, **POSE), folder + '/' + name)
-    for name, i in (('attackA', 1), ('attackB', 2), ('attackC', 4)):
-        save(cut(im, (AX[i] + (14 if i == 4 else 9), 646, AX[i + 1] - 6, 762), h, **ATTACK), folder + '/' + name)
+    ax, ay0, ay1 = (AXH, 645, 790) if sheet == 'marsh-hexbearer' else (AX, 646, 762)
+    for name, i in (('attackA', 1), ('attackB', 3), ('attackC', 5)) if sheet == 'marsh-hexbearer' else (('attackA', 1), ('attackB', 2), ('attackC', 4)):
+        save(cut(im, (ax[i] + (14 if i == 4 else 9), ay0, ax[i + 1] - 6, ay1), h, **ATTACK), folder + '/' + name)
 
 # Swarming Revenant: six single revenants from the idle column, two from the attack row
 rev = Image.open(os.path.join(SRC, 'motion-swarming-revenant.png'))

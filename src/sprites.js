@@ -44,7 +44,7 @@
         "side/dash": [20, 36], "side/hurt": [15, 34], "side/death": [25, 37],
       },
     },
-    drowned("squire"), drowned("footman"), drowned("archer"), drowned("defiler"), drowned("blackguard"), drowned("champion"),
+    drowned("squire"), drowned("footman"), drowned("archer"), drowned("defiler"), drowned("blackguard"), drowned("champion"), drowned("hexbearer"),
     drowned("revenant", (() => {
       const v = { idle: ["r0"], walk: ["r0", "r1", "r2", "r3"], attack: ["attackA", "attackB", "attackB"], dash: ["r4"], hurt: ["r5"], death: ["r5", "r5", "r5@fall"] };
       return { down: v, up: v, side: v };

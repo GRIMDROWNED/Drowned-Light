@@ -169,6 +169,7 @@
       pk: G.pickups.filter((k) => near(k.x, k.y, 800)).map((k) => [k.id, r1(k.x), r1(k.y), k.res]),
       pe: G.pearls.filter((q) => near(q.x, q.y, 1000)).map((q) => [q.id, r1(q.x), r1(q.y), q.amount, q.zi]),
       tg: G.telegraphs.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.delay]),
+      hx: G.hexPools.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.life]),
       ob: dirty,
     };
   }
@@ -326,6 +327,7 @@
     G.pickups = m.pk.map((k) => ({ id: k[0], x: k[1], y: k[2], res: k[3], t: 1, vx: 0, vy: 0 }));
     G.pearls = m.pe.map((q) => ({ id: q[0], type: "pearl", def: DL.OBJ.pearl, x: q[1], y: q[2], amount: q[3], zi: q[4], harvested: false }));
     G.telegraphs = m.tg.map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], delay: q[4], done: true }));
+    G.hexPools = (m.hx || []).map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], life: q[4] }));
     applyObjs(m.ob);
   }
 
