@@ -371,3 +371,26 @@ body.menu-open #toasts, body.menu-open #objective { visibility: hidden; }
 #coopStatus { min-height: 1.4em; color: var(--gold); }
 .fine { font-size: 11.5px; line-height: 1.5; max-width: 60ch; margin: 6px auto 14px; }
 #coopChip { margin-top: 4px; font-size: 10.5px; font-weight: 600; color: var(--warm); }
+
+/* co-op: friend marker, host pause, join kit picker */
+.arrow.friend { color: #e7d9ff; text-shadow: 0 0 6px rgba(190, 160, 255, 0.8); }
+#hostPaused {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+  background: rgba(4, 8, 10, 0.55); font: 700 clamp(22px, 5vw, 34px) var(--font-title); letter-spacing: 0.08em; color: #ffe6c2;
+  text-shadow: 0 0 20px rgba(255, 160, 70, 0.5);
+}
+#hostPaused.hidden { display: none; }
+.coop-kits { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.kit-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; border-radius: 8px; background: #071015; border: 1px solid rgba(160, 132, 92, 0.3); font: 600 10px var(--font-ui); color: var(--muted); min-width: 0; }
+.kit-chip.on { border-color: var(--warm); color: #ffe6c2; box-shadow: 0 0 10px rgba(255, 160, 70, 0.3); }
+.kit-chip .portrait { width: 44px; height: 54px; }
+.kit-chip:focus-visible { outline: 2px solid var(--warm); outline-offset: 2px; }
+
+/* save slots */
+.title-card.saves { width: min(640px, 100%); }
+.saves-list { display: grid; gap: 10px; margin: 16px 0; text-align: left; }
+.save-card p { margin: 6px 0 0; }
+.save-card footer { justify-content: flex-start; }
+.save-card footer button { background: rgba(12, 24, 30, 0.95); border-color: var(--line); color: var(--ink); }
+.save-card footer button.go { background: linear-gradient(#41301c, #24180c); border-color: var(--warm); color: #ffe6c2; }
+.save-card footer button.danger { margin-left: auto; color: #ffb4b4; border-color: rgba(255, 106, 106, 0.4); }

@@ -4,13 +4,17 @@
   const { clamp, dist, rand, TAU, angleDiff } = DL;
   const W = DL.World;
   const CYC = DL.CYCLE;
-  const SAVE_KEY = "drowned-light-save-v1";
+  // Three save slots. The very first save (before slots existed) becomes slot 1.
+  const LEGACY_KEY = "drowned-light-save-v1";
+  const SLOT_KEY = (n) => "drowned-light-save-slot-" + n;
+  const CURRENT_SLOT = "drowned-light-slot";
   const say = (m, k) => DL.UI && DL.UI.toast(m, k);
   const sfx = (n) => DL.Sound.play(n);
   const emptyRes = () => ({ wood: 0, stone: 0, resin: 0, iron: 0, pearl: 0 });
 
   const G = (DL.Game = { state: "title", t: 0, time: 0, nightAmt: 0, night: false, ally: null, eid: 0, pid: 0, dirty: new Set() });
   // Co-op: the guest's device plays inside the host's world and never saves it.
+  G.SLOTS = 3;
   G.isGuest = () => !!(DL.Net && DL.Net.role === "guest");
 
   /* ---------------- save ---------------- */
@@ -25,6 +29,7 @@
     torches: 2,
     drownedSelf: null,
     started: false,
+    lastPlayed: 0,
   });
   function merge(base, s) {
     for (const k in s) {
@@ -33,28 +38,60 @@
     }
     return base;
   }
-  G.load = function () {
+  function readSlot(n) {
+    try { return JSON.parse(localStorage.getItem(SLOT_KEY(n))); } catch (e) { return null; }
+  }
+  function migrate(s) {
+    // The Lanternwright became the Workbench.
+    if (s.up && s.up.lantern != null) { s.up.workbench = Math.max(s.up.workbench || 0, s.up.lantern); delete s.up.lantern; }
+    // Kits used to be bought and swapped with three mastery ranks; now one kit levels 1–20.
+    if (s.kits) {
+      const m = (s.kits[s.kit] && s.kits[s.kit].mastery) || 0;
+      s.kit = s.kit === "pyreCenser" ? "flameBastion" : s.kit;
+      s.kitLevel = s.kitLevel || 1 + 3 * m;
+      delete s.kits;
+    }
+    if (!DL.KITS[s.kit]) s.kit = "lanternBlade";
+    return merge(G.defaultSave(), s);
+  }
+  G.slot = 1;
+  G.load = function (slot) {
     try {
-      const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-      if (s && s.v === 1) {
-        // The Lanternwright became the Workbench.
-        if (s.up && s.up.lantern != null) { s.up.workbench = Math.max(s.up.workbench || 0, s.up.lantern); delete s.up.lantern; }
-        // Kits used to be bought and swapped with three mastery ranks; now one kit levels 1–20.
-        if (s.kits) {
-          const m = (s.kits[s.kit] && s.kits[s.kit].mastery) || 0;
-          s.kit = s.kit === "pyreCenser" ? "flameBastion" : s.kit;
-          s.kitLevel = s.kitLevel || 1 + 3 * m;
-          delete s.kits;
-        }
-        if (!DL.KITS[s.kit]) s.kit = "lanternBlade";
-        return merge(G.defaultSave(), s);
+      if (!localStorage.getItem(SLOT_KEY(1)) && localStorage.getItem(LEGACY_KEY)) {
+        localStorage.setItem(SLOT_KEY(1), localStorage.getItem(LEGACY_KEY));
+        localStorage.removeItem(LEGACY_KEY);
       }
-    } catch (e) { /* storage unavailable */ }
-    return G.defaultSave();
+      if (slot == null) slot = +localStorage.getItem(CURRENT_SLOT) || 1;
+    } catch (e) { slot = slot || 1; }
+    G.slot = Math.min(G.SLOTS, Math.max(1, slot | 0));
+    const s = readSlot(G.slot);
+    return s && s.v === 1 ? migrate(s) : G.defaultSave();
   };
   G.persist = function () {
     if (G.isGuest()) return;
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(G.save)); } catch (e) { /* ignore */ }
+    G.save.lastPlayed = Date.now();
+    try {
+      localStorage.setItem(SLOT_KEY(G.slot), JSON.stringify(G.save));
+      localStorage.setItem(CURRENT_SLOT, String(G.slot));
+    } catch (e) { /* ignore */ }
+  };
+  // What's in each slot, for the Saves screen.
+  G.listSlots = function () {
+    const out = [];
+    for (let n = 1; n <= G.SLOTS; n++) {
+      const s = readSlot(n);
+      out.push({ slot: n, save: s && s.v === 1 && s.started ? migrate(s) : null });
+    }
+    return out;
+  };
+  G.useSlot = function (n) {
+    try { localStorage.setItem(CURRENT_SLOT, String(n)); } catch (e) { /* ignore */ }
+    DL.World.chunks.clear();
+    G.init();
+  };
+  G.deleteSlot = function (n) {
+    try { localStorage.removeItem(SLOT_KEY(n)); } catch (e) { /* ignore */ }
+    if (n === G.slot) G.useSlot(n);
   };
 
   G.stats = function () {
@@ -176,7 +213,9 @@
       if (G.dying > 2.6) { G.state = "dead"; DL.UI.showDeath(G.deathInfo); }
       return;
     }
-    if (G.state !== "play") return;
+    // In co-op the world keeps going while either player is in the camp menu (they just stand still).
+    const live = G.state === "play" || (G.state === "camp" && DL.Net.role && (G.isGuest() || G.ally));
+    if (!live) return;
     if (G.isGuest()) { guestUpdate(dt); return; }
 
     const wasNight = G.night;
@@ -190,9 +229,9 @@
     collectBlooms();
     buildLights();
     updatePlayer(dt);
-    if (G.state !== "play") return;
+    if (G.state === "dying") return;
     updateCorruption(dt);
-    if (G.state !== "play") return;
+    if (G.state === "dying") return;
     updateSpawning(dt);
     updateEnemies(dt);
     updateDefenses(dt);
@@ -208,7 +247,7 @@
   // The guest runs only its own knight; the host's snapshots move the world (src/net.js).
   function guestUpdate(dt) {
     const wasNight = G.night;
-    G.time = (G.time + dt) % CYC.total;
+    if (!(G.hostState && G.hostState !== "play" && G.hostState !== "camp")) G.time = (G.time + dt) % CYC.total;
     G.nightAmt = nightAmount(G.time);
     G.night = G.nightAmt >= 0.5;
     if (G.night && !wasNight) { sfx("night"); say("Night falls. Stay in the light — or the darkness will take you.", "warn"); }
@@ -216,12 +255,15 @@
     collectBlooms();
     buildLights();
     const p = G.player;
-    if (p.downT > 0) {
+    const hostPaused = G.hostState && G.hostState !== "play" && G.hostState !== "camp";
+    if (hostPaused) {
+      // the host paused (or fell): everyone waits
+    } else if (p.downT > 0) {
       p.downT -= dt;
       if (p.downT <= 0) guestRise();
     } else {
       updatePlayer(dt);
-      if (G.state === "play") updateCorruption(dt);
+      updateCorruption(dt);
     }
     DL.Net.smooth(dt);
     DL.Kits.update(dt);
@@ -371,7 +413,10 @@
 
   /* ---------------- player ---------------- */
   function updatePlayer(dt) {
-    const p = G.player, st = G.stats(), inp = DL.Input.axis();
+    const p = G.player, st = G.stats();
+    const inMenu = G.state !== "play"; // co-op camp menu: stand still, no actions
+    const inp = inMenu ? { x: 0, y: 0, m: 0 } : DL.Input.axis();
+    if (inMenu) DL.Input.clear();
     p.inv = Math.max(0, p.inv - dt);
     p.dashCd = Math.max(0, p.dashCd - dt);
     p.abiCd = Math.max(0, p.abiCd - dt);
@@ -421,7 +466,7 @@
     if (p.swing) { p.swing.t += dt; if (p.swing.t >= p.swing.dur) p.swing = null; }
     p.aim = aimAngle(p);
     G.mineTarget = G.save.attackMode === "manual" ? nodeNear(p, 34) : null;
-    if (p.atkCd <= 0 && p.dashT <= 0) {
+    if (p.atkCd <= 0 && p.dashT <= 0 && !inMenu) {
       if (G.save.attackMode === "manual") {
         if (DL.Input.attacking()) DL.Kits.attack(p, st, p.aim);
         else if (DL.Input.mining() && G.mineTarget) mineStrike(p, G.mineTarget);
@@ -1253,6 +1298,7 @@
   };
 
   G.buyUpgrade = function (id) {
+    if (G.isGuest()) { DL.Net.event({ t: "build", id }); return true; } // the host builds it from the shared stash
     const u = DL.UPGRADES.find((x) => x.id === id), lvl = G.save.up[id];
     if (lvl >= u.max) return false;
     const cost = u.costs[lvl];
@@ -1273,6 +1319,11 @@
   };
 
   G.craftTorch = function () {
+    if (G.isGuest()) {
+      if (G.save.torches >= G.stats().torchMax) { sfx("deny"); return false; }
+      DL.Net.event({ t: "craftTorch" });
+      return true;
+    }
     if (G.save.torches >= G.stats().torchMax || !G.canAfford(DL.TORCH_COST)) { sfx("deny"); return false; }
     pay(DL.TORCH_COST);
     G.save.torches += 1;

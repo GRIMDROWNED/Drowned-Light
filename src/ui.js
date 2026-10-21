@@ -119,6 +119,20 @@
 
     /* co-op */
     $("btnCoop").addEventListener("click", () => UI.openCoop());
+    $("btnSaves").addEventListener("click", () => UI.openSaves());
+    $("btnSavesBack").addEventListener("click", () => { $("screenSaves").classList.add("hidden"); UI.showTitle(); });
+    $("savesList").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-slot]");
+      if (!b) return;
+      const n = +b.dataset.slot, act = b.dataset.slotAct;
+      if (act === "play") { G.useSlot(n); UI.hideScreens(); G.begin(); UI.showHud(true); }
+      else if (act === "new") { G.useSlot(n); $("screenSaves").classList.add("hidden"); UI.openSetup(); }
+      else if (act === "delete") {
+        if (!b.dataset.armed) { b.dataset.armed = "1"; b.textContent = "Tap again to delete"; setTimeout(() => UI.renderSaves(), 3000); return; }
+        G.deleteSlot(n);
+        UI.renderSaves();
+      }
+    });
     $("btnCoopBack").addEventListener("click", () => {
       if (DL.Net.role === "host" && G.state === "title") DL.Net.leave(true);
       $("screenCoop").classList.add("hidden");
@@ -136,8 +150,12 @@
     $("btnCoopStart").addEventListener("click", () => { UI.hideScreens(); G.begin(); UI.showHud(true); });
     $("btnJoin").addEventListener("click", async () => {
       $("btnJoin").disabled = true;
-      await DL.Net.join($("coopInput").value);
+      await DL.Net.join($("coopInput").value, UI.coopKit);
       $("btnJoin").disabled = false;
+    });
+    $("coopKits").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-coopkit]");
+      if (b) { UI.coopKit = b.dataset.coopkit; UI.renderJoinKits(); }
     });
     $("coopInput").addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Enter") $("btnJoin").click(); });
     $("btnLeaveCoop").addEventListener("click", () => {
@@ -170,7 +188,7 @@
   UI.showTitle = function () {
     const G = DL.Game;
     $("btnBegin").innerHTML = G.save.started
-      ? `Continue — Day ${G.save.day}<span class="sub">${G.kit().name} · Level ${G.save.kitLevel} · ${G.diff().name}</span>`
+      ? `Continue — Day ${G.save.day}<span class="sub">Slot ${G.slot} · ${G.kit().name} · Level ${G.save.kitLevel} · ${G.diff().name}</span>`
       : "Begin";
     $("btnNew").classList.toggle("hidden", !G.save.started);
     $("screenTitle").classList.remove("hidden");
@@ -204,15 +222,31 @@
       $("coopHostInfo").textContent = "Start a game of your own first; your friend joins your world.";
       $("btnHost").disabled = true;
     }
-    $("coopJoinInfo").textContent = `You'll join as your ${G.kit().name} (level ${G.save.kitLevel}). Nothing in your own save changes.`;
+    UI.coopKit = UI.coopKit || G.save.kit;
+    UI.renderJoinKits();
     UI.coopStatus("");
   };
+  // Join card: pick the kit you bring into your friend's world.
+  UI.renderJoinKits = function () {
+    const k = UI.coopKit, lvl = DL.Net.joinLevel(k);
+    $("coopKits").innerHTML = DL.KIT_ORDER.map((id) =>
+      `<button class="kit-chip ${id === k ? "on" : ""}" data-coopkit="${id}" aria-pressed="${id === k}" title="${DL.KITS[id].name}">
+        <canvas class="portrait" data-kit="${id}" data-still="1" width="44" height="54"></canvas><span>${DL.KITS[id].name.split(" ")[1]}</span></button>`).join("");
+    $("coopJoinInfo").textContent = `You'll join as the ${DL.KITS[k].name}, level ${lvl}. Levels you train in co-op are kept for your next co-op game; your own saves don't change.`;
+    UI.drawPortraits(0);
+  };
+  UI.refreshCamp = function () { if (DL.Game.state === "camp") UI.renderCamp(); };
+
   UI.coopStatus = function (msg) { $("coopStatus").textContent = msg || ""; };
 
   UI.pause = function () {
     const G = DL.Game;
     if (G.state !== "play") return;
     $("btnLeaveCoop").classList.toggle("hidden", !DL.Net.role);
+    $("pauseNote").textContent = G.isGuest()
+      ? "The world keeps running while you're paused. Only the host can pause it for both of you."
+      : DL.Net.role && G.ally ? "Paused for both of you. Camp upgrades and stored supplies save automatically."
+      : "Camp upgrades and stored supplies save automatically.";
     G.state = "pause";
     UI.updateCombatLabel();
     $("screenPause").classList.remove("hidden");
@@ -271,9 +305,35 @@
 
   /* ---------------- new game: choose a kit, then a difficulty ---------------- */
   UI.setup = { step: 1, kit: "lanternBlade", diff: "dark", attack: "auto" };
+  /* ---------------- save slots ---------------- */
+  UI.openSaves = function () {
+    $("screenTitle").classList.add("hidden");
+    $("screenSaves").classList.remove("hidden");
+    UI.renderSaves();
+  };
+  UI.renderSaves = function () {
+    const G = DL.Game;
+    $("savesList").innerHTML = G.listSlots().map(({ slot, save }) => {
+      const cur = slot === G.slot ? `<span class="tag">Current</span>` : "";
+      if (!save) {
+        return `<article class="card save-card"><header><h3>Slot ${slot}</h3>${cur}</header><p class="muted">Empty</p>
+          <footer><button data-slot="${slot}" data-slot-act="new">New game here</button></footer></article>`;
+      }
+      const k = DL.KITS[save.kit], d = DL.DIFFICULTIES[save.difficulty] || DL.DIFFICULTIES.dark;
+      const when = save.lastPlayed ? new Date(save.lastPlayed).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
+      return `<article class="card save-card"><header><h3>Slot ${slot}</h3>${cur}</header>
+        <p><b>Day ${save.day}</b> · ${k.name} level ${save.kitLevel} · ${d.name}</p>
+        <p class="muted">Central Flame ${save.up.flame} · ${save.nights} night${save.nights === 1 ? "" : "s"} survived${when ? " · played " + when : ""}</p>
+        <footer><button data-slot="${slot}" data-slot-act="play" class="go">Play</button>
+          <button data-slot="${slot}" data-slot-act="new">New game here</button>
+          <button data-slot="${slot}" data-slot-act="delete" class="danger">Delete</button></footer></article>`;
+    }).join("");
+  };
+
   UI.openSetup = function () {
     UI.setup = { step: 1, kit: "lanternBlade", diff: "dark", attack: "auto" };
     $("screenTitle").classList.add("hidden");
+    $("screenSaves").classList.add("hidden");
     $("screenSetup").classList.remove("hidden");
     UI.renderSetup();
     const loop = (ts) => {
@@ -350,7 +410,6 @@
   UI.openCamp = function () {
     const G = DL.Game;
     if (G.state !== "play" || !G.inCamp) return;
-    if (G.isGuest()) { UI.toast("Only the host builds at camp. Whatever you carry here goes into their stash."); return; }
     G.state = "camp";
     UI.renderCamp();
     $("screenCamp").classList.remove("hidden");
@@ -367,7 +426,7 @@
     for (const t of document.querySelectorAll("#campTabs button")) t.classList.toggle("on", t.dataset.tab === UI.campTab);
     $("campStash").innerHTML = DL.RES_KEYS.map((k) => `<span class="stash-item">${chip(k, s.stash[k])}<small>${DL.RESOURCES[k].name}</small></span>`).join("");
     const tier = DL.Camp.tier(s.up);
-    $("campDay").textContent = `Tier ${"I".repeat(tier)} · ${DL.TIER_NAMES[tier]} · Day ${s.day} · ${G.phase() === "day" ? "Daylight" : G.phase() === "night" ? "Night" : G.phase() === "dusk" ? "Dusk" : "Dawn"}`;
+    $("campDay").textContent = (G.isGuest() ? "Your friend's camp · shared stash · " : "") + `Tier ${"I".repeat(tier)} · ${DL.TIER_NAMES[tier]} · Day ${s.day} · ${G.phase() === "day" ? "Daylight" : G.phase() === "night" ? "Night" : G.phase() === "dusk" ? "Dusk" : "Dawn"}`;
     let html = "";
     if (UI.campTab === "build") {
       for (const u of DL.UPGRADES) {
@@ -429,11 +488,11 @@
         <header><h3>Torches</h3><span class="tag">${s.torches} / ${st.torchMax}</span></header>
         <p>Plant firelight anywhere. Torches reverse corruption like the camp fire, but burn out after a while — and Lantern Defilers hunt them.</p>
         <footer><div class="cost">${costHtml(DL.TORCH_COST)}</div><button data-act="torch" ${!full && G.canAfford(DL.TORCH_COST) ? "" : "disabled"}>${full ? "Satchel full" : "Craft"}</button></footer></article>`;
-      const day = G.phase() === "day";
+      const day = G.phase() === "day", guest = G.isGuest();
       html += `<article class="card">
         <header><h3>Rest</h3></header>
         <p>Sleep by the fire until dusk. You wake fully healed with a full lantern — ready to defend the camp through the night.</p>
-        <footer><button data-act="rest" ${day ? "" : "disabled"}>${day ? "Rest until dusk" : "Only by day"}</button></footer></article>`;
+        <footer><button data-act="rest" ${day && !guest ? "" : "disabled"}>${guest ? "Only the host can rest" : day ? "Rest until dusk" : "Only by day"}</button></footer></article>`;
       html += `<article class="card">
         <header><h3>Field guide</h3></header>
         <ul class="guide">
@@ -492,6 +551,14 @@
     set($("homeDist"), "text", d < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`);
     const ds = G.save.drownedSelf;
     set($("selfNav"), "hidden", !ds);
+    // where your co-op friend is
+    const fr = G.ally;
+    set($("friendNav"), "hidden", !fr);
+    if (fr) {
+      set($("friendArrow"), "transform", `rotate(${(Math.atan2(fr.y - p.y, fr.x - p.x) * 180) / Math.PI}deg)`);
+      set($("friendDist"), "text", `${DL.Net.role === "guest" ? "Host" : "Friend"} ${Math.round(Math.hypot(fr.x - p.x, fr.y - p.y) / 10)}m`);
+    }
+    set($("hostPaused"), "hidden", !(G.isGuest() && G.hostState === "pause"));
     if (ds) {
       set($("selfArrow"), "transform", `rotate(${(Math.atan2(ds.y - p.y, ds.x - p.x) * 180) / Math.PI}deg)`);
       set($("selfDist"), "text", `Drowned self ${Math.round(Math.hypot(ds.x - p.x, ds.y - p.y) / 10)}m`);
@@ -502,7 +569,7 @@
 
     // objective banner
     let obj = "";
-    if (G.isGuest() && G.hostState && G.hostState !== "play") obj = G.hostState === "dead" || G.hostState === "dying" ? "Your friend has fallen — waiting for them to rise" : "Your friend has paused the game";
+    if (G.isGuest() && (G.hostState === "dead" || G.hostState === "dying")) obj = "Your friend has fallen — waiting for them to rise";
     else if (!G.flame.lit) obj = "The Central Flame is out — survive until dawn";
     else if (G.night && Math.hypot(p.x, p.y) < G.siegeRadius()) obj = `Defend the camp · Flame ${Math.ceil(G.flame.hp)} / ${G.flame.max}`;
     else if (G.rootEvent && !G.rootEvent.obj.dead && Math.hypot(p.x - G.rootEvent.obj.x, p.y - G.rootEvent.obj.y) < 650) obj = `Defend the Mother Root until dawn · ${Math.ceil(G.rootEvent.obj.hp)} / ${Math.round(G.rootEvent.obj.maxHp)}`;

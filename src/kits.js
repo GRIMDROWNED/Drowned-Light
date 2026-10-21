@@ -30,10 +30,17 @@
   K.train = function () {
     const info = K.trainInfo();
     if (info.max || !info.ok) { sfx("deny"); return null; }
+    // A co-op guest asks the host, who pays from the shared stash; the level comes back in a reply.
+    if (G.isGuest()) { DL.Net.event({ t: "train", level: G.save.kitLevel }); return null; }
     G.pay(info.cost);
     G.save.kitLevel += 1;
     G.persist();
-    const L = G.save.kitLevel, mi = DL.MILESTONE_LEVELS.indexOf(L);
+    return K.levelUpFx(G.save.kitLevel);
+  };
+
+  // The pillar of light, ring, sparks and (at milestones) fanfare for reaching level L.
+  K.levelUpFx = function (L) {
+    const mi = DL.MILESTONE_LEVELS.indexOf(L);
     const p = G.player, col = K.color();
     G.effects.push({ type: "pillar", x: p.x, y: p.y, t: 0, max: mi >= 0 ? 1.6 : 1, col, big: mi >= 0 });
     G.effects.push({ type: "ring", x: p.x, y: p.y - 10, r0: 8, r1: mi >= 0 ? 140 : 70, t: 0, max: 0.7, col, w: mi >= 0 ? 10 : 5 });
