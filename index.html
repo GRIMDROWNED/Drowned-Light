@@ -16,10 +16,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.12.0">
+<link rel="stylesheet" href="style.css?v=0.13.0">
 </head>
 <body>
-<div id="splash" role="img" aria-label="Drowned Games"><img src="assets/drowned-games.jpg?v=0.12.0" alt="Drowned Games"></div>
+<div id="splash" role="img" aria-label="Drowned Games"><img src="assets/drowned-games.jpg?v=0.13.0" alt="Drowned Games"></div>
 <div id="stage">
 <canvas id="game" aria-label="Drowned Light game view"></canvas>
 <div id="touchzone" class="hidden"></div>
@@ -44,10 +44,12 @@
     <div id="coopChip" class="hidden"></div>
     <div class="compass"><span id="homeArrow" class="arrow warm">➤</span><span id="homeDist"></span></div>
     <div id="selfNav" class="compass hidden"><span id="selfArrow" class="arrow cold">➤</span><span id="selfDist"></span></div>
+    <div id="friendNav" class="compass hidden"><span id="friendArrow" class="arrow friend">➤</span><span id="friendDist"></span></div>
   </section>
   <button id="btnPause" aria-label="Pause">❚❚</button>
 
   <div id="objective" class="hidden"></div>
+  <div id="hostPaused" class="hidden">Paused by the host</div>
   <div id="toasts" aria-live="polite"></div>
 
   <button id="campBtn" class="hidden">Enter camp <kbd>C</kbd></button>
@@ -68,6 +70,7 @@
     <div class="menu">
       <button id="btnBegin" class="primary">Begin</button>
       <button id="btnNew" class="hidden">New game</button>
+      <button id="btnSaves">Saves</button>
       <button id="btnCoop">Play with a friend</button>
       <button id="btnSound">Sound: on</button>
       <button id="btnView" class="view-btn">View: Auto</button>
@@ -78,7 +81,7 @@
       <div><b>At camp</b> deposit supplies, build defenses, train your kit, and defend the Central Flame through the night.</div>
     </div>
     <p class="controls-hint"><span class="desk">Move <kbd>WASD</kbd> · Attack (manual) <kbd>J</kbd> or click · Mine (manual) <kbd>G</kbd> or right-click · Dash <kbd>Space</kbd> · Ability <kbd>E</kbd> · Torch <kbd>F</kbd> · Camp <kbd>C</kbd> · Pause <kbd>Esc</kbd></span><span class="mob">Drag on the left side to move. Attacks are automatic.</span></p>
-    <p class="version">Version 0.12.0</p>
+    <p class="version">Version 0.13.0</p>
   </div>
 </section>
 
@@ -94,6 +97,15 @@
       <button id="setupBack">Back</button>
       <button id="setupNext" class="primary">Next</button>
     </footer>
+  </div>
+</section>
+
+<section id="screenSaves" class="screen hidden">
+  <div class="title-card saves">
+    <h2>Saves</h2>
+    <p class="muted">Three save files. Each keeps its own camp, kit, difficulty and day.</p>
+    <div id="savesList" class="saves-list"></div>
+    <div class="menu"><button id="btnSavesBack">Back</button></div>
   </div>
 </section>
 
@@ -115,6 +127,7 @@
       </div>
       <div class="coop-card">
         <h3>Join</h3>
+        <div id="coopKits" class="coop-kits" role="group" aria-label="Your kit"></div>
         <p id="coopJoinInfo"></p>
         <label for="coopInput" class="sr">Room code</label>
         <input id="coopInput" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ROOM CODE">
@@ -138,7 +151,7 @@
       <button id="btnLeaveCoop" class="hidden">Leave co-op</button>
       <button id="btnQuit">Return to title</button>
     </div>
-    <p class="muted">Camp upgrades and stored supplies save automatically.</p>
+    <p id="pauseNote" class="muted">Camp upgrades and stored supplies save automatically.</p>
   </div>
 </section>
 
@@ -169,18 +182,18 @@
 </section>
 </div>
 
-<script src="src/core.js?v=0.12.0"></script>
-<script src="src/view.js?v=0.12.0"></script>
-<script src="src/data.js?v=0.12.0"></script>
-<script src="src/camp.js?v=0.12.0"></script>
-<script src="src/art.js?v=0.12.0"></script>
-<script src="src/units.js?v=0.12.0"></script>
-<script src="src/world.js?v=0.12.0"></script>
-<script src="src/game.js?v=0.12.0"></script>
-<script src="src/kits.js?v=0.12.0"></script>
-<script src="src/net.js?v=0.12.0"></script>
-<script src="src/render.js?v=0.12.0"></script>
-<script src="src/ui.js?v=0.12.0"></script>
-<script src="src/main.js?v=0.12.0"></script>
+<script src="src/core.js?v=0.13.0"></script>
+<script src="src/view.js?v=0.13.0"></script>
+<script src="src/data.js?v=0.13.0"></script>
+<script src="src/camp.js?v=0.13.0"></script>
+<script src="src/art.js?v=0.13.0"></script>
+<script src="src/units.js?v=0.13.0"></script>
+<script src="src/world.js?v=0.13.0"></script>
+<script src="src/game.js?v=0.13.0"></script>
+<script src="src/kits.js?v=0.13.0"></script>
+<script src="src/net.js?v=0.13.0"></script>
+<script src="src/render.js?v=0.13.0"></script>
+<script src="src/ui.js?v=0.13.0"></script>
+<script src="src/main.js?v=0.13.0"></script>
 </body>
 </html>

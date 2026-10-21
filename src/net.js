@@ -115,6 +115,21 @@
       const o = findObj(ev.id);
       if (o && !o.harvested) { o.harvested = true; G.dirty.add(o); }
       if (o && o.type === "pearl") G.pearls = G.pearls.filter((x) => x !== o);
+    } else if (ev.t === "build") {
+      const u = DL.UPGRADES.find((x) => x.id === ev.id);
+      const ok = !!u && G.buyUpgrade(ev.id);
+      Net.send({ t: "built", id: ev.id, ok, level: G.save.up[ev.id] });
+      if (ok) say(`Your friend built ${u.name} level ${G.save.up[ev.id]}.`, "good");
+    } else if (ev.t === "train") {
+      // The friend's kit level is theirs; the price comes out of the shared stash.
+      const L = ev.level, cost = DL.kitLevelCost(L), req = DL.kitLevelReq(L + 1);
+      const ok = L < DL.KIT_MAX_LEVEL && Object.keys(req).every((k) => G.save.up[k] >= req[k]) && G.canAfford(cost);
+      if (ok) { G.pay(cost); G.persist(); if (G.ally) G.ally.kitLevel = L + 1; say(`Your friend trained their kit to level ${L + 1}.`, "good"); }
+      Net.send({ t: "trained", ok, level: ok ? L + 1 : L });
+    } else if (ev.t === "craftTorch") {
+      const ok = G.canAfford(DL.TORCH_COST);
+      if (ok) { G.pay(DL.TORCH_COST); G.persist(); }
+      Net.send({ t: "torchMade", ok });
     } else if (ev.t === "deposit") {
       const parts = [];
       for (const k of DL.RES_KEYS) if (ev.res[k] > 0) { G.save.stash[k] += ev.res[k]; parts.push(`${ev.res[k]} ${DL.RESOURCES[k].name}`); }
@@ -133,30 +148,47 @@
   }
 
   function snapshot() {
-    const p = G.player, sw = p.swing;
+    const p = G.player, sw = p.swing, a = G.ally;
     const dirty = [...G.dirty].map(objRow);
     G.dirty.clear();
+    // Only what's near the friend: keeps snapshots small when the two of you are far apart.
+    const near = (x, y, R) => Math.abs(x - a.x) < R && Math.abs(y - a.y) < R;
     return {
       t: "snap", time: r1(G.time), day: G.save.day, nights: G.save.nights, up: G.save.up, state: G.state,
       flame: [Math.round(G.flame.hp), G.flame.max, G.flame.lit ? 1 : 0],
+      stash: G.save.stash,
       host: [r1(p.x), r1(p.y), r1(p.angle), p.moving ? 1 : 0, r1(p.dashT), p.stage, Math.round(p.hp), G.stats().maxHp, G.save.kit, G.save.kitLevel,
-        sw ? [r1(sw.ang), r1(sw.t), sw.kind, Math.round(sw.range), r1(sw.arc || 1), sw.col, sw.flip ? 1 : 0] : 0, G.state === "play" ? 0 : 1],
-      en: G.enemies.map((e) => [e.id, TYPES.indexOf(e.type), r1(e.x), r1(e.y), r1(e.angle), e.state === "windup" ? 1 : e.state === "recover" ? 2 : 0,
+        sw ? [r1(sw.ang), r1(sw.t), sw.kind, Math.round(sw.range), r1(sw.arc || 1), sw.col, sw.flip ? 1 : 0] : 0, G.state === "dying" || G.state === "dead" ? 1 : 0],
+      en: G.enemies.filter((e) => near(e.x, e.y, 1100)).map((e) => [e.id, TYPES.indexOf(e.type), r1(e.x), r1(e.y), r1(e.angle), e.state === "windup" ? 1 : e.state === "recover" ? 2 : 0,
         r1(e.stT), r1(e.aim || 0), Math.round(e.hp), Math.round(e.maxHp), r1(e.rise), e.moving ? 1 : 0, e.dormant ? 1 : 0, r1(e.burn || 0)]),
-      pr: G.projectiles.map((b) => [r1(b.x), r1(b.y), Math.round(b.vx), Math.round(b.vy), b.kind, b.col, b.hostile ? 1 : 0]),
+      pr: G.projectiles.filter((b) => near(b.x, b.y, 900)).map((b) => [r1(b.x), r1(b.y), Math.round(b.vx), Math.round(b.vy), b.kind, b.col, b.hostile ? 1 : 0]),
       to: G.torches.map((o) => [r1(o.x), r1(o.y), r1(o.t), o.max, Math.round(o.r), o.type, Math.round(o.hp)]),
       lz: G.lightZones.map((z) => [r1(z.x), r1(z.y), Math.round(z.r), r1(z.t), z.heal ? 1 : 0, z.fire ? 1 : 0]),
       wa: G.walls.map((w) => [r1(w.x1), r1(w.y1), r1(w.x2), r1(w.y2), r1(w.t), w.max]),
       py: G.pylons.map((q) => [Math.round(q.hp), q.lit ? 1 : 0]),
-      pk: G.pickups.map((k) => [k.id, r1(k.x), r1(k.y), k.res]),
-      pe: G.pearls.map((q) => [q.id, r1(q.x), r1(q.y), q.amount, q.zi]),
-      tg: G.telegraphs.map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.delay]),
+      pk: G.pickups.filter((k) => near(k.x, k.y, 800)).map((k) => [k.id, r1(k.x), r1(k.y), k.res]),
+      pe: G.pearls.filter((q) => near(q.x, q.y, 1000)).map((q) => [q.id, r1(q.x), r1(q.y), q.amount, q.zi]),
+      tg: G.telegraphs.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.delay]),
       ob: dirty,
     };
   }
 
   /* ---------------- guest ---------------- */
-  Net.join = async function (code) {
+  // Co-op kit levels the guest earns while playing in someone else's world.
+  const PROFILE = "drowned-light-coop";
+  Net.profile = function () {
+    try { return JSON.parse(localStorage.getItem(PROFILE)) || { levels: {} }; } catch (e) { return { levels: {} }; }
+  };
+  Net.saveProfile = function (pr) { try { localStorage.setItem(PROFILE, JSON.stringify(pr)); } catch (e) { /* ignore */ } };
+  // The level a kit joins at: its co-op level, or the best level from any of your own save slots.
+  Net.joinLevel = function (kit) {
+    let best = Net.profile().levels[kit] || 1;
+    for (const { save } of G.listSlots()) if (save && save.kit === kit) best = Math.max(best, save.kitLevel);
+    return best;
+  };
+
+  Net.join = async function (code, kit) {
+    Net.joinKit = DL.KITS[kit] ? kit : G.save.kit;
     code = (code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (code.length !== 5) { setStatus("Room codes are 5 letters and numbers."); return false; }
     Net.leave(true);
@@ -173,7 +205,7 @@
         Net.conn = c;
         c.on("open", () => {
           Net.connected = true;
-          Net.send({ t: "hello", kit: G.save.kit, level: G.save.kitLevel });
+          Net.send({ t: "hello", kit: Net.joinKit, level: Net.joinLevel(Net.joinKit) });
         });
         c.on("data", (m) => {
           if (m && m.t === "full") { clearTimeout(timer); fail("That room already has two players."); return; }
@@ -189,6 +221,8 @@
   function startGuest(w) {
     // Play inside the host's world: their camp, difficulty and day. Your own save is never written.
     G.save.up = w.up;
+    G.save.kit = Net.joinKit;
+    G.save.kitLevel = Net.joinLevel(Net.joinKit);
     G.save.difficulty = w.difficulty;
     G.save.day = w.day;
     G.save.nights = w.nights;
@@ -229,12 +263,28 @@
       p.carried[m.res] += m.amt;
       G.text(p.x, p.y - 70, `+${m.amt} ${DL.RESOURCES[m.res].name}`, DL.RESOURCES[m.res].color);
       DL.Sound.play("pickup");
+    } else if (m.t === "built") {
+      if (!m.ok) say("Couldn't build that — not enough in the stash, or it isn't unlocked yet.", "warn");
+      if (DL.UI.refreshCamp) DL.UI.refreshCamp();
+    } else if (m.t === "trained") {
+      if (m.ok) {
+        G.save.kitLevel = m.level;
+        const pr = Net.profile();
+        pr.levels[G.save.kit] = m.level;
+        Net.saveProfile(pr);
+        DL.Kits.levelUpFx(m.level);
+      } else say("Couldn't train — check the stash and the camp requirements.", "warn");
+      if (DL.UI.refreshCamp) DL.UI.refreshCamp();
+    } else if (m.t === "torchMade") {
+      if (m.ok) { G.save.torches += 1; DL.Sound.play("torch"); } else say("Not enough in the stash for a torch.", "warn");
+      if (DL.UI.refreshCamp) DL.UI.refreshCamp();
     } else if (m.t === "snap") applySnap(m);
   }
 
   function applySnap(m) {
     if (m.day !== G.save.day) { G.save.day = m.day; DL.World.resetDay(); }
     G.save.nights = m.nights;
+    G.save.stash = m.stash;
     const layoutChanged = JSON.stringify(m.up) !== JSON.stringify(G.save.up);
     G.save.up = m.up;
     if (layoutChanged) G.resetPylons();
@@ -324,6 +374,9 @@
     }
     if (!Net.connected) return;
     Net.acc += dt;
+    // Skip a beat when the link is backed up rather than let a queue (and the lag) build.
+    const dc = Net.conn && Net.conn.dataChannel;
+    if (dc && dc.bufferedAmount > 48 * 1024) return;
     if (Net.role === "host" && G.ally && Net.acc >= SNAP_EVERY) { Net.acc = 0; Net.send(snapshot()); }
     else if (Net.role === "guest" && Net.acc >= STATE_EVERY) { Net.acc = 0; forwardGuestCreations(); Net.send(guestState()); }
   };

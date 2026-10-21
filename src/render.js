@@ -253,6 +253,27 @@
     }
     c.globalAlpha = 1;
 
+    /* co-op: an arrow at the screen edge pointing to your friend when they're out of view */
+    const fr = G.ally;
+    if (fr && G.state !== "title") {
+      const sx = (fr.x - left) * z, sy = (fr.y - 40 - top) * z, m = 34;
+      if (sx < 0 || sy < 0 || sx > R.W || sy > R.H) {
+        const cx = R.W / 2, cy = R.H / 2, a = Math.atan2(sy - cy, sx - cx);
+        const k = Math.min((R.W / 2 - m) / Math.abs(Math.cos(a) || 1e-6), (R.H / 2 - m) / Math.abs(Math.sin(a) || 1e-6));
+        const ex = cx + Math.cos(a) * k, ey = cy + Math.sin(a) * k;
+        c.save();
+        c.translate(ex, ey);
+        c.rotate(a);
+        c.fillStyle = "rgba(231,217,255,0.9)";
+        c.beginPath(); c.moveTo(12, 0); c.lineTo(-6, -8); c.lineTo(-2, 0); c.lineTo(-6, 8); c.closePath(); c.fill();
+        c.restore();
+        c.font = "700 10px Inter, system-ui, sans-serif";
+        c.textAlign = "center";
+        c.fillStyle = "rgba(231,217,255,0.9)";
+        c.fillText(DL.Net.role === "guest" ? "Host" : "Friend", ex - Math.cos(a) * 20, ey - Math.sin(a) * 20 + 3);
+      }
+    }
+
     /* screen overlays */
     c.drawImage(R.vignette, 0, 0, R.W, R.H);
     if (p && G.state !== "title") {
