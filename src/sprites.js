@@ -11,6 +11,9 @@
 (function (DL) {
   const Art = DL.Art;
 
+  // Off for now: the cut-out art is still rough, so the game uses the coded sprites. Set to true to load the PNGs again.
+  const ENABLED = false;
+
   // Kit knights: [how far toward the drowned palette, lantern turns cyan] per corruption stage, as in src/units.js.
   const KNIGHT_STAGES = { lanternBlade1: [0, false], lanternBlade2: [0.22, false], lanternBlade3: [0.5, false], lanternBlade4: [0.8, true], self_lanternBlade: [0.9, true] };
 
@@ -135,6 +138,7 @@
 
   // Load every listed file, then swap the loaded art into the sprites and sheets already built.
   Art.loadFrames = function () {
+    if (!ENABLED) return Promise.resolve();
     const urls = new Set();
     for (const set of UNITS) for (const dir in set.views) for (const anim in set.views[dir])
       for (const e of set.views[dir][anim]) urls.add(set.path + fileOf(e) + ".png");

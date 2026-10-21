@@ -180,11 +180,11 @@ Progress (camp, stored supplies, kits, day) saves to the browser's `localStorage
 
 The knight and every Drowned Knight are pixel sprites painted in code (`src/units.js`) at the same pixel size as the world. They follow the Lantern Knight concept sheets.
 - **Lantern Knight**: idle, 4-frame walk, 3-frame attack, dash, hurt and death, in down / up / side views (left mirrors right). There are four corruption stages: steel and cloth darken, cyan seeps in, and the lantern turns cyan.
-- **The Drowned** share the knight's hood, mantle and armour, darkened, with glowing visors and cyan drips. Their coded sheets are now only a fallback for the PNG art below.
+- **The Drowned** share the knight's hood, mantle and armour, darkened, with glowing visors and cyan drips.
 
 Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite sheets can replace the generated ones later without touching the game code.
 
-**Hand-drawn art** (`src/sprites.js`) replaces coded art with PNG files in `assets/sprites/`, cut from the concept and motion sheets:
+**Hand-drawn art** (`src/sprites.js`) can replace coded art with PNG files in `assets/sprites/`, cut from the concept and motion sheets. It is switched off for now (`ENABLED = false` in `src/sprites.js`) because the cut-outs are still rough; the game uses the coded sprites. When it's on, it covers:
 - **Lantern Blade knight**: front, back and side poses and the attack swing from the motion sheet, plus walk, dash, hurt and death from the sprite sheet. Corruption stages and the drowned self are tinted from the same frames. Other kits are still coded.
 - **Drowned Knights**, each from its motion sheet: Mire Stalker (squire), Drowned Wretch (footman), Tide Archer (archer), Swarming Revenant (revenant), Lantern Reaver (defiler), Bone Bulwark (blackguard), Marsh Hexbearer (hexbearer) and Drowned Sovereign (champion).
 - **Blooms**: Refuge, Sentinel, Mother Root, Mire Sprout and Fading Husk, lit and unlit.
@@ -194,7 +194,7 @@ Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite 
 `tools/cut_concept_sprites.py` recreates the cut-out PNGs from the concept sheets (Python with Pillow, NumPy and SciPy). To add or redraw art:
 1. Draw one PNG per frame at art-pixel size (a knight is about 36 px tall), facing right for side views. Free editors: [Piskel](https://www.piskelapp.com) or [LibreSprite](https://libresprite.github.io).
 2. Put it under `assets/sprites/` and list it in `src/sprites.js` (`UNITS` for animated units, `PROPS` for world and camp sprites).
-3. Add the file to the sprite list in `sw.js` so the installed app has it offline.
+3. When the art is switched back on, add the files to the `FILES` list in `sw.js` so the installed app has them offline.
 
 A file that's missing or fails to load just keeps the coded frames.
 
