@@ -22,6 +22,16 @@ TWELVE = ['front', 'back', 'right', 'side/walk1', 'side/walk2', 'side/walk3', 's
 def twelve(folder, names):
     return {folder + '/' + n: out for n, out in zip(names, TWELVE)}
 
+# The two-sheets-of-six enemy prompt: each 3x2 sheet is split into one image per cell before cutting,
+# and the four side walk cells are joined into one strip for SHEETS. sheet -> (columns, rows, cell names)
+POSES_A = ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '10_attackC']
+POSES_B = ['04_walk', '05_walk', '06_walk', '07_walk', '11_hurt', '12_death']
+TWELVE_FILES = [n + '.png' for n in sorted(POSES_A + POSES_B)]
+GRIDS = {
+    'swarming-revenant/poses-a.png': (3, 2, POSES_A),
+    'swarming-revenant/poses-b.png': (3, 2, POSES_B),
+}
+
 SETS = {
     'lantern-knight': ('lantern-knight', 'knight-front.png', 80, 3, {
         'knight-front.png': 'front',
@@ -67,6 +77,7 @@ SETS = {
         '01_idle_front.png', '02_idle_back.png', '03_idle_right.png', '04_walk_left_forward.png', '05_walk_passing_a.png',
         '06_walk_right_forward.png', '07_walk_passing_b.png', '08_attack_windup.png', '09_attack_midstrike.png',
         '10_attack_followthrough.png', '11_hurt_recoil.png', '12_death.png'])),
+    'swarming-revenant': ('drowned/revenant', 'swarming-revenant/01_front.png', 76, 1, twelve('swarming-revenant', TWELVE_FILES)),
 }
 
 # Animation sheets: character -> [(sheet, columns, rows, height of the first frame's figure, output prefix[, row])].
@@ -94,6 +105,11 @@ SHEETS = {
         ('tide-archer/walk-front-4.png', 4, 1, 88, 'walkF'),
         ('tide-archer/walk-back-4.png', 4, 1, 86, 'walkB'),
     ],
+    'swarming-revenant': [
+        ('swarming-revenant/walk-side-4.png', 4, 1, 72, 'side/walk'),
+        ('swarming-revenant/walk-front-4.png', 4, 1, 78, 'walkF'),
+        ('swarming-revenant/walk-back-4.png', 4, 1, 80, 'walkB'),
+    ],
 }
 
 # Walk sheets the AI drew out of order or stepping with one foot only: the frames (1-based) to keep,
@@ -106,6 +122,19 @@ FRAME_ORDER = {('lantern-knight', 'walkB'): [2, 1, 4, -1], ('mire-stalker', 'wal
 SHEET_MATCH = {'tide-archer': 'tide-archer/01_front.png'}
 
 only = sys.argv[2:]  # optional character names to cut
+for sheet, (cols, rows, names) in GRIDS.items():
+    p = os.path.join(SRC, sheet)
+    if not os.path.exists(p): continue
+    img = Image.open(p).convert('RGB')
+    cw, ch = img.width // cols, img.height // rows
+    for i, n in enumerate(names):
+        img.crop((i % cols * cw, i // cols * ch, (i % cols + 1) * cw, (i // cols + 1) * ch)).save(os.path.join(os.path.dirname(p), n + '.png'))
+    walks = sorted(n for n in names if 'walk' in n)
+    if walks:
+        strip = Image.new('RGB', (cw * len(walks), ch), (255, 0, 255))
+        for i, n in enumerate(walks):
+            strip.paste(Image.open(os.path.join(os.path.dirname(p), n + '.png')), (i * cw, 0))
+        strip.save(os.path.join(os.path.dirname(p), 'walk-side-4.png'))
 for name, (folder, ref, target, fringe, files) in SETS.items():
     if only and name not in only: continue
     k = target / (cut_keyed(Image.open(os.path.join(SRC, ref)), 1, fringe=fringe).height - 2)
