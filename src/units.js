@@ -436,9 +436,10 @@
     const { dir, flip } = Art.unitDir(angle);
     const frames = sheet[dir][anim] || sheet[dir].idle;
     const f = frames[((frame % frames.length) + frames.length) % frames.length];
-    // Coded frames share one size and foot anchor; loaded PNG frames carry their own.
+    // Coded frames share one size and foot anchor; loaded PNG frames carry their own, and may be drawn
+    // at `res` file pixels per art pixel for finer detail.
     const fr = f.c, w = f.w, h = f.h, ax = f.ax != null ? f.ax : CX, ay = f.ay != null ? f.ay : GY;
-    const s = PS * scale;
+    const s = (PS * scale) / (f.res || 1);
     const clip = opt.clip != null ? Math.max(0, Math.min(1, opt.clip)) : 1;
     let img = fr;
     if (opt.flash) {

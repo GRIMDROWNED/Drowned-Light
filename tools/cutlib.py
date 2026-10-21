@@ -37,10 +37,13 @@ def cut(img, box, height, cool=0, thr=30, colors=24, keep_frac=0.06, sat_keep=40
     y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
     rgba = np.zeros((y1 - y0, x1 - x0, 4), 'uint8')
     rgba[..., :3] = a[y0:y1, x0:x1]; rgba[..., 3] = fg[y0:y1, x0:x1] * 255
-    im = Image.fromarray(rgba)
-    k = height / im.height
-    w2, h2 = max(1, round(im.width * k)), height
-    # box-average the colour (weighted by coverage) so the small sprite keeps its shading, then threshold alpha
+    k = height / rgba.shape[0]
+    return shrink(rgba, k, colors, outline, nearest)
+
+
+def shrink(rgba, k, colors=24, outline=(10, 11, 12), nearest=False):
+    """Scale a cut-out RGBA array by k into a pixel sprite: limited palette, solid alpha, 1 px outline."""
+    w2, h2 = max(1, round(rgba.shape[1] * k)), max(1, round(rgba.shape[0] * k))
     pre = Image.fromarray(rgba).convert('RGBa')
     small = np.asarray(pre.resize((w2, h2), Image.NEAREST if nearest else Image.BOX).convert('RGBA'))
     al = small[..., 3] > 110
@@ -63,3 +66,23 @@ def contact(ims, path, scale=4, bgc=(22, 32, 38, 255)):
     c = Image.new('RGBA', (W, H), bgc); x = 4
     for i in ims: c.alpha_composite(i, (x, H - 4 - i.height)); x += i.width + 4
     c.resize((W * scale, H * scale), Image.NEAREST).save(path)
+
+
+def cut_keyed(img, k, key=(255, 0, 255), tol=120, fringe=3, colors=32, outline=(10, 11, 12)):
+    """Cut a sprite off a flat key-colour background (AI renders): drop pixels near the key,
+    peel the tinted fringe, keep the main shapes, then shrink by k."""
+    a = np.asarray(img.convert('RGB')).astype(int)
+    d = np.sqrt(((a - np.array(key)) ** 2).sum(-1))
+    # purple fringe: red and blue both well above green
+    tint = (np.minimum(a[..., 0], a[..., 2]) - a[..., 1]) > 70
+    fg = (d > tol) & ~tint
+    fg = ndimage.binary_opening(fg, iterations=1)
+    lab, n = ndimage.label(fg, structure=np.ones((3, 3)))
+    sz = ndimage.sum(fg, lab, range(1, n + 1))
+    fg = np.isin(lab, 1 + np.where(sz >= 0.02 * sz.max())[0])
+    if fringe: fg = ndimage.binary_erosion(fg, iterations=fringe)
+    ys, xs = np.where(fg)
+    y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+    rgba = np.zeros((y1 - y0, x1 - x0, 4), 'uint8')
+    rgba[..., :3] = a[y0:y1, x0:x1]; rgba[..., 3] = fg[y0:y1, x0:x1] * 255
+    return shrink(rgba, k, colors, outline)
