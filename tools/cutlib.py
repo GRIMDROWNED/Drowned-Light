@@ -41,7 +41,7 @@ def cut(img, box, height, cool=0, thr=30, colors=24, keep_frac=0.06, sat_keep=40
     return shrink(rgba, k, colors, outline, nearest)
 
 
-def shrink(rgba, k, colors=24, outline=(10, 11, 12), nearest=False):
+def shrink(rgba, k, colors=24, outline=(10, 11, 12), nearest=False, crop=True):
     """Scale a cut-out RGBA array by k into a pixel sprite: limited palette, solid alpha, 1 px outline."""
     w2, h2 = max(1, round(rgba.shape[1] * k)), max(1, round(rgba.shape[0] * k))
     pre = Image.fromarray(rgba).convert('RGBa')
@@ -59,7 +59,7 @@ def shrink(rgba, k, colors=24, outline=(10, 11, 12), nearest=False):
     ring = ndimage.binary_dilation(A) & ~A
     pad[ring] = list(outline) + [255]
     out = Image.fromarray(pad)
-    return out.crop(out.getbbox())
+    return out.crop(out.getbbox()) if crop else out
 
 def contact(ims, path, scale=4, bgc=(22, 32, 38, 255)):
     W = sum(i.width + 4 for i in ims) + 4; H = max(i.height for i in ims) + 8
@@ -68,19 +68,50 @@ def contact(ims, path, scale=4, bgc=(22, 32, 38, 255)):
     c.resize((W * scale, H * scale), Image.NEAREST).save(path)
 
 
-def cut_keyed(img, k, key=(255, 0, 255), tol=120, fringe=3, colors=32, outline=(10, 11, 12), recolor=None):
-    """Cut a sprite off a flat key-colour background (AI renders): drop pixels near the key,
-    peel the tinted fringe, keep the main shapes, then shrink by k."""
-    a = np.asarray(img.convert('RGB')).astype(int)
+def key_mask(a, key=(255, 0, 255), tol=120, fringe=3):
+    """Foreground of a render on a flat key colour: drop pixels near the key and the tinted
+    fringe, keep the main shapes."""
     d = np.sqrt(((a - np.array(key)) ** 2).sum(-1))
-    # purple fringe: red and blue both well above green
-    tint = (np.minimum(a[..., 0], a[..., 2]) - a[..., 1]) > 70
+    tint = (np.minimum(a[..., 0], a[..., 2]) - a[..., 1]) > 70  # purple fringe: red and blue well above green
     fg = (d > tol) & ~tint
     fg = ndimage.binary_opening(fg, iterations=1)
     lab, n = ndimage.label(fg, structure=np.ones((3, 3)))
+    if n == 0: return fg
     sz = ndimage.sum(fg, lab, range(1, n + 1))
     fg = np.isin(lab, 1 + np.where(sz >= 0.02 * sz.max())[0])
     if fringe: fg = ndimage.binary_erosion(fg, iterations=fringe)
+    return fg
+
+
+def cut_sheet(img, cols, rows, height, fringe=1, colors=32, outline=(10, 11, 12)):
+    """Cut an animation sheet (equal cells on a key colour) into frames that share one canvas, so
+    the character stays put between frames. The first cell's figure is shrunk to `height` px and
+    every cell by the same factor. Returns the frames and their common foot point (x, y)."""
+    a = np.asarray(img.convert('RGB')).astype(int)
+    cw, ch = a.shape[1] // cols, a.shape[0] // rows
+    cells = [a[r * ch:(r + 1) * ch, c * cw:(c + 1) * cw] for r in range(rows) for c in range(cols)]
+    masks = [key_mask(c, fringe=fringe) for c in cells]
+    ys0, ys1 = np.where(masks[0].any(1))[0][[0, -1]]
+    k = height / (ys1 - ys0 + 1)
+    union = np.logical_or.reduce(masks)
+    ys, xs = np.where(union)
+    y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+    frames = []
+    for c, m in zip(cells, masks):
+        rgba = np.zeros((y1 - y0, x1 - x0, 4), 'uint8')
+        rgba[..., :3] = c[y0:y1, x0:x1] * m[y0:y1, x0:x1, None]; rgba[..., 3] = m[y0:y1, x0:x1] * 255
+        frames.append(shrink(rgba, k, colors, outline, crop=False))
+    al = np.logical_or.reduce([np.asarray(f)[..., 3] > 0 for f in frames])
+    ys, xs = np.where(al)
+    bottom = ys.max()
+    low = ys >= bottom - (bottom - ys.min()) // 4
+    return frames, (int(round(xs[low].mean())), int(bottom) + 1)
+
+
+def cut_keyed(img, k, key=(255, 0, 255), tol=120, fringe=3, colors=32, outline=(10, 11, 12), recolor=None):
+    """Cut a sprite off a flat key-colour background (AI renders) and shrink it by k."""
+    a = np.asarray(img.convert('RGB')).astype(int)
+    fg = key_mask(a, key, tol, fringe)
     ys, xs = np.where(fg)
     y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
     rgba = np.zeros((y1 - y0, x1 - x0, 4), 'uint8')

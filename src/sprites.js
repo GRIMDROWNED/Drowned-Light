@@ -39,6 +39,10 @@
     down: POSES_SIDE, up: POSES_SIDE,
   }), 2);
 
+  // An 8-frame walk cut from one sheet (tools/cut_ai_sprites.py SHEETS), and a stepping pose to match its length.
+  const WALK8 = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => "side/walk" + i);
+  const BOB8 = (p) => [p, p, p + "@bob", p + "@bob", p, p, p + "@bob", p + "@bob"];
+
   // The knight has his own walk, dash, hurt and death frames; down and up views borrow the side ones for dash, hurt and death.
   const KNIGHT_SIDE = { dash: ["side/dash"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] };
   const UNITS = [
@@ -47,10 +51,11 @@
       keys: KNIGHT_STAGES,
       res: 2,
       views: motion({
-        side: Object.assign({ walk: ["side/walk1", "side/walk2", "side/walk3", "side/walk4"] }, KNIGHT_SIDE),
-        down: KNIGHT_SIDE,
-        up: KNIGHT_SIDE,
+        side: Object.assign({ walk: WALK8 }, KNIGHT_SIDE),
+        down: Object.assign({ walk: BOB8("front") }, KNIGHT_SIDE),
+        up: Object.assign({ walk: BOB8("back") }, KNIGHT_SIDE),
       }),
+      feet: Object.fromEntries(WALK8.map((f) => [f, [32, 82]])), // the walk sheet's shared foot point
     },
     twelve("squire"),
     twelve("archer"),
