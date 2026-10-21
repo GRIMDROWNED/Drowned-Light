@@ -48,8 +48,8 @@
     down: POSES_SIDE, up: POSES_SIDE,
   }), 2);
 
-  // An 8-frame walk cut from one sheet (tools/cut_ai_sprites.py SHEETS), and a stepping pose to match its length.
-  const WALK8 = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => "side/walk" + i);
+  // A walk drawn with real leg movement: 4 frames each shown twice, with no foot lift ("@-").
+  const WALK4 = [1, 1, 2, 2, 3, 3, 4, 4].map((i) => "side/walk" + i + "@-");
   // Front and back walks are 4 frames from one sheet, each shown twice to match the side walk's length.
   const WALK4x2 = (p) => [1, 1, 2, 2, 3, 3, 4, 4].map((i) => p + i);
 
@@ -63,12 +63,12 @@
       keys: KNIGHT_STAGES,
       res: 2,
       views: motion({
-        side: Object.assign({ walk: WALK8 }, KNIGHT_SIDE),
+        side: Object.assign({ walk: WALK4 }, KNIGHT_SIDE),
         down: Object.assign({ walk: WALK4x2("walkF") }, KNIGHT_SIDE),
         up: Object.assign({ walk: WALK4x2("walkB") }, KNIGHT_SIDE),
       }),
       // each walk sheet's shared foot point, as printed by tools/cut_ai_sprites.py
-      feet: Object.assign(sheetFeet(WALK8, [36, 81]), sheetFeet(WALK4x2("walkF"), [35, 82]), sheetFeet(WALK4x2("walkB"), [30, 82])),
+      feet: Object.assign(sheetFeet([1, 2, 3, 4].map((i) => "side/walk" + i), [44, 80]), sheetFeet(WALK4x2("walkF"), [35, 82]), sheetFeet(WALK4x2("walkB"), [30, 82])),
     },
     twelve("squire"),
     twelve("archer"),
@@ -115,8 +115,9 @@
     return { c, w, h, ax, ay: ay + 1 };
   }
 
-  // A frame variant: "bob" one pixel lower, "fall" rotated onto its side, "L1"/"R2"... one foot lifted.
+  // A frame variant: "bob" one pixel lower, "fall" rotated onto its side, "L1"/"R2"... one foot lifted, "-" unchanged.
   function variant(fr, mod) {
+    if (mod === "-") return fr;
     if (mod[0] === "L" || mod[0] === "R") return lift(fr, mod[0] === "R", +mod.slice(1));
     if (mod === "bob") return { c: fr.c, w: fr.w, h: fr.h, ax: fr.ax, ay: fr.ay - (fr.res || 1), res: fr.res };
     const c = document.createElement("canvas");
