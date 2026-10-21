@@ -86,6 +86,7 @@
     walking("revenant", [54, 79], [38, 80], [41, 82]),
     walking("defiler", [54, 84], [38, 86], [40, 87]),
     walking("blackguard", [61, 87], [36, 88], [32, 87]),
+    walking("hexbearer", [55, 91], [46, 95], [41, 93]),
     walking("footman", [56, 78], [36, 84], [37, 83]),
   ];
 

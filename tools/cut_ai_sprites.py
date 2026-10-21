@@ -34,6 +34,8 @@ GRIDS = {
     'lantern-reaver/poses-b.png': (3, 2, POSES_B),
     'bone-bulwark/poses-a.png': (3, 2, POSES_A),
     'bone-bulwark/poses-b.png': (3, 2, POSES_B),
+    'marsh-hexbearer/poses-a.png': (3, 2, POSES_A),
+    'marsh-hexbearer/poses-b.png': (3, 2, POSES_B),
 }
 
 SETS = {
@@ -84,6 +86,8 @@ SETS = {
     'swarming-revenant': ('drowned/revenant', 'swarming-revenant/01_front.png', 76, 1, twelve('swarming-revenant', TWELVE_FILES)),
     'lantern-reaver': ('drowned/defiler', 'lantern-reaver/01_front.png', 82, 1, twelve('lantern-reaver', TWELVE_FILES)),
     'bone-bulwark': ('drowned/blackguard', 'bone-bulwark/01_front.png', 84, 1, twelve('bone-bulwark', TWELVE_FILES)),
+    # its staff stands above the hood, so the reference pose is taller than the others
+    'marsh-hexbearer': ('drowned/hexbearer', 'marsh-hexbearer/01_front.png', 92, 1, twelve('marsh-hexbearer', TWELVE_FILES)),
 }
 
 # Animation sheets: character -> [(sheet, columns, rows, height of the first frame's figure, output prefix[, row])].
@@ -125,6 +129,11 @@ SHEETS = {
         ('bone-bulwark/walk-side-4.png', 4, 1, 85, 'side/walk'),
         ('bone-bulwark/walk-front-4.png', 4, 1, 86, 'walkF'),
         ('bone-bulwark/walk-back-4.png', 4, 1, 85, 'walkB'),
+    ],
+    'marsh-hexbearer': [
+        ('marsh-hexbearer/walk-side-4.png', 4, 1, 89, 'side/walk'),
+        ('marsh-hexbearer/walk-front-4.png', 4, 1, 93, 'walkF'),
+        ('marsh-hexbearer/walk-back-4.png', 4, 1, 91, 'walkB'),
     ],
 }
 
