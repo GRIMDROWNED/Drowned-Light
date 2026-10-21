@@ -61,11 +61,11 @@
     Object.assign(sheetFeet([1, 2, 3, 4].map((i) => "side/walk" + i), side), sheetFeet(WALK4x2("walkF"), front), sheetFeet(WALK4x2("walkB"), back));
 
   // An enemy with the 12 poses plus 4-pose walk sheets for all three views.
-  const walking = (type, side, front, back) => Object.assign(drowned(type, motion({
+  const walking = (type, side, front, back, res = 2) => Object.assign(drowned(type, motion({
     side: Object.assign({ walk: WALK4 }, POSES_SIDE),
     down: Object.assign({ walk: WALK_FRONT }, POSES_SIDE),
     up: Object.assign({ walk: WALK_BACK }, POSES_SIDE),
-  }), 2), { feet: walkFeet(side, front, back) });
+  }), res), { feet: walkFeet(side, front, back) });
 
   // The knight has his own walk, dash, hurt and death frames; down and up views borrow the side ones for dash, hurt and death.
   const KNIGHT_SIDE = { dash: ["side/dash"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] };
@@ -87,6 +87,8 @@
     walking("defiler", [54, 84], [38, 86], [40, 87]),
     walking("blackguard", [61, 87], [36, 88], [32, 87]),
     walking("hexbearer", [55, 91], [46, 95], [41, 93]),
+    // the boss is drawn 1.5x bigger, so its frames are cut at 3 file px per art pixel
+    walking("champion", [87, 128], [58, 129], [41, 132], 3),
     walking("footman", [56, 78], [36, 84], [37, 83]),
   ];
 
