@@ -220,6 +220,10 @@ PROP_GRIDS = {
     'camp/torches.png': (3, 1, ['torch', 'burnt', 'brazier']),
     # the fire's animation frames (Art.drawFire)
     'camp/fire.png': (6, 1, ['fire1', 'fire2', 'fire3', 'fire4', 'fire5', 'fire6']),
+    # three iron deposits, each whole -> cracked -> rubble
+    'world/iron.png': (3, 3, ['iron11', 'iron12', 'iron13', 'iron21', 'iron22', 'iron23', 'iron31', 'iron32', 'iron33']),
+    # three amethyst deposits (the 'pearl' resource), each whole -> snapped -> stumps
+    'world/amethyst.png': (3, 3, ['amethyst11', 'amethyst12', 'amethyst13', 'amethyst21', 'amethyst22', 'amethyst23', 'amethyst31', 'amethyst32', 'amethyst33']),
     # two boulders, bare then mossy, each whole -> cracked -> crumbling
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
@@ -230,7 +234,11 @@ PROP_HEIGHT = {'refugeOff': 116, 'sentinelOff': 96, 'rootOff': 150, 'sproutOff':
                'stake': 40, 'gatePost': 100, 'banner': 96,
                'torch': 58, 'fire3': 64}
 # Or the width in file px, for low, wide props.
-PROP_WIDTH = {'flame1': 84, 'flame2': 104, 'forge4': 124, 'armory4': 120, 'workbench4': 116, 'palisade': 56, 'tent': 100, 'brazier': 44}
+PROP_WIDTH = {'flame1': 84, 'flame2': 104, 'forge4': 124, 'armory4': 120, 'workbench4': 116, 'palisade': 56, 'tent': 100, 'brazier': 44, 'iron11': 62}
+PROP_HEIGHT['amethyst11'] = 50
+# Renders whose own colours come close to the magenta key (purple crystals): key them out with a tighter
+# tolerance than the default 120 and without the purple-fringe filter, so the art isn't eaten.
+PROP_TOL = {n: 60 for n in ['amethyst11', 'amethyst12', 'amethyst13', 'amethyst21', 'amethyst22', 'amethyst23', 'amethyst31', 'amethyst32', 'amethyst33']}
 # Props whose footing isn't in the middle of the picture (a leaning stake, a post with a lamp hung out to one
 # side): padded so the footing is centred, since sprites are drawn centred on their spot.
 PROP_FOOT_CENTRE = {'stake', 'gatePost', 'gatePost2', 'fire1', 'fire2', 'fire3', 'fire4', 'fire5', 'fire6'}
@@ -242,7 +250,9 @@ PROP_SAME = {'swampTree1': 'swampTree2', 'swampTree3': 'swampTree2', 'gardenBed1
             'workbench1': 'workbench4', 'workbench2': 'workbench4', 'workbench3': 'workbench4',
             'tower1': 'tower3', 'tower2': 'tower3',
             'pylon1': 'pylon3', 'pylon2': 'pylon3', 'palisade2': 'palisade', 'gatePost2': 'gatePost',
-            'burnt': 'torch', 'fire1': 'fire3', 'fire2': 'fire3', 'fire4': 'fire3', 'fire5': 'fire3', 'fire6': 'fire3'}
+            'burnt': 'torch', 'fire1': 'fire3', 'fire2': 'fire3', 'fire4': 'fire3', 'fire5': 'fire3', 'fire6': 'fire3',
+            'iron12': 'iron11', 'iron13': 'iron11', 'iron21': 'iron11', 'iron22': 'iron11', 'iron23': 'iron11', 'iron31': 'iron11', 'iron32': 'iron11', 'iron33': 'iron11',
+            'amethyst12': 'amethyst11', 'amethyst13': 'amethyst11', 'amethyst21': 'amethyst11', 'amethyst22': 'amethyst11', 'amethyst23': 'amethyst11', 'amethyst31': 'amethyst11', 'amethyst32': 'amethyst11', 'amethyst33': 'amethyst11'}
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
 PROP_OUT = 'props'
@@ -339,11 +349,11 @@ if not only or 'props' in only:
     for sheet, (cols, rows, names) in PROP_GRIDS.items():
         p = os.path.join(SRC, sheet)
         if not os.path.exists(p): continue
-        for n, cell in zip(names, split_grid(Image.open(p), cols, rows)):
+        for n, cell in zip(names, split_grid(Image.open(p), cols, rows, tol=PROP_TOL.get(names[0], 120))):
             if n: cells[n] = cell
     k = {}
     for n, cell in cells.items():
-        if n in PROP_HEIGHT: k[n] = PROP_HEIGHT[n] / (cut_keyed(cell, 1, fringe=1).height - 2)
+        if n in PROP_HEIGHT: k[n] = PROP_HEIGHT[n] / (cut_keyed(cell, 1, fringe=1, tol=PROP_TOL.get(n, 120), tint=n not in PROP_TOL).height - 2)
         if n in PROP_WIDTH: k[n] = PROP_WIDTH[n] / (cut_keyed(cell, 1, fringe=1).width - 2)
     for n, ref in PROP_SAME.items():
         if n in cells and ref in k: k[n] = k[ref]
@@ -352,7 +362,7 @@ if not only or 'props' in only:
             k[n] = k[twin] * base_width(cut_keyed(cells[twin], 1, fringe=1)) / base_width(cut_keyed(cells[n], 1, fringe=1))
     done = []
     for n, cell in cells.items():
-        im = cut_keyed(cell, k[n], fringe=1)
+        im = cut_keyed(cell, k[n], fringe=1, tol=PROP_TOL.get(n, 120), tint=n not in PROP_TOL)
         if n in PROP_DESPILL: im = despill(im)
         if n in PROP_FOOT_CENTRE: im = centre_foot(im)
         # even sizes, so the art-pixel size (half) is whole; the padding goes on the top and the left

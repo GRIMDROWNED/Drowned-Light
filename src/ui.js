@@ -499,7 +499,7 @@
           <li><b class="warm">Firelight</b> (camp, torches, Illuminate) reverses corruption and refills your lantern.</li>
           <li><b class="cold">Bloomlight</b> (Refuge, Sentinel, Mother Root) only halts it. Blooms wake at night.</li>
           <li>Your <b>lantern oil</b> halves corruption in the dark until it runs dry.</li>
-          <li><b>Abyssal Pearls</b> surface only in darkness, in the Mire and deeper.</li>
+          <li><b>Amethyst</b> deposits surface only in darkness, in the Mire and deeper.</li>
           <li>Defend a <b>Mother Root</b> until dawn for a rich reward.</li>
           <li>Fall, and your <b>drowned self</b> keeps your supplies. Slay it to get them back.</li>
         </ul></article>`;
