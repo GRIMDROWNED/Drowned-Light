@@ -57,7 +57,8 @@
   Net.send = function (msg) {
     if (Net.conn && Net.connected) { try { Net.conn.send(msg); } catch (e) { /* closed */ } }
   };
-  Net.event = function (ev) { Net.events.push(ev); };
+  Net.event = function (ev) { Net.events.push(ev); if (ev.t === "mined") Net.mined.add(ev.id); };
+  Net.mined = new Set(); // what the guest broke, so it doesn't pop back before the host hears
 
   /* ---------------- host ---------------- */
   Net.host = async function () {
@@ -359,7 +360,10 @@
     G.walls = m.wa.map((w) => ({ x1: w[0], y1: w[1], x2: w[2], y2: w[3], t: w[4], max: w[5], dps: 0, net: 1 }));
     m.py.forEach((q, i) => { if (G.pylons[i]) { G.pylons[i].hp = q[0]; G.pylons[i].lit = !!q[1]; } });
     G.pickups = m.pk.map((k) => ({ id: k[0], x: k[1], y: k[2], res: k[3], t: 1, vx: 0, vy: 0 }));
-    G.pearls = m.pe.map((q) => ({ id: q[0], type: "pearl", def: DL.OBJ.pearl, x: q[1], y: q[2], amount: q[3], zi: q[4], harvested: false }));
+    // Keep the same amethyst objects between snapshots so hits on them add up (they take two).
+    const pearlById = new Map(G.pearls.map((q) => [q.id, q]));
+    G.pearls = m.pe.map((q) => Object.assign(pearlById.get(q[0]) || { id: q[0], type: "pearl", def: DL.OBJ.pearl, harvested: false }, { x: q[1], y: q[2], amount: q[3], zi: q[4] }))
+      .filter((q) => !q.harvested && !Net.mined.has(q.id));
     G.telegraphs = m.tg.map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], delay: q[4], done: true }));
     G.hexPools = (m.hx || []).map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], life: q[4] }));
     applyObjs(m.ob);
@@ -421,7 +425,7 @@
     const was = Net.role;
     try { if (Net.conn) Net.conn.close(); } catch (e) { /* ignore */ }
     try { if (Net.peer) Net.peer.destroy(); } catch (e) { /* ignore */ }
-    Object.assign(Net, { role: null, code: null, peer: null, conn: null, connected: false, events: [], acc: 0 });
+    Object.assign(Net, { role: null, code: null, peer: null, conn: null, connected: false, events: [], acc: 0, mined: new Set() });
     G.ally = null;
     G.netProjectiles = null;
     if (was === "guest") { G.save = G.load(); DL.World.chunks.clear(); }
