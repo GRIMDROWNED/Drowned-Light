@@ -12,7 +12,7 @@
   const sfx = (n) => DL.Sound.play(n);
   const emptyRes = () => ({ wood: 0, stone: 0, resin: 0, iron: 0, pearl: 0 });
 
-  const G = (DL.Game = { state: "title", t: 0, time: 0, nightAmt: 0, night: false, ally: null, eid: 0, pid: 0, dirty: new Set() });
+  const G = (DL.Game = { state: "title", t: 0, time: 0, nightAmt: 0, night: false, allies: [], eid: 0, pid: 0, dirty: new Set() });
   // Co-op: the guest's device plays inside the host's world and never saves it.
   G.SLOTS = 3;
   G.isGuest = () => !!(DL.Net && DL.Net.role === "guest");
@@ -218,7 +218,7 @@
       return;
     }
     // In co-op the world keeps going while either player is in the camp menu (they just stand still).
-    const live = G.state === "play" || (G.state === "camp" && DL.Net.role && (G.isGuest() || G.ally));
+    const live = G.state === "play" || (G.state === "camp" && DL.Net.role && (G.isGuest() || G.allies.length));
     if (!live) return;
     if (G.isGuest()) { guestUpdate(dt); return; }
 
@@ -385,7 +385,7 @@
     } else if (p) {
       L.push({ x: p.x, y: p.y - 28, r: 80, s: 0.8, col: "255,180,90", a: 0.75, flick: 1 });
     }
-    if (G.ally && !G.ally.down) L.push({ x: G.ally.x, y: G.ally.y - 28, r: 80, s: 0.8, col: "255,180,90", a: 0.7, flick: 1 });
+    for (const a of G.allies) if (!a.down) L.push({ x: a.x, y: a.y - 28, r: 80, s: 0.8, col: "255,180,90", a: 0.7, flick: 1 });
     for (const e of G.enemies) {
       if (e.type === "defiler") L.push({ x: e.x, y: e.y - 70, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
       else if (e.def.boss) L.push({ x: e.x, y: e.y - 40, r: 60, s: 0.3, col: "70,230,240", a: 0.6 });
@@ -663,9 +663,10 @@
 
   /* ---------------- spawning ---------------- */
   function updateSpawning(dt) {
-    const a = G.ally;
-    const p = a && !a.down && dist(a.x, a.y, G.player.x, G.player.y) > 500 && Math.random() < 0.5
-      ? { x: a.x, y: a.y, zi: W.zoneIndex(a.x, a.y) } : G.player;
+    // In co-op, friends far from the host get their own share of the roaming Drowned.
+    const far = G.allies.filter((a) => !a.down && dist(a.x, a.y, G.player.x, G.player.y) > 500);
+    const a = far.length && Math.random() < far.length / (far.length + 1) ? far[(Math.random() * far.length) | 0] : null;
+    const p = a ? { x: a.x, y: a.y, zi: W.zoneIndex(a.x, a.y) } : G.player;
     const Z = DL.ZONES[Math.max(1, p.zi)], dCamp = Math.hypot(p.x, p.y);
     const active = G.night || (Z.abyss && G.nightAmt < 0.5);
 
@@ -684,7 +685,7 @@
     if (!G.night && !Z.abyss) { G.pearls.length = 0; }
     if (!active) return;
 
-    const cap = G.night ? 55 : 14;
+    const cap = (G.night ? 55 : 14) + G.allies.length * (G.night ? 15 : 4);
     if (G.enemies.length >= cap) return;
 
     // Siege: the Drowned come for the Central Flame.
@@ -692,7 +693,7 @@
       G.siegeT -= dt;
       if (G.siegeT <= 0) {
         G.siegeT = 11;
-        const n = Math.round((3 + Math.floor(G.save.day * 1.3)) * G.diff().spawn);
+        const n = Math.round((3 + Math.floor(G.save.day * 1.3)) * G.diff().spawn * G.partyScale());
         spawnWave(0, 0, DL.campPool(G.save.day), n, G.flame, 540, 1);
         if (G.save.day >= 5 && !G.champSpawned && G.phase() === "night") {
           G.champSpawned = true;
@@ -754,7 +755,7 @@
   function makeEnemy(type, x, y, zi, extra) {
     const def = DL.ENEMIES[type], Z = DL.ZONES[Math.max(1, zi)], day = G.save.day;
     const D = G.diff();
-    const hp = def.hp * Z.hp * (1 + 0.08 * (day - 1)) * D.enemyHp;
+    const hp = def.hp * Z.hp * (1 + 0.08 * (day - 1)) * D.enemyHp * (1 + 0.15 * G.allies.length);
     return Object.assign({
       id: ++G.eid, type, def, x, y, kx: 0, ky: 0, hp, maxHp: hp,
       dmg: def.dmg * Z.dmg * (1 + 0.05 * (day - 1)) * D.enemyDmg,
@@ -782,16 +783,19 @@
     return best;
   }
 
-  // Each Drowned hunts whichever knight is nearer (host or co-op friend).
+  // Each Drowned hunts whichever knight is nearest (host or a co-op friend).
+  G.knights = () => [G.player, ...G.allies.filter((a) => !a.down)];
   function targetFor(e) {
-    const p = G.player, a = G.ally;
-    if (!a || a.down) return p;
-    return dist(e.x, e.y, a.x, a.y) < dist(e.x, e.y, p.x, p.y) ? a : p;
+    let best = G.player, bd = dist(e.x, e.y, G.player.x, G.player.y);
+    for (const a of G.allies) if (!a.down) { const d = dist(e.x, e.y, a.x, a.y); if (d < bd) { bd = d; best = a; } }
+    return best;
   }
   function hurtKnight(k, dmg, ang) {
-    if (k === G.ally) DL.Net.hurtAlly(dmg, ang);
+    if (k !== G.player) DL.Net.hurtAlly(k, dmg, ang);
     else hurtPlayer(dmg, ang);
   }
+  // More knights, more Drowned: siege waves grow by a third per friend (and each Drowned has 15% more health per friend, in makeEnemy).
+  G.partyScale = () => 1 + 0.35 * G.allies.length;
 
   function updateEnemies(dt) {
     for (const e of G.enemies) {
@@ -931,7 +935,7 @@
           b.x += (dx / d) * push * (ma / tot); b.y += (dy / d) * push * (ma / tot);
         }
       }
-      for (const k of G.ally && !G.ally.down ? [G.player, G.ally] : [G.player]) {
+      for (const k of G.knights()) {
         const dx = a.x - k.x, dy = a.y - k.y, d = Math.hypot(dx, dy) || 0.01, min = a.def.radius + 9;
         if (d < min) { a.x = k.x + (dx / d) * min; a.y = k.y + (dy / d) * min; }
       }
@@ -1254,7 +1258,10 @@
           if (b.corrupt && p.hp < hp) p.corrupt = clamp(p.corrupt + b.corrupt, 0, 100);
           b.life = 0;
         }
-        else if (G.ally && !G.ally.down && dist(b.x, b.y, G.ally.x, G.ally.y - 22) < 16) { DL.Net.hurtAlly(b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
+        else {
+          const a = G.allies.find((k) => !k.down && dist(b.x, b.y, k.x, k.y - 22) < 16);
+          if (a) { DL.Net.hurtAlly(a, b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
+        }
       } else {
         for (const e of G.enemies) {
           if (e.rise > 0 || e.removed || (b.hit && b.hit.has(e))) continue;
@@ -1291,8 +1298,7 @@
       if (t.t >= t.delay && !t.done) {
         t.done = true;
         if (dist(t.x, t.y, p.x, p.y) < t.r + 6) hurtPlayer(t.dmg, Math.atan2(p.y - t.y, p.x - t.x));
-        const a = G.ally;
-        if (a && !a.down && dist(t.x, t.y, a.x, a.y) < t.r + 6) DL.Net.hurtAlly(t.dmg, Math.atan2(a.y - t.y, a.x - t.x));
+        for (const a of G.allies) if (!a.down && dist(t.x, t.y, a.x, a.y) < t.r + 6) DL.Net.hurtAlly(a, t.dmg, Math.atan2(a.y - t.y, a.x - t.x));
         for (let i = 0; i < 10; i++) spark(t.x + rand(-t.r, t.r) * 0.6, t.y + rand(-t.r, t.r) * 0.3, "90,235,245", 120);
         G.effects.push({ type: "spikes", x: t.x, y: t.y, r: t.r, t: 0, max: 0.5 });
       }
@@ -1302,7 +1308,7 @@
 
   // Marsh Hexbearer corruption pools: standing in one wounds you and feeds the corruption.
   function updateHexPools(dt) {
-    const p = G.player, a = G.ally;
+    const p = G.player;
     const inside = (k, q) => Math.hypot(k.x - q.x, (k.y - q.y) / 0.55) < q.r;
     for (const q of G.hexPools) {
       q.t += dt;
@@ -1313,7 +1319,7 @@
         if (p.hp <= 0) { die("wounds"); return; }
       }
       q.tick = (q.tick || 0) - dt;
-      if (a && !a.down && inside(a, q) && q.tick <= 0) { q.tick = 0.5; DL.Net.hurtAlly(2, 0); }
+      if (q.tick <= 0) { q.tick = 0.5; for (const a of G.allies) if (!a.down && inside(a, q)) DL.Net.hurtAlly(a, 2, 0); }
       if (Math.random() < 0.15) puff(q.x + rand(-q.r, q.r) * 0.7, q.y + rand(-q.r, q.r) * 0.35, "rgba(60,220,230,0.5)", 20, 0.8, -20);
     }
     G.hexPools = G.hexPools.filter((q) => q.t < q.life);
@@ -1322,16 +1328,16 @@
   function updatePickups(dt) {
     for (const k of G.pickups) {
       k.t += dt;
-      const a = G.ally && !G.ally.down ? G.ally : null;
-      const p = a && dist(k.x, k.y, a.x, a.y) < dist(k.x, k.y, G.player.x, G.player.y) ? a : G.player;
+      let p = G.player;
+      for (const a of G.allies) if (!a.down && dist(k.x, k.y, a.x, a.y) < dist(k.x, k.y, p.x, p.y)) p = a;
       const d = dist(k.x, k.y, p.x, p.y - 10);
       if (k.t > 0.45 && d < 95) {
         const s = 420;
         k.x += ((p.x - k.x) / d) * s * dt;
         k.y += ((p.y - 10 - k.y) / d) * s * dt;
-        if (d < 16 && p === G.ally) {
+        if (d < 16 && p !== G.player) {
           k.done = true;
-          DL.Net.send({ t: "gain", res: k.res, amt: k.amt });
+          DL.Net.gain(p, k.res, k.amt);
         } else if (d < 16) {
           k.done = true;
           p.carried[k.res] += k.amt;

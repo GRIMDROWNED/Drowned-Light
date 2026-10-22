@@ -175,7 +175,7 @@
     }
     for (const f of G.effects) if (f.type === "dissolve") list.push({ y: f.e.y, f: () => drawDissolve(c, f) });
     if (G.player && G.state !== "dead") list.push({ y: G.player.y, f: () => drawPlayer(c, G, t) });
-    if (G.ally) list.push({ y: G.ally.y, f: () => drawAlly(c, G, t) });
+    for (const a of G.allies) list.push({ y: a.y, f: () => drawAlly(c, a, t) });
     list.sort((a, b) => a.y - b.y);
     for (const it of list) it.f();
 
@@ -198,10 +198,10 @@
     c.globalCompositeOperation = "lighter";
     for (const b of G.projectiles) drawProjectile(c, b);
     for (const b of G.netProjectiles || []) drawProjectile(c, b);
-    if (G.ally) for (const q of G.ally.proj) drawProjectile(c, { x: q[0], y: q[1], vx: q[2], vy: q[3], kind: q[4], col: q[5], hostile: false, life: 1 });
-    if (G.ally && G.ally.swing && !G.ally.down) {
-      const s = G.ally.swing, a = G.ally, k = Math.min(1, s.t / s.dur);
-      if (s.kind === "arc") drawSlash(c, a.x, a.y - 24, s.ang, s.arc, s.range, k, s.col, 9, s.flip);
+    for (const a of G.allies) {
+      for (const q of a.proj || []) drawProjectile(c, { x: q[0], y: q[1], vx: q[2], vy: q[3], kind: q[4], col: q[5], hostile: false, life: 1 });
+      const s = a.swing;
+      if (s && !a.down && s.kind === "arc") drawSlash(c, a.x, a.y - 24, s.ang, s.arc, s.range, Math.min(1, s.t / s.dur), s.col, 9, s.flip);
     }
     for (const f of G.effects) {
       if (f.type === "spark") {
@@ -286,9 +286,8 @@
     }
     c.globalAlpha = 1;
 
-    /* co-op: an arrow at the screen edge pointing to your friend when they're out of view */
-    const fr = G.ally;
-    if (fr && G.state !== "title") {
+    /* co-op: an arrow at the screen edge pointing to each friend who's out of view */
+    for (const fr of G.state !== "title" ? G.allies : []) {
       const sx = (fr.x - left) * z, sy = (fr.y - 40 - top) * z, m = 34;
       if (sx < 0 || sy < 0 || sx > R.W || sy > R.H) {
         const cx = R.W / 2, cy = R.H / 2, a = Math.atan2(sy - cy, sx - cx);
@@ -303,7 +302,7 @@
         c.font = "700 10px Inter, system-ui, sans-serif";
         c.textAlign = "center";
         c.fillStyle = "rgba(231,217,255,0.9)";
-        c.fillText(DL.Net.role === "guest" ? "Host" : "Friend", ex - Math.cos(a) * 20, ey - Math.sin(a) * 20 + 3);
+        c.fillText(fr.label || "Friend", ex - Math.cos(a) * 20, ey - Math.sin(a) * 20 + 3);
       }
     }
 
@@ -644,8 +643,8 @@
   }
 
   // The co-op friend: their own kit and corruption, animated from what their device reports.
-  function drawAlly(c, G, t) {
-    const a = G.ally, key = a.kit + (a.stage || 1);
+  function drawAlly(c, a, t) {
+    const key = a.kit + (a.stage || 1);
     shadow(c, a.x, a.y, 15, 5);
     if (a.down) { Art.drawUnit(c, key, "death", 2, a.angle, a.x, a.y, 1, { alpha: 0.5 }); }
     else {
@@ -657,7 +656,7 @@
       Art.drawUnit(c, key, anim, fr, ang, a.x, a.y, 1);
     }
     // name tag + health
-    const label = DL.Net.role === "guest" ? "Host" : "Friend";
+    const label = a.label || "Friend";
     c.font = "700 9px Inter, system-ui, sans-serif";
     c.textAlign = "center";
     c.fillStyle = "rgba(0,0,0,0.6)";
@@ -796,7 +795,7 @@
      a ring of light at the feet (15), and a crest of light above the hood (20). */
   function drawKitGlow(c, G, p, t) {
     const tier = DL.Kits.tier(), col = DL.Kits.color();
-    for (const w of [G.wisp, G.ally && G.ally.wisp]) {
+    for (const w of [G.wisp, ...G.allies.map((a) => a.wisp)]) {
       if (!w) continue;
       const g = c.createRadialGradient(w.x, w.y, 0, w.x, w.y, 14);
       g.addColorStop(0, "rgba(255,255,240,1)"); g.addColorStop(0.3, "rgba(255,232,170,0.8)"); g.addColorStop(1, "rgba(255,232,170,0)");
