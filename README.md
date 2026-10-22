@@ -193,6 +193,7 @@ Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite 
 - **Swarming Revenant** (revenant), **Lantern Reaver** (defiler), **Bone Bulwark** (blackguard), **Marsh Hexbearer** (hexbearer) and **Drowned Sovereign** (champion, cut at `res: 3` because the boss is drawn 1.5× bigger): the poses came as two 3×2 sheets of six (`GRIDS` in the cutter splits them into poses, keeping a cloak or blade that pokes over a cell edge with its pose).
 - The knight and all eight enemies walk with 4-pose side, front and back walk sheets.
 - **Bioluminescent plants** (Refuge Bloom, Sentinel Bloom, Mother Root, sprout, garden flowers, and the husk of a dead bloom), lit and unlit: cut from two sheets by `PROP_GRIDS` in the cutter into `assets/sprites/props/` at `res: 2`. The lit plants are scaled to match their unlit twins by the width of their rocky base.
+- **Cultivation Plot**: a drawn bed per plot level (`gardenBed1`–`3`); the glowing flowers sit in rows of six along its furrows (`BED_SOIL` in `src/render.js` gives each bed's soil corners).
 - **Reeds**: six clumps from one sheet (`reeds1`–`reeds6`), one picked per spot.
 - Camp and the other world props are coded until their new art arrives. Set `ENABLED = false` in `src/sprites.js` to use coded art everywhere.
 
