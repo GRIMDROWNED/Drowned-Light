@@ -44,6 +44,8 @@ GRIDS = {
     'ashen-arbalist/poses-b.png': (3, 2, POSES_B),
     'relic-bearer/poses-a.png': (3, 2, POSES_A),
     'relic-bearer/poses-b.png': (3, 2, POSES_B),
+    'flame-bastion/poses-a.png': (3, 2, POSES_A),
+    'flame-bastion/poses-b.png': (3, 2, POSES_B),
 }
 # Cells the AI drew at another scale than the rest of their sheet: cell -> factor to resize it by.
 CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05}
@@ -104,6 +106,8 @@ SETS = {
     'pike-warden': ('pike-warden', 'pike-warden/01_front.png', 104, 1, twelve('pike-warden', TWELVE_FILES)),
     'ashen-arbalist': ('ashen-arbalist', 'ashen-arbalist/01_front.png', 83, 1, twelve('ashen-arbalist', TWELVE_FILES)),
     'relic-bearer': ('relic-bearer', 'relic-bearer/01_front.png', 98, 1, twelve('relic-bearer', TWELVE_FILES)),
+    # the heaviest kit (bulk 1 in src/units.js), a little bigger than the Lantern Knight
+    'flame-bastion': ('flame-bastion', 'flame-bastion/01_front.png', 84, 1, twelve('flame-bastion', TWELVE_FILES)),
 }
 
 # Animation sheets: character -> [(sheet, columns, rows, height of the first frame's figure, output prefix[, row])].
@@ -171,6 +175,11 @@ SHEETS = {
         ('relic-bearer/walk-front-4.png', 4, 1, 99, 'walkF'),
         ('relic-bearer/walk-back-4.png', 4, 1, 99, 'walkB'),
     ],
+    'flame-bastion': [
+        ('flame-bastion/walk-side-4.png', 4, 1, 82, 'side/walk'),
+        ('flame-bastion/walk-front-4.png', 4, 1, 84, 'walkF'),
+        ('flame-bastion/walk-back-4.png', 4, 1, 84, 'walkB'),
+    ],
 }
 
 # Walk sheets the AI drew out of order or stepping with one foot only: the frames (1-based) to keep,
@@ -181,11 +190,11 @@ FRAME_ORDER = {('lantern-knight', 'walkB'): [2, 1, 4, -1], ('mire-stalker', 'wal
                # every frame steps with the same foot
                ('pike-warden', 'walkF'): [1, 3, -1, 3],
                # frames 2 and 4 both lift the same foot
-               ('relic-bearer', 'walkF'): [1, 2, 3, -2]}
+               ('relic-bearer', 'walkF'): [1, 2, 3, -2], ('flame-bastion', 'walkB'): [1, 2, 3, -2]}
 
 # Where to mirror legs when the feet can't be found from the bottom rows (one foot lifted, a staff butt
 # beside them): character -> (legs share, half width, centre x) for mirror_legs.
-MIRROR_AT = {'relic-bearer': (0.32, 10, 39)}
+MIRROR_AT = {'relic-bearer': (0.32, 10, 39), 'flame-bastion': (0.32, 10, 36)}
 
 # Walk sheets rendered in other colours than the character's first batch: recolour to this image.
 SHEET_MATCH = {'tide-archer': 'tide-archer/01_front.png'}
