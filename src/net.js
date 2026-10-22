@@ -17,6 +17,7 @@
   const r1 = (v) => Math.round(v * 10) / 10;
   // How far through its special move a knight is (0..1, 0 when not casting), for its attack pose on the other screen.
   const castK = (p) => (p.cast ? Math.max(0.1, r1(p.cast.t / p.cast.dur)) : 0);
+  const wispK = () => (G.wisp ? [r1(G.wisp.x), r1(G.wisp.y)] : 0);
   const TYPES = Object.keys(DL.ENEMIES);
 
   /* Two phones on mobile data (or behind strict routers) can't reach each other directly, so their
@@ -116,6 +117,7 @@
       a.tx = s[0]; a.ty = s[1]; a.angle = s[2]; a.moving = !!s[3]; a.dashT = s[4]; a.stage = s[5]; a.hp = s[6]; a.maxHp = s[7]; a.down = !!s[8];
       a.swing = s[9] ? { ang: s[9][0], t: s[9][1], dur: 0.2, kind: s[9][2], range: s[9][3], arc: s[9][4], col: s[9][5], flip: !!s[9][6] } : null;
       a.cast = s[10] || 0;
+      a.wisp = s[11] ? { x: s[11][0], y: s[11][1] } : null;
       a.proj = m.pr || [];
       for (const ev of m.ev || []) DL.Net.apply(ev);
     }
@@ -179,7 +181,7 @@
       flame: [Math.round(G.flame.hp), G.flame.max, G.flame.lit ? 1 : 0],
       stash: G.save.stash,
       host: [r1(p.x), r1(p.y), r1(p.angle), p.moving ? 1 : 0, r1(p.dashT), p.stage, Math.round(p.hp), G.stats().maxHp, G.save.kit, G.save.kitLevel,
-        sw ? [r1(sw.ang), r1(sw.t), sw.kind, Math.round(sw.range), r1(sw.arc || 1), sw.col, sw.flip ? 1 : 0] : 0, G.state === "dying" || G.state === "dead" ? 1 : 0, castK(p)],
+        sw ? [r1(sw.ang), r1(sw.t), sw.kind, Math.round(sw.range), r1(sw.arc || 1), sw.col, sw.flip ? 1 : 0] : 0, G.state === "dying" || G.state === "dead" ? 1 : 0, castK(p), wispK()],
       en: G.enemies.filter((e) => near(e.x, e.y, 1100)).map((e) => [e.id, TYPES.indexOf(e.type), r1(e.x), r1(e.y), r1(e.angle), e.state === "windup" ? 1 : e.state === "recover" ? 2 : 0,
         r1(e.stT), r1(e.aim || 0), Math.round(e.hp), Math.round(e.maxHp), r1(e.rise), e.moving ? 1 : 0, e.dormant ? 1 : 0, r1(e.burn || 0)]),
       pr: G.projectiles.filter((b) => near(b.x, b.y, 900)).map((b) => [r1(b.x), r1(b.y), Math.round(b.vx), Math.round(b.vy), b.kind, b.col, b.hostile ? 1 : 0]),
@@ -324,6 +326,7 @@
     a.swing = h[10] ? { ang: h[10][0], t: h[10][1], dur: 0.2, kind: h[10][2], range: h[10][3], arc: h[10][4], col: h[10][5], flip: !!h[10][6] } : null;
     a.down = !!h[11];
     a.cast = h[12] || 0;
+    a.wisp = h[13] ? { x: h[13][0], y: h[13][1] } : null;
 
     // the Drowned: update puppets in place so animation and smoothing carry on
     const byId = new Map(G.enemies.map((e) => [e.id, e]));
@@ -383,7 +386,7 @@
     return {
       t: "state",
       p: [r1(p.x), r1(p.y), r1(sw ? sw.ang : p.angle), p.moving ? 1 : 0, r1(p.dashT), p.stage, Math.round(Math.max(0, p.hp)), G.stats().maxHp, p.downT > 0 ? 1 : 0,
-        sw ? [r1(sw.ang), r1(sw.t), sw.kind, Math.round(sw.range), r1(sw.arc || 1), sw.col, sw.flip ? 1 : 0] : 0, castK(p)],
+        sw ? [r1(sw.ang), r1(sw.t), sw.kind, Math.round(sw.range), r1(sw.arc || 1), sw.col, sw.flip ? 1 : 0] : 0, castK(p), wispK()],
       pr: G.projectiles.slice(0, 24).map((b) => [r1(b.x), r1(b.y), Math.round(b.vx), Math.round(b.vy), b.kind, b.col]),
       ev: Net.events.splice(0),
     };

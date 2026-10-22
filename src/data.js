@@ -148,7 +148,7 @@
       passive: { lanternR: 1.4, oilDrain: 0.7 },
       special: { name: "Wide Lantern", desc: "Your lantern reaches 40% farther and burns its oil 30% slower." },
       milestones: [
-        { name: "Lost Things Shine", desc: "A guiding wisp drifts toward the nearest supplies." },
+        { name: "Lost Things Shine", desc: "A wisp familiar hovers by you and flicks motes of light at nearby Drowned." },
         { name: "Twin Relics", desc: "The staff looses two orbs at a time." },
         { name: "Purifying Pulse", desc: "Beacon Pulse also heals you and cleanses twice as much." },
         { name: "Guiding Light", desc: "A halo of bloomlight travels with you and holds corruption at bay." },

@@ -290,6 +290,9 @@
   };
 
   /* ---------- per-frame upkeep: walls, fire, healing, milestone flourishes ---------- */
+  // Wisp familiar: chip damage only, about a fifth of the staff's own output.
+  const WISP = { range: 240, cd: 1.1, dmg: 4 };
+
   function segDist(px, py, w) {
     const dx = w.x2 - w.x1, dy = w.y2 - w.y1, l2 = dx * dx + dy * dy || 1;
     const t = Math.max(0, Math.min(1, ((px - w.x1) * dx + (py - w.y1) * dy) / l2));
@@ -331,31 +334,38 @@
       if (z.heal && dist(p.x, p.y, z.x, z.y) < z.r * 0.82) p.hp = Math.min(st.maxHp, p.hp + 5 * dt);
     }
 
-    // Relic Bearer's guiding wisp drifts toward the nearest supplies.
+    // Relic Bearer's wisp familiar: hovers by you and flicks small motes of light at the nearest Drowned.
     if (G.save.kit === "relicBearer" && K.has(5)) {
-      G.wispT = (G.wispT || 0) - dt;
-      if (G.wispT <= 0) {
-        G.wispT = 0.6;
-        let best = null, bd = 900;
-        DL.World.near(p.x, p.y, 900, (o) => {
-          if (!o.def.res || o.harvested) return;
-          const d = dist(p.x, p.y, o.x, o.y);
-          if (d < bd && d > 40) { bd = d; best = o; }
-        });
-        for (const pr of G.pearls) { const d = dist(p.x, p.y, pr.x, pr.y); if (d < bd && d > 40) { bd = d; best = pr; } }
-        G.wispTarget = best;
-      }
-      const tg = G.wispTarget;
       if (!G.wisp) G.wisp = { x: p.x, y: p.y - 40 };
+      const w = G.wisp, tg = G.wispTarget, live = tg && !tg.removed && !(tg.rise > 0) && dist(p.x, p.y, tg.x, tg.y) < WISP.range + 40;
+      if (!live) G.wispTarget = null;
+      G.wispT = (G.wispT || 0) - dt;
+      if (G.wispT <= 0 && G.state === "play" && !(p.downT > 0)) {
+        let best = null, bd = WISP.range;
+        for (const e of G.enemies) {
+          if (e.rise > 0 || e.removed) continue;
+          const d = dist(p.x, p.y, e.x, e.y);
+          if (d < bd) { bd = d; best = e; }
+        }
+        G.wispTarget = best;
+        if (best) {
+          G.wispT = WISP.cd;
+          const ang = Math.atan2(best.y - 20 * best.def.scale - w.y, best.x - w.x);
+          shoot({ x: w.x, y: w.y + 26 }, ang, { kind: "shard", speed: 420, life: 0.9, dmg: WISP.dmg * K.power() * st.dmgMult * G.corruptBonus(), homing: true, r: 8 });
+          G.spark(w.x, w.y, kit.color, 40);
+        } else G.wispT = 0.3;
+      }
+      // Lean a little toward whatever it's harrying, otherwise bob above your shoulder.
+      const t = G.wispTarget;
       let tx = p.x, ty = p.y - 46;
-      if (tg && !tg.harvested) {
-        const d = dist(p.x, p.y, tg.x, tg.y), k = Math.min(80, d * 0.5) / (d || 1);
-        tx = p.x + (tg.x - p.x) * k; ty = p.y - 30 + (tg.y - p.y) * k;
+      if (t) {
+        const d = dist(p.x, p.y, t.x, t.y), k = Math.min(50, d * 0.4) / (d || 1);
+        tx = p.x + (t.x - p.x) * k; ty = p.y - 40 + (t.y - p.y) * k;
       }
       const f = 1 - Math.pow(0.05, dt);
-      G.wisp.x += (tx - G.wisp.x) * f;
-      G.wisp.y += (ty + Math.sin(G.t * 3) * 6 - G.wisp.y) * f;
-    } else G.wisp = null;
+      w.x += (tx - w.x) * f;
+      w.y += (ty + Math.sin(G.t * 3) * 6 - w.y) * f;
+    } else { G.wisp = null; G.wispTarget = null; }
 
     // Embers that drift off a kit from its second milestone on.
     const tier = K.tier();
@@ -376,6 +386,6 @@
     if (p && G.save.kit === "relicBearer" && K.has(20)) {
       L.push({ x: p.x, y: p.y - 24, r: 92 * D.light, s: 0.55, col: "255,232,170", a: 0.25, kind: "bloom" });
     }
-    if (G.wisp) L.push({ x: G.wisp.x, y: G.wisp.y, r: 40, s: 0.4, col: "255,232,170", a: 0.9 });
+    for (const w of [G.wisp, G.ally && G.ally.wisp]) if (w) L.push({ x: w.x, y: w.y, r: 40, s: 0.4, col: "255,232,170", a: 0.9 });
   };
 })(window.DL);

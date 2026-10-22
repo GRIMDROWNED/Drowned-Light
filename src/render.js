@@ -796,8 +796,9 @@
      a ring of light at the feet (15), and a crest of light above the hood (20). */
   function drawKitGlow(c, G, p, t) {
     const tier = DL.Kits.tier(), col = DL.Kits.color();
-    if (G.wisp) {
-      const w = G.wisp, g = c.createRadialGradient(w.x, w.y, 0, w.x, w.y, 14);
+    for (const w of [G.wisp, G.ally && G.ally.wisp]) {
+      if (!w) continue;
+      const g = c.createRadialGradient(w.x, w.y, 0, w.x, w.y, 14);
       g.addColorStop(0, "rgba(255,255,240,1)"); g.addColorStop(0.3, "rgba(255,232,170,0.8)"); g.addColorStop(1, "rgba(255,232,170,0)");
       c.fillStyle = g; c.fillRect(w.x - 14, w.y - 14, 28, 28);
     }
