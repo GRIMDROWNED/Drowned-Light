@@ -4,6 +4,8 @@
   const CH = 256;      // chunk size in world px
   const GS = 128;      // ground texture resolution per chunk (1 texel = 2 world px)
   const CAMP_CLEAR = 300;
+  // waterVal below WATER is water (about a tenth of the land), up to SHORE is its muddy edge, where reeds grow.
+  const WATER = 0.31, SHORE = 0.345;
   const GROUND_K = 0.62; // drawn ground textures are darkened by this to stay under the characters and props
 
   const W = (DL.World = {
@@ -20,7 +22,8 @@
     zone(x, y) { return DL.ZONES[this.zoneIndex(x, y)]; },
 
     waterVal(x, y) { return DL.fbm(x / 260, y / 260, 11); },
-    isWater(x, y) { return Math.hypot(x, y) > 260 && this.waterVal(x, y) < 0.38; },
+    isWater(x, y) { return Math.hypot(x, y) > 260 && this.waterVal(x, y) < WATER; },
+    isShore(x, y) { const w = this.waterVal(x, y); return Math.hypot(x, y) > 260 && w >= WATER && w < SHORE; },
 
     chunk(cx, cy) {
       const key = cx + "," + cy;
@@ -42,13 +45,14 @@
         let type = DL.weighted(this.spawnTable(ozi, D), DL.hash(cx, cy, i * 3 + 3));
         // "gap" is where driftwood used to lie: nothing spawns there, so the ground is clearer
         if (type === "gap") continue;
-        if (this.isWater(x, y) && !["reeds", "sprout", "refuge"].includes(type)) {
-          if (DL.hash(cx, cy, i * 7 + 9) < 0.5) type = "reeds"; else continue;
-        }
+        // nothing grows in the water; reeds grow only on its edge, and half of what lands there turns to reeds
+        if (this.isWater(x, y)) continue;
+        if (this.isShore(x, y)) { if (DL.hash(cx, cy, i * 7 + 9) < 0.5) type = "reeds"; }
+        else if (type === "reeds") continue;
         objs.push(this.makeObj(type, x, y, `${cx},${cy},${i}`, ozi, DL.hash(cx, cy, i * 5 + 4)));
       }
       // Rare Mother Roots in the Mire and deeper.
-      if (zi >= 2 && DL.hash(cx, cy, 77) < 0.06 * D.bloom) objs.push(this.makeObj("root", mx, my, `${cx},${cy},root`, zi, 0.5));
+      if (zi >= 2 && DL.hash(cx, cy, 77) < 0.06 * D.bloom && !this.isWater(mx, my)) objs.push(this.makeObj("root", mx, my, `${cx},${cy},root`, zi, 0.5));
       return objs;
     },
 
@@ -166,20 +170,20 @@
         const w = this.waterVal(x, y);
         // water is kept brighter than the land so it reads at a glance
         const sh = this.texel("shallow", x, y, 0.95), dp = this.texel("deep", x, y, 1.05), so = this.texel("shore", x, y, 0.8);
-        if (w < 0.36 && sh && dp && so) {
+        if (w < WATER && sh && dp && so) {
           // drawn water: shallow at the edge, deep further in, fading out of the shore over the first stretch
-          const k = Math.min(1, (0.36 - w) * 8), e = Math.max(0, (w - 0.352) / 0.008);
+          const k = Math.min(1, (WATER - w) * 8), e = Math.max(0, (w - WATER + 0.008) / 0.008);
           r = DL.lerp(DL.lerp(sh[0], dp[0], k), so[0], e); g = DL.lerp(DL.lerp(sh[1], dp[1], k), so[1], e); b = DL.lerp(DL.lerp(sh[2], dp[2], k), so[2], e);
-          if (w > 0.352 && w < 0.357) { r += 14; g += 26; b += 26; } // a pale wet line where the water starts
+          if (w > WATER - 0.008 && w < WATER - 0.003) { r += 14; g += 26; b += 26; } // a pale wet line where the water starts
           if (h > 0.994 - depth * 0.01) { r = 40; g = 150; b = 160; }
-        } else if (w < 0.36) {
-          const k = Math.min(1, (0.36 - w) * 4);
+        } else if (w < WATER) {
+          const k = Math.min(1, (WATER - w) * 4);
           r = 10 - k * 4; g = 24 - k * 8; b = 32 - k * 6;
           if (h > 0.994 - depth * 0.01) { r = 40; g = 150; b = 160; }
           else if (DL.hash(x >> 3, y >> 1, 8) > 0.97) { r += 8; g += 14; b += 16; }
-        } else if (w < 0.395 && so) {
+        } else if (w < SHORE && so) {
           [r, g, b] = so;
-        } else if (w < 0.395) {
+        } else if (w < SHORE) {
           r = 17; g = 35; b = 38;
           if (h > 0.85) { r = 24; g = 46; b = 46; }
         } else if (this.tex.grass && this.tex.dirt) {
@@ -187,13 +191,13 @@
           const m = DL.fbm(x / 110, y / 110, 21), k = Math.min(1, Math.max(0, (m - 0.42) / 0.12));
           const gr = this.texel("grass", x, y, GROUND_K), di = this.texel("dirt", x, y, GROUND_K);
           r = DL.lerp(di[0], gr[0], k); g = DL.lerp(di[1], gr[1], k); b = DL.lerp(di[2], gr[2], k);
-          if (w < 0.42) { const t = (0.42 - w) / 0.025; r *= 1 - 0.2 * t; g *= 1 - 0.12 * t; b *= 1 - 0.05 * t; }
+          if (w < SHORE + 0.025) { const t = (SHORE + 0.025 - w) / 0.025; r *= 1 - 0.2 * t; g *= 1 - 0.12 * t; b *= 1 - 0.05 * t; }
         } else {
           const m = DL.fbm(x / 110, y / 110, 21);
           if (m > 0.56) { r = 30; g = 44; b = 30; } else if (m > 0.42) { r = 28; g = 36; b = 29; } else { r = 32; g = 31; b = 27; }
           if (h > 0.955) { r += 14; g += 18; b += 9; }
           else if (h < 0.04) { r -= 9; g -= 9; b -= 8; }
-          if (w < 0.42 && h > 0.6) { r -= 5; g -= 2; b += 2; }
+          if (w < SHORE + 0.025 && h > 0.6) { r -= 5; g -= 2; b += 2; }
         }
         if (d < 300) {
           const t = (300 - d) / 65;
