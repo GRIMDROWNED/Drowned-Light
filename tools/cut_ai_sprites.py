@@ -199,6 +199,19 @@ MIRROR_AT = {'relic-bearer': (0.32, 10, 39), 'flame-bastion': (0.32, 10, 36)}
 # Walk sheets rendered in other colours than the character's first batch: recolour to this image.
 SHEET_MATCH = {'tide-archer': 'tide-archer/01_front.png'}
 
+# World props (plants for now): sheet -> (columns, rows, a sprite name per cell in reading order, None to skip).
+# They're cut at res 2 like the units; PROPS in src/sprites.js lists the files.
+PROP_GRIDS = {
+    'plants/plants-lit.png': (5, 2, ['refugeOn', 'sentinelOn', 'rootOn', 'sproutOn', 'husk', None, None, None, 'gardenOn', None]),
+    'plants/plants-unlit.png': (3, 2, ['refugeOff', 'sentinelOff', 'rootOff', 'sproutOff', 'sproutBare', 'gardenOff']),
+}
+# Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
+# width of their rocky base, since glow wisps change its height. Names not listed here use their own height.
+PROP_HEIGHT = {'refugeOff': 116, 'sentinelOff': 96, 'rootOff': 150, 'sproutOff': 60, 'gardenOff': 20, 'husk': 104}
+PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
+             'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
+PROP_OUT = 'props'
+
 only = sys.argv[2:]  # optional character names to cut
 for sheet, (cols, rows, names) in GRIDS.items():
     p = os.path.join(SRC, sheet)
@@ -256,3 +269,38 @@ for name, sheets in SHEETS.items():
             im.save(dst)
         print(folder, prefix, len(frames), 'frames', frames[0].size, 'feet', list(feet))
         contact(frames, os.path.join(SRC, name + '-' + prefix.replace('/', '-') + '-preview.png'))
+
+def base_width(im):
+    """Width of the lowest tenth of a cut-out's opaque pixels: its footing, which glow doesn't change."""
+    import numpy as np
+    a = np.asarray(im)[..., 3] > 0
+    rows = a[int(a.shape[0] * 0.9):]
+    xs = np.where(rows.any(axis=0))[0]
+    return xs.max() - xs.min() + 1
+
+if not only or 'props' in only:
+    cells = {}
+    for sheet, (cols, rows, names) in PROP_GRIDS.items():
+        p = os.path.join(SRC, sheet)
+        if not os.path.exists(p): continue
+        for n, cell in zip(names, split_grid(Image.open(p), cols, rows)):
+            if n: cells[n] = cell
+    k = {}
+    for n, cell in cells.items():
+        if n in PROP_HEIGHT: k[n] = PROP_HEIGHT[n] / (cut_keyed(cell, 1, fringe=1).height - 2)
+    for n, twin in PROP_TWIN.items():
+        if n in cells and twin in k:
+            k[n] = k[twin] * base_width(cut_keyed(cells[twin], 1, fringe=1)) / base_width(cut_keyed(cells[n], 1, fringe=1))
+    done = []
+    for n, cell in cells.items():
+        im = cut_keyed(cell, k[n], fringe=1)
+        # even sizes, so the art-pixel size (half) is whole; the padding goes on the top and the left
+        w, h = im.width + im.width % 2, im.height + im.height % 2
+        if (w, h) != im.size:
+            pad = Image.new('RGBA', (w, h)); pad.paste(im, (w - im.width, h - im.height)); im = pad
+        dst = os.path.join(OUT, PROP_OUT, n + '.png')
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        im.save(dst)
+        done.append(im)
+        print(dst, im.size)
+    if done: contact(done, os.path.join(SRC, 'plants-preview.png'))
