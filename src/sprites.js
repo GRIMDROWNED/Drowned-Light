@@ -212,7 +212,19 @@
     }
     if (!low.length) return null;
     const ys = low.map((l) => l[1]).sort((a, b) => a - b), x0 = low[0][0], x1 = low[low.length - 1][0];
-    return { dx: ((x0 + x1) / 2 - fr.w / 2) / res, rx: (x1 - x0) / 2 / res, dy: (fr.h - 1 - ys[ys.length >> 1]) / res };
+    // A soft dark band along the base where the picture meets the ground, so it doesn't hover:
+    // the drawn art has no ground of its own, only a hard edge against the terrain.
+    const pad = 8, raw = document.createElement("canvas");
+    raw.width = fr.w + pad * 2; raw.height = fr.h + pad * 2;
+    const g = raw.getContext("2d");
+    g.fillStyle = "#000";
+    for (const [x, y] of low) g.fillRect(x + pad - 1, y + pad - 3, 3, 6);
+    const contact = document.createElement("canvas");
+    contact.width = raw.width; contact.height = raw.height;
+    const cg = contact.getContext("2d");
+    cg.filter = `blur(${2 * res}px)`;
+    cg.drawImage(raw, 0, 0);
+    return { dx: ((x0 + x1) / 2 - fr.w / 2) / res, rx: (x1 - x0) / 2 / res, dy: (fr.h - 1 - ys[ys.length >> 1]) / res, contact, pad: pad / res };
   }
 
   const fileOf = (entry) => entry.split("@")[0];
