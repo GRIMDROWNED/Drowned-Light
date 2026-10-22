@@ -426,20 +426,9 @@
     }
   }
 
-  // A building's shadow under its drawn footprint (y is the picture's bottom edge); coded art keeps the plain one.
+  // Drawn buildings have no shadow (the owner prefers them without); coded fallback art keeps a plain one.
   function groundShadow(c, name, x, y, flip, rx, ry) {
-    const f = Art.sprites[name] && Art.sprites[name].foot;
-    if (!f) return shadow(c, x, y - 2, rx, ry);
-    const w = f.rx * PS * 0.75, s = Art.sprites[name];
-    shadow(c, x + (flip ? -f.dx : f.dx) * PS, y - f.dy * PS, w, Math.min(10, Math.max(3, w * 0.25)), 0.2);
-    // contact shadow hugging the base
-    const cw = (s.w + f.pad * 2) * PS, ch = (s.h + f.pad * 2) * PS;
-    c.save();
-    c.globalAlpha = 0.4;
-    c.translate(Math.round(x), 0);
-    if (flip) c.scale(-1, 1);
-    c.drawImage(f.contact, Math.round(-cw / 2), Math.round(y - s.h * PS - f.pad * PS), cw, ch);
-    c.restore();
+    if (!(Art.sprites[name] && Art.sprites[name].res)) shadow(c, x, y - 2, rx, ry);
   }
 
   function pushCamp(list, G, c, t) {
@@ -515,7 +504,7 @@
     put(2, () => {
       const lvl = u.flame;
       let fy = 2;
-      if (Art.sprites.flame1) { const y = [10, 14, 12][L.tier - 1]; if (L.tier === 3) shadow(c, 0, 8, 40, 10, 0.45); else groundShadow(c, "flame" + L.tier, 0, y, false, 30, 8); sprite(c, "flame" + L.tier, 0, y); fy = FLAME_FIRE[L.tier]; }
+      if (Art.sprites.flame1) { const y = [10, 14, 12][L.tier - 1]; sprite(c, "flame" + L.tier, 0, y); fy = FLAME_FIRE[L.tier]; }
       else if (L.tier === 1) sprite(c, "firering", 0, 10);
       else if (L.tier === 2) { sprite(c, "firepit2", 0, 14); fy = -2; }
       else { shadow(c, 0, 8, 40, 10, 0.45); sprite(c, "brazierBig", 0, 12); fy = -46; }
@@ -543,7 +532,6 @@
   function drawGarden(c, g, lvl, night, t) {
     const bed = Art.sprites["gardenBed" + lvl];
     if (bed && Art.sprites.gardenOn) {
-      groundShadow(c, "gardenBed" + lvl, g.x, g.y + 4, false, 40, 10);
       sprite(c, "gardenBed" + lvl, g.x, g.y + 4);
       const [L, T, B] = BED_SOIL[lvl], x0 = g.x - (bed.w * PS) / 2, y0 = g.y + 4 - bed.h * PS;
       // back rows first, so the front ones overlap them
