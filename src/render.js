@@ -431,26 +431,29 @@
     const put = (y, f) => list.push({ y, f });
     for (const tn of L.tents) put(tn.y, () => { shadow(c, tn.x, tn.y + 2, 26, 7); sprite(c, "tent", tn.x, tn.y + 4, tn.flip); });
     for (const b of L.banners) put(b.y, () => { shadow(c, b.x, b.y + 1, 6, 2); sprite(c, "banner", b.x, b.y + 2); });
-    if (L.forge) put(L.forge.y, () => { shadow(c, L.forge.x, L.forge.y + 2, 30, 7); sprite(c, "forge", L.forge.x, L.forge.y + 4); });
+    // drawn buildings have a picture per level; the coded ones are the fallback
+    const drawn = Art.sprites.forge1;
+    const building = (b, name) => { shadow(c, b.x, b.y + 2, Art.sprites[name].w * 0.75, 7); sprite(c, name, b.x, b.y + 4); };
+    if (L.forge) put(L.forge.y, () => building(L.forge, drawn ? "forge" + u.forge : "forge"));
     if (L.armory) put(L.armory.y, () => {
+      if (drawn) return building(L.armory, "armory" + u.armory);
       shadow(c, L.armory.x, L.armory.y + 2, 26, 7);
       if (L.tier >= 2) sprite(c, "awning", L.armory.x, L.armory.y + 4);
       sprite(c, "rack", L.armory.x, L.armory.y + 4);
     });
     if (L.workbench) put(L.workbench.y, () => {
+      if (drawn) return building(L.workbench, "workbench" + u.workbench);
       shadow(c, L.workbench.x, L.workbench.y + 2, 26, 7);
       if (L.tier >= 2) sprite(c, "awning", L.workbench.x, L.workbench.y + 4, true);
       sprite(c, "workbench", L.workbench.x, L.workbench.y + 4);
     });
     if (L.garden) put(L.garden.y - 20, () => drawGarden(c, L.garden, u.garden, night, t));
-    for (const tw of L.towers) put(tw.y, () => { shadow(c, tw.x, tw.y + 2, 20, 6); sprite(c, "tower", tw.x, tw.y + 4); });
+    for (const tw of L.towers) put(tw.y, () => { shadow(c, tw.x, tw.y + 2, 20, 6); sprite(c, drawn ? "tower" + u.tower : "tower", tw.x, tw.y + 4); });
+    const pyl = drawn ? "pylon" + u.pylon : "pylon", lamps = drawn ? PYLON_LAMPS[u.pylon] : [[-11, -77], [11, -77]];
     for (const q of G.pylons) put(q.y, () => {
       shadow(c, q.x, q.y + 2, 10, 3);
-      sprite(c, "pylon", q.x, q.y + 4);
-      if (q.lit) for (const ox of [-14, 8]) {
-        c.fillStyle = "#ffab3d"; c.fillRect(q.x + ox, q.y - 82, 6, 10);
-        c.fillStyle = "#fff1c2"; c.fillRect(q.x + ox + 2, q.y - 80, 2, 5);
-      }
+      sprite(c, pyl, q.x, q.y + 4);
+      if (q.lit) for (const [ox, oy] of lamps) lampFlame(c, q.x + ox, q.y + oy);
       if (q.hp < q.max) bar(c, q.x, q.y - 120, 24, q.hp / q.max, "#ffb35a");
     });
     // barricade: stakes, then a palisade with four gates
@@ -465,11 +468,17 @@
       for (let i = 0; i < n; i++) {
         const a = (i / n) * Math.PI * 2, x = Math.cos(a) * R, y = Math.sin(a) * R;
         if (DL.Camp.nearestGate(x, y).arc < DL.Camp.GATE_HALF + 22) continue;
-        put(y, () => sprite(c, "palisade", x, y + 4, i % 2 === 0));
+        put(y, () => sprite(c, u.stakes >= 3 && Art.sprites.palisade2 ? "palisade2" : "palisade", x, y + 4, i % 2 === 0));
       }
       for (const g of DL.Camp.GATES) for (const sgn of [-1, 1]) {
         const a = g + (sgn * (DL.Camp.GATE_HALF + 6)) / R, x = Math.cos(a) * R, y = Math.sin(a) * R;
         put(y + 1, () => {
+          if (u.stakes >= 3 && Art.sprites.gatePost2) {
+            // the reinforced post carries its own lamp, hung out on the side away from the gate
+            sprite(c, "gatePost2", x, y + 4, sgn > 0);
+            lampFlame(c, x + (sgn > 0 ? -GATE_LAMP[0] : GATE_LAMP[0]), y + GATE_LAMP[1]);
+            return;
+          }
           sprite(c, "gatePost", x, y + 4, sgn > 0);
           if (u.stakes >= 3) {
             c.fillStyle = "#2a2622"; c.fillRect(x + (sgn > 0 ? -14 : 6), y - 62, 8, 11);
@@ -490,13 +499,24 @@
     put(2, () => {
       const lvl = u.flame;
       let fy = 2;
-      if (L.tier === 1) sprite(c, "firering", 0, 10);
+      if (Art.sprites.flame1) { const y = [10, 14, 12][L.tier - 1]; if (L.tier === 3) shadow(c, 0, 8, 40, 10, 0.45); sprite(c, "flame" + L.tier, 0, y); fy = FLAME_FIRE[L.tier]; }
+      else if (L.tier === 1) sprite(c, "firering", 0, 10);
       else if (L.tier === 2) { sprite(c, "firepit2", 0, 14); fy = -2; }
       else { shadow(c, 0, 8, 40, 10, 0.45); sprite(c, "brazierBig", 0, 12); fy = -46; }
       if (f.lit) Art.drawFire(c, 0, fy, 1.6 + lvl * 0.25 + (f.hitT > 0 ? -0.4 : 0), t);
       else { c.fillStyle = "#6a2a14"; c.fillRect(-4, fy - 4, 3, 2); c.fillRect(3, fy - 2, 2, 2); }
       if (f.lit && f.hp < f.max) bar(c, 0, fy - 50 - lvl * 4, 46, f.hp / f.max, "#ffb35a");
     });
+  }
+
+  // Where the fire sits in each drawn Central Flame (on its coals), and the lamp glass on each drawn pylon
+  // level and on the reinforced gate post, relative to where they stand.
+  const FLAME_FIRE = { 1: -12, 2: -34, 3: -68 };
+  const PYLON_LAMPS = { 1: [[-20, -74], [17, -58]], 2: [[-19, -71], [17, -62]], 3: [[-24, -71], [23, -63]] };
+  const GATE_LAMP = [31, -56];
+  function lampFlame(c, x, y) {
+    c.fillStyle = "#ffab3d"; c.fillRect(Math.round(x) - 3, Math.round(y) - 5, 6, 10);
+    c.fillStyle = "#fff1c2"; c.fillRect(Math.round(x) - 1, Math.round(y) - 3, 2, 5);
   }
 
   // The drawn bed for each plot level: its soil's left, back and front corners in the PNG's pixels. Flowers

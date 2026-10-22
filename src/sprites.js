@@ -102,7 +102,8 @@
   const PLANTS = ["refugeOn", "refugeOff", "sentinelOn", "sentinelOff", "rootOn", "rootOff", "sproutOn", "sproutOff", "sproutBare", "husk", "gardenOn", "gardenOff",
     "reeds1", "reeds2", "reeds3", "reeds4", "reeds5", "reeds6", "gardenBed1", "gardenBed2", "gardenBed3",
     "swampTree1", "swampTree2", "swampTree3",
-    "boulder11", "boulder12", "boulder13", "boulder21", "boulder22", "boulder23", "boulder31", "boulder32", "boulder33", "boulder41", "boulder42", "boulder43"];
+    "boulder11", "boulder12", "boulder13", "boulder21", "boulder22", "boulder23", "boulder31", "boulder32", "boulder33", "boulder41", "boulder42", "boulder43",
+    "flame1", "flame2", "flame3", "forge1", "forge2", "forge3", "forge4", "armory1", "armory2", "armory3", "armory4", "workbench1", "workbench2", "workbench3", "workbench4", "tower1", "tower2", "tower3", "pylon1", "pylon2", "pylon3", "stake", "palisade", "palisade2", "gatePost", "gatePost2", "tent", "banner"];
   const PROPS = {
     path: "assets/sprites/",
     // cut at 2 file px per art pixel, like the units

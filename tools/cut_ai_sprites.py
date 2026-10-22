@@ -207,15 +207,37 @@ PROP_GRIDS = {
     'plants/reeds.png': (3, 2, ['reeds1', 'reeds2', 'reeds3', 'reeds4', 'reeds5', 'reeds6']),
     'plants/garden-beds.png': (3, 1, ['gardenBed1', 'gardenBed2', 'gardenBed3']),
     'world/trees.png': (3, 1, ['swampTree1', 'swampTree2', 'swampTree3']),
+    # camp buildings, one picture per level (the Central Flame has one per camp tier)
+    'camp/flame.png': (3, 1, ['flame1', 'flame2', 'flame3']),
+    'camp/forge.png': (4, 1, ['forge1', 'forge2', 'forge3', 'forge4']),
+    'camp/armory.png': (4, 1, ['armory1', 'armory2', 'armory3', 'armory4']),
+    'camp/workbench.png': (4, 1, ['workbench1', 'workbench2', 'workbench3', 'workbench4']),
+    'camp/towers.png': (3, 1, ['tower1', 'tower2', 'tower3']),
+    'camp/pylons.png': (3, 1, ['pylon1', 'pylon2', 'pylon3']),
+    # these keep the coded sprites' names, so the drawn ones simply replace them
+    'camp/barricade.png': (5, 1, ['stake', 'palisade', 'gatePost', 'gatePost2', 'palisade2']),
+    'camp/tent-banner.png': (2, 1, ['tent', 'banner']),
     # two boulders, bare then mossy, each whole -> cracked -> crumbling
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
 # width of their rocky base, since glow wisps change its height. Names not listed here use their own height.
-PROP_HEIGHT = {'refugeOff': 116, 'sentinelOff': 96, 'rootOff': 150, 'sproutOff': 60, 'gardenOff': 14, 'husk': 104, 'reeds2': 50, 'gardenBed2': 100, 'swampTree2': 140, 'boulder11': 60}
+PROP_HEIGHT = {'refugeOff': 116, 'sentinelOff': 96, 'rootOff': 150, 'sproutOff': 60, 'gardenOff': 14, 'husk': 104, 'reeds2': 50, 'gardenBed2': 100, 'swampTree2': 140, 'boulder11': 60,
+               'flame3': 110, 'tower3': 160, 'pylon3': 120,
+               'stake': 40, 'gatePost': 100, 'banner': 96}
+# Or the width in file px, for low, wide props.
+PROP_WIDTH = {'flame1': 84, 'flame2': 104, 'forge4': 124, 'armory4': 120, 'workbench4': 116, 'palisade': 56, 'tent': 100}
+# Props whose footing isn't in the middle of the picture (a leaning stake, a post with a lamp hung out to one
+# side): padded so the footing is centred, since sprites are drawn centred on their spot.
+PROP_FOOT_CENTRE = {'stake', 'gatePost', 'gatePost2'}
 # Variants drawn on one sheet at one scale: name -> the variant whose scale it shares.
 PROP_SAME = {'swampTree1': 'swampTree2', 'swampTree3': 'swampTree2', 'gardenBed1': 'gardenBed2', 'gardenBed3': 'gardenBed2', 'reeds1': 'reeds2', 'reeds3': 'reeds2', 'reeds4': 'reeds2', 'reeds5': 'reeds2', 'reeds6': 'reeds2',
-            'boulder12': 'boulder11', 'boulder13': 'boulder11', 'boulder21': 'boulder11', 'boulder22': 'boulder11', 'boulder23': 'boulder11', 'boulder31': 'boulder11', 'boulder32': 'boulder11', 'boulder33': 'boulder11', 'boulder41': 'boulder11', 'boulder42': 'boulder11', 'boulder43': 'boulder11'}
+            'boulder12': 'boulder11', 'boulder13': 'boulder11', 'boulder21': 'boulder11', 'boulder22': 'boulder11', 'boulder23': 'boulder11', 'boulder31': 'boulder11', 'boulder32': 'boulder11', 'boulder33': 'boulder11', 'boulder41': 'boulder11', 'boulder42': 'boulder11', 'boulder43': 'boulder11',
+            'forge1': 'forge4', 'forge2': 'forge4', 'forge3': 'forge4',
+            'armory1': 'armory4', 'armory2': 'armory4', 'armory3': 'armory4',
+            'workbench1': 'workbench4', 'workbench2': 'workbench4', 'workbench3': 'workbench4',
+            'tower1': 'tower3', 'tower2': 'tower3',
+            'pylon1': 'pylon3', 'pylon2': 'pylon3', 'palisade2': 'palisade', 'gatePost2': 'gatePost'}
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
 PROP_OUT = 'props'
@@ -289,6 +311,16 @@ def despill(im):
     a[..., 0] -= over; a[..., 2] -= over
     return Image.fromarray(a.clip(0, 255).astype('uint8'))
 
+def centre_foot(im):
+    """Pad a cut-out on one side so the middle of its lowest tenth sits in the middle of the image."""
+    import numpy as np
+    a = np.asarray(im)[..., 3] > 0
+    xs = np.where(a[int(a.shape[0] * 0.9):].any(axis=0))[0]
+    shift = int(round((xs.min() + xs.max()) / 2 - im.width / 2)) * 2
+    w = im.width + abs(shift)
+    pad = Image.new('RGBA', (w, im.height)); pad.paste(im, (0 if shift > 0 else -shift, 0))
+    return pad
+
 def base_width(im):
     """Width of the lowest tenth of a cut-out's opaque pixels: its footing, which glow doesn't change."""
     import numpy as np
@@ -307,6 +339,7 @@ if not only or 'props' in only:
     k = {}
     for n, cell in cells.items():
         if n in PROP_HEIGHT: k[n] = PROP_HEIGHT[n] / (cut_keyed(cell, 1, fringe=1).height - 2)
+        if n in PROP_WIDTH: k[n] = PROP_WIDTH[n] / (cut_keyed(cell, 1, fringe=1).width - 2)
     for n, ref in PROP_SAME.items():
         if n in cells and ref in k: k[n] = k[ref]
     for n, twin in PROP_TWIN.items():
@@ -316,6 +349,7 @@ if not only or 'props' in only:
     for n, cell in cells.items():
         im = cut_keyed(cell, k[n], fringe=1)
         if n in PROP_DESPILL: im = despill(im)
+        if n in PROP_FOOT_CENTRE: im = centre_foot(im)
         # even sizes, so the art-pixel size (half) is whole; the padding goes on the top and the left
         w, h = im.width + im.width % 2, im.height + im.height % 2
         if (w, h) != im.size:

@@ -1200,7 +1200,7 @@
         G.towerCd[i] -= dt;
         if (G.towerCd[i] > 0) return;
         const e = nearestEnemy(t.x, t.y, 300);
-        if (e) { G.towerCd[i] = 1.1; shoot(t.x, t.y - 56, e, 520, 10 + 6 * lv, "255,190,110", "bolt"); }
+        if (e) { G.towerCd[i] = 1.1; shoot(t.x, t.y - (DL.Art.sprites.tower1 ? [0, 106, 112, 118][lv] : 56), e, 520, 10 + 6 * lv, "255,190,110", "bolt"); }
       });
     }
     for (const o of G.blooms) {
