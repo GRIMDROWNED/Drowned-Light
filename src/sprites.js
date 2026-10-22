@@ -123,6 +123,15 @@
       img.src = url;
     });
   }
+  // Run the loads a few at a time rather than all ~300 at once.
+  function loadAll(urls, each, n = 12) {
+    const queue = [...urls];
+    return Promise.all(Array.from({ length: n }, function next() {
+      if (!queue.length) return Promise.resolve();
+      const u = queue.shift();
+      return loadImage(u).then((img) => { each(u, img); return next(); });
+    }));
+  }
 
   function toFrame(img) {
     const c = document.createElement("canvas");
@@ -191,6 +200,21 @@
     return { c, w: fr.w, h: fr.h, ax: fr.ax, ay: fr.ay, res: fr.res };
   }
 
+  // Where a drawn prop meets the ground, in art px: the columns that reach the lower part of the picture,
+  // their middle (dx from the centre), half their width (rx), and how far above the bottom edge their feet sit (dy).
+  // Buildings drawn in 3/4 view stand on a patch above their lowest pixel, so their shadow goes there.
+  function footprint(fr, res) {
+    const p = fr.c.getContext("2d").getImageData(0, 0, fr.w, fr.h).data, low = [];
+    for (let x = 0; x < fr.w; x++) {
+      let y = fr.h - 1;
+      while (y >= 0 && !p[(y * fr.w + x) * 4 + 3]) y--;
+      if (y >= fr.h * 0.6) low.push([x, y]);
+    }
+    if (!low.length) return null;
+    const ys = low.map((l) => l[1]).sort((a, b) => a - b), x0 = low[0][0], x1 = low[low.length - 1][0];
+    return { dx: ((x0 + x1) / 2 - fr.w / 2) / res, rx: (x1 - x0) / 2 / res, dy: (fr.h - 1 - ys[ys.length >> 1]) / res };
+  }
+
   const fileOf = (entry) => entry.split("@")[0];
   const propImage = (name) => images[PROPS.path + PROPS.files[name] + ".png"];
 
@@ -201,27 +225,37 @@
     for (const set of UNITS) for (const dir in set.views) for (const anim in set.views[dir])
       for (const e of set.views[dir][anim]) urls.add(set.path + fileOf(e) + ".png");
     for (const name in PROPS.files) urls.add(PROPS.path + PROPS.files[name] + ".png");
-    return Promise.all([...urls].map((u) => loadImage(u).then((img) => { if (img) images[u] = toFrame(img); })))
-      .then(() => {
-        for (const set of UNITS) if (set.res) for (const dir in set.views) for (const anim in set.views[dir])
-          for (const e of set.views[dir][anim]) { const f = images[set.path + fileOf(e) + ".png"]; if (f) f.res = set.res; }
-        for (const set of UNITS) for (const file in set.feet || {}) {
-          const f = images[set.path + file + ".png"];
-          if (f) [f.ax, f.ay] = set.feet[file];
-        }
-        for (const name in PROPS.files) {
-          const f = propImage(name);
-          if (f) Art.sprites[name] = { c: f.c, w: f.w / PROPS.res, h: f.h / PROPS.res, res: PROPS.res };
-        }
-        for (const name in PROPS.hide)
-          if (PROPS.hide[name].every(propImage)) {
-            const c = document.createElement("canvas");
-            c.width = c.height = 1;
-            Art.sprites[name] = { c, w: 0, h: 0 };
-          }
-        for (const key in Art.sheets) Art.applyFrames(key, Art.sheets[key]);
-      });
+    const got = (u, img) => { if (img) images[u] = toFrame(img); };
+    // A phone on a patchy connection can drop a few files, and a missing frame leaves that animation
+    // in coded art, so the game starts with what arrived and keeps retrying the rest in the background.
+    const retry = (n) => {
+      const missing = [...urls].filter((u) => !images[u]);
+      if (!missing.length || n > 4) return;
+      setTimeout(() => loadAll(missing, got, 4).then(() => { if (missing.some((u) => images[u])) apply(); retry(n + 1); }), 1500 * n);
+    };
+    return loadAll(urls, got).then(() => { apply(); retry(1); });
   };
+
+  // Put the loaded files into the sprites and sheets (again after a retry brings more).
+  function apply() {
+    for (const set of UNITS) if (set.res) for (const dir in set.views) for (const anim in set.views[dir])
+      for (const e of set.views[dir][anim]) { const f = images[set.path + fileOf(e) + ".png"]; if (f) f.res = set.res; }
+    for (const set of UNITS) for (const file in set.feet || {}) {
+      const f = images[set.path + file + ".png"];
+      if (f) [f.ax, f.ay] = set.feet[file];
+    }
+    for (const name in PROPS.files) {
+      const f = propImage(name);
+      if (f) Art.sprites[name] = { c: f.c, w: f.w / PROPS.res, h: f.h / PROPS.res, res: PROPS.res, foot: footprint(f, PROPS.res) };
+    }
+    for (const name in PROPS.hide)
+      if (PROPS.hide[name].every(propImage)) {
+        const c = document.createElement("canvas");
+        c.width = c.height = 1;
+        Art.sprites[name] = { c, w: 0, h: 0 };
+      }
+    for (const key in Art.sheets) Art.applyFrames(key, Art.sheets[key]);
+  }
 
   // Called whenever a coded sheet is built (and for the ones built before loading): swap in loaded frames.
   Art.applyFrames = function (key, sheet) {

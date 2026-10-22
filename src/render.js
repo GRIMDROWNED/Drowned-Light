@@ -426,14 +426,22 @@
     }
   }
 
+  // A building's shadow under its drawn footprint (y is the picture's bottom edge); coded art keeps the plain one.
+  function groundShadow(c, name, x, y, flip, rx, ry) {
+    const f = Art.sprites[name] && Art.sprites[name].foot;
+    if (!f) return shadow(c, x, y - 2, rx, ry);
+    const w = f.rx * PS * 0.9;
+    shadow(c, x + (flip ? -f.dx : f.dx) * PS, y - f.dy * PS, w, Math.min(14, Math.max(4, w * 0.3)));
+  }
+
   function pushCamp(list, G, c, t) {
     const u = G.save.up, L = DL.Camp.layout(u), R = DL.WALL_R, night = G.nightAmt;
     const put = (y, f) => list.push({ y, f });
-    for (const tn of L.tents) put(tn.y, () => { shadow(c, tn.x, tn.y + 2, 26, 7); sprite(c, "tent", tn.x, tn.y + 4, tn.flip); });
+    for (const tn of L.tents) put(tn.y, () => { groundShadow(c, "tent", tn.x, tn.y + 4, tn.flip, 26, 7); sprite(c, "tent", tn.x, tn.y + 4, tn.flip); });
     for (const b of L.banners) put(b.y, () => { shadow(c, b.x, b.y + 1, 6, 2); sprite(c, "banner", b.x, b.y + 2); });
     // drawn buildings have a picture per level; the coded ones are the fallback
     const drawn = Art.sprites.forge1;
-    const building = (b, name) => { shadow(c, b.x, b.y + 2, Art.sprites[name].w * 0.75, 7); sprite(c, name, b.x, b.y + 4); };
+    const building = (b, name) => { groundShadow(c, name, b.x, b.y + 4, false, Art.sprites[name].w * 0.75, 7); sprite(c, name, b.x, b.y + 4); };
     if (L.forge) put(L.forge.y, () => building(L.forge, drawn ? "forge" + u.forge : "forge"));
     if (L.armory) put(L.armory.y, () => {
       if (drawn) return building(L.armory, "armory" + u.armory);
@@ -448,10 +456,10 @@
       sprite(c, "workbench", L.workbench.x, L.workbench.y + 4);
     });
     if (L.garden) put(L.garden.y - 20, () => drawGarden(c, L.garden, u.garden, night, t));
-    for (const tw of L.towers) put(tw.y, () => { shadow(c, tw.x, tw.y + 2, 20, 6); sprite(c, drawn ? "tower" + u.tower : "tower", tw.x, tw.y + 4); });
+    for (const tw of L.towers) put(tw.y, () => { const n = drawn ? "tower" + u.tower : "tower"; groundShadow(c, n, tw.x, tw.y + 4, false, 20, 6); sprite(c, n, tw.x, tw.y + 4); });
     const pyl = drawn ? "pylon" + u.pylon : "pylon", lamps = drawn ? PYLON_LAMPS[u.pylon] : [[-11, -77], [11, -77]];
     for (const q of G.pylons) put(q.y, () => {
-      shadow(c, q.x, q.y + 2, 10, 3);
+      groundShadow(c, pyl, q.x, q.y + 4, false, 10, 3);
       sprite(c, pyl, q.x, q.y + 4);
       if (q.lit) for (const [ox, oy] of lamps) lampFlame(c, q.x + ox, q.y + oy);
       if (q.hp < q.max) bar(c, q.x, q.y - 120, 24, q.hp / q.max, "#ffb35a");
