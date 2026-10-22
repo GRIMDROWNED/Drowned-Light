@@ -270,6 +270,7 @@ body.touch .controls-hint .desk { display: none; }
   animation: splashSink 1.1s ease-out both;
 }
 #splash.out { opacity: 0; pointer-events: none; }
+.no-splash #splash { display: none; } /* already shown this session: a reload goes straight to the title */
 #splash.out img { transform: translateY(14px); transition: transform 0.9s ease-in; }
 @keyframes splashSink { from { opacity: 0; transform: translateY(-14px); } }
 @media (prefers-reduced-motion: reduce) {
