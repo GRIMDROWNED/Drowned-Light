@@ -204,10 +204,13 @@ SHEET_MATCH = {'tide-archer': 'tide-archer/01_front.png'}
 PROP_GRIDS = {
     'plants/plants-lit.png': (5, 2, ['refugeOn', 'sentinelOn', 'rootOn', 'sproutOn', 'husk', None, None, None, 'gardenOn', None]),
     'plants/plants-unlit.png': (3, 2, ['refugeOff', 'sentinelOff', 'rootOff', 'sproutOff', 'sproutBare', 'gardenOff']),
+    'plants/reeds.png': (3, 2, ['reeds1', 'reeds2', 'reeds3', 'reeds4', 'reeds5', 'reeds6']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
 # width of their rocky base, since glow wisps change its height. Names not listed here use their own height.
-PROP_HEIGHT = {'refugeOff': 116, 'sentinelOff': 96, 'rootOff': 150, 'sproutOff': 60, 'gardenOff': 20, 'husk': 104}
+PROP_HEIGHT = {'refugeOff': 116, 'sentinelOff': 96, 'rootOff': 150, 'sproutOff': 60, 'gardenOff': 20, 'husk': 104, 'reeds2': 50}
+# Variants drawn on one sheet at one scale: name -> the variant whose scale it shares.
+PROP_SAME = {'reeds1': 'reeds2', 'reeds3': 'reeds2', 'reeds4': 'reeds2', 'reeds5': 'reeds2', 'reeds6': 'reeds2'}
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
 PROP_OUT = 'props'
@@ -288,6 +291,8 @@ if not only or 'props' in only:
     k = {}
     for n, cell in cells.items():
         if n in PROP_HEIGHT: k[n] = PROP_HEIGHT[n] / (cut_keyed(cell, 1, fringe=1).height - 2)
+    for n, ref in PROP_SAME.items():
+        if n in cells and ref in k: k[n] = k[ref]
     for n, twin in PROP_TWIN.items():
         if n in cells and twin in k:
             k[n] = k[twin] * base_width(cut_keyed(cells[twin], 1, fringe=1)) / base_width(cut_keyed(cells[n], 1, fringe=1))

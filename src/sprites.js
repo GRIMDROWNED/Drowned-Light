@@ -99,7 +99,8 @@
   ];
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
-  const PLANTS = ["refugeOn", "refugeOff", "sentinelOn", "sentinelOff", "rootOn", "rootOff", "sproutOn", "sproutOff", "sproutBare", "husk", "gardenOn", "gardenOff"];
+  const PLANTS = ["refugeOn", "refugeOff", "sentinelOn", "sentinelOff", "rootOn", "rootOff", "sproutOn", "sproutOff", "sproutBare", "husk", "gardenOn", "gardenOff",
+    "reeds1", "reeds2", "reeds3", "reeds4", "reeds5", "reeds6"];
   const PROPS = {
     path: "assets/sprites/",
     // cut at 2 file px per art pixel, like the units
