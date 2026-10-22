@@ -224,6 +224,8 @@ PROP_GRIDS = {
     'world/iron.png': (3, 3, ['iron11', 'iron12', 'iron13', 'iron21', 'iron22', 'iron23', 'iron31', 'iron32', 'iron33']),
     # three amethyst deposits (the 'pearl' resource), each whole -> snapped -> stumps
     'world/amethyst.png': (3, 3, ['amethyst11', 'amethyst12', 'amethyst13', 'amethyst21', 'amethyst22', 'amethyst23', 'amethyst31', 'amethyst32', 'amethyst33']),
+    # the five supplies, as pickups ('res' + resource key)
+    'world/supplies.png': (5, 1, ['resWood', 'resStone', 'resResin', 'resIron', 'resPearl']),
     # two boulders, bare then mossy, each whole -> cracked -> crumbling
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
@@ -236,9 +238,11 @@ PROP_HEIGHT = {'refugeOff': 116, 'sentinelOff': 96, 'rootOff': 150, 'sproutOff':
 # Or the width in file px, for low, wide props.
 PROP_WIDTH = {'flame1': 84, 'flame2': 104, 'forge4': 124, 'armory4': 120, 'workbench4': 116, 'palisade': 56, 'tent': 100, 'brazier': 44, 'iron11': 62}
 PROP_HEIGHT['amethyst11'] = 50
+PROP_WIDTH['resWood'] = 22
 # Renders whose own colours come close to the magenta key (purple crystals): key them out with a tighter
 # tolerance than the default 120 and without the purple-fringe filter, so the art isn't eaten.
 PROP_TOL = {n: 60 for n in ['amethyst11', 'amethyst12', 'amethyst13', 'amethyst21', 'amethyst22', 'amethyst23', 'amethyst31', 'amethyst32', 'amethyst33']}
+PROP_TOL['resPearl'] = 60
 # Props whose footing isn't in the middle of the picture (a leaning stake, a post with a lamp hung out to one
 # side): padded so the footing is centred, since sprites are drawn centred on their spot.
 PROP_FOOT_CENTRE = {'stake', 'gatePost', 'gatePost2', 'fire1', 'fire2', 'fire3', 'fire4', 'fire5', 'fire6'}
@@ -252,7 +256,8 @@ PROP_SAME = {'swampTree1': 'swampTree2', 'swampTree3': 'swampTree2', 'gardenBed1
             'pylon1': 'pylon3', 'pylon2': 'pylon3', 'palisade2': 'palisade', 'gatePost2': 'gatePost',
             'burnt': 'torch', 'fire1': 'fire3', 'fire2': 'fire3', 'fire4': 'fire3', 'fire5': 'fire3', 'fire6': 'fire3',
             'iron12': 'iron11', 'iron13': 'iron11', 'iron21': 'iron11', 'iron22': 'iron11', 'iron23': 'iron11', 'iron31': 'iron11', 'iron32': 'iron11', 'iron33': 'iron11',
-            'amethyst12': 'amethyst11', 'amethyst13': 'amethyst11', 'amethyst21': 'amethyst11', 'amethyst22': 'amethyst11', 'amethyst23': 'amethyst11', 'amethyst31': 'amethyst11', 'amethyst32': 'amethyst11', 'amethyst33': 'amethyst11'}
+            'amethyst12': 'amethyst11', 'amethyst13': 'amethyst11', 'amethyst21': 'amethyst11', 'amethyst22': 'amethyst11', 'amethyst23': 'amethyst11', 'amethyst31': 'amethyst11', 'amethyst32': 'amethyst11', 'amethyst33': 'amethyst11',
+            'resStone': 'resWood', 'resResin': 'resWood', 'resIron': 'resWood', 'resPearl': 'resWood'}
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
 PROP_OUT = 'props'

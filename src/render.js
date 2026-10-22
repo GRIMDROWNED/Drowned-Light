@@ -606,6 +606,9 @@
     const y = k.y - 6 - Math.abs(Math.sin(t * 5 + k.x)) * 3;
     c.fillStyle = "rgba(0,0,0,0.4)";
     c.fillRect(k.x - 3, k.y - 1, 6, 2);
+    // the drawn supply (resWood, resStone ...), bobbing above its spot; else a coloured square
+    const name = "res" + k.res[0].toUpperCase() + k.res.slice(1);
+    if (Art.sprites[name]) return sprite(c, name, k.x, y + 6);
     c.fillStyle = "#07090a";
     c.fillRect(k.x - 4, y - 4, 8, 8);
     c.fillStyle = DL.RESOURCES[k.res].color;
