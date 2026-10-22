@@ -671,7 +671,7 @@
       G.pearlT = 2.5;
       if ((G.night || Z.abyss) && p.zi >= 2 && G.pearls.length < 5) {
         const a = rand(0, TAU), r = rand(280, 600), x = p.x + Math.cos(a) * r, y = p.y + Math.sin(a) * r;
-        if (!G.protectionAt(x, y) && W.zoneIndex(x, y) >= 2) {
+        if (!G.protectionAt(x, y) && W.zoneIndex(x, y) >= 2 && !W.isWater(x, y)) {
           const zi = W.zoneIndex(x, y);
           G.pearls.push({ id: "pearl" + G.t, type: "pearl", def: DL.OBJ.pearl, x, y, zi, amount: Math.max(1, Math.round(DL.ZONES[zi].yield * 0.6 * G.diff().yield)), harvested: false });
         }
