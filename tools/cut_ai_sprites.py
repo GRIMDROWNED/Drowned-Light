@@ -40,6 +40,8 @@ GRIDS = {
     'drowned-sovereign/poses-b.png': (3, 2, POSES_B),
     'pike-warden/poses-a.png': (3, 2, POSES_A),
     'pike-warden/poses-b.png': (3, 2, POSES_B),
+    'ashen-arbalist/poses-a.png': (3, 2, POSES_A),
+    'ashen-arbalist/poses-b.png': (3, 2, POSES_B),
 }
 # Cells the AI drew at another scale than the rest of their sheet: cell -> factor to resize it by.
 CELL_SCALE = {'pike-warden/07_walk': 1.16}
@@ -98,6 +100,7 @@ SETS = {
     'drowned-sovereign': ('drowned/champion', 'drowned-sovereign/01_front.png', 128, 1, twelve('drowned-sovereign', TWELVE_FILES)),
     # kit knights: the body is 80 px like the Lantern Knight's, so the reference pose with its pike above the hood is taller
     'pike-warden': ('pike-warden', 'pike-warden/01_front.png', 104, 1, twelve('pike-warden', TWELVE_FILES)),
+    'ashen-arbalist': ('ashen-arbalist', 'ashen-arbalist/01_front.png', 83, 1, twelve('ashen-arbalist', TWELVE_FILES)),
 }
 
 # Animation sheets: character -> [(sheet, columns, rows, height of the first frame's figure, output prefix[, row])].
@@ -154,6 +157,11 @@ SHEETS = {
         ('pike-warden/walk-side-4.png', 4, 1, 99, 'side/walk'),
         ('pike-warden/walk-front-4.png', 4, 1, 101, 'walkF'),
         ('pike-warden/walk-back-4.png', 4, 1, 101, 'walkB'),
+    ],
+    'ashen-arbalist': [
+        ('ashen-arbalist/walk-side-4.png', 4, 1, 79, 'side/walk'),
+        ('ashen-arbalist/walk-front-4.png', 4, 1, 83, 'walkF'),
+        ('ashen-arbalist/walk-back-4.png', 4, 1, 83, 'walkB'),
     ],
 }
 
