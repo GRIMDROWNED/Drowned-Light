@@ -571,12 +571,12 @@
     if (tr.type === "brazier") {
       shadow(c, tr.x, tr.y, 12, 4);
       sprite(c, "brazier", tr.x, tr.y + 2);
-      Art.drawFire(c, tr.x, tr.y - 22, 1.1, t);
+      Art.drawFire(c, tr.x, tr.y + 14 - Art.sprites.brazier.h * PS, 1.1, t);
     } else {
       shadow(c, tr.x, tr.y, 6, 3);
       sprite(c, "torch", tr.x, tr.y + 2);
       const k = tr.t < 8 ? tr.t / 8 : 1;
-      Art.drawFire(c, tr.x, tr.y - 44, 0.5 + 0.5 * k, t);
+      Art.drawFire(c, tr.x, tr.y + 10 - Art.sprites.torch.h * PS, 0.5 + 0.5 * k, t);
     }
     if (tr.hp < (tr.type === "brazier" ? 60 : 40)) bar(c, tr.x, tr.y - 64, 22, tr.hp / (tr.type === "brazier" ? 60 : 40), "#ffb35a");
   }

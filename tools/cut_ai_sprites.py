@@ -217,6 +217,9 @@ PROP_GRIDS = {
     # these keep the coded sprites' names, so the drawn ones simply replace them
     'camp/barricade.png': (5, 1, ['stake', 'palisade', 'gatePost', 'gatePost2', 'palisade2']),
     'camp/tent-banner.png': (2, 1, ['tent', 'banner']),
+    'camp/torches.png': (3, 1, ['torch', 'burnt', 'brazier']),
+    # the fire's animation frames (Art.drawFire)
+    'camp/fire.png': (6, 1, ['fire1', 'fire2', 'fire3', 'fire4', 'fire5', 'fire6']),
     # two boulders, bare then mossy, each whole -> cracked -> crumbling
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
@@ -224,12 +227,13 @@ PROP_GRIDS = {
 # width of their rocky base, since glow wisps change its height. Names not listed here use their own height.
 PROP_HEIGHT = {'refugeOff': 116, 'sentinelOff': 96, 'rootOff': 150, 'sproutOff': 60, 'gardenOff': 14, 'husk': 104, 'reeds2': 50, 'gardenBed2': 100, 'swampTree2': 140, 'boulder11': 60,
                'flame3': 110, 'tower3': 160, 'pylon3': 120,
-               'stake': 40, 'gatePost': 100, 'banner': 96}
+               'stake': 40, 'gatePost': 100, 'banner': 96,
+               'torch': 58, 'fire3': 64}
 # Or the width in file px, for low, wide props.
-PROP_WIDTH = {'flame1': 84, 'flame2': 104, 'forge4': 124, 'armory4': 120, 'workbench4': 116, 'palisade': 56, 'tent': 100}
+PROP_WIDTH = {'flame1': 84, 'flame2': 104, 'forge4': 124, 'armory4': 120, 'workbench4': 116, 'palisade': 56, 'tent': 100, 'brazier': 44}
 # Props whose footing isn't in the middle of the picture (a leaning stake, a post with a lamp hung out to one
 # side): padded so the footing is centred, since sprites are drawn centred on their spot.
-PROP_FOOT_CENTRE = {'stake', 'gatePost', 'gatePost2'}
+PROP_FOOT_CENTRE = {'stake', 'gatePost', 'gatePost2', 'fire1', 'fire2', 'fire3', 'fire4', 'fire5', 'fire6'}
 # Variants drawn on one sheet at one scale: name -> the variant whose scale it shares.
 PROP_SAME = {'swampTree1': 'swampTree2', 'swampTree3': 'swampTree2', 'gardenBed1': 'gardenBed2', 'gardenBed3': 'gardenBed2', 'reeds1': 'reeds2', 'reeds3': 'reeds2', 'reeds4': 'reeds2', 'reeds5': 'reeds2', 'reeds6': 'reeds2',
             'boulder12': 'boulder11', 'boulder13': 'boulder11', 'boulder21': 'boulder11', 'boulder22': 'boulder11', 'boulder23': 'boulder11', 'boulder31': 'boulder11', 'boulder32': 'boulder11', 'boulder33': 'boulder11', 'boulder41': 'boulder11', 'boulder42': 'boulder11', 'boulder43': 'boulder11',
@@ -237,7 +241,8 @@ PROP_SAME = {'swampTree1': 'swampTree2', 'swampTree3': 'swampTree2', 'gardenBed1
             'armory1': 'armory4', 'armory2': 'armory4', 'armory3': 'armory4',
             'workbench1': 'workbench4', 'workbench2': 'workbench4', 'workbench3': 'workbench4',
             'tower1': 'tower3', 'tower2': 'tower3',
-            'pylon1': 'pylon3', 'pylon2': 'pylon3', 'palisade2': 'palisade', 'gatePost2': 'gatePost'}
+            'pylon1': 'pylon3', 'pylon2': 'pylon3', 'palisade2': 'palisade', 'gatePost2': 'gatePost',
+            'burnt': 'torch', 'fire1': 'fire3', 'fire2': 'fire3', 'fire4': 'fire3', 'fire5': 'fire3', 'fire6': 'fire3'}
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
 PROP_OUT = 'props'

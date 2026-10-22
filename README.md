@@ -197,6 +197,7 @@ Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite 
 - **Trees**: three swamp trees (`swampTree1`–`3`), one picked per spot. The render tinted their moss pink, so `PROP_DESPILL` takes the magenta back out.
 - **Boulders**: two boulder shapes, bare or mossy (`boulder11`–`43`: shape/moss, then damage stage), one picked per spot. Each shows three stages as it is mined: whole, cracked, crumbling.
 - **Camp buildings**: a picture per level for the Forge, Armory and Workbench (`forge1`–`4` …), the Watchtowers and Lantern Pylons (`tower1`–`3`, `pylon1`–`3`), and one per camp tier for the Central Flame (`flame1`–`3`, drawn unlit: the fire is animated in code at `FLAME_FIRE` in `src/render.js`, and pylon and gate lamps at `PYLON_LAMPS` / `GATE_LAMP`). The tent, banner, stake, palisade and gate post keep their coded names, so the drawn ones replace them; `palisade2` and `gatePost2` are the reinforced level 3 barricade.
+- **Torches and fire**: the torch, burnt torch and placed brazier replace the coded ones, and `Art.drawFire` plays six drawn flame frames (`fire1`–`6`) for every fire: the Central Flame, torches, braziers and burning enemies.
 - **Reeds**: six clumps from one sheet (`reeds1`–`reeds6`), one picked per spot.
 - The other world props (iron, graves, pillars, pearls) are coded until their new art arrives. Set `ENABLED = false` in `src/sprites.js` to use coded art everywhere.
 

@@ -380,7 +380,18 @@
   }
 
   // Animated pixel fire, base at (x, y). size ~ 1 for a torch, 2–3 for the camp flame.
+  // With the drawn fire loaded (fire1–6), one of its six frames, about 18 px tall per unit of size, sunk a
+  // little into whatever it burns on so its round foot doesn't float.
   Art.drawFire = function (ctx, x, y, size, t, cool) {
+    const f = !cool && Art.sprites["fire" + (1 + (Math.floor(t * 10 + x * 0.37) % 6 + 6) % 6)];
+    if (f) {
+      const h = 18 * size, w = (h * f.w) / f.h;
+      const sm = ctx.imageSmoothingEnabled;
+      ctx.imageSmoothingEnabled = true; // it's drawn smaller than it was cut, so let it blend
+      ctx.drawImage(f.c, Math.round(x - w / 2), Math.round(y - h * 0.88), w, h);
+      ctx.imageSmoothingEnabled = sm;
+      return;
+    }
     const cols = cool ? ["#1c7f8a", "#3fd6e0", "#c9fbff"] : ["#d9561f", "#ffa23a", "#ffe6a6"];
     const u = 2 * size;
     for (let layer = 0; layer < 3; layer++) {
