@@ -206,15 +206,19 @@ PROP_GRIDS = {
     'plants/plants-unlit.png': (3, 2, ['refugeOff', 'sentinelOff', 'rootOff', 'sproutOff', 'sproutBare', 'gardenOff']),
     'plants/reeds.png': (3, 2, ['reeds1', 'reeds2', 'reeds3', 'reeds4', 'reeds5', 'reeds6']),
     'plants/garden-beds.png': (3, 1, ['gardenBed1', 'gardenBed2', 'gardenBed3']),
+    # cropped from a phone screenshot (JPEG), so the key colour is noisy
+    'world/trees.png': (3, 1, ['swampTree1', 'swampTree2', 'swampTree3']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
 # width of their rocky base, since glow wisps change its height. Names not listed here use their own height.
-PROP_HEIGHT = {'refugeOff': 116, 'sentinelOff': 96, 'rootOff': 150, 'sproutOff': 60, 'gardenOff': 14, 'husk': 104, 'reeds2': 50, 'gardenBed2': 100}
+PROP_HEIGHT = {'refugeOff': 116, 'sentinelOff': 96, 'rootOff': 150, 'sproutOff': 60, 'gardenOff': 14, 'husk': 104, 'reeds2': 50, 'gardenBed2': 100, 'swampTree2': 140}
 # Variants drawn on one sheet at one scale: name -> the variant whose scale it shares.
-PROP_SAME = {'gardenBed1': 'gardenBed2', 'gardenBed3': 'gardenBed2', 'reeds1': 'reeds2', 'reeds3': 'reeds2', 'reeds4': 'reeds2', 'reeds5': 'reeds2', 'reeds6': 'reeds2'}
+PROP_SAME = {'swampTree1': 'swampTree2', 'swampTree3': 'swampTree2', 'gardenBed1': 'gardenBed2', 'gardenBed3': 'gardenBed2', 'reeds1': 'reeds2', 'reeds3': 'reeds2', 'reeds4': 'reeds2', 'reeds5': 'reeds2', 'reeds6': 'reeds2'}
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
 PROP_OUT = 'props'
+# Cut from a JPEG, so magenta bled into the edges: pull the pink back out (see despill).
+PROP_DESPILL = {'swampTree1', 'swampTree2', 'swampTree3'}
 
 only = sys.argv[2:]  # optional character names to cut
 for sheet, (cols, rows, names) in GRIDS.items():
@@ -274,6 +278,15 @@ for name, sheets in SHEETS.items():
         print(folder, prefix, len(frames), 'frames', frames[0].size, 'feet', list(feet))
         contact(frames, os.path.join(SRC, name + '-' + prefix.replace('/', '-') + '-preview.png'))
 
+def despill(im):
+    """Take the magenta tint out of a cut-out: where red and blue both beat green, pull them down to it."""
+    import numpy as np
+    a = np.asarray(im).astype(float)
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    over = np.clip(np.minimum(r, b) - g, 0, None) * 0.85
+    a[..., 0] -= over; a[..., 2] -= over
+    return Image.fromarray(a.clip(0, 255).astype('uint8'))
+
 def base_width(im):
     """Width of the lowest tenth of a cut-out's opaque pixels: its footing, which glow doesn't change."""
     import numpy as np
@@ -300,6 +313,7 @@ if not only or 'props' in only:
     done = []
     for n, cell in cells.items():
         im = cut_keyed(cell, k[n], fringe=1)
+        if n in PROP_DESPILL: im = despill(im)
         # even sizes, so the art-pixel size (half) is whole; the padding goes on the top and the left
         w, h = im.width + im.width % 2, im.height + im.height % 2
         if (w, h) != im.size:

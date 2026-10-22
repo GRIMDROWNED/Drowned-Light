@@ -28,7 +28,7 @@ A top-down dark-fantasy survival game for the browser and phones. You are a lant
 
 ## The core loop
 
-1. **Day: venture out.** Gather wood, stone, bloom resin and iron scrap. Rings of land get darker and richer the farther you go: *The Shallows → The Mire → Drowned Reaches → The Abyss*.
+1. **Day: venture out.** Chop down trees for wood, and gather stone, bloom resin and iron scrap. Felled trees and mined supplies grow back at dawn. Rings of land get darker and richer the farther you go: *The Shallows → The Mire → Drowned Reaches → The Abyss*.
 2. **Night: stay in the light.** Outside light, **corruption** rises. It has four visible stages, and at 100% you become a Drowned Knight.
    - **Firelight** (camp, torches, Illuminate) *reverses* corruption, heals you and refills your lantern.
    - **Bloomlight** (Refuge Blooms, Sentinel Blooms, Mother Roots) only *halts* it. Blooms wake at night, and the Drowned come to tear them down.
@@ -194,6 +194,7 @@ Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite 
 - The knight and all eight enemies walk with 4-pose side, front and back walk sheets.
 - **Bioluminescent plants** (Refuge Bloom, Sentinel Bloom, Mother Root, sprout, garden flowers, and the husk of a dead bloom), lit and unlit: cut from two sheets by `PROP_GRIDS` in the cutter into `assets/sprites/props/` at `res: 2`. The lit plants are scaled to match their unlit twins by the width of their rocky base.
 - **Cultivation Plot**: a drawn bed per plot level (`gardenBed1`–`3`); the glowing flowers sit in rows of six along its furrows (`BED_SOIL` in `src/render.js` gives each bed's soil corners).
+- **Trees**: three swamp trees (`swampTree1`–`3`), one picked per spot. Cut from a phone screenshot, so `PROP_DESPILL` takes the magenta bleed out of their edges.
 - **Reeds**: six clumps from one sheet (`reeds1`–`reeds6`), one picked per spot.
 - Camp and the other world props are coded until their new art arrives. Set `ENABLED = false` in `src/sprites.js` to use coded art everywhere.
 

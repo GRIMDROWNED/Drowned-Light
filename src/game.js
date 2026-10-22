@@ -583,14 +583,14 @@
     const col = DL.RESOURCES[o.def.res].color, ix = o.x - Math.cos(ang) * 6, iy = o.y - 12;
     for (let i = 0; i < 6; i++) puff(ix, iy, col, 90, 0.45, -60);
     if (o.type === "sprout" || o.type === "pearl") { for (let i = 0; i < 5; i++) spark(ix, iy, o.type === "pearl" ? "190,160,255" : "80,230,240", 90); sfx("chime"); }
-    else sfx(o.type === "wood" ? "chop" : "clink");
+    else sfx(o.type === "tree" ? "chop" : "clink");
     if (o.mineHp <= 0) shatter(o);
   }
 
-  const NODE_SPRITE = { wood: "driftwood", stone: "rock", iron: "ironpile", pearl: "pearl" };
+  const NODE_SPRITE = { stone: "rock", iron: "ironpile", pearl: "pearl" };
   function shatter(o) {
     o.harvested = true;
-    const name = NODE_SPRITE[o.type] || (o.active ? "sproutOn" : "sproutOff");
+    const name = o.type === "tree" ? DL.Render.treeSprite(o) : NODE_SPRITE[o.type] || (o.active ? "sproutOn" : "sproutOff");
     const s = DL.Art.sprites[name], PS = 2, w = s.w * PS, h = s.h * PS, pieces = [];
     const cols = 3, rows = 2, pw = Math.ceil(s.w / cols), ph = Math.ceil(s.h / rows);
     for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) {
