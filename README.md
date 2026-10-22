@@ -186,7 +186,7 @@ Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite 
 
 **Hand-drawn art** (`src/sprites.js`) replaces coded art with PNG files in `assets/sprites/`. The art is being redone piece by piece from AI renders: one pose per image on a flat magenta background, made from prompts in the project's art-prompts file.
 - **Lantern Blade knight**: front, back and side poses, 4-frame side, front and back walks cut from sheets, a 3-frame attack, dash, hurt and death. The frames are cut at twice the art resolution (`res: 2`) so the detail survives. Corruption stages and the drowned self are tinted from the same frames.
-- **Pike Warden knight**: the same 12 poses and walk sheets as an enemy, tinted for every corruption stage. Its front walk stepped with one foot, so the cutter mirrors the legs for the other step. Ashen Arbalist, Relic Bearer and Flame Bastion are still coded.
+- **Pike Warden** and **Ashen Arbalist knights**: the same 12 poses and walk sheets as an enemy, tinted for every corruption stage. The Pike Warden's front walk stepped with one foot, so the cutter mirrors the legs for the other step. Relic Bearer and Flame Bastion are still coded.
 - **Mire Stalker** (squire): the 12 poses from the enemy prompt (three views, a 4-frame side walk, three attack frames, hurt and death), also at `res: 2`.
 - **Drowned Wretch** (footman): two batches of renders. The first batch came out as the knight with cyan details, so `match_colors` in `tools/cutlib.py` recolours it to match the second.
 - **Tide Archer** (archer): the 12 poses. Six of them came as cells of one 3×2 sheet, cut into frames before cutting.

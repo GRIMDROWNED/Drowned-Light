@@ -92,6 +92,7 @@
     walking("footman", [56, 78], [36, 84], [37, 83]),
     // the other kits' knights: the 12 poses and walk sheets like an enemy's, at every corruption stage
     Object.assign(walking("pikeWarden", [52, 103], [33, 103], [38, 103]), { path: "assets/sprites/pike-warden/", keys: stages("pikeWarden") }),
+    Object.assign(walking("ashenArbalist", [57, 81], [35, 85], [42, 86]), { path: "assets/sprites/ashen-arbalist/", keys: stages("ashenArbalist") }),
   ];
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
