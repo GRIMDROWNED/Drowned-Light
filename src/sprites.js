@@ -200,33 +200,6 @@
     return { c, w: fr.w, h: fr.h, ax: fr.ax, ay: fr.ay, res: fr.res };
   }
 
-  // Where a drawn prop meets the ground, in art px: the columns that reach the lower part of the picture,
-  // their middle (dx from the centre), half their width (rx), and how far above the bottom edge their feet sit (dy).
-  // Buildings drawn in 3/4 view stand on a patch above their lowest pixel, so their shadow goes there.
-  function footprint(fr, res) {
-    const p = fr.c.getContext("2d").getImageData(0, 0, fr.w, fr.h).data, low = [];
-    for (let x = 0; x < fr.w; x++) {
-      let y = fr.h - 1;
-      while (y >= 0 && !p[(y * fr.w + x) * 4 + 3]) y--;
-      if (y >= fr.h * 0.6) low.push([x, y]);
-    }
-    if (!low.length) return null;
-    const ys = low.map((l) => l[1]).sort((a, b) => a - b), x0 = low[0][0], x1 = low[low.length - 1][0];
-    // A soft dark band along the base where the picture meets the ground, so it doesn't hover:
-    // the drawn art has no ground of its own, only a hard edge against the terrain.
-    const pad = 8, raw = document.createElement("canvas");
-    raw.width = fr.w + pad * 2; raw.height = fr.h + pad * 2;
-    const g = raw.getContext("2d");
-    g.fillStyle = "#000";
-    for (const [x, y] of low) g.fillRect(x + pad - 1, y + pad - 3, 3, 6);
-    const contact = document.createElement("canvas");
-    contact.width = raw.width; contact.height = raw.height;
-    const cg = contact.getContext("2d");
-    cg.filter = `blur(${2 * res}px)`;
-    cg.drawImage(raw, 0, 0);
-    return { dx: ((x0 + x1) / 2 - fr.w / 2) / res, rx: (x1 - x0) / 2 / res, dy: (fr.h - 1 - ys[ys.length >> 1]) / res, contact, pad: pad / res };
-  }
-
   const fileOf = (entry) => entry.split("@")[0];
   const propImage = (name) => images[PROPS.path + PROPS.files[name] + ".png"];
 
@@ -258,7 +231,7 @@
     }
     for (const name in PROPS.files) {
       const f = propImage(name);
-      if (f) Art.sprites[name] = { c: f.c, w: f.w / PROPS.res, h: f.h / PROPS.res, res: PROPS.res, foot: footprint(f, PROPS.res) };
+      if (f) Art.sprites[name] = { c: f.c, w: f.w / PROPS.res, h: f.h / PROPS.res, res: PROPS.res };
     }
     for (const name in PROPS.hide)
       if (PROPS.hide[name].every(propImage)) {
