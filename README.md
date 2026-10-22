@@ -200,6 +200,7 @@ Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite 
 - **Torches and fire**: the torch, burnt torch and placed brazier replace the coded ones, and `Art.drawFire` plays six drawn flame frames (`fire1`–`6`) for every fire: the Central Flame, torches, braziers and burning enemies.
 - **Reeds**: six clumps from one sheet (`reeds1`–`reeds6`), one picked per spot.
 - **Iron and amethyst deposits**: three of each (`iron11`–`33`, `amethyst11`–`33`: variant, then damage stage), mined down in three stages like the boulders. Amethyst is the `pearl` resource in code.
+- **Supplies**: the five resources as pickups (`resWood`, `resStone`, `resResin`, `resIron`, `resPearl`), drawn where mined supplies drop instead of coloured squares.
 - **Ground**: nine repeating textures in `assets/sprites/ground/` (camp earth, flagstones for the tier II plaza, paving for tier III, marsh grass and dirt, shore, shallow and deep water, boardwalk planks), cut by the `GROUND` section of the cutter, which also makes their edges wrap. `groundColor` in `src/world.js` still decides where each terrain goes and blends them; `GROUND_K` darkens the land so the art stands out.
 - Graves and pillars no longer spawn in the wild; their coded art is kept for a ruin entrance. Set `ENABLED = false` in `src/sprites.js` to use coded art everywhere.
 
