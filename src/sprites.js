@@ -56,7 +56,8 @@
   const sheetFeet = (files, xy) => Object.fromEntries(files.map((f) => [f, xy]));
   const WALK_FRONT = WALK4x2("walkF").map((f) => f + "@-");
   const WALK_BACK = WALK4x2("walkB").map((f) => f + "@-");
-  // The shared foot point of each walk sheet (side, front, back), as printed by tools/cut_ai_sprites.py.
+  // The shared foot point of each walk sheet (side, front, back), as printed by tools/cut_ai_sprites.py
+  // (moved onto the feet by hand where a pike or staff butt on the ground pulled it aside).
   const walkFeet = (side, front, back) =>
     Object.assign(sheetFeet([1, 2, 3, 4].map((i) => "side/walk" + i), side), sheetFeet(WALK4x2("walkF"), front), sheetFeet(WALK4x2("walkB"), back));
 
@@ -91,8 +92,9 @@
     walking("champion", [87, 128], [58, 129], [41, 132], 3),
     walking("footman", [56, 78], [36, 84], [37, 83]),
     // the other kits' knights: the 12 poses and walk sheets like an enemy's, at every corruption stage
-    Object.assign(walking("pikeWarden", [52, 103], [33, 103], [38, 103]), { path: "assets/sprites/pike-warden/", keys: stages("pikeWarden") }),
+    Object.assign(walking("pikeWarden", [48, 103], [33, 103], [31, 103]), { path: "assets/sprites/pike-warden/", keys: stages("pikeWarden") }),
     Object.assign(walking("ashenArbalist", [57, 81], [35, 85], [42, 86]), { path: "assets/sprites/ashen-arbalist/", keys: stages("ashenArbalist") }),
+    Object.assign(walking("relicBearer", [57, 105], [39, 101], [40, 101]), { path: "assets/sprites/relic-bearer/", keys: stages("relicBearer") }),
   ];
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
