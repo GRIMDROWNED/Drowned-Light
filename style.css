@@ -115,20 +115,27 @@ body.touch kbd { display: none; }
   padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap;
   background: rgba(40, 14, 14, 0.85); border: 1px solid rgba(255, 120, 100, 0.5); color: #ffd7c9;
 }
+/* messages sit on the right, under the clock panel, so they never cover the knight */
 #toasts {
-  position: absolute; left: 50%; top: 26%; transform: translateX(-50%); width: min(520px, 92vw);
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  position: absolute; right: max(12px, env(safe-area-inset-right)); top: calc(max(12px, env(safe-area-inset-top)) + 160px);
+  width: min(300px, 40vw); display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none;
 }
 .toast {
-  padding: 8px 14px; border-radius: 8px; font-size: 13.5px; font-weight: 600; text-align: center; line-height: 1.35;
+  padding: 7px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; text-align: right; line-height: 1.35;
   background: rgba(8, 16, 21, 0.85); border: 1px solid var(--line); animation: toastIn 0.3s ease-out; transition: opacity 0.6s, transform 0.6s;
   text-shadow: 0 1px 2px #000;
 }
 .toast.warn { border-color: rgba(95, 230, 238, 0.55); color: #cdfbff; }
 .toast.danger { border-color: var(--danger); color: #ffd1d1; }
 .toast.good { border-color: rgba(255, 179, 90, 0.6); color: #ffe6c2; }
-.toast.out { opacity: 0; transform: translateY(-8px); }
-@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } }
+.toast.out { opacity: 0; transform: translateX(12px); }
+@keyframes toastIn { from { opacity: 0; transform: translateX(12px); } }
+/* short landscape phones: tuck in under the clock, newest two only, clear of the buttons */
+@media (max-height: 500px) {
+  #toasts { top: calc(max(12px, env(safe-area-inset-top)) + 122px); width: min(300px, 44vw); gap: 4px; }
+  .toast { font-size: 11px; padding: 4px 9px; }
+  .toast:not(:nth-last-child(-n+2)) { display: none; }
+}
 
 #campBtn {
   position: absolute; left: 50%; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 8px); transform: translateX(-50%);
@@ -237,7 +244,8 @@ body.touch .controls-hint .desk { display: none; }
 @media (max-width: 520px) {
   #vitals { padding: 7px 9px; width: 44vw; }
   #vitals .opt { display: none; }
-  .toast { font-size: 12px; padding: 6px 10px; }
+  #toasts { width: 46vw; top: calc(max(12px, env(safe-area-inset-top)) + 150px); }
+  .toast { font-size: 11.5px; padding: 5px 9px; }
   #lightState { font-size: 10.5px; }
   #vitals .row { font-size: 9.5px; }
   #nav { min-width: 0; padding: 6px 9px; }
