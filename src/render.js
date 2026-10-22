@@ -69,6 +69,8 @@
       case "sentinel": return o.dead ? "husk" : o.active ? "sentinelOn" : "sentinelOff";
       case "root": return o.dead ? "husk" : o.active ? "rootOn" : "rootOff";
       case "pearl": return o.harvested ? null : "pearl";
+      // six drawn reed clumps when their art is loaded, one picked per spot
+      case "reeds": return Art.sprites.reeds1 ? "reeds" + (o.reed || (o.reed = 1 + Math.floor(DL.hash(o.x | 0, o.y | 0, 9) * 6))) : "reeds";
       default: return o.def.sprite;
     }
   }

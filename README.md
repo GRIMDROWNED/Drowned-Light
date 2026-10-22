@@ -193,7 +193,8 @@ Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite 
 - **Swarming Revenant** (revenant), **Lantern Reaver** (defiler), **Bone Bulwark** (blackguard), **Marsh Hexbearer** (hexbearer) and **Drowned Sovereign** (champion, cut at `res: 3` because the boss is drawn 1.5× bigger): the poses came as two 3×2 sheets of six (`GRIDS` in the cutter splits them into poses, keeping a cloak or blade that pokes over a cell edge with its pose).
 - The knight and all eight enemies walk with 4-pose side, front and back walk sheets.
 - **Bioluminescent plants** (Refuge Bloom, Sentinel Bloom, Mother Root, sprout, garden flowers, and the husk of a dead bloom), lit and unlit: cut from two sheets by `PROP_GRIDS` in the cutter into `assets/sprites/props/` at `res: 2`. The lit plants are scaled to match their unlit twins by the width of their rocky base.
-- Camp and world props are coded until their new art arrives. Set `ENABLED = false` in `src/sprites.js` to use coded art everywhere.
+- **Reeds**: six clumps from one sheet (`reeds1`–`reeds6`), one picked per spot.
+- Camp and the other world props are coded until their new art arrives. Set `ENABLED = false` in `src/sprites.js` to use coded art everywhere.
 
 `tools/cut_ai_sprites.py <folder>` cuts the AI renders. Walk cycles come as one sheet per view (`SHEETS`), cut onto a shared canvas with one foot point so the character doesn't jitter between frames; longer walks play faster so a stride takes the same time. For single images, it keys out the magenta, shrinks every pose of a character by the same factor, limits the palette and adds an outline (Python with Pillow, NumPy and SciPy). `tools/cut_concept_sprites.py` is the older cutter for the concept sheets. To add or redraw art:
 1. Draw one PNG per frame at art-pixel size (a knight is about 36 px tall), facing right for side views. Free editors: [Piskel](https://www.piskelapp.com) or [LibreSprite](https://libresprite.github.io).
