@@ -35,16 +35,17 @@
   // What grows where (weights), per zone index.
   DL.SPAWN_TABLE = [
     {},
-    { tree: 4, gap: 8.5, stone: 2.5, sprout: 2, refuge: 1.6, reeds: 4, grave: 1, pillar: 0.5 },
-    { tree: 3, gap: 6, stone: 2, iron: 2.5, sprout: 3, refuge: 1.6, sentinel: 0.8, reeds: 3, grave: 1.5, pillar: 1.2 },
-    { tree: 2.5, gap: 4.5, stone: 1.5, iron: 4, sprout: 3.5, refuge: 1.4, sentinel: 1.2, reeds: 2, grave: 2, pillar: 2 },
-    { tree: 2, gap: 3.5, stone: 1.5, iron: 5, sprout: 4, refuge: 1, sentinel: 1.5, reeds: 1, grave: 2.5, pillar: 2.5 },
+    { tree: 4, gap: 10, stone: 2.5, sprout: 2, refuge: 1.6, reeds: 4 },
+    { tree: 3, gap: 8.7, stone: 2, iron: 2.5, sprout: 3, refuge: 1.6, sentinel: 0.8, reeds: 3 },
+    { tree: 2.5, gap: 8.5, stone: 1.5, iron: 4, sprout: 3.5, refuge: 1.4, sentinel: 1.2, reeds: 2 },
+    { tree: 2, gap: 8.5, stone: 1.5, iron: 5, sprout: 4, refuge: 1, sentinel: 1.5, reeds: 1 },
   ];
 
   // World objects. `solid` = collision radius, `hits` = strikes to mine it. `bloom` objects glow at night and shelter you.
   DL.OBJ = {
     // Trees are the wood: chop one down for a big load; it grows back at dawn.
     tree: { sprite: "tree", solid: 9, res: "wood", base: 6, hits: 5, r: 16 },
+    // Graves and pillars no longer spawn in the wild: they are kept for the entrance to a ruin.
     pillar: { sprite: "pillar", solid: 9 },
     grave: { sprite: "grave" },
     reeds: { sprite: "reeds" },
