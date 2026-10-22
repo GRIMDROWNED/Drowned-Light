@@ -16,7 +16,7 @@
   const ENABLED = true;
 
   // Kit knights: [how far toward the drowned palette, lantern turns cyan] per corruption stage, as in src/units.js.
-  const KNIGHT_STAGES = { lanternBlade1: [0, false], lanternBlade2: [0.22, false], lanternBlade3: [0.5, false], lanternBlade4: [0.8, true], self_lanternBlade: [0.9, true] };
+  const stages = (kit) => ({ [kit + 1]: [0, false], [kit + 2]: [0.22, false], [kit + 3]: [0.5, false], [kit + 4]: [0.8, true], ["self_" + kit]: [0.9, true] });
 
   // A unit from its motion sheet: a pose per view (front, back, right) and three attack frames shared by every view.
   // A single pose walks by stepping ("@bob") and dies by falling ("@fall").
@@ -72,7 +72,7 @@
   const UNITS = [
     {
       path: "assets/sprites/lantern-knight/",
-      keys: KNIGHT_STAGES,
+      keys: stages("lanternBlade"),
       res: 2,
       views: motion({
         side: Object.assign({ walk: WALK4 }, KNIGHT_SIDE),
@@ -90,6 +90,8 @@
     // the boss is drawn 1.5x bigger, so its frames are cut at 3 file px per art pixel
     walking("champion", [87, 128], [58, 129], [41, 132], 3),
     walking("footman", [56, 78], [36, 84], [37, 83]),
+    // the other kits' knights: the 12 poses and walk sheets like an enemy's, at every corruption stage
+    Object.assign(walking("pikeWarden", [52, 103], [33, 103], [38, 103]), { path: "assets/sprites/pike-warden/", keys: stages("pikeWarden") }),
   ];
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
