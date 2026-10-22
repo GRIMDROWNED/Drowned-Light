@@ -224,11 +224,17 @@
       const fail = (msg) => { setStatus(msg); Net.leave(true); resolve(false); };
       let reached = false; // the room answered, so the code was right
       const timer = setTimeout(() => fail(reached ? LINK_FAILED : "No answer from that room. Check the code, and that your friend's game is open."), 25000);
-      peer.on("error", (err) => { clearTimeout(timer); fail(err.type === "peer-unavailable" ? "No room with that code is open." : "Couldn't connect: " + (err.message || err.type)); });
+      peer.on("error", (err) => {
+        // Once in, the PeerJS server is no longer needed: a phone briefly losing it (screen off, switching
+        // networks) must not end the game. Only the link between the two devices closing does that.
+        if (Net.role === "guest") return;
+        clearTimeout(timer);
+        fail(err.type === "peer-unavailable" ? "No room with that code is open." : "Couldn't connect: " + (err.message || err.type));
+      });
       peer.on("open", () => {
         const c = peer.connect(PREFIX + code, { reliable: true, serialization: "json" });
         Net.conn = c;
-        onLinkFail(c, () => { clearTimeout(timer); fail(LINK_FAILED); });
+        onLinkFail(c, () => { if (Net.role === "guest") return guestLost(); clearTimeout(timer); fail(LINK_FAILED); });
         if (c.peerConnection) c.peerConnection.addEventListener("signalingstatechange", () => { if (c.peerConnection.signalingState === "stable") reached = true; });
         c.on("open", () => {
           Net.connected = true;
