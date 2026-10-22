@@ -89,7 +89,7 @@ What's shared:
 **How it works:** the host's device runs the world and sends snapshots about 15 times a second. A snapshot holds only what's near the guest, and a beat is skipped when the connection is backed up. The guest's device runs its own knight and reports hits, mining and deposits (`src/net.js`). The free public PeerJS server introduces the two devices, and the game data then goes directly between them over WebRTC. The PeerJS library is loaded only when co-op is used, so solo play still works offline. Some strict networks (schools, offices, some mobile carriers) block direct connections.
 
 ### Mining
-Supply nodes take several hits to break: logs 3, rock 4, iron 5, bloom sprouts 2, pearls 2. Each strike shakes and cracks the node and throws chips. The last strike shatters it into pieces of its sprite, and the supplies spill out as pickups that fly to you. In auto mode the knight mines a node you stand beside whenever no Drowned are in reach. In manual mode mining has its own control (Mine / G / right-click), so Attack never mines by mistake.
+Supply nodes take several hits to break: trees 5, boulders 6, iron 5, bloom sprouts 2, pearls 2. Each strike shakes and cracks the node and throws chips. The last strike shatters it into pieces of its sprite, and the supplies spill out as pickups that fly to you. In auto mode the knight mines a node you stand beside whenever no Drowned are in reach. In manual mode mining has its own control (Mine / G / right-click), so Attack never mines by mistake.
 
 ### View
 **Auto** follows the device. **Portrait** and **Landscape** lock the screen rotation in the installed app. Where a lock isn't possible:
@@ -195,6 +195,7 @@ Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite 
 - **Bioluminescent plants** (Refuge Bloom, Sentinel Bloom, Mother Root, sprout, garden flowers, and the husk of a dead bloom), lit and unlit: cut from two sheets by `PROP_GRIDS` in the cutter into `assets/sprites/props/` at `res: 2`. The lit plants are scaled to match their unlit twins by the width of their rocky base.
 - **Cultivation Plot**: a drawn bed per plot level (`gardenBed1`–`3`); the glowing flowers sit in rows of six along its furrows (`BED_SOIL` in `src/render.js` gives each bed's soil corners).
 - **Trees**: three swamp trees (`swampTree1`–`3`), one picked per spot. The render tinted their moss pink, so `PROP_DESPILL` takes the magenta back out.
+- **Boulders**: two boulder shapes, bare or mossy (`boulder11`–`43`: shape/moss, then damage stage), one picked per spot. Each shows three stages as it is mined: whole, cracked, crumbling.
 - **Reeds**: six clumps from one sheet (`reeds1`–`reeds6`), one picked per spot.
 - Camp and the other world props are coded until their new art arrives. Set `ENABLED = false` in `src/sprites.js` to use coded art everywhere.
 

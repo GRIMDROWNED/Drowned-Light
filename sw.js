@@ -2,7 +2,7 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.30";
+const VERSION = "0.15.31";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
@@ -36,7 +36,7 @@ const FILES = [
     "relic-bearer/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "flame-bastion/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "flame-bastion/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
-    "props/": ["gardenBed1", "gardenBed2", "gardenBed3", "gardenOff", "gardenOn", "husk", "refugeOff", "refugeOn", "rootOff", "rootOn", "sentinelOff", "sentinelOn", "reeds1", "reeds2", "reeds3", "reeds4", "reeds5", "reeds6", "sproutBare", "sproutOff", "sproutOn", "swampTree1", "swampTree2", "swampTree3"],
+    "props/": ["gardenBed1", "gardenBed2", "gardenBed3", "gardenOff", "gardenOn", "husk", "refugeOff", "refugeOn", "rootOff", "rootOn", "sentinelOff", "sentinelOn", "reeds1", "reeds2", "reeds3", "reeds4", "reeds5", "reeds6", "sproutBare", "sproutOff", "sproutOn", "swampTree1", "swampTree2", "swampTree3", "boulder11", "boulder12", "boulder13", "boulder21", "boulder22", "boulder23", "boulder31", "boulder32", "boulder33", "boulder41", "boulder42", "boulder43"],
   }).flatMap(([dir, names]) => names.map((n) => "assets/sprites/" + dir + n + ".png")),
 ].map((f) => (/\.(js|css|jpg)$/.test(f) ? f + "?v=" + VERSION : f));
 

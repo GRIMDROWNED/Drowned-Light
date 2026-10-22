@@ -64,10 +64,20 @@
     return Art.sprites.swampTree1 ? "swampTree" + (o.art || (o.art = 1 + Math.floor(DL.hash(o.x | 0, o.y | 0, 11) * 3))) : "tree" + o.variant;
   }
 
+  R.rockSprite = (o) => rockSprite(o);
+  // Four drawn boulders (two shapes, bare or mossy) when their art is loaded, each crumbling in three
+  // stages as it's mined; else the coded rock.
+  function rockSprite(o) {
+    if (!Art.sprites.boulder11) return "rock";
+    const v = o.art || (o.art = 1 + Math.floor(DL.hash(o.x | 0, o.y | 0, 13) * 4));
+    const k = o.mineHp == null ? 0 : 1 - o.mineHp / o.def.hits;
+    return "boulder" + v + (k >= 2 / 3 ? 3 : k >= 1 / 3 ? 2 : 1);
+  }
+
   function objSprite(o) {
     switch (o.type) {
       case "tree": return o.harvested ? null : treeSprite(o);
-      case "stone": return o.harvested ? null : "rock";
+      case "stone": return o.harvested ? null : rockSprite(o);
       case "iron": return o.harvested ? null : "ironpile";
       case "sprout": return o.harvested ? "sproutBare" : o.active ? "sproutOn" : "sproutOff";
       case "refuge": return o.dead ? "husk" : o.active ? "refugeOn" : "refugeOff";
@@ -316,7 +326,7 @@
 
   /* ---------- scene pieces ---------- */
   function drawObject(c, G, o, name) {
-    const sh = o.type === "tree" ? 20 : o.type === "root" ? 40 : 12;
+    const sh = o.type === "tree" ? 20 : o.type === "root" ? 40 : o.type === "stone" && name !== "rock" ? 16 : 12;
     shadow(c, o.x, o.y, sh, sh * 0.35, 0.3);
     let x = o.x;
     const hit = o.hitT > 0 ? o.hitT / 0.18 : 0;
@@ -331,7 +341,8 @@
     sprite(c, name, x, o.y + 2, o.flip);
     c.restore();
     if (o.def.bloom && !o.dead && o.hp < o.maxHp) bar(c, o.x, o.y - Art.sprites[name].h * PS - 6, 34, o.hp / o.maxHp, "#5fe6ee");
-    if (o.def.hits && o.mineHp != null && o.mineHp < o.def.hits) drawCracks(c, o, name, 1 - o.mineHp / o.def.hits);
+    // drawn boulders show their damage in their own stages
+    if (o.def.hits && o.mineHp != null && o.mineHp < o.def.hits && !name.startsWith("boulder")) drawCracks(c, o, name, 1 - o.mineHp / o.def.hits);
   }
 
   // Damage on a supply node: dark cracks in stone and iron, pale splintered chips in wood and plants.
