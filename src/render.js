@@ -430,12 +430,12 @@
   function groundShadow(c, name, x, y, flip, rx, ry) {
     const f = Art.sprites[name] && Art.sprites[name].foot;
     if (!f) return shadow(c, x, y - 2, rx, ry);
-    const w = f.rx * PS * 0.9, s = Art.sprites[name];
-    shadow(c, x + (flip ? -f.dx : f.dx) * PS, y - f.dy * PS, w, Math.min(14, Math.max(4, w * 0.3)));
+    const w = f.rx * PS * 0.75, s = Art.sprites[name];
+    shadow(c, x + (flip ? -f.dx : f.dx) * PS, y - f.dy * PS, w, Math.min(10, Math.max(3, w * 0.25)), 0.2);
     // contact shadow hugging the base
     const cw = (s.w + f.pad * 2) * PS, ch = (s.h + f.pad * 2) * PS;
     c.save();
-    c.globalAlpha = 0.6;
+    c.globalAlpha = 0.4;
     c.translate(Math.round(x), 0);
     if (flip) c.scale(-1, 1);
     c.drawImage(f.contact, Math.round(-cw / 2), Math.round(y - s.h * PS - f.pad * PS), cw, ch);
