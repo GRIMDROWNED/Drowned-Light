@@ -1,8 +1,9 @@
-/* Drowned Light — online co-op for two (PeerJS).
+/* Drowned Light — online co-op for up to four (PeerJS).
    The host's device runs the world: the Drowned, day and night, the camp and its stash.
-   The guest's device runs only the guest's own knight (with its own kit and level) and
+   Each guest's device runs only that guest's own knight (with its own kit and level) and
    sends what it does — hits, mined nodes, lights it raises, supplies it deposits — to the host.
-   The host sends a snapshot of the world about 15 times a second; both sides smooth the gaps.
+   The host sends each guest a snapshot of the world about 15 times a second, including every
+   other knight; all sides smooth the gaps. Guests only talk to the host, never to each other.
 
    Connecting uses the free public PeerJS server to introduce the two devices; after that the
    game data goes directly between them (WebRTC). The library loads only when co-op is used. */
@@ -19,6 +20,20 @@
   const castK = (p) => (p.cast ? Math.max(0.1, r1(p.cast.t / p.cast.dur)) : 0);
   const wispK = () => (G.wisp ? [r1(G.wisp.x), r1(G.wisp.y)] : 0);
   const TYPES = Object.keys(DL.ENEMIES);
+  const MAX_GUESTS = 3; // four knights in all
+  const swingRow = (sw) => (sw ? [r1(sw.ang), r1(sw.t), sw.kind, Math.round(sw.range), r1(sw.arc || 1), sw.col, sw.flip ? 1 : 0] : 0);
+  // One knight as sent over the link: [x, y, angle, moving, dash, stage, hp, maxHp, down, swing, cast, wisp, kit, kitLevel].
+  function applyKnight(a, s) {
+    a.tx = s[0]; a.ty = s[1]; a.angle = s[2]; a.moving = !!s[3]; a.dashT = s[4]; a.stage = s[5]; a.hp = s[6]; a.maxHp = s[7]; a.down = !!s[8];
+    a.swing = s[9] ? { ang: s[9][0], t: s[9][1], dur: 0.2, kind: s[9][2], range: s[9][3], arc: s[9][4], col: s[9][5], flip: !!s[9][6] } : null;
+    a.cast = s[10] || 0;
+    a.wisp = s[11] ? { x: s[11][0], y: s[11][1] } : null;
+    if (s[12] && DL.KITS[s[12]]) a.kit = s[12];
+    if (s[13]) a.kitLevel = s[13];
+  }
+  const newAlly = (id, kit, level, x, label) => ({ id, label, x, y: 70, tx: x, ty: 70, angle: Math.PI / 2, moving: false, animT: 0,
+    kit: DL.KITS[kit] ? kit : "lanternBlade", kitLevel: level || 1, stage: 1, hp: 100, maxHp: 100, down: false, swing: null, dashT: 0, proj: [] });
+  const kitLabel = (kit) => (DL.KITS[kit] ? DL.KITS[kit].name : "Friend");
 
   /* Two phones on mobile data (or behind strict routers) can't reach each other directly, so their
      data has to go through a relay ("TURN") server. PeerJS's own relays no longer answer, so put the
@@ -39,7 +54,8 @@
     if (!pc) return;
     pc.addEventListener("iceconnectionstatechange", () => { if (pc.iceConnectionState === "failed") fn(); });
   }
-  const Net = (DL.Net = { role: null, code: null, peer: null, conn: null, connected: false, events: [], acc: 0, status: "" });
+  // conn/connected: the guest's link to the host. guests: the host's links, one per friend.
+  const Net = (DL.Net = { role: null, code: null, peer: null, conn: null, connected: false, guests: [], events: [], acc: 0, status: "" });
 
   function loadLib() {
     if (window.Peer) return Promise.resolve();
@@ -75,13 +91,17 @@
           resolve(true);
         });
         peer.on("connection", (c) => {
-          if (Net.conn && Net.connected) { c.on("open", () => { c.send({ t: "full" }); setTimeout(() => c.close(), 300); }); return; }
-          Net.conn = c;
-          c.on("open", () => { Net.connected = true; });
-          onLinkFail(c, () => { if (!Net.connected) { say("A friend tried to join, but your devices couldn't link up. Try both on the same Wi-Fi.", "warn"); Net.conn = null; } });
-          c.on("data", hostData);
-          c.on("close", () => hostLost());
-          c.on("error", () => hostLost());
+          if (Net.guests.length >= MAX_GUESTS) { c.on("open", () => { c.send({ t: "full" }); setTimeout(() => c.close(), 300); }); return; }
+          // the lowest free number, so names and spots stay steady as friends come and go
+          let id = 1;
+          while (Net.guests.some((x) => x.id === id)) id++;
+          const g = { id, conn: c, open: false, ally: null };
+          Net.guests.push(g);
+          c.on("open", () => { g.open = true; });
+          onLinkFail(c, () => { if (!g.open) say("A friend tried to join, but your devices couldn't link up. Try both on the same Wi-Fi.", "warn"); hostLost(g); });
+          c.on("data", (m) => hostData(g, m));
+          c.on("close", () => hostLost(g));
+          c.on("error", () => hostLost(g));
         });
         peer.on("error", (err) => {
           if (err.type === "unavailable-id" && attempt < 3) { peer.destroy(); tryOpen(attempt + 1); return; }
@@ -93,39 +113,58 @@
     });
   };
 
-  function hostLost() {
-    if (!Net.conn) return;
-    Net.conn = null;
-    Net.connected = false;
-    if (G.ally) say("Your friend left the game.", "warn");
-    G.ally = null;
+  function sendTo(g, msg) {
+    if (g && g.open) { try { g.conn.send(msg); } catch (e) { /* closed */ } }
   }
 
-  function hostData(m) {
-    if (!m || !m.t) return;
-    if (m.t === "hello") {
-      G.ally = { x: 30, y: 70, tx: 30, ty: 70, angle: Math.PI / 2, moving: false, animT: 0, kit: DL.KITS[m.kit] ? m.kit : "lanternBlade",
-        kitLevel: m.level || 1, stage: 1, hp: 100, maxHp: 100, down: false, swing: null, dashT: 0, proj: [] };
-      const harvested = [];
-      for (const c of DL.World.chunks.values()) for (const o of c.objects) if (o.harvested || o.dead || (o.maxHp && o.hp < o.maxHp)) harvested.push(objRow(o));
-      Net.send({ t: "welcome", up: G.save.up, difficulty: G.save.difficulty, day: G.save.day, nights: G.save.nights, time: G.time, ob: harvested });
-      say(`A friend joined as the ${DL.KITS[G.ally.kit].name} (Lv ${G.ally.kitLevel}).`, "good");
-      DL.Sound.play("dawn");
-    } else if (m.t === "state") {
-      const a = G.ally;
-      if (!a) return;
-      const s = m.p;
-      a.tx = s[0]; a.ty = s[1]; a.angle = s[2]; a.moving = !!s[3]; a.dashT = s[4]; a.stage = s[5]; a.hp = s[6]; a.maxHp = s[7]; a.down = !!s[8];
-      a.swing = s[9] ? { ang: s[9][0], t: s[9][1], dur: 0.2, kind: s[9][2], range: s[9][3], arc: s[9][4], col: s[9][5], flip: !!s[9][6] } : null;
-      a.cast = s[10] || 0;
-      a.wisp = s[11] ? { x: s[11][0], y: s[11][1] } : null;
-      a.proj = m.pr || [];
-      for (const ev of m.ev || []) DL.Net.apply(ev);
+  function hostLost(g) {
+    if (!Net.guests.includes(g)) return;
+    Net.guests = Net.guests.filter((x) => x !== g);
+    try { g.conn.close(); } catch (e) { /* ignore */ }
+    if (g.ally) {
+      G.allies = G.allies.filter((a) => a !== g.ally);
+      say(`The ${g.ally.label} left the game.`, "warn");
     }
   }
 
-  // The guest's actions, applied to the real world on the host.
-  Net.apply = function (ev) {
+  // Host: remove a friend from the game. They're told why, then the link closes.
+  Net.kick = function (id) {
+    const g = Net.guests.find((x) => x.id === id);
+    if (!g) return;
+    sendTo(g, { t: "kicked" });
+    const name = g.ally ? g.ally.label : "friend";
+    g.ally && (G.allies = G.allies.filter((a) => a !== g.ally));
+    g.ally = null; // so hostLost doesn't announce it as leaving
+    setTimeout(() => hostLost(g), 300);
+    say(`You removed the ${name} from the game.`, "warn");
+  };
+
+  function hostData(g, m) {
+    if (!m || !m.t) return;
+    if (m.t === "hello") {
+      if (g.ally) return;
+      const a = (g.ally = newAlly(g.id, m.kit, m.level, 30 * g.id, ""));
+      a.label = kitLabel(a.kit);
+      a.g = g;
+      G.allies.push(a);
+      const harvested = [];
+      for (const c of DL.World.chunks.values()) for (const o of c.objects) if (o.harvested || o.dead || (o.maxHp && o.hp < o.maxHp)) harvested.push(objRow(o));
+      sendTo(g, { t: "welcome", id: g.id, up: G.save.up, difficulty: G.save.difficulty, day: G.save.day, nights: G.save.nights, time: G.time, ob: harvested });
+      say(`A friend joined as the ${a.label} (Lv ${a.kitLevel}).`, "good");
+      DL.Sound.play("dawn");
+    } else if (m.t === "state") {
+      const a = g.ally;
+      if (!a) return;
+      applyKnight(a, m.p);
+      a.label = kitLabel(a.kit);
+      a.proj = m.pr || [];
+      for (const ev of m.ev || []) DL.Net.apply(ev, g);
+    }
+  }
+
+  // A guest's actions, applied to the real world on the host.
+  Net.apply = function (ev, g) {
+    const who = g && g.ally ? "The " + g.ally.label : "Your friend";
     if (ev.t === "hit") {
       const e = G.enemies.find((x) => x.id === ev.id);
       if (e) G.hitEnemy(e, ev.dmg, ev.ang, ev.kb, ev.burn, true);
@@ -142,26 +181,28 @@
     } else if (ev.t === "build") {
       const u = DL.UPGRADES.find((x) => x.id === ev.id);
       const ok = !!u && G.buyUpgrade(ev.id);
-      Net.send({ t: "built", id: ev.id, ok, level: G.save.up[ev.id] });
-      if (ok) say(`Your friend built ${u.name} level ${G.save.up[ev.id]}.`, "good");
+      sendTo(g, { t: "built", id: ev.id, ok, level: G.save.up[ev.id] });
+      if (ok) say(`${who} built ${u.name} level ${G.save.up[ev.id]}.`, "good");
     } else if (ev.t === "train") {
       // The friend's kit level is theirs; the price comes out of the shared stash.
       const L = ev.level, cost = DL.kitLevelCost(L), req = DL.kitLevelReq(L + 1);
       const ok = L < DL.KIT_MAX_LEVEL && Object.keys(req).every((k) => G.save.up[k] >= req[k]) && G.canAfford(cost);
-      if (ok) { G.pay(cost); G.persist(); if (G.ally) G.ally.kitLevel = L + 1; say(`Your friend trained their kit to level ${L + 1}.`, "good"); }
-      Net.send({ t: "trained", ok, level: ok ? L + 1 : L });
+      if (ok) { G.pay(cost); G.persist(); if (g && g.ally) g.ally.kitLevel = L + 1; say(`${who} trained their kit to level ${L + 1}.`, "good"); }
+      sendTo(g, { t: "trained", ok, level: ok ? L + 1 : L });
     } else if (ev.t === "craftTorch") {
       const ok = G.canAfford(DL.TORCH_COST);
       if (ok) { G.pay(DL.TORCH_COST); G.persist(); }
-      Net.send({ t: "torchMade", ok });
+      sendTo(g, { t: "torchMade", ok });
     } else if (ev.t === "deposit") {
       const parts = [];
       for (const k of DL.RES_KEYS) if (ev.res[k] > 0) { G.save.stash[k] += ev.res[k]; parts.push(`${ev.res[k]} ${DL.RESOURCES[k].name}`); }
-      if (parts.length) { G.persist(); say("Your friend stored: " + parts.join(", "), "good"); }
+      if (parts.length) { G.persist(); say(`${who} stored: ` + parts.join(", "), "good"); }
     }
   };
 
-  Net.hurtAlly = function (dmg, ang) { Net.send({ t: "hurt", dmg, ang }); };
+  // Host side: a blow or a pickup that lands on a friend's knight is sent to that friend's device.
+  Net.hurtAlly = function (a, dmg, ang) { if (Net.role === "host") sendTo(a.g, { t: "hurt", dmg, ang }); };
+  Net.gain = function (a, res, amt) { if (Net.role === "host") sendTo(a.g, { t: "gain", res, amt }); };
 
   function objRow(o) { return [o.id, o.harvested ? 1 : 0, o.dead ? 1 : 0, o.hp != null ? Math.round(o.hp) : -1]; }
   function findObj(id) {
@@ -171,18 +212,24 @@
     return DL.World.chunk(cx, cy).objects.find((o) => o.id === id) || null;
   }
 
-  function snapshot() {
-    const p = G.player, sw = p.swing, a = G.ally;
-    const dirty = [...G.dirty].map(objRow);
-    G.dirty.clear();
-    // Only what's near the friend: keeps snapshots small when the two of you are far apart.
+  function hostKnight() {
+    const p = G.player;
+    return [r1(p.x), r1(p.y), r1(p.angle), p.moving ? 1 : 0, r1(p.dashT), p.stage, Math.round(p.hp), G.stats().maxHp, G.state === "dying" || G.state === "dead" ? 1 : 0,
+      swingRow(p.swing), castK(p), wispK(), G.save.kit, G.save.kitLevel];
+  }
+  const allyKnight = (a) => [r1(a.x), r1(a.y), r1(a.angle), a.moving ? 1 : 0, r1(a.dashT), a.stage, Math.round(a.hp), a.maxHp, a.down ? 1 : 0,
+    swingRow(a.swing), a.cast || 0, a.wisp ? [r1(a.wisp.x), r1(a.wisp.y)] : 0, a.kit, a.kitLevel];
+
+  function snapshot(g, dirty) {
+    const a = g.ally;
+    // Only what's near this friend: keeps snapshots small when you're spread out.
     const near = (x, y, R) => Math.abs(x - a.x) < R && Math.abs(y - a.y) < R;
     return {
       t: "snap", time: r1(G.time), day: G.save.day, nights: G.save.nights, up: G.save.up, state: G.state,
       flame: [Math.round(G.flame.hp), G.flame.max, G.flame.lit ? 1 : 0],
       stash: G.save.stash,
-      host: [r1(p.x), r1(p.y), r1(p.angle), p.moving ? 1 : 0, r1(p.dashT), p.stage, Math.round(p.hp), G.stats().maxHp, G.save.kit, G.save.kitLevel,
-        sw ? [r1(sw.ang), r1(sw.t), sw.kind, Math.round(sw.range), r1(sw.arc || 1), sw.col, sw.flip ? 1 : 0] : 0, G.state === "dying" || G.state === "dead" ? 1 : 0, castK(p), wispK()],
+      // every other knight: the host (id 0) and the other friends, with their bolts
+      kn: [[0, "Host", hostKnight(), []], ...G.allies.filter((o) => o !== a).map((o) => [o.id, o.label, allyKnight(o), o.proj || []])],
       en: G.enemies.filter((e) => near(e.x, e.y, 1100)).map((e) => [e.id, TYPES.indexOf(e.type), r1(e.x), r1(e.y), r1(e.angle), e.state === "windup" ? 1 : e.state === "recover" ? 2 : 0,
         r1(e.stT), r1(e.aim || 0), Math.round(e.hp), Math.round(e.maxHp), r1(e.rise), e.moving ? 1 : 0, e.dormant ? 1 : 0, r1(e.burn || 0)]),
       pr: G.projectiles.filter((b) => near(b.x, b.y, 900)).map((b) => [r1(b.x), r1(b.y), Math.round(b.vx), Math.round(b.vy), b.kind, b.col, b.hostile ? 1 : 0]),
@@ -242,8 +289,8 @@
           Net.send({ t: "hello", kit: Net.joinKit, level: Net.joinLevel(Net.joinKit) });
         });
         c.on("data", (m) => {
-          if (m && m.t === "full") { clearTimeout(timer); fail("That room already has two players."); return; }
-          if (m && m.t === "welcome") { clearTimeout(timer); Net.role = "guest"; Net.code = code; startGuest(m); resolve(true); return; }
+          if (m && m.t === "full") { clearTimeout(timer); fail(`That room is full (${MAX_GUESTS + 1} players).`); return; }
+          if (m && m.t === "welcome") { clearTimeout(timer); Net.role = "guest"; Net.code = code; Net.myId = m.id; startGuest(m); resolve(true); return; }
           guestData(m);
         });
         c.on("close", () => guestLost());
@@ -263,8 +310,8 @@
     DL.World.chunks.clear();
     G.startLife();
     G.time = w.time;
-    G.player.x = 30;
-    G.ally = { x: 0, y: 70, tx: 0, ty: 70, angle: Math.PI / 2, moving: false, animT: 0, kit: "lanternBlade", kitLevel: 1, stage: 1, hp: 100, maxHp: 100, down: false, swing: null, dashT: 0, proj: [] };
+    G.player.x = 30 * (w.id || 1);
+    G.allies = [];
     applyObjs(w.ob);
     setStatus("");
     DL.UI.hideScreens();
@@ -291,7 +338,13 @@
 
   function guestData(m) {
     if (!m) return;
-    if (m.t === "hurt") G.hurtPlayer(m.dmg, m.ang);
+    if (m.t === "kicked") {
+      Net.role = "kicked"; // so the link closing isn't reported as lost
+      say("The host removed you from the game.", "danger");
+      Net.leave(true);
+      G.save = G.load(); DL.World.chunks.clear();
+      DL.UI.toTitle();
+    } else if (m.t === "hurt") G.hurtPlayer(m.dmg, m.ang);
     else if (m.t === "gain") {
       const p = G.player;
       p.carried[m.res] += m.amt;
@@ -326,14 +379,16 @@
     G.hostState = m.state;
     G.flame.hp = m.flame[0]; G.flame.max = m.flame[1]; G.flame.lit = !!m.flame[2];
 
-    // the host's knight
-    const h = m.host, a = G.ally;
-    a.tx = h[0]; a.ty = h[1]; a.angle = h[2]; a.moving = !!h[3]; a.dashT = h[4]; a.stage = h[5]; a.hp = h[6]; a.maxHp = h[7];
-    a.kit = h[8]; a.kitLevel = h[9];
-    a.swing = h[10] ? { ang: h[10][0], t: h[10][1], dur: 0.2, kind: h[10][2], range: h[10][3], arc: h[10][4], col: h[10][5], flip: !!h[10][6] } : null;
-    a.down = !!h[11];
-    a.cast = h[12] || 0;
-    a.wisp = h[13] ? { x: h[13][0], y: h[13][1] } : null;
+    // the host's knight and the other friends': keep the same objects so they glide and animate
+    const known = new Map(G.allies.map((a) => [a.id, a]));
+    G.allies = (m.kn || []).map(([id, label, row, proj]) => {
+      let a = known.get(id);
+      if (!a) { a = newAlly(id, row[12], row[13], row[0], label); a.x = row[0]; a.y = row[1]; }
+      applyKnight(a, row);
+      a.label = label;
+      a.proj = proj;
+      return a;
+    });
 
     // the Drowned: update puppets in place so animation and smoothing carry on
     const byId = new Map(G.enemies.map((e) => [e.id, e]));
@@ -396,7 +451,7 @@
     return {
       t: "state",
       p: [r1(p.x), r1(p.y), r1(sw ? sw.ang : p.angle), p.moving ? 1 : 0, r1(p.dashT), p.stage, Math.round(Math.max(0, p.hp)), G.stats().maxHp, p.downT > 0 ? 1 : 0,
-        sw ? [r1(sw.ang), r1(sw.t), sw.kind, Math.round(sw.range), r1(sw.arc || 1), sw.col, sw.flip ? 1 : 0] : 0, castK(p), wispK()],
+        swingRow(sw), castK(p), wispK(), G.save.kit, G.save.kitLevel],
       pr: G.projectiles.slice(0, 24).map((b) => [r1(b.x), r1(b.y), Math.round(b.vx), Math.round(b.vy), b.kind, b.col]),
       ev: Net.events.splice(0),
     };
@@ -404,29 +459,34 @@
 
   /* ---------------- every frame ---------------- */
   Net.tick = function (dt) {
-    // The friend's knight glides toward its reported position on either side.
-    const a = G.ally;
-    if (a) {
-      const k = 1 - Math.pow(0.0004, dt);
+    // The other knights glide toward their reported positions on every device.
+    const k = 1 - Math.pow(0.0004, dt);
+    for (const a of G.allies) {
       a.x += (a.tx - a.x) * k; a.y += (a.ty - a.y) * k;
       a.animT += dt;
       if (Math.hypot(a.tx - a.x, a.ty - a.y) > 300) { a.x = a.tx; a.y = a.ty; }
     }
-    if (!Net.connected) return;
     Net.acc += dt;
-    // Skip a beat when the link is backed up rather than let a queue (and the lag) build.
-    const dc = Net.conn && Net.conn.dataChannel;
-    if (dc && dc.bufferedAmount > 48 * 1024) return;
-    if (Net.role === "host" && G.ally && Net.acc >= SNAP_EVERY) { Net.acc = 0; Net.send(snapshot()); }
-    else if (Net.role === "guest" && Net.acc >= STATE_EVERY) { Net.acc = 0; forwardGuestCreations(); Net.send(guestState()); }
+    // Skip a beat for a link that's backed up rather than let a queue (and the lag) build.
+    const backed = (c) => c && c.dataChannel && c.dataChannel.bufferedAmount > 48 * 1024;
+    if (Net.role === "host" && Net.acc >= SNAP_EVERY) {
+      Net.acc = 0;
+      // Changed objects go to every friend in the same beat, then the list is cleared.
+      const dirty = [...G.dirty].map(objRow);
+      G.dirty.clear();
+      for (const g of Net.guests) if (g.open && g.ally && !backed(g.conn)) sendTo(g, snapshot(g, dirty));
+    } else if (Net.role === "guest" && Net.connected && Net.acc >= STATE_EVERY && !backed(Net.conn)) {
+      Net.acc = 0; forwardGuestCreations(); Net.send(guestState());
+    }
   };
 
   Net.leave = function (quiet) {
     const was = Net.role;
     try { if (Net.conn) Net.conn.close(); } catch (e) { /* ignore */ }
+    for (const g of Net.guests) { try { g.conn.close(); } catch (e) { /* ignore */ } }
     try { if (Net.peer) Net.peer.destroy(); } catch (e) { /* ignore */ }
-    Object.assign(Net, { role: null, code: null, peer: null, conn: null, connected: false, events: [], acc: 0, mined: new Set() });
-    G.ally = null;
+    Object.assign(Net, { role: null, code: null, peer: null, conn: null, connected: false, guests: [], events: [], acc: 0, mined: new Set(), myId: 0 });
+    G.allies = [];
     G.netProjectiles = null;
     if (was === "guest") { G.save = G.load(); DL.World.chunks.clear(); }
     if (!quiet && was) say("Co-op session ended.");

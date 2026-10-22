@@ -158,6 +158,13 @@
       if (b) { UI.coopKit = b.dataset.coopkit; UI.renderJoinKits(); }
     });
     $("coopInput").addEventListener("keydown", (e) => { e.stopPropagation(); if (e.key === "Enter") $("btnJoin").click(); });
+    $("coopPlayers").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-boot]");
+      if (!b) return;
+      if (!b.dataset.armed) { b.dataset.armed = "1"; b.textContent = "Tap again to remove"; setTimeout(() => UI.renderCoopPlayers(), 3000); return; }
+      DL.Net.kick(+b.dataset.boot);
+      UI.renderCoopPlayers();
+    });
     $("btnLeaveCoop").addEventListener("click", () => {
       const guest = DL.Net.role === "guest";
       DL.Net.leave();
@@ -243,13 +250,20 @@
     const G = DL.Game;
     if (G.state !== "play") return;
     $("btnLeaveCoop").classList.toggle("hidden", !DL.Net.role);
+    UI.renderCoopPlayers();
     $("pauseNote").textContent = G.isGuest()
       ? "The world keeps running while you're paused. Only the host can pause it for both of you."
-      : DL.Net.role && G.ally ? "Paused for both of you. Camp upgrades and stored supplies save automatically."
+      : DL.Net.role && G.allies.length ? "Paused for everyone. Camp upgrades and stored supplies save automatically."
       : "Camp upgrades and stored supplies save automatically.";
     G.state = "pause";
     UI.updateCombatLabel();
     $("screenPause").classList.remove("hidden");
+  };
+  // Host's pause menu: a button per friend to remove them from the game (tap twice).
+  UI.renderCoopPlayers = function () {
+    const G = DL.Game, host = DL.Net.role === "host" && G.allies.length;
+    $("coopPlayers").classList.toggle("hidden", !host);
+    $("coopPlayers").innerHTML = host ? G.allies.map((a) => `<button data-boot="${a.id}">Remove ${a.label}</button>`).join("") : "";
   };
   UI.resume = function () {
     const G = DL.Game;
@@ -543,7 +557,7 @@
 
     set($("zoneText"), "text", DL.ZONES[p.zi].name);
     const N = DL.Net;
-    const coopText = !N.role ? "" : N.role === "guest" ? "Co-op · your friend's world" : G.ally ? `Co-op · friend joined · room ${N.code}` : `Room ${N.code} · waiting for a friend`;
+    const coopText = !N.role ? "" : N.role === "guest" ? "Co-op · your friend's world" : G.allies.length ? `Co-op · ${G.allies.length + 1} players · room ${N.code}` : `Room ${N.code} · waiting for friends`;
     set($("coopChip"), "text", coopText);
     set($("coopChip"), "hidden", !coopText);
     const d = Math.hypot(p.x, p.y);
@@ -551,12 +565,13 @@
     set($("homeDist"), "text", d < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`);
     const ds = G.save.drownedSelf;
     set($("selfNav"), "hidden", !ds);
-    // where your co-op friend is
-    const fr = G.ally;
+    // where your nearest co-op friend is
+    let fr = null;
+    for (const a of G.allies) if (!fr || Math.hypot(a.x - p.x, a.y - p.y) < Math.hypot(fr.x - p.x, fr.y - p.y)) fr = a;
     set($("friendNav"), "hidden", !fr);
     if (fr) {
       set($("friendArrow"), "transform", `rotate(${(Math.atan2(fr.y - p.y, fr.x - p.x) * 180) / Math.PI}deg)`);
-      set($("friendDist"), "text", `${DL.Net.role === "guest" ? "Host" : "Friend"} ${Math.round(Math.hypot(fr.x - p.x, fr.y - p.y) / 10)}m`);
+      set($("friendDist"), "text", `${fr.label || "Friend"} ${Math.round(Math.hypot(fr.x - p.x, fr.y - p.y) / 10)}m`);
     }
     set($("hostPaused"), "hidden", !(G.isGuest() && G.hostState === "pause"));
     if (ds) {

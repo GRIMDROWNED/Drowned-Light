@@ -65,7 +65,7 @@ There are three save files (title screen → **Saves**). Each keeps its own camp
 ### Starting a game: kit, difficulty and combat
 A new game asks you to choose a **kit**, a **difficulty** and a **combat mode** (Auto-attack or Manual attack). The kit and difficulty stay fixed for that save. The combat mode can be switched any time from the pause menu.
 
-### Co-op (online, 2 players)
+### Co-op (online, up to 4 players)
 Title screen → **Play with a friend**.
 - **Host:** needs a game of their own. **Host my world** opens a room with a 5-character code. Share the code, then **Start playing**. The friend can join any time.
 - **Join:** pick the kit you'll bring (any of the five), type the code, and you play in the host's world: their camp, difficulty, day and stash. The kit joins at its co-op level, or your best level for it in your own saves. Kit levels you train in co-op are kept on your device for your next co-op game. Your own saves never change.

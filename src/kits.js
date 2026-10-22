@@ -386,6 +386,6 @@
     if (p && G.save.kit === "relicBearer" && K.has(20)) {
       L.push({ x: p.x, y: p.y - 24, r: 92 * D.light, s: 0.55, col: "255,232,170", a: 0.25, kind: "bloom" });
     }
-    for (const w of [G.wisp, G.ally && G.ally.wisp]) if (w) L.push({ x: w.x, y: w.y, r: 40, s: 0.4, col: "255,232,170", a: 0.9 });
+    for (const w of [G.wisp, ...G.allies.map((a) => a.wisp)]) if (w) L.push({ x: w.x, y: w.y, r: 40, s: 0.4, col: "255,232,170", a: 0.9 });
   };
 })(window.DL);
