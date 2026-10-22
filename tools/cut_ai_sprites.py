@@ -375,3 +375,33 @@ if not only or 'props' in only:
         done.append(im)
         print(dst, im.size)
     if done: contact(done, os.path.join(SRC, 'plants-preview.png'))
+
+# Ground textures: a square render per terrain, shrunk so one texel is one ground texel (2 world px) and made to
+# repeat: the last BLEND texels of each edge are cross-faded into the first ones, then cut off, so the right edge
+# runs on into the left and the bottom into the top. `World` in src/world.js samples them.
+GROUND = {'camp-earth': 'campEarth', 'camp-flagstones': 'campFlags', 'camp-paving': 'campPaving', 'grass': 'grass', 'dirt': 'dirt',
+          'shore': 'shore', 'shallow': 'shallow', 'deep': 'deep', 'boardwalk': 'boardwalk'}
+GROUND_SIZE, GROUND_BLEND = 200, 8
+
+def seamless(a, k):
+    """Wrap an image array on itself: fade its last k rows/columns into its first k, then drop them."""
+    import numpy as np
+    for axis in (1, 0):
+        a = np.moveaxis(a, axis, 0)
+        n = a.shape[0] - k
+        t = (np.arange(k) / k).reshape((k,) + (1,) * (a.ndim - 1))
+        head = a[n:] * (1 - t) + a[:k] * t
+        a = np.moveaxis(np.concatenate([head, a[k:n]]), 0, axis)
+    return a
+
+if not only or 'ground' in only:
+    import numpy as np
+    for src, name in GROUND.items():
+        p = os.path.join(SRC, 'ground', src + '.png')
+        if not os.path.exists(p): continue
+        im = Image.open(p).convert('RGB').resize((GROUND_SIZE, GROUND_SIZE), Image.BOX)
+        out = Image.fromarray(seamless(np.asarray(im).astype(float), GROUND_BLEND).round().astype('uint8'))
+        dst = os.path.join(OUT, 'ground', name + '.png')
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        out.save(dst)
+        print(dst, out.size)
