@@ -194,7 +194,7 @@ Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite 
 - The knight and all eight enemies walk with 4-pose side, front and back walk sheets.
 - **Bioluminescent plants** (Refuge Bloom, Sentinel Bloom, Mother Root, sprout, garden flowers, and the husk of a dead bloom), lit and unlit: cut from two sheets by `PROP_GRIDS` in the cutter into `assets/sprites/props/` at `res: 2`. The lit plants are scaled to match their unlit twins by the width of their rocky base.
 - **Cultivation Plot**: a drawn bed per plot level (`gardenBed1`–`3`); the glowing flowers sit in rows of six along its furrows (`BED_SOIL` in `src/render.js` gives each bed's soil corners).
-- **Trees**: three swamp trees (`swampTree1`–`3`), one picked per spot. Cut from a phone screenshot, so `PROP_DESPILL` takes the magenta bleed out of their edges.
+- **Trees**: three swamp trees (`swampTree1`–`3`), one picked per spot. The render tinted their moss pink, so `PROP_DESPILL` takes the magenta back out.
 - **Reeds**: six clumps from one sheet (`reeds1`–`reeds6`), one picked per spot.
 - Camp and the other world props are coded until their new art arrives. Set `ENABLED = false` in `src/sprites.js` to use coded art everywhere.
 

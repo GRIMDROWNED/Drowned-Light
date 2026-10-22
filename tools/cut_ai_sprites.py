@@ -206,7 +206,6 @@ PROP_GRIDS = {
     'plants/plants-unlit.png': (3, 2, ['refugeOff', 'sentinelOff', 'rootOff', 'sproutOff', 'sproutBare', 'gardenOff']),
     'plants/reeds.png': (3, 2, ['reeds1', 'reeds2', 'reeds3', 'reeds4', 'reeds5', 'reeds6']),
     'plants/garden-beds.png': (3, 1, ['gardenBed1', 'gardenBed2', 'gardenBed3']),
-    # cropped from a phone screenshot (JPEG), so the key colour is noisy
     'world/trees.png': (3, 1, ['swampTree1', 'swampTree2', 'swampTree3']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
@@ -217,7 +216,7 @@ PROP_SAME = {'swampTree1': 'swampTree2', 'swampTree3': 'swampTree2', 'gardenBed1
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
 PROP_OUT = 'props'
-# Cut from a JPEG, so magenta bled into the edges: pull the pink back out (see despill).
+# Renders where the magenta background tinted the art pink (the trees' moss): pull it back out (see despill).
 PROP_DESPILL = {'swampTree1', 'swampTree2', 'swampTree3'}
 
 only = sys.argv[2:]  # optional character names to cut
