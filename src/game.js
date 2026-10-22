@@ -27,6 +27,7 @@
     difficulty: "dark",
     attackMode: "auto",
     torches: 2,
+    carried: emptyRes(), // what the knight had on them when the game was last saved
     drownedSelf: null,
     started: false,
     lastPlayed: 0,
@@ -70,6 +71,8 @@
   G.persist = function () {
     if (G.isGuest()) return;
     G.save.lastPlayed = Date.now();
+    // Supplies in hand are kept too, so quitting or closing the app doesn't lose them.
+    if (G.player && ["play", "pause", "camp"].includes(G.state)) G.save.carried = { ...G.player.carried };
     try {
       localStorage.setItem(SLOT_KEY(G.slot), JSON.stringify(G.save));
       localStorage.setItem(CURRENT_SLOT, String(G.slot));
@@ -148,6 +151,7 @@
       setTimeout(() => say("Deeper lands hold richer supplies — and deadlier Drowned."), 5200);
     }
     G.startLife();
+    for (const k of DL.RES_KEYS) G.player.carried[k] = G.save.carried[k] || 0;
   };
 
   G.newGame = function (kit, difficulty, attackMode) {
@@ -1403,6 +1407,8 @@
     G.dying = 0;
     sfx("death");
     const lost = { ...p.carried };
+    p.carried = emptyRes(); // they stay with your drowned self
+    G.save.carried = emptyRes();
     const any = DL.RES_KEYS.some((k) => lost[k] > 0);
     const hadSelf = !!G.save.drownedSelf;
     if (any) {

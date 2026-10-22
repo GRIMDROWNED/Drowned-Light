@@ -115,7 +115,7 @@
     });
     $("btnRise").addEventListener("click", () => { UI.hideScreens(); G.respawn(); UI.showHud(true); });
     $("btnResume").addEventListener("click", () => UI.resume());
-    $("btnQuit").addEventListener("click", () => { DL.Net.leave(true); UI.toTitle(); });
+    $("btnQuit").addEventListener("click", () => { G.persist(); DL.Net.leave(true); UI.toTitle(); });
 
     /* co-op */
     $("btnCoop").addEventListener("click", () => UI.openCoop());
@@ -179,7 +179,7 @@
       t.addEventListener("click", () => { UI.campTab = t.dataset.tab; UI.renderCamp(); });
     }
     UI.campTab = "build";
-    document.addEventListener("visibilitychange", () => { if (document.hidden && G.state === "play") UI.pause(); });
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) return; if (G.state === "play") UI.pause(); G.persist(); });
     if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
     UI.updateSoundLabel();
     UI.updateViewLabel();
