@@ -47,6 +47,9 @@
   ];
   // window.DL_PEER_CONFIG = { lib, peer } lets a local test point co-op at its own PeerJS server.
   const cfg = () => window.DL_PEER_CONFIG || { peer: { config: { iceServers: ICE } } };
+  // Both sides must run the same build: an update changes what the messages carry.
+  const VERSION = ((document.querySelector(".version") || {}).textContent || "").replace(/[^0-9.]/g, "");
+  const updateMsg = (theirs) => `Your friend's game is on ${theirs ? "version " + theirs : "an older version"} and yours is on ${VERSION}. Both of you close and reopen the game to update, then try again.`;
   const LINK_FAILED = "Found your friend's room, but your devices couldn't link up. This happens most on mobile data: try both on the same Wi-Fi.";
   // Reports when the direct link between the two devices gives up (instead of waiting out a timer).
   function onLinkFail(c, fn) {
@@ -143,13 +146,19 @@
     if (!m || !m.t) return;
     if (m.t === "hello") {
       if (g.ally) return;
+      if (m.v !== VERSION) {
+        sendTo(g, { t: "version", v: VERSION });
+        say(`A friend tried to join on ${m.v ? "version " + m.v : "an older version"}. You're on ${VERSION}: both of you close and reopen the game to update.`, "warn");
+        setTimeout(() => hostLost(g), 300);
+        return;
+      }
       const a = (g.ally = newAlly(g.id, m.kit, m.level, 30 * g.id, ""));
       a.label = kitLabel(a.kit);
       a.g = g;
       G.allies.push(a);
       const harvested = [];
       for (const c of DL.World.chunks.values()) for (const o of c.objects) if (o.harvested || o.dead || (o.maxHp && o.hp < o.maxHp)) harvested.push(objRow(o));
-      sendTo(g, { t: "welcome", id: g.id, up: G.save.up, difficulty: G.save.difficulty, day: G.save.day, nights: G.save.nights, time: G.time, ob: harvested });
+      sendTo(g, { t: "welcome", v: VERSION, id: g.id, up: G.save.up, difficulty: G.save.difficulty, day: G.save.day, nights: G.save.nights, time: G.time, ob: harvested });
       say(`A friend joined as the ${a.label} (Lv ${a.kitLevel}).`, "good");
       DL.Sound.play("dawn");
     } else if (m.t === "state") {
@@ -286,10 +295,11 @@
         if (c.peerConnection) c.peerConnection.addEventListener("signalingstatechange", () => { if (c.peerConnection.signalingState === "stable") reached = true; });
         c.on("open", () => {
           Net.connected = true;
-          Net.send({ t: "hello", kit: Net.joinKit, level: Net.joinLevel(Net.joinKit) });
+          Net.send({ t: "hello", v: VERSION, kit: Net.joinKit, level: Net.joinLevel(Net.joinKit) });
         });
         c.on("data", (m) => {
           if (m && m.t === "full") { clearTimeout(timer); fail(`That room is full (${MAX_GUESTS + 1} players).`); return; }
+          if (m && (m.t === "version" || (m.t === "welcome" && m.v !== VERSION))) { clearTimeout(timer); fail(updateMsg(m.v)); return; }
           if (m && m.t === "welcome") { clearTimeout(timer); Net.role = "guest"; Net.code = code; Net.myId = m.id; startGuest(m); resolve(true); return; }
           guestData(m);
         });
