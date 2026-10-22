@@ -56,6 +56,7 @@
     DL.Render.init();
     G.init();
     UI.init();
+    DL.World.loadGround();
     await DL.Art.load();
     document.body.classList.add("ready");
     UI.showTitle();

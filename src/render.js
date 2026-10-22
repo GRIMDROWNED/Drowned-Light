@@ -412,16 +412,42 @@
     c.strokeStyle = "rgba(66,54,40,0.6)";
     c.lineWidth = 18;
     c.beginPath(); c.arc(0, 0, R - 34, 0, Math.PI * 2); c.stroke();
-    c.fillStyle = "#3a342b";
-    c.beginPath(); c.ellipse(0, 4, 58, 40, 0, 0, Math.PI * 2); c.fill();
-    c.fillStyle = "#2c271f";
-    for (let i = 0; i < 18; i++) {
-      const a = (i / 18) * Math.PI * 2;
-      c.fillRect(Math.round(Math.cos(a) * 44) - 5, Math.round(4 + Math.sin(a) * 30) - 3, 10, 6);
+    const floor = W.canvases[L.tier >= 3 ? "campPaving" : "campFlags"];
+    if (floor) {
+      // the drawn floor, one texel per 2 px like the ground, darkened to match it; the Beacon's is wider
+      const pat = c.createPattern(floor, "repeat");
+      pat.setTransform(new DOMMatrix().scale(2));
+      const rx = L.tier >= 3 ? 104 : 80, ry = rx * 0.7;
+      c.fillStyle = pat;
+      c.beginPath(); c.ellipse(0, 6, rx, ry, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = "rgba(0,0,0,0.2)"; c.fill();
+      c.strokeStyle = "rgba(24,19,14,0.7)"; c.lineWidth = 3; c.stroke();
+    } else {
+      c.fillStyle = "#3a342b";
+      c.beginPath(); c.ellipse(0, 4, 58, 40, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = "#2c271f";
+      for (let i = 0; i < 18; i++) {
+        const a = (i / 18) * Math.PI * 2;
+        c.fillRect(Math.round(Math.cos(a) * 44) - 5, Math.round(4 + Math.sin(a) * 30) - 3, 10, 6);
+      }
     }
     // boardwalks out to each gate (the Beacon's run on out over the marsh)
     const reach = L.tier >= 3 ? R + 140 : R + 36;
-    for (const g of DL.Camp.GATES) {
+    const boards = W.canvases.boardwalk;
+    if (boards) {
+      // drawn planks at full size (a texel per px, so a plank is about half the walk wide), laid across the walk:
+      // the texture's planks run left to right, so turn it for the east-west walks
+      for (const g of DL.Camp.GATES) {
+        const ux = Math.round(Math.cos(g)), uy = Math.round(Math.sin(g));
+        const pat = c.createPattern(boards, "repeat");
+        pat.setTransform(ux ? new DOMMatrix().rotate(90) : new DOMMatrix());
+        const x0 = ux ? Math.min(ux * 44, ux * reach) : -14, y0 = uy ? Math.min(uy * 44, uy * reach) : -14;
+        const w = ux ? reach - 44 : 28, h = uy ? reach - 44 : 28;
+        c.fillStyle = "#1e150e"; c.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
+        c.fillStyle = pat; c.fillRect(x0, y0, w, h);
+        c.fillStyle = "rgba(0,0,0,0.15)"; c.fillRect(x0, y0, w, h);
+      }
+    } else for (const g of DL.Camp.GATES) {
       const ux = Math.round(Math.cos(g)), uy = Math.round(Math.sin(g));
       for (let r = 48, i = 0; r < reach; r += 8, i++) {
         const x = ux * r, y = uy * r;
