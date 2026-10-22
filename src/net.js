@@ -19,8 +19,25 @@
   const castK = (p) => (p.cast ? Math.max(0.1, r1(p.cast.t / p.cast.dur)) : 0);
   const TYPES = Object.keys(DL.ENEMIES);
 
+  /* Two phones on mobile data (or behind strict routers) can't reach each other directly, so their
+     data has to go through a relay ("TURN") server. PeerJS's own relays no longer answer, so put the
+     free ExpressTURN account details here (expressturn.com, 1 TB a month free). Left empty, co-op
+     still works for phones on the same Wi-Fi and on friendlier networks. */
+  const TURN = { username: "", credential: "" };
+  const ICE = [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun.expressturn.com:3478" },
+    ...(TURN.username ? [{ urls: ["turn:relay1.expressturn.com:3478?transport=udp", "turn:relay1.expressturn.com:3478?transport=tcp", "turns:relay1.expressturn.com:443?transport=tcp"], ...TURN }] : []),
+  ];
   // window.DL_PEER_CONFIG = { lib, peer } lets a local test point co-op at its own PeerJS server.
-  const cfg = () => window.DL_PEER_CONFIG || {};
+  const cfg = () => window.DL_PEER_CONFIG || { peer: { config: { iceServers: ICE } } };
+  const LINK_FAILED = "Found your friend's room, but your devices couldn't link up. This happens most on mobile data: try both on the same Wi-Fi.";
+  // Reports when the direct link between the two devices gives up (instead of waiting out a timer).
+  function onLinkFail(c, fn) {
+    const pc = c.peerConnection;
+    if (!pc) return;
+    pc.addEventListener("iceconnectionstatechange", () => { if (pc.iceConnectionState === "failed") fn(); });
+  }
   const Net = (DL.Net = { role: null, code: null, peer: null, conn: null, connected: false, events: [], acc: 0, status: "" });
 
   function loadLib() {
@@ -59,6 +76,7 @@
           if (Net.conn && Net.connected) { c.on("open", () => { c.send({ t: "full" }); setTimeout(() => c.close(), 300); }); return; }
           Net.conn = c;
           c.on("open", () => { Net.connected = true; });
+          onLinkFail(c, () => { if (!Net.connected) { say("A friend tried to join, but your devices couldn't link up. Try both on the same Wi-Fi.", "warn"); Net.conn = null; } });
           c.on("data", hostData);
           c.on("close", () => hostLost());
           c.on("error", () => hostLost());
@@ -202,11 +220,14 @@
       const peer = new window.Peer(cfg().peer);
       Net.peer = peer;
       const fail = (msg) => { setStatus(msg); Net.leave(true); resolve(false); };
-      const timer = setTimeout(() => fail("No answer from that room. Check the code, and that your friend's game is open."), 15000);
+      let reached = false; // the room answered, so the code was right
+      const timer = setTimeout(() => fail(reached ? LINK_FAILED : "No answer from that room. Check the code, and that your friend's game is open."), 25000);
       peer.on("error", (err) => { clearTimeout(timer); fail(err.type === "peer-unavailable" ? "No room with that code is open." : "Couldn't connect: " + (err.message || err.type)); });
       peer.on("open", () => {
         const c = peer.connect(PREFIX + code, { reliable: true, serialization: "json" });
         Net.conn = c;
+        onLinkFail(c, () => { clearTimeout(timer); fail(LINK_FAILED); });
+        if (c.peerConnection) c.peerConnection.addEventListener("signalingstatechange", () => { if (c.peerConnection.signalingState === "stable") reached = true; });
         c.on("open", () => {
           Net.connected = true;
           Net.send({ t: "hello", kit: Net.joinKit, level: Net.joinLevel(Net.joinKit) });
