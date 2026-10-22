@@ -35,19 +35,19 @@
   // What grows where (weights), per zone index.
   DL.SPAWN_TABLE = [
     {},
-    { tree: 4, wood: 6, stone: 5, sprout: 2, refuge: 1.6, reeds: 4, grave: 1, pillar: 0.5 },
-    { tree: 3, wood: 4, stone: 4, iron: 2.5, sprout: 3, refuge: 1.6, sentinel: 0.8, reeds: 3, grave: 1.5, pillar: 1.2 },
-    { tree: 2.5, wood: 3, stone: 3, iron: 4, sprout: 3.5, refuge: 1.4, sentinel: 1.2, reeds: 2, grave: 2, pillar: 2 },
-    { tree: 2, wood: 2, stone: 3, iron: 5, sprout: 4, refuge: 1, sentinel: 1.5, reeds: 1, grave: 2.5, pillar: 2.5 },
+    { tree: 4, gap: 6, stone: 5, sprout: 2, refuge: 1.6, reeds: 4, grave: 1, pillar: 0.5 },
+    { tree: 3, gap: 4, stone: 4, iron: 2.5, sprout: 3, refuge: 1.6, sentinel: 0.8, reeds: 3, grave: 1.5, pillar: 1.2 },
+    { tree: 2.5, gap: 3, stone: 3, iron: 4, sprout: 3.5, refuge: 1.4, sentinel: 1.2, reeds: 2, grave: 2, pillar: 2 },
+    { tree: 2, gap: 2, stone: 3, iron: 5, sprout: 4, refuge: 1, sentinel: 1.5, reeds: 1, grave: 2.5, pillar: 2.5 },
   ];
 
   // World objects. `solid` = collision radius, `hits` = strikes to mine it. `bloom` objects glow at night and shelter you.
   DL.OBJ = {
-    tree: { sprite: "tree", solid: 9 },
+    // Trees are the wood: chop one down for a big load; it grows back at dawn.
+    tree: { sprite: "tree", solid: 9, res: "wood", base: 6, hits: 5, r: 16 },
     pillar: { sprite: "pillar", solid: 9 },
     grave: { sprite: "grave" },
     reeds: { sprite: "reeds" },
-    wood: { sprite: "driftwood", res: "wood", base: 3, hits: 3, r: 14 },
     stone: { sprite: "rock", res: "stone", base: 3, hits: 4, r: 12, solid: 7 },
     iron: { sprite: "ironpile", res: "iron", base: 2, hits: 5, r: 14 },
     sprout: { sprite: "sprout", res: "resin", base: 2, hits: 2, r: 10 },

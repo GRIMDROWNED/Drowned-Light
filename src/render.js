@@ -58,10 +58,15 @@
     c.fill();
   }
 
+  R.treeSprite = (o) => treeSprite(o);
+  // Three drawn trees when their art is loaded, one picked per spot; else the two coded ones.
+  function treeSprite(o) {
+    return Art.sprites.swampTree1 ? "swampTree" + (o.art || (o.art = 1 + Math.floor(DL.hash(o.x | 0, o.y | 0, 11) * 3))) : "tree" + o.variant;
+  }
+
   function objSprite(o) {
     switch (o.type) {
-      case "tree": return "tree" + o.variant;
-      case "wood": return o.harvested ? null : "driftwood";
+      case "tree": return o.harvested ? null : treeSprite(o);
       case "stone": return o.harvested ? null : "rock";
       case "iron": return o.harvested ? null : "ironpile";
       case "sprout": return o.harvested ? "sproutBare" : o.active ? "sproutOn" : "sproutOff";
@@ -333,7 +338,7 @@
   function drawCracks(c, o, name, k) {
     const s = Art.sprites[name], w = s.w * PS, h = s.h * PS;
     const cx = o.x, cy = o.y + 2 - h * 0.45;
-    const wood = o.type === "wood" || o.type === "sprout";
+    const wood = o.type === "tree" || o.type === "sprout";
     c.strokeStyle = wood ? "rgba(214,182,130,0.9)" : "rgba(12,10,8,0.9)";
     c.lineWidth = 2;
     const n = Math.ceil(k * 3);

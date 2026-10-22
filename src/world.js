@@ -39,6 +39,8 @@
         if (Math.hypot(x, y) < CAMP_CLEAR) continue;
         const ozi = Math.max(1, this.zoneIndex(x, y));
         let type = DL.weighted(this.spawnTable(ozi, D), DL.hash(cx, cy, i * 3 + 3));
+        // "gap" is where driftwood used to lie: nothing spawns there, so the ground is clearer
+        if (type === "gap") continue;
         if (this.isWater(x, y) && !["reeds", "sprout", "refuge"].includes(type)) {
           if (DL.hash(cx, cy, i * 7 + 9) < 0.5) type = "reeds"; else continue;
         }
