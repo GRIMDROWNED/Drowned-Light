@@ -36,6 +36,7 @@
   const SPLASH_MS = 2400;
   let splashGone = false;
   function hideSplash() {
+    try { sessionStorage.setItem("dl-splash", "1"); } catch (e) {}
     const el = document.getElementById("splash");
     if (!el || splashGone) return;
     splashGone = true;
@@ -66,14 +67,7 @@
   // Installable app: cache the game so it also starts offline (needs https or localhost).
   if ("serviceWorker" in navigator && /^(https:|http:\/\/localhost)/.test(location.href)) {
     addEventListener("load", () => navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(() => {}));
-    // When a newer version takes over an already-running app, reload once to pick it up.
-    if (navigator.serviceWorker.controller) {
-      let reloaded = false;
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (reloaded) return;
-        reloaded = true;
-        location.reload();
-      });
-    }
+    // No reload when a newer version takes over: the worker always fetches fresh files first,
+    // so this launch already runs the latest code, and a reload would replay the splash mid-game.
   }
 })(window.DL);
