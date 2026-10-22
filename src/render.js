@@ -529,6 +529,7 @@
     if (p.dashT > 0) return ["dash", 0, p.angle];
     if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
     if (p.swing) return ["attack", Math.min(2, Math.floor((p.swing.t / p.swing.dur) * 3)), p.swing.ang];
+    if (p.cast) return ["attack", Math.min(2, Math.floor((p.cast.t / p.cast.dur) * 3)), p.cast.ang];
     if (p.moving) return ["walk", Math.floor(p.animT * walkRate(G.save.kit + p.stage, 6)), p.angle];
     return ["idle", Math.floor(t * 1.6), p.angle];
   }
@@ -554,6 +555,7 @@
       let anim = "idle", fr = Math.floor(t * 1.6), ang = a.angle;
       if (a.dashT > 0) anim = "dash";
       else if (a.swing) { anim = "attack"; fr = Math.min(2, Math.floor((a.swing.t / a.swing.dur) * 3)); ang = a.swing.ang; }
+      else if (a.cast) { anim = "attack"; fr = Math.min(2, Math.floor(a.cast * 3)); }
       else if (a.moving) { anim = "walk"; fr = Math.floor(a.animT * walkRate(key, 6)); }
       Art.drawUnit(c, key, anim, fr, ang, a.x, a.y, 1);
     }

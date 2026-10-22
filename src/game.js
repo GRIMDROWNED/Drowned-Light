@@ -168,7 +168,7 @@
       x: 0, y: 70, kx: 0, ky: 0, hp: st.maxHp, corrupt: 0, oil: st.maxOil,
       angle: Math.PI / 2, moving: false, animT: 0,
       dashT: 0, dashCd: 0, dashDir: { x: 0, y: 1 }, dashHit: new Set(), trail: [],
-      inv: 0, atkCd: 0, swing: null, abiCd: 0, flash: 0, hurtFlash: 0,
+      inv: 0, atkCd: 0, swing: null, cast: null, abiCd: 0, flash: 0, hurtFlash: 0,
       carried: emptyRes(), protect: null, stage: 1, zi: 0, aim: Math.PI / 2,
     };
     G.time = 4;
@@ -465,6 +465,7 @@
     // way you face) and never mines; Mine works the nearest supply node in reach.
     p.atkCd -= dt;
     if (p.swing) { p.swing.t += dt; if (p.swing.t >= p.swing.dur) p.swing = null; }
+    if (p.cast) { p.cast.t += dt; if (p.cast.t >= p.cast.dur) p.cast = null; }
     p.aim = aimAngle(p);
     G.mineTarget = G.save.attackMode === "manual" ? nodeNear(p, 34) : null;
     if (p.atkCd <= 0 && p.dashT <= 0 && !inMenu) {
@@ -531,6 +532,8 @@
     p.oil -= ab.oil;
     p.abiCd = DL.Kits.abilityCd();
     sfx("ability");
+    // there's no special-move art, so the knight plays its attack while the ability goes off
+    p.cast = { t: 0, dur: 0.4, ang: p.aim ?? p.angle };
     DL.Kits.ability(p, G.stats());
   }
 
