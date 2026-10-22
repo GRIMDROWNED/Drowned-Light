@@ -483,13 +483,29 @@
     });
   }
 
+  // The drawn bed for each plot level: its soil's left, back and front corners in the PNG's pixels. Flowers
+  // go in rows of six along the furrows, which run from the left corner toward the front one.
+  const BED_SOIL = { 1: [[22, 44], [63, 20], [75, 72]], 2: [[16, 42], [56, 22], [65, 66]], 3: [[18, 62], [56, 36], [70, 92]] };
+  const BED_ROWS = { 1: [0.5], 2: [0.68, 0.32], 3: [0.8, 0.5, 0.2] };
+
   function drawGarden(c, g, lvl, night, t) {
+    const bed = Art.sprites["gardenBed" + lvl];
+    if (bed && Art.sprites.gardenOn) {
+      sprite(c, "gardenBed" + lvl, g.x, g.y + 4);
+      const [L, T, B] = BED_SOIL[lvl], x0 = g.x - (bed.w * PS) / 2, y0 = g.y + 4 - bed.h * PS;
+      // back rows first, so the front ones overlap them
+      for (const v of BED_ROWS[lvl]) for (let i = 0; i < 6; i++) {
+        const u = 0.1 + (0.8 * i) / 5;
+        const x = L[0] + u * (B[0] - L[0]) + v * (T[0] - L[0]), y = L[1] + u * (B[1] - L[1]) + v * (T[1] - L[1]);
+        sprite(c, night > 0.3 ? "gardenOn" : "gardenOff", Math.round(x0 + x), Math.round(y0 + y + 3));
+      }
+      return;
+    }
     sprite(c, "garden", g.x, g.y + 4);
     const n = [0, 6, 12, 18][lvl];
     for (let i = 0; i < n; i++) {
       const col = i % 6, row = Math.floor(i / 6);
       const x = g.x - 40 + col * 16 + (row % 2) * 6, y = g.y - 40 + row * 18;
-      if (Art.sprites.gardenOn) { sprite(c, night > 0.3 ? "gardenOn" : "gardenOff", x + 1, y + 6); continue; }
       const pulse = 0.6 + 0.4 * Math.sin(t * 2 + i);
       c.fillStyle = "#2b3e2c"; c.fillRect(x, y - 2, 2, 8); c.fillRect(x - 3, y + 2, 3, 2); c.fillRect(x + 2, y, 3, 2);
       c.fillStyle = night > 0.3 ? `rgba(127,246,255,${0.6 + 0.4 * pulse})` : "#1d4d55";
