@@ -54,7 +54,7 @@ The camp grows through three tiers as the Central Flame levels up:
 | Barricade & Gate | Level 1 is a stake ring. Level 2 is a palisade with four gates, so the Drowned must path through them and take stake damage. Level 3 reinforces it with gate lanterns and spikes |
 
 ### High-risk reasons to leave the light
-- **Abyssal Pearls** surface only in darkness (the Mire and deeper). You need them for top-tier upgrades.
+- **Amethyst** deposits surface only in darkness (the Mire and deeper). You need them for top-tier upgrades.
 - **Torches** you plant burn out, and Lantern Reavers snuff them out.
 - **Mother Roots**: defend one until dawn for a big reward.
 - **Your drowned self**: when you fall, a Drowned version of you keeps everything you carried. Kill it to get your supplies back. If you die again first, they're gone.
@@ -199,7 +199,8 @@ Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite 
 - **Camp buildings**: a picture per level for the Forge, Armory and Workbench (`forge1`–`4` …), the Watchtowers and Lantern Pylons (`tower1`–`3`, `pylon1`–`3`), and one per camp tier for the Central Flame (`flame1`–`3`, drawn unlit: the fire is animated in code at `FLAME_FIRE` in `src/render.js`, and pylon and gate lamps at `PYLON_LAMPS` / `GATE_LAMP`). The tent, banner, stake, palisade and gate post keep their coded names, so the drawn ones replace them; `palisade2` and `gatePost2` are the reinforced level 3 barricade.
 - **Torches and fire**: the torch, burnt torch and placed brazier replace the coded ones, and `Art.drawFire` plays six drawn flame frames (`fire1`–`6`) for every fire: the Central Flame, torches, braziers and burning enemies.
 - **Reeds**: six clumps from one sheet (`reeds1`–`reeds6`), one picked per spot.
-- Iron and pearls are coded until their new art arrives. Set `ENABLED = false` in `src/sprites.js` to use coded art everywhere.
+- **Iron and amethyst deposits**: three of each (`iron11`–`33`, `amethyst11`–`33`: variant, then damage stage), mined down in three stages like the boulders. Amethyst is the `pearl` resource in code.
+- Graves and pillars no longer spawn in the wild; their coded art is kept for a ruin entrance. Set `ENABLED = false` in `src/sprites.js` to use coded art everywhere.
 
 `tools/cut_ai_sprites.py <folder>` cuts the AI renders. Walk cycles come as one sheet per view (`SHEETS`), cut onto a shared canvas with one foot point so the character doesn't jitter between frames; longer walks play faster so a stride takes the same time. For single images, it keys out the magenta, shrinks every pose of a character by the same factor, limits the palette and adds an outline (Python with Pillow, NumPy and SciPy). `tools/cut_concept_sprites.py` is the older cutter for the concept sheets. To add or redraw art:
 1. Draw one PNG per frame at art-pixel size (a knight is about 36 px tall), facing right for side views. Free editors: [Piskel](https://www.piskelapp.com) or [LibreSprite](https://libresprite.github.io).

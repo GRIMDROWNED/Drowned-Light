@@ -68,12 +68,13 @@ def contact(ims, path, scale=4, bgc=(22, 32, 38, 255)):
     c.resize((W * scale, H * scale), Image.NEAREST).save(path)
 
 
-def key_mask(a, key=(255, 0, 255), tol=120, fringe=3):
+def key_mask(a, key=(255, 0, 255), tol=120, fringe=3, tint=True):
     """Foreground of a render on a flat key colour: drop pixels near the key and the tinted
     fringe, keep the main shapes."""
     d = np.sqrt(((a - np.array(key)) ** 2).sum(-1))
-    tint = (np.minimum(a[..., 0], a[..., 2]) - a[..., 1]) > 70  # purple fringe: red and blue well above green
-    fg = (d > tol) & ~tint
+    fg = d > tol
+    if tint:  # purple fringe: red and blue well above green (off for art that is purple itself)
+        fg &= (np.minimum(a[..., 0], a[..., 2]) - a[..., 1]) <= 70
     fg = ndimage.binary_opening(fg, iterations=1)
     lab, n = ndimage.label(fg, structure=np.ones((3, 3)))
     if n == 0: return fg
@@ -115,10 +116,10 @@ def cut_sheet(img, cols, rows, height, fringe=1, colors=32, outline=(10, 11, 12)
     return frames, (int(round((left / W) * (fw - 2))) + 1, fh)
 
 
-def cut_keyed(img, k, key=(255, 0, 255), tol=120, fringe=3, colors=32, outline=(10, 11, 12), recolor=None):
+def cut_keyed(img, k, key=(255, 0, 255), tol=120, fringe=3, colors=32, outline=(10, 11, 12), recolor=None, tint=True):
     """Cut a sprite off a flat key-colour background (AI renders) and shrink it by k."""
     a = np.asarray(img.convert('RGB')).astype(int)
-    fg = key_mask(a, key, tol, fringe)
+    fg = key_mask(a, key, tol, fringe, tint)
     ys, xs = np.where(fg)
     y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
     rgba = np.zeros((y1 - y0, x1 - x0, 4), 'uint8')

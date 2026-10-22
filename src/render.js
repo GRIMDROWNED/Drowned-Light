@@ -67,23 +67,30 @@
   R.rockSprite = (o) => rockSprite(o);
   // Four drawn boulders (two shapes, bare or mossy) when their art is loaded, each crumbling in three
   // stages as it's mined; else the coded rock.
-  function rockSprite(o) {
-    if (!Art.sprites.boulder11) return "rock";
-    const v = o.art || (o.art = 1 + Math.floor(DL.hash(o.x | 0, o.y | 0, 13) * 4));
+  function rockSprite(o) { return Art.sprites.boulder11 ? staged(o, "boulder", 4) : "rock"; }
+  // Three drawn iron deposits, mined down the same way; else the coded pile.
+  R.ironSprite = (o) => ironSprite(o);
+  function ironSprite(o) { return Art.sprites.iron11 ? staged(o, "iron", 3) : "ironpile"; }
+  // The "pearl" resource is drawn as amethyst deposits when their art is loaded.
+  R.amethystSprite = (o) => amethystSprite(o);
+  function amethystSprite(o) { return Art.sprites.amethyst11 ? staged(o, "amethyst", 3) : "pearl"; }
+  // One of n drawn variants, picked per spot, at the damage stage its mining has reached.
+  function staged(o, base, n) {
+    const v = o.art || (o.art = 1 + Math.floor(DL.hash(o.x | 0, o.y | 0, 13) * n));
     const k = o.mineHp == null ? 0 : 1 - o.mineHp / o.def.hits;
-    return "boulder" + v + (k >= 2 / 3 ? 3 : k >= 1 / 3 ? 2 : 1);
+    return base + v + (k >= 2 / 3 ? 3 : k >= 1 / 3 ? 2 : 1);
   }
 
   function objSprite(o) {
     switch (o.type) {
       case "tree": return o.harvested ? null : treeSprite(o);
       case "stone": return o.harvested ? null : rockSprite(o);
-      case "iron": return o.harvested ? null : "ironpile";
+      case "iron": return o.harvested ? null : ironSprite(o);
       case "sprout": return o.harvested ? "sproutBare" : o.active ? "sproutOn" : "sproutOff";
       case "refuge": return o.dead ? "husk" : o.active ? "refugeOn" : "refugeOff";
       case "sentinel": return o.dead ? "husk" : o.active ? "sentinelOn" : "sentinelOff";
       case "root": return o.dead ? "husk" : o.active ? "rootOn" : "rootOff";
-      case "pearl": return o.harvested ? null : "pearl";
+      case "pearl": return o.harvested ? null : amethystSprite(o);
       // six drawn reed clumps when their art is loaded, one picked per spot
       case "reeds": return Art.sprites.reeds1 ? "reeds" + (o.reed || (o.reed = 1 + Math.floor(DL.hash(o.x | 0, o.y | 0, 9) * 6))) : "reeds";
       default: return o.def.sprite;
@@ -150,7 +157,7 @@
       const name = objSprite(o);
       if (name) list.push({ y: o.y, f: () => drawObject(c, G, o, name) });
     });
-    for (const pr of G.pearls) if (!pr.harvested) list.push({ y: pr.y, f: () => drawObject(c, G, pr, "pearl") });
+    for (const pr of G.pearls) if (!pr.harvested) list.push({ y: pr.y, f: () => drawObject(c, G, pr, amethystSprite(pr)) });
     pushCamp(list, G, c, t);
     for (const tr of G.torches) list.push({ y: tr.y, f: () => drawTorch(c, tr, t) });
     for (const w of G.walls || []) {
@@ -326,7 +333,7 @@
 
   /* ---------- scene pieces ---------- */
   function drawObject(c, G, o, name) {
-    const sh = o.type === "tree" ? 20 : o.type === "root" ? 40 : o.type === "stone" && name !== "rock" ? 16 : 12;
+    const sh = o.type === "tree" ? 20 : o.type === "root" ? 40 : (o.type === "stone" && name !== "rock") || (o.type === "iron" && name !== "ironpile") ? 18 : 12;
     shadow(c, o.x, o.y, sh, sh * 0.35, 0.3);
     let x = o.x;
     const hit = o.hitT > 0 ? o.hitT / 0.18 : 0;
@@ -342,7 +349,7 @@
     c.restore();
     if (o.def.bloom && !o.dead && o.hp < o.maxHp) bar(c, o.x, o.y - Art.sprites[name].h * PS - 6, 34, o.hp / o.maxHp, "#5fe6ee");
     // drawn boulders show their damage in their own stages
-    if (o.def.hits && o.mineHp != null && o.mineHp < o.def.hits && !name.startsWith("boulder")) drawCracks(c, o, name, 1 - o.mineHp / o.def.hits);
+    if (o.def.hits && o.mineHp != null && o.mineHp < o.def.hits && !/^(boulder|iron\d|amethyst)/.test(name)) drawCracks(c, o, name, 1 - o.mineHp / o.def.hits);
   }
 
   // Damage on a supply node: dark cracks in stone and iron, pale splintered chips in wood and plants.

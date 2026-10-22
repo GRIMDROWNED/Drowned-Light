@@ -15,7 +15,7 @@
     stone: { name: "Stone", color: "#9a9d9e" },
     resin: { name: "Bloom Resin", color: "#43e6ee" },
     iron: { name: "Iron Scrap", color: "#c06a44" },
-    pearl: { name: "Abyssal Pearl", color: "#bfa8ff" },
+    pearl: { name: "Amethyst", color: "#bfa8ff" },
   };
   DL.RES_KEYS = Object.keys(DL.RESOURCES);
 
