@@ -23,7 +23,7 @@
      data has to go through a relay ("TURN") server. PeerJS's own relays no longer answer, so put the
      free ExpressTURN account details here (expressturn.com, 1 TB a month free). Left empty, co-op
      still works for phones on the same Wi-Fi and on friendlier networks. */
-  const TURN = { username: "", credential: "" };
+  const TURN = { username: "000000002108000612", credential: "6rr7klTQzqEjYaTao22kW6qEVLg=" };
   const ICE = [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun.expressturn.com:3478" },
