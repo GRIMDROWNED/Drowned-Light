@@ -38,7 +38,11 @@ GRIDS = {
     'marsh-hexbearer/poses-b.png': (3, 2, POSES_B),
     'drowned-sovereign/poses-a.png': (3, 2, POSES_A),
     'drowned-sovereign/poses-b.png': (3, 2, POSES_B),
+    'pike-warden/poses-a.png': (3, 2, POSES_A),
+    'pike-warden/poses-b.png': (3, 2, POSES_B),
 }
+# Cells the AI drew at another scale than the rest of their sheet: cell -> factor to resize it by.
+CELL_SCALE = {'pike-warden/07_walk': 1.16}
 
 SETS = {
     'lantern-knight': ('lantern-knight', 'knight-front.png', 80, 3, {
@@ -92,6 +96,8 @@ SETS = {
     'marsh-hexbearer': ('drowned/hexbearer', 'marsh-hexbearer/01_front.png', 92, 1, twelve('marsh-hexbearer', TWELVE_FILES)),
     # the boss is drawn 1.5x bigger, so it is cut at 3 file px per art pixel (res: 3) to stay sharp
     'drowned-sovereign': ('drowned/champion', 'drowned-sovereign/01_front.png', 128, 1, twelve('drowned-sovereign', TWELVE_FILES)),
+    # kit knights: the body is 80 px like the Lantern Knight's, so the reference pose with its pike above the hood is taller
+    'pike-warden': ('pike-warden', 'pike-warden/01_front.png', 104, 1, twelve('pike-warden', TWELVE_FILES)),
 }
 
 # Animation sheets: character -> [(sheet, columns, rows, height of the first frame's figure, output prefix[, row])].
@@ -144,13 +150,20 @@ SHEETS = {
         ('drowned-sovereign/walk-front-4.png', 4, 1, 127, 'walkF'),
         ('drowned-sovereign/walk-back-4.png', 4, 1, 129, 'walkB'),
     ],
+    'pike-warden': [
+        ('pike-warden/walk-side-4.png', 4, 1, 99, 'side/walk'),
+        ('pike-warden/walk-front-4.png', 4, 1, 101, 'walkF'),
+        ('pike-warden/walk-back-4.png', 4, 1, 101, 'walkB'),
+    ],
 }
 
 # Walk sheets the AI drew out of order or stepping with one foot only: the frames (1-based) to keep,
 # in play order; a negative number is that frame with its legs mirrored, giving the other foot's step.
 FRAME_ORDER = {('lantern-knight', 'walkB'): [2, 1, 4, -1], ('mire-stalker', 'walkB'): [1, 2, 3, -2],
                # the lantern is missing from frames 1 and 3
-               ('drowned-wretch', 'walkB'): [2, 2, 4, 4]}
+               ('drowned-wretch', 'walkB'): [2, 2, 4, 4],
+               # every frame steps with the same foot
+               ('pike-warden', 'walkF'): [1, 3, -1, 3]}
 
 # Walk sheets rendered in other colours than the character's first batch: recolour to this image.
 SHEET_MATCH = {'tide-archer': 'tide-archer/01_front.png'}
@@ -160,6 +173,8 @@ for sheet, (cols, rows, names) in GRIDS.items():
     p = os.path.join(SRC, sheet)
     if not os.path.exists(p): continue
     for n, cell in zip(names, split_grid(Image.open(p), cols, rows)):
+        f = CELL_SCALE.get(os.path.dirname(sheet) + '/' + n)
+        if f: cell = cell.resize((round(cell.width * f), round(cell.height * f)), Image.NEAREST)
         cell.save(os.path.join(os.path.dirname(p), n + '.png'))
     walks = sorted(n for n in names if 'walk' in n)
     if walks:
