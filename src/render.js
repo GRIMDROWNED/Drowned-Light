@@ -358,7 +358,8 @@
       c.save();
       c.translate(x, y);
       c.rotate(pc.vr * f.t);
-      c.drawImage(s.c, pc.sx, pc.sy, pc.sw, pc.sh, (-pc.sw * PS) / 2, (-pc.sh * PS) / 2, pc.sw * PS, pc.sh * PS);
+      const res = s.res || 1;
+      c.drawImage(s.c, pc.sx * res, pc.sy * res, pc.sw * res, pc.sh * res, (-pc.sw * PS) / 2, (-pc.sh * PS) / 2, pc.sw * PS, pc.sh * PS);
       c.restore();
     }
     c.globalAlpha = 1;
@@ -486,6 +487,7 @@
     for (let i = 0; i < n; i++) {
       const col = i % 6, row = Math.floor(i / 6);
       const x = g.x - 40 + col * 16 + (row % 2) * 6, y = g.y - 40 + row * 18;
+      if (Art.sprites.gardenOn) { sprite(c, night > 0.3 ? "gardenOn" : "gardenOff", x + 1, y + 6); continue; }
       const pulse = 0.6 + 0.4 * Math.sin(t * 2 + i);
       c.fillStyle = "#2b3e2c"; c.fillRect(x, y - 2, 2, 8); c.fillRect(x - 3, y + 2, 3, 2); c.fillRect(x + 2, y, 3, 2);
       c.fillStyle = night > 0.3 ? `rgba(127,246,255,${0.6 + 0.4 * pulse})` : "#1d4d55";

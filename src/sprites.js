@@ -99,9 +99,12 @@
   ];
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
+  const PLANTS = ["refugeOn", "refugeOff", "sentinelOn", "sentinelOff", "rootOn", "rootOff", "sproutOn", "sproutOff", "sproutBare", "husk", "gardenOn", "gardenOff"];
   const PROPS = {
     path: "assets/sprites/",
-    files: {},
+    // cut at 2 file px per art pixel, like the units
+    res: 2,
+    files: Object.fromEntries(PLANTS.map((n) => [n, "props/" + n])),
     // The armory and workbench concept art have their own canopies, so the coded awning is hidden once they load.
     hide: { awning: ["rack", "workbench"] },
   };
@@ -204,7 +207,7 @@
         }
         for (const name in PROPS.files) {
           const f = propImage(name);
-          if (f) Art.sprites[name] = { c: f.c, w: f.w, h: f.h };
+          if (f) Art.sprites[name] = { c: f.c, w: f.w / PROPS.res, h: f.h / PROPS.res, res: PROPS.res };
         }
         for (const name in PROPS.hide)
           if (PROPS.hide[name].every(propImage)) {
