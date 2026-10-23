@@ -264,6 +264,14 @@
      are dead, walk over a carcass to haul it (at `haulSpeed`) and bring it into the camp: it rises as your hound.
      The den fills again at the dawn after its last carcass is taken. `clear` keeps trees and rocks off its ground. */
   DL.DEN = { dist: 1750, clear: 190, pack: 5, wake: 240, leash: 560, spawn: 900, forget: 1500, grab: 34, haulSpeed: 0.85 };
+  /* Kindle, the walking lantern (src/kindle.js): every knight lights their own. A broken lantern lies `dist` px from
+     camp, in the Mire where the iron starts. Stand within `feedR` px of it and it takes a torch from your satchel
+     every `feedEvery` seconds; `torches` light your Kindle for good. Then he follows you at `speed` and, when your
+     lantern is below `refillBelow` of its oil, fills it (no more than once every `refillEvery` seconds). He only
+     fills his own knight's lantern, doesn't touch corruption, and his light doesn't hold it off. Every `guideEvery`
+     nights after the world's first Kindle was lit, every Kindle runs `lead` px ahead of its knight toward the same
+     unique place, until that knight is within `reachR` px of it. */
+  DL.KINDLE = { dist: 1450, torches: 7, feedR: 46, feedEvery: 0.5, speed: 160, refillEvery: 50, refillBelow: 0.5, guideEvery: 3, lead: 90, reachR: 360 };
   /* Derek, the stone golem familiar (src/golem.js): won in Derek's Hollow (DL.CAVE), one per knight.
      He can't be hurt. Every `buildCd` seconds, when a Drowned comes within `trigger` px of his knight,
      he raises a stone wall `len` px long across its path, `gap` px out from the knight. Drowned within

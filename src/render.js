@@ -179,6 +179,9 @@
     for (const f of G.effects) if (f.type === "dissolve") list.push({ y: f.e.y, f: () => drawDissolve(c, f) });
     for (const h of G.hounds) list.push({ y: h.y, f: () => drawHound(c, h, t) });
     for (const m of G.golems) list.push({ y: m.y, f: () => drawGolem(c, m, t) });
+    for (const k of G.kindles) list.push({ y: k.y, f: () => drawKindle(c, k, t) });
+    const kb = DL.Kindle.broken();
+    if (kb) list.push({ y: kb.y, f: () => drawKindleBroken(c, kb, t) });
     for (const w of G.stoneWalls) for (let i = 0; i < 3; i++) {
       const u = (i - 1) / 3, x = w.x + Math.cos(w.ang) * w.len * u, y = w.y + Math.sin(w.ang) * w.len * u;
       list.push({ y, f: () => drawWallRock(c, w, i, x, y, t) });
@@ -237,6 +240,16 @@
         c.strokeStyle = `rgba(90,235,245,${0.7 * (1 - k)})`;
         c.lineWidth = 2;
         c.beginPath(); c.ellipse(f.x2, f.y2 + 10, 20 + 30 * k, (20 + 30 * k) * 0.5, 0, 0, Math.PI * 2); c.stroke();
+      } else if (f.type === "kindleRefill") {
+        // Kindle tipping flame into a lantern: embers arcing from him to it
+        const k = f.t / f.max;
+        for (let i = 0; i < 6; i++) {
+          const u = Math.min(1, k * 1.6 - i * 0.08);
+          if (u <= 0) continue;
+          const x = f.x1 + (f.x2 - f.x1) * u, y = f.y1 + (f.y2 - f.y1) * u - Math.sin(Math.PI * u) * 26;
+          c.fillStyle = `rgba(255,${170 + i * 10},80,${0.9 * (1 - k)})`;
+          c.beginPath(); c.arc(x, y, 3 - i * 0.3, 0, Math.PI * 2); c.fill();
+        }
       } else if (f.type === "pillar") {
         // level-up: a column of the kit's light rising from the knight
         const k = f.t / f.max, a = Math.sin(Math.PI * Math.min(1, k * 1.4)) * (1 - k * 0.5);
@@ -300,6 +313,8 @@
     }
     for (const m of G.golems) drawGolemHeart(c, m, t);
     DL.Cave.drawGlow(c, t);
+    for (const k of G.kindles) drawKindleGlow(c, k, t);
+    if (kb && Math.sin(t * 1.3) > 0.6) { c.fillStyle = "rgba(255,110,50,0.35)"; c.fillRect(kb.x - 2, kb.y - 8, 4, 4); }
     drawMotes(c, G, view, t);
     c.globalCompositeOperation = "source-over";
 
@@ -809,6 +824,78 @@
     c.beginPath(); c.rect(x - wd, y - h - 4, wd * 2, h + 6); c.clip(); // rising out of the ground
     c.drawImage(s.c, Math.round(x - wd / 2 + shake), Math.round(y + 2 - h + (1 - k) * h), wd, h);
     c.restore();
+  }
+  /* Kindle, the walking lantern: a coded stand-in until the drawn sprite arrives. A bronze cage with
+     glass panes and a ring on top, carried on four spider legs. Broken, he lies on his side with his
+     legs curled, the glass dark (an ember shows for each torch fed so far). */
+  const KINDLE_METAL = "#3b2c1c", KINDLE_RIM = "#8a6a3a", KINDLE_GLASS = "rgba(255,190,90,0.85)", KINDLE_COLD = "rgba(60,70,72,0.9)";
+  function kindleLegs(c, k, t, lift) {
+    const step = k.moving ? k.animT * 13 : 0;
+    c.strokeStyle = "#7a5a32";
+    c.lineWidth = 2.2;
+    c.lineCap = "round";
+    for (let i = 0; i < 4; i++) {
+      const side = i < 2 ? -1 : 1, back = i % 2 ? 1 : -1, ph = step + (i === 0 || i === 3 ? 0 : Math.PI);
+      const up = k.moving ? Math.max(0, Math.sin(ph)) * 3 : 0, sw = k.moving ? Math.cos(ph) * 3 : 0;
+      const hx = side * 5, hy = -lift - 1 + back, kx = side * 13 + sw, ky = -lift - 7 + back - up, fx = side * 12 + sw * 1.4, fy = back * 2 - up;
+      c.beginPath(); c.moveTo(hx, hy); c.lineTo(kx, ky); c.lineTo(fx, fy); c.stroke();
+    }
+  }
+  function kindleBody(c, lit, fed, t) {
+    // the cage: cap, panes, base, and the carry ring
+    c.fillStyle = KINDLE_METAL;
+    c.fillRect(-8, -24, 16, 3); c.fillRect(-7, -4, 14, 3);
+    c.beginPath(); c.moveTo(-6, -24); c.lineTo(0, -28); c.lineTo(6, -24); c.fill();
+    c.strokeStyle = KINDLE_RIM; c.lineWidth = 1.5;
+    c.beginPath(); c.arc(0, -31, 3.5, 0, Math.PI * 2); c.stroke();
+    c.fillStyle = lit ? KINDLE_GLASS : KINDLE_COLD;
+    c.fillRect(-6, -21, 12, 17);
+    if (lit) {
+      const f = 1 + 0.15 * Math.sin(t * 11);
+      c.fillStyle = "rgba(255,240,180,0.95)";
+      c.beginPath(); c.ellipse(0, -10, 2.5 * f, 5 * f, 0, 0, Math.PI * 2); c.fill();
+    } else {
+      for (let i = 0; i < fed; i++) { c.fillStyle = "rgba(255,120,50,0.8)"; c.fillRect(-4 + (i % 4) * 2.5, -7 - Math.floor(i / 4) * 2.5, 1.5, 1.5); }
+      c.strokeStyle = "rgba(200,210,210,0.5)"; c.lineWidth = 0.8; // cracked glass
+      c.beginPath(); c.moveTo(-5, -19); c.lineTo(-1, -13); c.lineTo(-3, -8); c.moveTo(-1, -13); c.lineTo(4, -15); c.stroke();
+    }
+    c.fillStyle = KINDLE_RIM; // the bars
+    for (const x of [-6, -1, 4]) c.fillRect(x, -21, 2, 17);
+  }
+  // Your broken lantern, until you light it: tipped over, legs curled up.
+  function drawKindleBroken(c, b, t) {
+    shadow(c, b.x, b.y, 11, 4);
+    c.save();
+    c.translate(Math.round(b.x), Math.round(b.y));
+    c.rotate(-1.25);
+    c.translate(0, -2);
+    kindleLegs(c, { moving: false }, t, 1);
+    kindleBody(c, false, b.fed, t);
+    c.restore();
+  }
+  function drawKindle(c, k, t) {
+    shadow(c, k.x, k.y, 11, 4);
+    c.save();
+    c.translate(Math.round(k.x), Math.round(k.y));
+    const bob = k.moving ? Math.abs(Math.sin(k.animT * 13)) * 1.5 : Math.sin(t * 2) * 0.6;
+    kindleLegs(c, k, t, 8);
+    c.translate(0, -8 - bob);
+    kindleBody(c, true, 0, t);
+    c.restore();
+  }
+  // Over the dark: his flame, and while he leads the way, a trail of embers pointing where.
+  function drawKindleGlow(c, k, t) {
+    const x = k.x, y = k.y - 18, r = 14 + Math.sin(t * 9) * 1.5, g = c.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, "rgba(255,210,120,0.75)"); g.addColorStop(1, "rgba(255,150,60,0)");
+    c.fillStyle = g;
+    c.fillRect(x - r, y - r, r * 2, r * 2);
+    const a = k.lead;
+    if (a == null) return;
+    for (let i = 0; i < 4; i++) {
+      const u = ((t * 0.9 + i / 4) % 1), d = 26 + u * 70, px = k.x + Math.cos(a) * d, py = k.y - 6 + Math.sin(a) * d * 0.75;
+      c.fillStyle = `rgba(255,180,80,${0.7 * Math.sin(Math.PI * u)})`;
+      c.beginPath(); c.arc(px, py, 3, 0, Math.PI * 2); c.fill();
+    }
   }
   /* Where a side-view hound frame's eyes are, from its feet in world px (found once per frame): the red
      pixels highest and farthest forward (the mantle sits lower and farther back). */
