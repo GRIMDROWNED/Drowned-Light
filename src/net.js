@@ -235,6 +235,8 @@
 
   // Host side: a blow or a pickup that lands on a friend's knight is sent to that friend's device.
   Net.hurtAlly = function (a, dmg, ang) { if (Net.role === "host") sendTo(a.g, { t: "hurt", dmg, ang }); };
+  // Host: show a notice on every friend's screen too.
+  Net.say = function (msg, kind) { if (Net.role === "host") for (const g of Net.guests) sendTo(g, { t: "say", m: msg, k: kind }); };
   Net.gain = function (a, res, amt) { if (Net.role === "host") sendTo(a.g, { t: "gain", res, amt }); };
   Net.houndLost = function (owner) { if (Net.role === "host") sendTo(Net.guests.find((g) => g.id === owner), { t: "houndLost" }); };
 
@@ -380,7 +382,8 @@
       Net.leave(true);
       G.save = G.load(); DL.World.chunks.clear();
       DL.UI.toTitle();
-    } else if (m.t === "hurt") G.hurtPlayer(m.dmg, m.ang);
+    } else if (m.t === "say") say(m.m, m.k);
+    else if (m.t === "hurt") G.hurtPlayer(m.dmg, m.ang);
     else if (m.t === "gain") {
       const p = G.player;
       p.carried[m.res] += m.amt;

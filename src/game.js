@@ -340,8 +340,11 @@
 
   /* ---------------- light ---------------- */
   function collectBlooms() {
-    const p = G.player, out = [], gems = [];
-    W.near(p.x, p.y, 1000, (o) => {
+    // The host gathers plants around every knight, so a friend far away still has working blooms and roots.
+    const out = [], gems = [], seen = new Set();
+    for (const k of G.isGuest() ? [G.player] : [G.player, ...G.allies]) W.near(k.x, k.y, 1000, (o) => {
+      if (seen.has(o)) return;
+      seen.add(o);
       if (o.type === "pearl") { if (!o.harvested) gems.push(o); return; }
       if (o.def.bloom || o.type === "sprout") {
         o.active = !o.dead && (G.nightAmt > 0.3 || DL.ZONES[o.zi].abyss);
@@ -666,6 +669,13 @@
   }
 
   /* ---------------- spawning ---------------- */
+  // The Drowned Sovereign stays away from young worlds: no siege before this day, no roaming one before the other.
+  const SOVEREIGN_SIEGE_DAY = 10, SOVEREIGN_ROAM_DAY = 7;
+  function pickType(pool) {
+    const t = DL.weighted(pool);
+    return t === "champion" && G.save.day < SOVEREIGN_ROAM_DAY ? "blackguard" : t;
+  }
+
   function updateSpawning(dt) {
     // In co-op, friends far from the host get their own share of the roaming Drowned.
     const far = G.allies.filter((a) => !a.down && dist(a.x, a.y, G.player.x, G.player.y) > 500);
@@ -685,39 +695,42 @@
         G.siegeT = 11;
         const n = Math.round((3 + Math.floor(G.save.day * 1.3)) * G.diff().spawn * G.partyScale());
         spawnWave(0, 0, DL.campPool(G.save.day), n, G.flame, 540, 1);
-        if (G.save.day >= 5 && !G.champSpawned && G.phase() === "night") {
+        if (G.save.day >= SOVEREIGN_SIEGE_DAY && !G.champSpawned && G.phase() === "night") {
           G.champSpawned = true;
           const a = rand(0, TAU);
           G.enemies.push(makeEnemy("champion", Math.cos(a) * 560, Math.sin(a) * 560, 2, { goal: G.flame }));
           say("The Drowned Sovereign marches on your camp!", "danger");
+          DL.Net.say("The Drowned Sovereign marches on your camp!", "danger");
         }
       }
       return;
     }
 
-    // Mother Root: defend it until dawn for its gifts.
+    // Mother Root: defend it until dawn for its gifts. Any knight, host or friend, can wake it.
+    const nearRoot = (o, R) => G.knights().some((k) => dist(k.x, k.y, o.x, o.y) < R);
     if (G.night && !G.rootEvent) {
-      const root = G.blooms.find((o) => o.type === "root" && !o.dead && dist(p.x, p.y, o.x, o.y) < 260);
+      const root = G.blooms.find((o) => o.type === "root" && !o.dead && nearRoot(o, 260));
       if (root) {
         G.rootEvent = { obj: root, waveT: 3 };
         say("The Mother Root stirs. Defend it until dawn.", "warn");
+        DL.Net.say("The Mother Root stirs. Defend it until dawn.", "warn");
       }
     }
-    if (G.rootEvent && !G.rootEvent.obj.dead && dist(p.x, p.y, G.rootEvent.obj.x, G.rootEvent.obj.y) < 650) {
+    if (G.rootEvent && !G.rootEvent.obj.dead && nearRoot(G.rootEvent.obj, 650)) {
       const ev = G.rootEvent;
       ev.waveT -= dt;
       if (ev.waveT <= 0) {
         ev.waveT = 12;
         spawnWave(ev.obj.x, ev.obj.y, DL.ZONES[ev.obj.zi].pool, 4 + ev.obj.zi + Math.floor(G.save.day * 0.5), ev.obj, 520, ev.obj.zi);
       }
-      return;
+      if (dist(p.x, p.y, ev.obj.x, ev.obj.y) < 650) return; // the knight at the root gets waves, not roamers
     }
 
     G.spawnT -= dt;
     if (G.spawnT > 0) return;
     G.spawnT = Math.max(0.8, (G.night ? 3.2 : 6.5) - p.zi * 0.35 - G.save.day * 0.06) / G.diff().spawn;
     const shelter = G.bloomShelter(p.x, p.y);
-    const type = DL.weighted(Z.pool);
+    const type = pickType(Z.pool);
     const count = type === "revenant" ? 4 + ((Math.random() * 3) | 0) : type === "squire" ? 2 + ((Math.random() * 2) | 0) : 1;
     let x, y;
     for (let tries = 0; tries < 6; tries++) {
@@ -736,7 +749,7 @@
     const base = rand(0, TAU);
     for (let i = 0; i < n; i++) {
       const a = base + rand(-0.9, 0.9), r = R + rand(0, 80);
-      const type = DL.weighted(pool);
+      const type = pickType(pool);
       const e = makeEnemy(type, cx + Math.cos(a) * r, cy + Math.sin(a) * r, zi, { goal });
       G.enemies.push(e);
     }
