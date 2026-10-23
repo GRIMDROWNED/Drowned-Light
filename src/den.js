@@ -97,7 +97,7 @@
       const b = s.bodies.find((q) => !taken.has(q) && dist(k.x, k.y, q[0], q[1]) < D.grab);
       if (!b) continue;
       Den.carry.set(id, b);
-      tell(id, "You heave a Bone Wolf's carcass onto your back. Carry it into the camp and it will rise for you.", "good");
+      tell(id, "You take up a Bone Wolf's carcass. Carry it into the camp and it will rise for you.", "good");
       sfx("pickup");
     }
     // Into the camp with it: it rises as that knight's Bone Hound.

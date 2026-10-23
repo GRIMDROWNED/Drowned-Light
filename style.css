@@ -88,6 +88,8 @@ body.touch kbd { display: none; }
 .chip i { width: 9px; height: 9px; transform: rotate(45deg); border: 1px solid rgba(0, 0, 0, 0.6); }
 .chip.no { color: var(--danger); }
 .chip.soul { color: #9ff5dc; }
+.chip.carcass { color: #e6dcc0; }
+.chip.carcass i { background: #d9cdae; border-radius: 2px; transform: none; }
 .chip.soul i { background: #071311; border-color: #5af5cd; border-radius: 50%; transform: none; box-shadow: 0 0 6px #5af5cd; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
