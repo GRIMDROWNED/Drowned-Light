@@ -226,6 +226,11 @@
       const ok = !!g && DL.Hounds.grant(g.id);
       sendTo(g, { t: "houndMade", ok });
       if (ok) say(`${who} raised a Bone Hound.`, "good");
+    } else if (ev.t === "golem") {
+      // Derek for this friend, paid from the shared stash
+      const ok = !!g && DL.Golems.grant(g.id);
+      sendTo(g, { t: "golemMade", ok });
+      if (ok) say(`${who} raised Derek, a stone golem.`, "good");
     } else if (ev.t === "deposit") {
       const parts = [];
       for (const k of DL.RES_KEYS) if (ev.res[k] > 0) { G.save.stash[k] += ev.res[k]; parts.push(`${ev.res[k]} ${DL.RESOURCES[k].name}`); }
@@ -278,6 +283,9 @@
       // Bone Hounds: [id, owner, x, y, angle, moving, hp, maxHp, biting, bite time left, hit flash]
       hd: G.hounds.filter((h) => near(h.x, h.y, 1100)).map((h) => [h.id, h.owner, r1(h.x), r1(h.y), r1(h.angle), h.moving ? 1 : 0, Math.round(h.hp), h.maxHp,
         h.state === "bite" ? 1 : 0, r1(h.stT), h.flash > 0 ? 1 : 0]),
+      // Derek: [id, owner, x, y, angle, moving, casting, cast time left]; his walls: [id, owner, x, y, angle, length, hits left, age]
+      gm: G.golems.filter((m) => near(m.x, m.y, 1100)).map((m) => [m.id, m.owner, r1(m.x), r1(m.y), r1(m.angle), m.moving ? 1 : 0, m.state === "cast" ? 1 : 0, r1(m.stT)]),
+      sw: G.stoneWalls.filter((w) => near(w.x, w.y, 1100)).map((w) => [w.id, w.owner, r1(w.x), r1(w.y), r1(w.ang), w.len, w.hits, r1(w.t)]),
       ob: dirty,
     };
   }
@@ -408,6 +416,10 @@
       if (m.ok) { DL.Sound.play("growl"); say("A Bone Hound claws its way up out of the mud. It hunts at your side.", "good"); }
       else say("Couldn't raise a Bone Hound: not enough in the stash, or the Central Flame is too low.", "warn");
       if (DL.UI.refreshCamp) DL.UI.refreshCamp();
+    } else if (m.t === "golemMade") {
+      if (m.ok) { DL.Sound.play("build"); say("Derek heaves himself up out of the stones. He'll wall the Drowned off from you.", "good"); }
+      else say("Couldn't raise Derek: not enough in the stash, or the Central Flame is too low.", "warn");
+      if (DL.UI.refreshCamp) DL.UI.refreshCamp();
     } else if (m.t === "houndLost") say("Your Bone Hound falls apart. Raise another at the camp fire.", "warn");
     else if (m.t === "snap") applySnap(m);
   }
@@ -472,6 +484,21 @@
     });
     // one that vanished close by fell (one that ran out of range just isn't sent)
     for (const h of hounds.values()) if (Math.hypot(h.x - G.player.x, h.y - G.player.y) < 800) DL.Hounds.fallFx(h);
+    // Derek and his walls: a wall that appears rises with its dust, one that vanishes close by crumbles
+    const golems = new Map(G.golems.map((o) => [o.id, o]));
+    G.golems = (m.gm || []).map((r) => {
+      const o = golems.get(r[0]) || { id: r[0], golem: true, x: r[2], y: r[3], animT: 0 };
+      return Object.assign(o, { owner: r[1], tx: r[2], ty: r[3], angle: r[4], moving: !!r[5], state: r[6] ? "cast" : "move", stT: r[7] });
+    });
+    const walls = new Map(G.stoneWalls.map((w) => [w.id, w]));
+    G.stoneWalls = (m.sw || []).map((r) => {
+      let w = walls.get(r[0]);
+      if (!w) { w = { id: r[0], stoneWall: true, rad: 10, hitT: 0 }; Object.assign(w, { x: r[2], y: r[3], ang: r[4], len: r[5] }); if (r[7] < 1) DL.Golems.raiseFx(w, G.golems.find((o) => o.owner === r[1])); }
+      else if (r[6] < w.hits) w.hitT = 0.2;
+      walls.delete(r[0]);
+      return Object.assign(w, { owner: r[1], x: r[2], y: r[3], ang: r[4], len: r[5], hits: r[6], t: r[7] });
+    });
+    for (const w of walls.values()) if (Math.hypot(w.x - G.player.x, w.y - G.player.y) < 800) DL.Golems.crumbleFx(w);
     applyObjs(m.ob);
   }
 
@@ -489,6 +516,13 @@
       h.x += (h.tx - h.x) * k; h.y += (h.ty - h.y) * k;
       h.animT += dt;
     }
+    for (const o of G.golems) {
+      if (o.tx == null) continue;
+      o.x += (o.tx - o.x) * k; o.y += (o.ty - o.y) * k;
+      o.animT += dt;
+      if (o.state === "cast") o.stT -= dt;
+    }
+    for (const w of G.stoneWalls) { w.t += dt; w.hitT = Math.max(0, w.hitT - dt); }
   };
 
   // Lights, walls and torches the guest makes become the host's; the guest sees them come back in the next snapshot.

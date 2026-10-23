@@ -522,6 +522,66 @@
     return sheet;
   }
 
+  /* ---------- Derek: a mossy stone golem with a glowing cyan heart and rocks circling him ----------
+     Its own frame size; side views face right. Coded until drawn sheets come in (src/sprites.js). */
+  const GW = 40, GH = 40, GX = 20, GG = 37;
+  const GOLEM = {
+    stone: "#64665d", stoneHi: "#8d8f82", stoneDk: "#3d3e38", crack: "#25261f", moss: "#4c6a32", mossHi: "#7d9e46",
+    core: "#5ff3ff", coreHi: "#eaffff", coreDk: "#1d97a8", outline: "#0a0b09",
+  };
+  // lift: foot lift [near, far]; orb: where the circling rocks are (quarter turns); arm: fists raised (−) or slammed (+); glow: heart brightness
+  const GOLEM_ANIMS = {
+    idle: [{ orb: 0 }, { orb: 1, bob: 1 }],
+    walk: [{ lift: [3, 0], stride: 2, orb: 0, bob: -1 }, { orb: 1 }, { lift: [0, 3], stride: -2, orb: 2, bob: -1 }, { orb: 3 }],
+    attack: [{ arm: -7, glow: 1, orb: 0, bob: -1 }, { arm: -10, glow: 2, orb: 1, bob: -2 }, { arm: 4, glow: 2, orb: 2, bob: 1 }],
+  };
+  function golem(P, dir, pose) {
+    const p = GOLEM, G = GG, side = dir === "side", back = dir === "up";
+    const c = GX, cy = G - 17 + (pose.bob || 0), lift = pose.lift || [0, 0], st = pose.stride || 0;
+    const rock = (x, y, r) => { P.ell(x, y, r, r * 0.85, p.stoneDk); P.ell(x - r * 0.25, y - r * 0.25, r * 0.6, r * 0.5, p.stone); };
+    const orbs = [0, 2].map((k) => { const a = ((pose.orb || 0) + k) * Math.PI / 2 + 0.6; return { x: c + Math.cos(a) * 16, y: cy - 4 + Math.sin(a) * 5, front: Math.sin(a) > 0 }; });
+    for (const o of orbs) if (!o.front) rock(o.x, o.y, 2.5);
+    // stubby legs
+    const legs = side ? [[c - 3 - st, lift[1], p.stoneDk], [c + 3 + st, lift[0], p.stone]] : [[c - 6, lift[0], p.stone], [c + 6, lift[1], p.stone]];
+    for (const [x, l, col] of legs) { P.rect(x - 3, G - 7 - l, 6, 6, p.stoneDk); P.rect(x - 3, G - 7 - l, 5, 4, col); P.rect(x - 4, G - 2 - l, 8, 2, p.stoneDk); }
+    // fists, behind the body when seen from behind
+    const arm = pose.arm || 0;
+    const fists = side ? [[c - 10, cy + 2 + arm]] : [[c - 13, cy + 2 + arm], [c + 13, cy + 2 + arm]];
+    if (back || side) for (const [x, y] of fists) rock(x, y, 4); // seen from the side, his fist swings behind him
+    // the boulder body
+    P.ell(c, cy, 12, 11, p.stoneDk);
+    P.ell(c - 1, cy - 1, 11, 10, p.stone);
+    P.ell(c - 4, cy - 4, 5, 4, p.stoneHi);
+    P.poly([c - 11, cy + 3, c + 11, cy + 3, c + 8, cy + 9, c - 8, cy + 9], p.stoneDk);
+    // cracks running out from the heart
+    const hx = side ? c + 6 : c;
+    if (!back) { P.seg(hx - 3, cy, hx - 9, cy - 5, p.crack); P.seg(hx + 2, cy + 3, hx + 6, cy + 8, p.crack); P.seg(hx - 2, cy + 4, hx - 6, cy + 9, p.crack); }
+    else { P.seg(c - 4, cy - 4, c + 2, cy + 3, p.crack); P.seg(c + 2, cy + 3, c + 7, cy + 1, p.crack); P.seg(c - 6, cy + 2, c - 2, cy + 8, p.crack); }
+    // moss over the top
+    P.ell(c - 1, cy - 9, back ? 9 : 7, 3, p.moss);
+    P.ell(c - 3, cy - 10, 4, 2, p.mossHi);
+    P.rect(c + 4, cy - 8, 2, 3, p.moss); P.rect(c - 8, cy - 8, 2, 4, p.moss);
+    if (back) { P.ell(c + 3, cy + 1, 4, 2, p.moss); P.px(c + 2, cy, p.mossHi); }
+    // the glowing heart
+    if (!back) {
+      const s = side ? 2 : 3, g = pose.glow || 0;
+      P.poly([hx, cy - s - 2, hx + s + 1, cy + 1, hx, cy + s + 3, hx - s - 1, cy + 1], p.coreDk);
+      P.poly([hx, cy - s - 1, hx + s, cy + 1, hx, cy + s + 2, hx - s, cy + 1], p.core);
+      P.rect(hx - (g ? 1 : 0), cy, g ? 2 : 1, g ? 2 : 1, p.coreHi);
+    }
+    if (!back && !side) for (const [x, y] of fists) rock(x, y, 4);
+    for (const o of orbs) if (o.front) rock(o.x, o.y, 2.5);
+  }
+  function golemSheet() {
+    const sheet = {};
+    for (const dir of ["down", "up", "side"]) {
+      sheet[dir] = {};
+      for (const anim in GOLEM_ANIMS) sheet[dir][anim] = GOLEM_ANIMS[anim].map((pose) =>
+        Object.assign(Art.mk(GW, GH, (P) => golem(P, dir, pose), GOLEM.outline), { ax: GX, ay: GG }));
+    }
+    return sheet;
+  }
+
   /* ---------- sheet building ---------- */
   function fallen(src, dir) {
     // Lay the kneeling frame on its side.
@@ -575,6 +635,7 @@
     sh.blackguard = buildSheet({ pal: d({ cloth: "#4a5559", clothMd: "#36424a", metal: "#2c3840", metalHi: "#55707a" }), weapon: "sword", offhand: "tower", bulk: 2, drips: 10, seed: 26 });
     sh.hexbearer = buildSheet({ pal: d({ cloth: "#8d9896" }), weapon: "staff", offhand: "lantern", torn: true, drips: 14, seed: 28 });
     sh.boneHound = Art.applyFrames("boneHound", houndSheet());
+    sh.derek = Art.applyFrames("derek", golemSheet());
     sh.champion = buildSheet({ pal: d({ cloth: "#c3cbc6", clothMd: "#8d9a99", blade: "#7fa6b0" }), weapon: "greatsword", offhand: "none", bulk: 1, crown: true, drips: 22, seed: 27 });
   };
 

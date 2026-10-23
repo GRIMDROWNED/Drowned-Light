@@ -132,6 +132,8 @@ Reaching a milestone triggers a pillar of the kit's light.
 
 **Bone Hound:** a summoned ally raised from the camp menu's Kit tab once the Central Flame is level 2 (16 stone, 12 iron, 8 bloom resin). One per knight, paid from the shared stash in co-op. It hunts in order: any Drowned that retreats (Mire Stalkers, anything backing away), then anything that shoots (Tide Archers, Hexbearers), then whatever is nearest. Retreating and shooting prey is chased up to 480 px from its knight, the rest within 320. It bites, hops clear and comes again, but stays on the heels of prey that runs. It goes through the palisade by the gates, lining up first and then running straight through. Each bite (6 damage) adds a stack of bleeding, 2.5 damage a second for 4 seconds that ignores armour, up to 3 stacks. It has 80 health, heals in firelight, and some Drowned turn on it. It stays until it falls, comes back with you when you rise or reload, and its health and bite grow 15% per Central Flame level after 2.
 
+**Derek:** a stone golem familiar raised from the Kit tab once the Central Flame is level 3 (24 stone, 12 iron, 12 bloom resin). One per knight, paid from the shared stash in co-op. He can't be hurt and doesn't fight. He follows his knight, and every 9 seconds, when a Drowned comes within 300 px, he raises a stone wall 76 px long across its path, between it and his knight. Any Drowned within 230 px of a wall goes for the wall instead of the knight, walls are solid to the Drowned, and arrows and orbs stop on them. Each blow or shot is one hit, and two hits break a wall. A wall crumbles on its own after 20 seconds, and at most 2 stand for each Derek. Numbers are in `DL.GOLEM` (src/data.js).
+
 **Difficulties:**
 
 | | Supplies | The Drowned | Light |
@@ -165,11 +167,12 @@ No build step, no dependencies. These are plain scripts loaded in order:
 | `src/kits.js` | the five kits in play: attacks, dashes, abilities, passives, training and milestone effects |
 | `src/camp.js` | base camp layout per tier, palisade walls, gate pathing |
 | `src/art.js` | procedural pixel sprites for the world, camp and effects |
-| `src/units.js` | the knight, Drowned Knight and Bone Hound sprite sheets (all animations, corruption stages) |
+| `src/units.js` | the knight, Drowned Knight, Bone Hound and Derek sprite sheets (all animations, corruption stages) |
 | `src/sprites.js` | loads hand-drawn PNG art over the coded sprites and sheets |
 | `src/world.js` | endless chunked wetland: ground texture, resources, blooms, collisions |
 | `src/game.js` | simulation: player, corruption, spawning, enemy AI, combat, camp economy, saving |
 | `src/hounds.js` | the Bone Hound summon: buying, its hunt and bite, bleeding, co-op ownership |
+| `src/golem.js` | Derek the stone golem familiar: buying, following, raising stone walls the Drowned attack |
 | `src/render.js` | drawing, the darkness/light compositing, effects |
 | `src/ui.js` | HUD, camp menu, title, pause and death screens |
 | `src/main.js` | boot + main loop |

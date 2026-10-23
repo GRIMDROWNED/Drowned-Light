@@ -111,6 +111,7 @@
     }
     return { x: cx * r, y: cy * r };
   }
+  Hounds.gateWay = gateWay; // Derek walks the same way (src/golem.js)
 
   function bite(h, e, st) {
     const ang = Math.atan2(e.y - h.y, e.x - h.x);
