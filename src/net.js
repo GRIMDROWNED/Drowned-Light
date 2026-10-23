@@ -451,7 +451,7 @@
 
     // world lights and objects
     G.netProjectiles = m.pr.map((b) => ({ x: b[0], y: b[1], vx: b[2], vy: b[3], kind: b[4], col: b[5], hostile: !!b[6] }));
-    G.torches = m.to.map((o) => ({ x: o[0], y: o[1], t: o[2], max: o[3], r: o[4], type: o[5], hp: o[6], rad: 8 }));
+    G.torches = m.to.map((o) => ({ x: o[0], y: o[1], t: o[2], max: o[3], r: o[4], type: o[5], hp: o[6], rad: 8, net: 1 }));
     G.lightZones = m.lz.map((z) => ({ x: z[0], y: z[1], r: z[2], t: z[3], heal: !!z[4], fire: !!z[5], net: 1 }));
     G.walls = m.wa.map((w) => ({ x1: w[0], y1: w[1], x2: w[2], y2: w[3], t: w[4], max: w[5], dps: 0, net: 1 }));
     m.py.forEach((q, i) => { if (G.pylons[i]) { G.pylons[i].hp = q[0]; G.pylons[i].lit = !!q[1]; } });
