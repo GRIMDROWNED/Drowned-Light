@@ -98,7 +98,18 @@
     Object.assign(walking("flameBastion", [53, 86], [37, 86], [34, 86]), { path: "assets/sprites/flame-bastion/", keys: stages("flameBastion") }),
     // the Bone Hound summon: the same 12 poses and walk sheets, its side walk a four-legged gallop
     Object.assign(walking("boneHound", [55, 55], [27, 64], [26, 66]), { path: "assets/sprites/bone-hound/", keys: { boneHound: [0, false] } }),
+    derek(),
   ];
+
+  // Derek the golem familiar, cut at res 4 so he stands a quarter of the knight's height. His cast is drawn
+  // facing you (fists up, slam, rise) and from the side; from behind he just stamps. He is never hurt.
+  function derek() {
+    const set = Object.assign(walking("derek", [22, 45], [22, 42], [24, 45], 4), { path: "assets/sprites/derek/", keys: { derek: [0, false] } });
+    set.views.side.attack = ["side/castUp", "side/castSlam", "side/castSlam"];
+    set.views.up.attack = ["back", "back@bob", "back"];
+    for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]]) Object.assign(set.views[dir], { hurt: [p], death: [p, p, p + "@fall"] });
+    return set;
+  }
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
   const PLANTS = ["refugeOn", "refugeOff", "sentinelOn", "sentinelOff", "rootOn", "rootOff", "sproutOn", "sproutOff", "sproutBare", "husk", "gardenOn", "gardenOff",

@@ -760,7 +760,7 @@
     return ["idle", Math.floor(t * 1.6 + m.id)];
   }
   function drawGolem(c, m, t) {
-    shadow(c, m.x, m.y, 20, 6);
+    shadow(c, m.x, m.y, 8, 3);
     const [anim, fr] = golemAnim(m, t);
     Art.drawUnit(c, "derek", anim, fr, m.angle, m.x, m.y, 1);
   }
@@ -768,8 +768,8 @@
   function drawGolemHeart(c, m, t) {
     const { dir, flip } = Art.unitDir(m.angle);
     if (dir === "up") return;
-    const x = m.x + (dir === "side" ? (flip ? -12 : 12) : 0), y = m.y - 34;
-    const a = (m.state === "cast" ? 0.9 : 0.45) + 0.1 * Math.sin(t * 3 + m.id), r = m.state === "cast" ? 16 : 10;
+    const x = m.x + (dir === "side" ? (flip ? -5 : 5) : 0), y = m.y - 8;
+    const a = (m.state === "cast" ? 0.9 : 0.45) + 0.1 * Math.sin(t * 3 + m.id), r = m.state === "cast" ? 9 : 5;
     const g = c.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, `rgba(150,250,255,${a})`); g.addColorStop(1, "rgba(90,235,245,0)");
     c.fillStyle = g;

@@ -48,6 +48,8 @@ GRIDS = {
     'flame-bastion/poses-b.png': (3, 2, POSES_B),
     'bone-hound/poses-a.png': (3, 2, POSES_A),
     'bone-hound/poses-b.png': (3, 2, POSES_B),
+    'derek/poses-a.png': (3, 2, POSES_A),
+    'derek/poses-b.png': (3, 2, POSES_B),
 }
 # Cells the AI drew at another scale than the rest of their sheet: cell -> factor to resize it by.
 CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
@@ -55,6 +57,8 @@ CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
               'bone-hound/08_attackA': 1.25, 'bone-hound/09_attackB': 1.25, 'bone-hound/10_attackC': 1.25}
 
 HOUND_H = 60
+DEREK_H = 40  # cut at 4 file px per art pixel (res: 4): drawn 20 px tall, a quarter of the knight
+DEREK_SIDE_H = 41
 SETS = {
     'lantern-knight': ('lantern-knight', 'knight-front.png', 80, 3, {
         'knight-front.png': 'front',
@@ -115,6 +119,13 @@ SETS = {
     'flame-bastion': ('flame-bastion', 'flame-bastion/01_front.png', 84, 1, twelve('flame-bastion', TWELVE_FILES)),
     # the Bone Hound summon: a dog, so shorter than a knight (its spines and raised tail make up the height)
     'bone-hound': ('bone-hound', 'bone-hound/01_front.png', HOUND_H, 1, twelve('bone-hound', TWELVE_FILES)),
+    # Derek the golem familiar: his sheets put a front-facing cast (fists up, slam, rise) where the 12-pose
+    # prompt has its attacks, and a side cast where it has hurt and death. Floating rocks count in his height.
+    'derek': ('derek', 'derek/01_front.png', DEREK_H, 1, {
+        'derek/01_front.png': 'front', 'derek/02_back.png': 'back', 'derek/03_right.png': 'right',
+        'derek/04_walk.png': 'side/walk1', 'derek/05_walk.png': 'side/walk2', 'derek/06_walk.png': 'side/walk3', 'derek/07_walk.png': 'side/walk4',
+        'derek/08_attackA.png': 'attackA', 'derek/09_attackB.png': 'attackB', 'derek/10_attackC.png': 'attackC',
+        'derek/11_hurt.png': 'side/castUp', 'derek/12_death.png': 'side/castSlam'}),
 }
 
 # Animation sheets: character -> [(sheet, columns, rows, height of the first frame's figure, output prefix[, row])].
@@ -192,6 +203,11 @@ SHEETS = {
         ('bone-hound/walk-side-4.png', 4, 1, 40, 'side/walk'),
         ('bone-hound/walk-front-4.png', 4, 1, 62, 'walkF'),
         ('bone-hound/walk-back-4.png', 4, 1, 64, 'walkB'),
+    ],
+    'derek': [
+        ('derek/walk-side-4.png', 4, 1, DEREK_SIDE_H, 'side/walk'),
+        ('derek/walk-front-4.png', 4, 1, DEREK_H, 'walkF'),
+        ('derek/walk-back-4.png', 4, 1, DEREK_H, 'walkB'),
     ],
 }
 
