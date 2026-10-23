@@ -94,6 +94,8 @@
       // six drawn reed clumps when their art is loaded, one picked per spot
       case "reeds": return Art.sprites.reeds1 ? "reeds" + (o.reed || (o.reed = 1 + Math.floor(DL.hash(o.x | 0, o.y | 0, 9) * 6))) : "reeds";
       // the drawn den: eyes in its mouth while the pack lives, empty once it's broken; else the coded one
+      // the drawn graves come in two kinds, one picked per stone
+      case "grave": return Art.sprites.grave2 && DL.hash(o.x | 0, o.y | 0, 11) < 0.4 ? "grave2" : "grave";
       case "den": return Art.sprites.denGuarded ? (DL.Den.state().cleared ? "denCleared" : "denGuarded") : "boneDen";
       default: return o.def.sprite;
     }
@@ -182,6 +184,7 @@
     for (const k of G.kindles) list.push({ y: k.y, f: () => drawKindle(c, k, t) });
     const kb = DL.Kindle.broken();
     if (kb) list.push({ y: kb.y, f: () => drawKindleBroken(c, kb, t) });
+    for (const w of G.wraiths) list.push({ y: w.y, f: () => drawWraith(c, w, t) });
     for (const w of G.stoneWalls) for (let i = 0; i < 3; i++) {
       const u = (i - 1) / 3, x = w.x + Math.cos(w.ang) * w.len * u, y = w.y + Math.sin(w.ang) * w.len * u;
       list.push({ y, f: () => drawWallRock(c, w, i, x, y, t) });
@@ -250,6 +253,22 @@
           c.fillStyle = `rgba(255,${170 + i * 10},80,${0.9 * (1 - k)})`;
           c.beginPath(); c.arc(x, y, 3 - i * 0.3, 0, Math.PI * 2); c.fill();
         }
+      } else if (f.type === "soulPulse") {
+        // Abigail's blessing: souls stream from her to her knight, then a ring of soul-light at their feet
+        const k = f.t / f.max;
+        for (let i = 0; i < 5; i++) {
+          const u = Math.min(1, k * 2 - i * 0.1);
+          if (u <= 0) continue;
+          const x = f.x1 + (f.x2 - f.x1) * u, y = f.y1 + (f.y2 - f.y1) * u - Math.sin(Math.PI * u) * 18;
+          c.fillStyle = `rgba(${SOUL},${0.9 * (1 - k)})`;
+          c.beginPath(); c.arc(x, y, 3.2 - i * 0.4, 0, Math.PI * 2); c.fill();
+        }
+        if (k > 0.4) {
+          const q = (k - 0.4) / 0.6, r = 12 + 26 * q;
+          c.strokeStyle = `rgba(${SOUL},${0.85 * (1 - q)})`;
+          c.lineWidth = 3 * (1 - q) + 1;
+          c.beginPath(); c.ellipse(f.x2, f.y2 + 24, r, r * 0.45, 0, 0, Math.PI * 2); c.stroke();
+        }
       } else if (f.type === "pillar") {
         // level-up: a column of the kit's light rising from the knight
         const k = f.t / f.max, a = Math.sin(Math.PI * Math.min(1, k * 1.4)) * (1 - k * 0.5);
@@ -314,6 +333,7 @@
     for (const m of G.golems) drawGolemHeart(c, m, t);
     DL.Cave.drawGlow(c, t);
     for (const k of G.kindles) drawKindleGlow(c, k, t);
+    drawSoulGlow(c, G, view, t);
     if (kb && Math.sin(t * 1.3) > 0.6) { c.fillStyle = "rgba(255,110,50,0.35)"; c.fillRect(kb.x - 2, kb.y - 8, 4, 4); }
     drawMotes(c, G, view, t);
     c.globalCompositeOperation = "source-over";
@@ -1027,8 +1047,191 @@
     }
   }
 
+  /* Abigail, the soul wraith: a coded stand-in until the drawn sprite arrives. A hooded girl of teal rags
+     floating above the ground, her face a black hollow with two pale eyes, a gold chain across her chest,
+     her tattered hem trailing off into wisps. She raises an arm to throw her orbs. */
+  const SOUL = DL.Abigail.SOUL;
+  const WRAITH = { dark: "#0c2b29", cloak: "#175a52", hood: "#22786c", hi: "#3aa596", face: "#020606", gold: "#c8a24a" };
+  // Where she floats this frame (her feet's spot on the ground stays at w.x, w.y): [x, top of the hem, facing].
+  function wraithPose(w, t) {
+    const { dir, flip } = Art.unitDir(w.angle);
+    return { x: Math.round(w.x), y: Math.round(w.y - 14 + Math.sin(t * 2.2 + w.id) * 3), dir, flip };
+  }
+  // Drawn frames, once they've loaded (otherwise the coded stand-in below).
+  const wraithDrawn = () => !Art.sheet("abigail").down.idle[0].blank;
+  // Throwing (arm up, then the throw), blessing her knight just now (facing you, arms raised), drifting, or floating still.
+  function wraithAnim(w, t) {
+    if (w.state === "cast") return ["attack", Math.max(0, Math.min(2, Math.floor((1 - w.stT / 0.45) * 3))), w.angle];
+    if (w.buff > DL.ABIGAIL.buffDur - 0.9) return ["bless", 0, Math.PI / 2];
+    if (w.moving) return ["walk", Math.floor(w.animT * walkRate("abigail", 7)), w.angle];
+    return ["idle", 0, w.angle];
+  }
+  function drawWraith(c, w, t) {
+    if (wraithDrawn()) {
+      shadow(c, w.x, w.y, 10, 3, 0.22);
+      const [anim, fr, ang] = wraithAnim(w, t);
+      return Art.drawUnit(c, "abigail", anim, fr, ang, w.x, w.y - 10 + Math.sin(t * 2.2 + w.id) * 3, 1);
+    }
+    const P = wraithPose(w, t), sway = Math.sin(t * 3 + w.id) * 3, side = P.dir === "side", back = P.dir === "up";
+    shadow(c, w.x, w.y, 10, 3, 0.22);
+    c.save();
+    c.translate(P.x, P.y);
+    if (side && P.flip) c.scale(-1, 1);
+    // her rags, tapering into a ragged trailing hem
+    c.fillStyle = WRAITH.dark;
+    c.beginPath();
+    c.moveTo(-10, -30);
+    c.quadraticCurveTo(-13, -14, -9 + sway * 0.3, -4);
+    c.lineTo(-6 + sway, 5); c.lineTo(-3 + sway * 0.6, -1); c.lineTo(0 + sway, 7); c.lineTo(3 + sway * 0.5, -1); c.lineTo(7 + sway, 4);
+    c.quadraticCurveTo(13, -14, 10, -30);
+    c.closePath(); c.fill();
+    c.fillStyle = WRAITH.cloak;
+    c.beginPath();
+    c.moveTo(-7, -30); c.quadraticCurveTo(-8, -16, -5 + sway * 0.4, -6); c.lineTo(-1 + sway * 0.6, -2); c.lineTo(3 + sway * 0.5, -7);
+    c.quadraticCurveTo(7, -16, 7, -30);
+    c.closePath(); c.fill();
+    // a ragged sleeve: hanging at her side, or raised to throw
+    const throwing = w.state === "cast";
+    c.fillStyle = WRAITH.dark;
+    c.beginPath();
+    if (throwing) { c.moveTo(4, -32); c.lineTo(18, -40); c.lineTo(19, -35); c.lineTo(7, -25); }
+    else { c.moveTo(6, -31); c.lineTo(12 + sway * 0.3, -17); c.lineTo(8 + sway * 0.3, -15); c.lineTo(4, -24); }
+    c.closePath(); c.fill();
+    // the gold chain across her chest
+    if (!back) { c.fillStyle = WRAITH.gold; for (let i = 0; i < 5; i++) c.fillRect(-6 + i * 2.6, -29 + i * 1.8, 1.6, 1.6); }
+    // the hood
+    c.fillStyle = WRAITH.hood;
+    c.beginPath(); c.moveTo(-10, -28); c.quadraticCurveTo(-12, -47, 0, -49); c.quadraticCurveTo(12, -47, 10, -28); c.closePath(); c.fill();
+    c.fillStyle = WRAITH.hi;
+    c.fillRect(-8, -42, 2, 11);
+    // her face, a hollow in the hood (none from behind)
+    if (!back) {
+      c.fillStyle = WRAITH.face;
+      c.beginPath(); c.ellipse(side ? 3 : 0, -36, side ? 4.5 : 5.5, 6.5, 0, 0, Math.PI * 2); c.fill();
+    }
+    c.restore();
+  }
+  // Her eyes, as world points (none from behind).
+  function wraithEyes(w, t) {
+    const P = wraithPose(w, t);
+    if (P.dir === "up" || wraithDrawn()) return []; // the drawn eyes glow on their own
+    if (P.dir === "side") return [[P.x + (P.flip ? -4.5 : 4.5), P.y - 37]];
+    return [[P.x - 2.2, P.y - 37], [P.x + 2.2, P.y - 37]];
+  }
+  R.drawWraith = drawWraith;
+  // A soul orb: a dark round soul with two pale eyes in a teal halo (`s` scales it, `ph` sets its flicker).
+  function soulOrb(c, x, y, s, ph) {
+    const sp = Art.sprites.soulOrb;
+    if (sp) {
+      // the drawn one: a soft halo, then the orb with its wisp curling up (its centre is near the bottom)
+      const r = 11 * s, g = c.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgba(${SOUL},0.5)`); g.addColorStop(1, `rgba(${SOUL},0)`);
+      c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2);
+      const op = c.globalCompositeOperation, w = sp.w * PS * s, h = sp.h * PS * s;
+      c.globalCompositeOperation = "source-over";
+      c.drawImage(sp.c, Math.round(x - w / 2), Math.round(y + 6 * s - h), w, h);
+      c.globalCompositeOperation = op;
+      return;
+    }
+    const r = 13 * s, g = c.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(${SOUL},0.95)`); g.addColorStop(0.45, `rgba(${SOUL},0.5)`); g.addColorStop(1, `rgba(${SOUL},0)`);
+    c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2);
+    const op = c.globalCompositeOperation;
+    c.globalCompositeOperation = "source-over";
+    c.fillStyle = "#020807";
+    c.beginPath(); c.arc(x, y, 4.2 * s, 0, Math.PI * 2); c.fill();
+    c.fillStyle = `rgba(200,255,240,${0.75 + 0.25 * Math.sin(ph * 2)})`;
+    c.fillRect(x - 2.2 * s, y - 1.2 * s, 1.4 * s, 1.4 * s); c.fillRect(x + 0.8 * s, y - 1.2 * s, 1.4 * s, 1.4 * s);
+    c.globalCompositeOperation = op;
+  }
+  /* Over the dark: Abigail's eyes and the souls circling her, her blessing at her knight's feet, the mark on
+     the Drowned she has weakened, your soul orbs lying out there, and the souls you've laid to rest at the graves. */
+  function drawSoulGlow(c, G, view, t) {
+    const AB = DL.Abigail, me = G.isGuest() ? DL.Net.myId : 0;
+    for (const w of G.wraiths) {
+      for (const [x, y] of wraithEyes(w, t)) {
+        const g = c.createRadialGradient(x, y, 0, x, y, 5);
+        g.addColorStop(0, "rgba(200,255,240,0.95)"); g.addColorStop(1, `rgba(${SOUL},0)`);
+        c.fillStyle = g; c.fillRect(x - 5, y - 5, 10, 10);
+      }
+      const P = wraithPose(w, t);
+      for (let i = 0; i < 2; i++) {
+        const a = t * 1.6 + i * Math.PI + w.id;
+        soulOrb(c, P.x + Math.cos(a) * 17, P.y - 26 + Math.sin(a) * 7, 0.45, t * 3 + i);
+      }
+      if (w.buff > 0) {
+        const k = w.owner === me ? G.player : G.allies.find((a) => a.id === w.owner);
+        if (!k) continue;
+        const f = Math.min(1, w.buff / 1.5), pulse = 0.75 + 0.25 * Math.sin(t * 5);
+        c.strokeStyle = `rgba(${SOUL},${0.55 * f * pulse})`;
+        c.lineWidth = 2;
+        c.beginPath(); c.ellipse(k.x, k.y, 18, 7, 0, 0, Math.PI * 2); c.stroke();
+        for (let i = 0; i < 3; i++) {
+          const u = (t * 0.7 + i / 3) % 1;
+          c.fillStyle = `rgba(${SOUL},${0.7 * f * Math.sin(Math.PI * u)})`;
+          c.fillRect(k.x + Math.cos(i * 2.1 + t) * 13 - 1, k.y - u * 50 - 1, 2, 2);
+        }
+      }
+    }
+    for (const e of G.enemies) {
+      if (!e.cursed || e.rise > 0) continue;
+      const s = e.def.scale, a = 0.3 + 0.12 * Math.sin(t * 4 + e.id);
+      c.strokeStyle = `rgba(${SOUL},${a})`;
+      c.lineWidth = 1.5;
+      c.beginPath(); c.ellipse(e.x, e.y, 13 * s, 5 * s, 0, 0, Math.PI * 2); c.stroke();
+      const u = (t * 0.8 + e.id * 0.37) % 1;
+      c.fillStyle = `rgba(${SOUL},${0.6 * Math.sin(Math.PI * u)})`;
+      c.fillRect(e.x + Math.sin(e.id) * 8 - 1, e.y - u * 40 * s - 1, 2, 2);
+    }
+    for (const o of AB.left()) {
+      if (o.x < view.left - 40 || o.x > view.right + 40 || o.y < view.top - 40 || o.y > view.bottom + 60) continue;
+      const y = o.y - 16 + Math.sin(t * 2 + o.i) * 3;
+      for (let i = 1; i <= 4; i++) {
+        // wisps curling up off it
+        const u = (t * 0.9 + i / 4) % 1;
+        c.fillStyle = `rgba(${SOUL},${0.45 * Math.sin(Math.PI * u)})`;
+        c.beginPath(); c.arc(o.x + Math.sin(t * 3 + i * 2) * 4, y - 6 - u * 16, 2.2 - u, 0, Math.PI * 2); c.fill();
+      }
+      soulOrb(c, o.x, y, 0.85, t * 2 + o.i);
+    }
+    const n = AB.restingSouls();
+    if (n) {
+      const gs = AB.graveSpot();
+      if (Math.abs(gs.x - G.camera.x) < 900 && Math.abs(gs.y - G.camera.y) < 900)
+        for (let i = 0; i < n; i++) {
+          const a = t * 0.8 + (i / n) * Math.PI * 2;
+          soulOrb(c, gs.x + Math.cos(a) * 28, gs.y - 50 + Math.sin(a) * 9, 0.4, t * 2 + i);
+        }
+    }
+  }
+
   function drawProjectile(c, b) {
     const a = Math.atan2(b.vy, b.vx), ux = Math.cos(a), uy = Math.sin(a);
+    if (b.kind === "soul") {
+      // Abigail's soul orb: a teal wisp trailing behind a dark round soul with two pale eyes
+      const tt = DL.Game.t;
+      const fly = Art.sprites[Math.floor(tt * 10) % 2 ? "soulFly2" : "soulFly1"];
+      if (fly) {
+        // the drawn orb streaming its tail behind it, turned the way it flies (its head is at the right end)
+        const w = fly.w * PS * 0.75, h = fly.h * PS * 0.75, g = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, 14);
+        g.addColorStop(0, `rgba(${SOUL},0.55)`); g.addColorStop(1, `rgba(${SOUL},0)`);
+        c.fillStyle = g; c.fillRect(b.x - 14, b.y - 14, 28, 28);
+        c.save();
+        c.globalCompositeOperation = "source-over";
+        c.translate(b.x, b.y); c.rotate(a);
+        if (Math.cos(a) < 0) c.scale(1, -1); // keep it upright going left
+        c.drawImage(fly.c, -w + 6, -h / 2, w, h);
+        c.restore();
+        return;
+      }
+      for (let i = 1; i <= 6; i++) {
+        const w = Math.sin(tt * 18 + i * 1.3) * 2.5 * (i / 6);
+        c.fillStyle = `rgba(${SOUL},${0.55 * (1 - i / 7)})`;
+        c.beginPath(); c.arc(b.x - ux * i * 4.5 - uy * w, b.y - uy * i * 4.5 + ux * w, 4.5 - i * 0.5, 0, Math.PI * 2); c.fill();
+      }
+      soulOrb(c, b.x, b.y, 1, tt * 3 + b.x * 0.01);
+      return;
+    }
     if (b.kind === "orb") {
       const g = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, 12);
       g.addColorStop(0, "rgba(255,255,240,1)"); g.addColorStop(0.35, `rgba(${b.col},0.9)`); g.addColorStop(1, `rgba(${b.col},0)`);

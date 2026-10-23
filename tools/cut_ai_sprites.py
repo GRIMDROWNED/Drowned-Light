@@ -52,6 +52,8 @@ GRIDS = {
     'derek/poses-b.png': (3, 2, POSES_B),
     'kindle/poses-a.png': (3, 2, POSES_A),
     'kindle/poses-b.png': (3, 2, POSES_B),
+    'abigail/poses-a.png': (3, 2, POSES_A),
+    'abigail/poses-b.png': (3, 2, POSES_B),
 }
 # Cells the AI drew at another scale than the rest of their sheet: cell -> factor to resize it by.
 CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
@@ -61,6 +63,7 @@ CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
 HOUND_H = 60
 DEREK_H = 60  # cut at 4 file px per art pixel (res: 4): drawn 30 px tall, about 3/8 of the knight
 DEREK_SIDE_H = 62
+ABIGAIL_H = 112  # cut at res 4: drawn 28 px tall, hem to hood, about two thirds of the knight
 KINDLE_H = 64  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
 SETS = {
     'lantern-knight': ('lantern-knight', 'knight-front.png', 80, 3, {
@@ -132,6 +135,12 @@ SETS = {
     # Kindle the walking lantern: his sheets put the broken lantern (lying on its side), a pour (refilling a
     # lantern) and a point (leading the way) where the 12-pose prompt has its attacks, and a crouch and a hop
     # where it has hurt and death.
+    # Abigail floats: her 'walk' is a drift; attackA/B raise and throw, 'hurt' recoils, then her blessing and her fading
+    'abigail': ('abigail', 'abigail/01_front.png', ABIGAIL_H, 1, {
+        'abigail/01_front.png': 'front', 'abigail/02_back.png': 'back', 'abigail/03_right.png': 'right',
+        'abigail/04_walk.png': 'side/walk1', 'abigail/05_walk.png': 'side/walk2', 'abigail/06_walk.png': 'side/walk3', 'abigail/07_walk.png': 'side/walk4',
+        'abigail/08_attackA.png': 'side/castUp', 'abigail/09_attackB.png': 'side/throw', 'abigail/10_attackC.png': 'side/hurt',
+        'abigail/11_hurt.png': 'bless', 'abigail/12_death.png': 'side/fade'}),
     'kindle': ('kindle', 'kindle/01_front.png', KINDLE_H, 1, {
         'kindle/01_front.png': 'front', 'kindle/02_back.png': 'back', 'kindle/03_right.png': 'right',
         'kindle/04_walk.png': 'side/walk1', 'kindle/05_walk.png': 'side/walk2', 'kindle/06_walk.png': 'side/walk3', 'kindle/07_walk.png': 'side/walk4',
@@ -220,6 +229,11 @@ SHEETS = {
         ('derek/walk-front-4.png', 4, 1, DEREK_H, 'walkF'),
         ('derek/walk-back-4.png', 4, 1, DEREK_H, 'walkB'),
     ],
+    'abigail': [
+        ('abigail/walk-side-4.png', 4, 1, ABIGAIL_H, 'side/walk'),
+        ('abigail/walk-front-4.png', 4, 1, ABIGAIL_H, 'walkF'),
+        ('abigail/walk-back-4.png', 4, 1, ABIGAIL_H, 'walkB'),
+    ],
     'kindle': [
         ('kindle/walk-side-4.png', 4, 1, KINDLE_H, 'side/walk'),
         ('kindle/walk-front-4.png', 4, 1, KINDLE_H, 'walkF'),
@@ -278,6 +292,10 @@ PROP_GRIDS = {
     'den/den.png': (2, 1, ['denGuarded', 'denCleared']),
     # the mouth of Derek's Hollow: sealed by a slab, then open with its runes lit
     'cave/cave-entrance.png': (2, 1, ['caveSealed', 'caveOpen']),
+    # the Abyss graves (src/abigail.js): the headstone where soul orbs are laid, two graves, a pillar (keeping the coded names)
+    'abigail/graves.png': (4, 1, ['headstone', 'grave', 'grave2', 'pillar']),
+    # Abigail's soul orb: lying out in the world, then flying (two flickers)
+    'abigail/soul-orb.png': (3, 1, ['soulOrb', 'soulFly1', 'soulFly2']),
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
@@ -292,6 +310,8 @@ PROP_HEIGHT['amethyst11'] = 50
 PROP_WIDTH['resWood'] = 22
 PROP_WIDTH['denGuarded'] = 220  # about four knights wide
 PROP_WIDTH['caveOpen'] = 176  # about four knights wide
+PROP_HEIGHT.update({'headstone': 84, 'grave': 50, 'pillar': 104, 'soulOrb': 40})
+PROP_WIDTH.update({'grave2': 60, 'soulFly1': 56, 'soulFly2': 56})
 # Renders whose own colours come close to the magenta key (purple crystals): key them out with a tighter
 # tolerance than the default 120 and without the purple-fringe filter, so the art isn't eaten.
 PROP_TOL = {n: 60 for n in ['amethyst11', 'amethyst12', 'amethyst13', 'amethyst21', 'amethyst22', 'amethyst23', 'amethyst31', 'amethyst32', 'amethyst33']}

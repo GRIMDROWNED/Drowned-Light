@@ -424,6 +424,15 @@
       g.imageSmoothingEnabled = false;
       DL.Art.drawUnit(g, "boneHound", "idle", 0, 0, cv.width / 2 - 2, cv.height - 4, cv.width / 88);
     }
+    for (const cv of document.querySelectorAll("canvas[data-wraith]")) {
+      const g = cv.getContext("2d");
+      g.clearRect(0, 0, cv.width, cv.height);
+      g.save();
+      g.translate(cv.width / 2, cv.height - 2);
+      g.scale(0.9, 0.9);
+      DL.Render.drawWraith(g, { id: 1, x: 0, y: 0, angle: Math.PI / 2, state: "move" }, t);
+      g.restore();
+    }
     for (const cv of document.querySelectorAll("canvas[data-golem]")) {
       const g = cv.getContext("2d");
       g.clearRect(0, 0, cv.width, cv.height);
@@ -505,6 +514,7 @@
         }).join("")}</ol></article>`;
       html += houndCard(G);
       html += golemCard(G);
+      html += wraithCard(G);
       const d = G.diff();
       html += `<article class="card"><header><h3>${d.name}</h3><span class="tag">Difficulty</span></header>
         <p class="motto">${d.motto}</p><ul class="guide">${d.notes.map((n) => `<li>${n}</li>`).join("")}</ul></article>`;
@@ -531,6 +541,7 @@
           <li>Defend a <b>Mother Root</b> until dawn for a rich reward.</li>
           <li>Bone Wolves den in the Mire, to the ${DL.Den.direction()}. Break the pack and carry a carcass home: it rises as your <b>Bone Hound</b>.</li>
           <li>${DL.Kindle.guideLine()}</li>
+          <li>${DL.Abigail.guideLine()}</li>
           <li>Fall, and your <b>drowned self</b> keeps your supplies. Slay it to get them back.</li>
         </ul></article>`;
     }
@@ -572,6 +583,24 @@
         <div><span class="tag">Familiar · Defender</span><h3>${H.name}</h3><span class="motto">Stone between you and the dark.</span></div></header>
       <p>A mossy stone golem with a glowing heart who follows you everywhere. When the Drowned close in, he raises a stone wall across their path. Any Drowned near a wall stops chasing you to smash it, and arrows and orbs break on it too.</p>
       <p class="effect">A wall every ${H.buildCd} s · ${H.hits} hits to break · lasts ${H.life} s · up to ${H.maxWalls} at once<br>Can't be hurt · stays with you for good · one per knight</p>
+      ${how}
+      <footer>${action}</footer></article>`;
+  }
+
+  // Abigail: a soul wraith familiar, one per knight, won by laying soul orbs to rest at the Abyss graves.
+  function wraithCard(G) {
+    const A = DL.ABIGAIL, mine = DL.Abigail.mine(), pr = DL.Abigail.progress(), w = DL.Abigail.where(), pct = Math.round(A.buff * 100);
+    UI.wraithShown = !!mine;
+    let action;
+    if (mine) action = `<span class="maxed">At your side${mine.buff > 0 ? " · blessing you now" : ""}</span>`;
+    else if (pr.held + pr.given >= A.need) action = `<span class="req">You carry enough souls: take them to the graves${pr.found ? `, ${w.m} m ${w.dir}` : " in the Abyss"}</span>`;
+    else action = `<span class="req">Soul orbs ${pr.given} laid to rest · ${pr.held} carried · ${A.need} needed</span>`;
+    const how = mine ? "" : `<p class="effect"><b>Win her at the graves.</b> Soul orbs glow pale teal all over the land, from the Shallows to the Abyss. Walk over one to take it, and carry them to the old graves deep in the Abyss${pr.found ? `, ${w.m} m ${w.dir} of camp` : ""}. Lay ${A.need} to rest at the tall headstone and Abigail rises. Orbs you carry aren't lost when you fall. With friends, everyone gathers their own.</p>`;
+    return `<article class="card hound-card">
+      <header><canvas class="portrait" data-wraith="1" width="66" height="52"></canvas>
+        <div><span class="tag">Familiar · Ranged · Curse</span><h3>${A.name}</h3><span class="motto">She remembers every soul the dark took.</span></div></header>
+      <p>A hooded soul wraith who drifts at your shoulder. She sends homing soul orbs at the Drowned, and any Drowned an orb touches is weakened for good. Every ${A.pulseEvery} seconds she blesses you.</p>
+      <p class="effect">Soul orb ${DL.Abigail.dmg()} damage every ${A.cd} s · weakened Drowned: ${pct}% less damage and speed, ${pct}% more damage taken<br>Blessing every ${A.pulseEvery} s for ${A.buffDur} s: ${pct}% more damage and speed, ${pct}% less damage taken<br>Can't be hurt · stays with you for good · one per knight</p>
       ${how}
       <footer>${action}</footer></article>`;
   }
@@ -625,6 +654,14 @@
       set($("caveArrow"), "transform", `rotate(${(Math.atan2(m.y - p.y, m.x - p.x) * 180) / Math.PI}deg)`);
       set($("caveDist"), "text", `Hollow ${Math.round(Math.hypot(m.x - p.x, m.y - p.y) / 10)}m`);
     }
+    // the way to the Abyss graves, once found, while you carry soul orbs
+    const gn = DL.Abigail.showNav();
+    set($("graveNav"), "hidden", !gn);
+    if (gn) {
+      const m = DL.Abigail.graveSpot();
+      set($("graveArrow"), "transform", `rotate(${(Math.atan2(m.y - p.y, m.x - p.x) * 180) / Math.PI}deg)`);
+      set($("graveDist"), "text", `Graves ${Math.round(Math.hypot(m.x - p.x, m.y - p.y) / 10)}m`);
+    }
     const ds = G.save.drownedSelf;
     set($("selfNav"), "hidden", !ds);
     // where your nearest co-op friend is
@@ -641,7 +678,8 @@
       set($("selfDist"), "text", `Drowned self ${Math.round(Math.hypot(ds.x - p.x, ds.y - p.y) / 10)}m`);
     }
 
-    const carried = DL.RES_KEYS.filter((k) => p.carried[k] > 0).map((k) => chip(k, p.carried[k])).join("");
+    const souls = DL.Abigail.won() ? 0 : DL.Abigail.held();
+    const carried = DL.RES_KEYS.filter((k) => p.carried[k] > 0).map((k) => chip(k, p.carried[k])).join("") + (souls ? `<span class="chip soul"><i></i>${souls} soul orb${souls > 1 ? "s" : ""}</span>` : "");
     set($("carried"), "html", carried ? `<span class="lbl">Carrying</span>${carried}` : "");
 
     // objective banner
@@ -657,7 +695,7 @@
     const kit = G.kit();
     set($("abilityName"), "text", kit.ability.name);
     const abFrac = p.abiCd > 0 ? p.abiCd / DL.Kits.abilityCd() : 0;
-    set($("kitLine"), "text", `${kit.name} · Lv ${G.save.kitLevel} · ${G.diff().name}`);
+    set($("kitLine"), "text", `${kit.name} · Lv ${G.save.kitLevel} · ${G.diff().name}${DL.Abigail.buffed() ? " · Abigail's blessing" : ""}`);
     set($("btnAbility"), "--cd", abFrac.toFixed(3));
     set($("btnAbility"), "class", "act" + (p.oil < kit.ability.oil ? " low" : ""));
     set($("btnDash"), "--cd", (p.dashCd / 2.2).toFixed(3));
@@ -668,6 +706,6 @@
     document.body.classList.toggle("manual", manual);
     set($("campBtn"), "hidden", !G.inCamp);
     // the Bone Hound card follows the hound rising, going down or getting up while the menu is open
-    if (G.state === "camp" && UI.campTab === "kit" && (houndState(DL.Hounds.mine()) !== UI.houndShown || !!DL.Golems.mine() !== UI.golemShown)) UI.renderCamp();
+    if (G.state === "camp" && UI.campTab === "kit" && (houndState(DL.Hounds.mine()) !== UI.houndShown || !!DL.Golems.mine() !== UI.golemShown || !!DL.Abigail.mine() !== UI.wraithShown)) UI.renderCamp();
   };
 })(window.DL);

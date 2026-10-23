@@ -135,6 +135,16 @@
       P.rect(1, 17, 3, 2, C.moss);
     });
 
+    // The tall headstone at the heart of the Abyss graves, where soul orbs are laid to rest (src/abigail.js).
+    S.headstone = mk(20, 30, (P) => {
+      P.rect(1, 26, 18, 4, C.stoneDk);
+      P.poly([3, 27, 3, 8, 6, 3, 10, 1, 14, 3, 17, 8, 17, 27], C.stone);
+      P.rect(4, 8, 2, 19, C.stoneHi);
+      P.rect(9, 6, 2, 13, C.stoneDk); P.rect(6, 10, 8, 2, C.stoneDk);
+      P.rect(12, 21, 3, 3, C.stoneDk);
+      P.rect(2, 24, 4, 3, C.moss); P.rect(14, 15, 3, 2, C.moss);
+    });
+
     // The Bone Wolf den (coded stand-in until its drawn art arrives): a low earth-and-rock mound with a black
     // mouth facing you, ribs and bones strewn round it, a big skull on top.
     S.boneDen = mk(76, 48, (P) => {

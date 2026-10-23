@@ -583,9 +583,12 @@
   }
 
   // Kindle has no coded sheet (src/render.js draws his stand-in by hand): an empty one for the drawn frames to fill.
-  function kindleSheet() {
+  function kindleSheet(extra = ["point"]) {
     const blank = Object.assign(Art.mk(1, 1, () => {}), { ax: 0, ay: 0, blank: true }), sheet = {};
-    for (const dir of ["down", "up", "side"]) sheet[dir] = { idle: [blank], walk: [blank], attack: [blank], point: [blank], hurt: [blank], death: [blank] };
+    for (const dir of ["down", "up", "side"]) {
+      sheet[dir] = { idle: [blank], walk: [blank], attack: [blank], hurt: [blank], death: [blank] };
+      for (const a of extra) sheet[dir][a] = [blank];
+    }
     return sheet;
   }
 
@@ -644,6 +647,7 @@
     sh.boneHound = Art.applyFrames("boneHound", houndSheet());
     sh.derek = Art.applyFrames("derek", golemSheet());
     sh.kindle = Art.applyFrames("kindle", kindleSheet());
+    sh.abigail = Art.applyFrames("abigail", kindleSheet(["bless"])); // the same for Abigail (src/render.js)
     sh.champion = buildSheet({ pal: d({ cloth: "#c3cbc6", clothMd: "#8d9a99", blade: "#7fa6b0" }), weapon: "greatsword", offhand: "none", bulk: 1, crown: true, drips: 22, seed: 27 });
   };
 

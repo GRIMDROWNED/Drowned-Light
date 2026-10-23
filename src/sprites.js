@@ -100,6 +100,7 @@
     Object.assign(walking("boneHound", [55, 55], [27, 64], [26, 66]), { path: "assets/sprites/bone-hound/", keys: { boneHound: [0, false] } }),
     derek(),
     kindle(),
+    abigail(),
   ];
 
   // Derek the golem familiar, cut at res 4, 30 px tall (about 3/8 of the knight). His cast is drawn
@@ -122,12 +123,22 @@
     return set;
   }
 
+  // Abigail the soul wraith, cut at res 4, 28 px tall from hem to hood. She floats (src/render.js lifts her off the
+  // ground): her walk is a drift, "attack" raises an arm and throws, "bless" is her blessing (facing you, arms up),
+  // and "death" fades her away.
+  function abigail() {
+    const set = Object.assign(walking("abigail", [89, 125], [68, 121], [70, 117], 4), { path: "assets/sprites/abigail/", keys: { abigail: [0, false] } });
+    for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
+      Object.assign(set.views[dir], { attack: ["side/castUp", "side/throw", "side/throw"], bless: ["bless"], hurt: ["side/hurt"], death: ["side/fade"], idle: [p] });
+    return set;
+  }
+
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
   const PLANTS = ["refugeOn", "refugeOff", "sentinelOn", "sentinelOff", "rootOn", "rootOff", "sproutOn", "sproutOff", "sproutBare", "husk", "gardenOn", "gardenOff",
     "reeds1", "reeds2", "reeds3", "reeds4", "reeds5", "reeds6", "gardenBed1", "gardenBed2", "gardenBed3",
     "swampTree1", "swampTree2", "swampTree3",
     "boulder11", "boulder12", "boulder13", "boulder21", "boulder22", "boulder23", "boulder31", "boulder32", "boulder33", "boulder41", "boulder42", "boulder43",
-    "flame1", "flame2", "flame3", "forge1", "forge2", "forge3", "forge4", "armory1", "armory2", "armory3", "armory4", "workbench1", "workbench2", "workbench3", "workbench4", "tower1", "tower2", "tower3", "pylon1", "pylon2", "pylon3", "stake", "palisade", "palisade2", "gatePost", "gatePost2", "palisadeSide", "palisadeSide2", "cornerPost", "cornerPost2", "tent", "banner", "torch", "burnt", "brazier", "fire1", "fire2", "fire3", "fire4", "fire5", "fire6", "iron11", "iron12", "iron13", "iron21", "iron22", "iron23", "iron31", "iron32", "iron33", "amethyst11", "amethyst12", "amethyst13", "amethyst21", "amethyst22", "amethyst23", "amethyst31", "amethyst32", "amethyst33", "resWood", "resStone", "resResin", "resIron", "resPearl", "denGuarded", "denCleared", "caveSealed", "caveOpen"];
+    "flame1", "flame2", "flame3", "forge1", "forge2", "forge3", "forge4", "armory1", "armory2", "armory3", "armory4", "workbench1", "workbench2", "workbench3", "workbench4", "tower1", "tower2", "tower3", "pylon1", "pylon2", "pylon3", "stake", "palisade", "palisade2", "gatePost", "gatePost2", "palisadeSide", "palisadeSide2", "cornerPost", "cornerPost2", "tent", "banner", "torch", "burnt", "brazier", "fire1", "fire2", "fire3", "fire4", "fire5", "fire6", "iron11", "iron12", "iron13", "iron21", "iron22", "iron23", "iron31", "iron32", "iron33", "amethyst11", "amethyst12", "amethyst13", "amethyst21", "amethyst22", "amethyst23", "amethyst31", "amethyst32", "amethyst33", "resWood", "resStone", "resResin", "resIron", "resPearl", "denGuarded", "denCleared", "caveSealed", "caveOpen", "headstone", "grave", "grave2", "pillar", "soulOrb", "soulFly1", "soulFly2"];
   const PROPS = {
     path: "assets/sprites/",
     // cut at 2 file px per art pixel, like the units
