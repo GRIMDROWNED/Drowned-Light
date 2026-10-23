@@ -224,15 +224,16 @@
 
   DL.TORCH_COST = { wood: 3, resin: 1 };
 
-  /* Bone Hound: a summoned ally bought at the camp fire (Kit tab), one per knight. It runs down
-     the Drowned that strike and fall back (Tide Archers, Hexbearers, Mire Stalkers) first, bites
-     and hops clear, and every bite opens a bleed that ignores armour and stacks up to `bleedMax`.
+  /* Bone Hound: a summoned ally bought at the camp fire (Kit tab), one per knight. It hunts in order:
+     any Drowned that retreats (Mire Stalkers, and anything backing away), then anything that shoots
+     (Tide Archers, Hexbearers), then whatever is nearest. Priority prey is chased out to `chase` px
+     from its knight, the rest within `sight`. Every bite opens a bleed that ignores armour and stacks up to `bleedMax`.
      It stays until it falls; health and bite grow by `perFlame` for each Central Flame level past `reqFlame`. */
   DL.HOUND = {
     name: "Bone Hound", reqFlame: 2, cost: { stone: 8, iron: 6, resin: 4 },
     hp: 80, dmg: 6, cd: 0.8, range: 22, speed: 185, lunge: 360, perFlame: 0.15,
     bleedDps: 2.5, bleedDur: 4, bleedMax: 3,
-    sight: 320, leash: 400, regen: 5, radius: 9,
+    sight: 320, chase: 480, leash: 650, regen: 5, radius: 9,
   };
   DL.scaleCost = scaleCost;
 

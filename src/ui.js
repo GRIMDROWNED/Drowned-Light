@@ -541,7 +541,7 @@
     return `<article class="card hound-card">
       <header><canvas class="portrait" data-hound="1" width="66" height="52"></canvas>
         <div><span class="tag">Summon · Melee</span><h3>${H.name}</h3><span class="motto">It hunts what runs.</span></div></header>
-      <p>A fast skeletal hound that fights beside you. It runs down the Drowned that strike and fall back first (Tide Archers, Hexbearers, Mire Stalkers), bites, hops clear and comes again. Every bite makes them bleed.</p>
+      <p>A fast skeletal hound that fights beside you. It hunts any Drowned that retreats first (Mire Stalkers, anything backing away), then anything that shoots (Tide Archers, Hexbearers), then whatever is nearest. It bites, hops clear and comes again, and stays on the heels of prey that runs. Every bite makes them bleed.</p>
       <p class="effect">Health ${st.maxHp} · bite ${st.dmg} · bleed ${H.bleedDps}/s, stacking ${H.bleedMax}× · heals in firelight<br>Stays until it falls · one per knight · grows with the Central Flame</p>
       <footer>${action}</footer></article>`;
   }
