@@ -544,9 +544,26 @@
     if (u.stakes === 1) {
       DL.Camp.ring(R - 10, 52).forEach(({ x, y }, i) => put(y, () => sprite(c, "stake", x, y + 2, i % 2 === 0)));
     } else if (u.stakes >= 2) {
-      DL.Camp.ring(R, 46).forEach(({ x, y }, i) => {
+      const rf = u.stakes >= 3 && Art.sprites.palisade2 ? "2" : "";
+      if (Art.sprites.palisadeSide) {
+        // drawn walls: front-facing sections along the north and south, side-on strips down the east and
+        // west (packed closer, as each covers less ground), and a post at each corner
+        const n = Math.round((2 * R) / 46);
+        for (let i = 1; i < n; i++) for (const y of [-R, R]) {
+          const x = -R + (2 * R * i) / n;
+          if (Math.abs(x) < DL.Camp.GATE_HALF + 22) continue;
+          put(y, () => sprite(c, "palisade" + rf, x, y + 4, i % 2 === 0));
+        }
+        const m = Math.round((2 * R) / SIDE_STEP);
+        for (let i = 1; i < m; i++) for (const x of [-R, R]) {
+          const y = -R + (2 * R * i) / m;
+          if (Math.abs(y) < DL.Camp.GATE_HALF + 14) continue;
+          put(y, () => sprite(c, "palisadeSide" + rf, x, y + 4, x > 0));
+        }
+        for (const x of [-R, R]) for (const y of [-R, R]) put(y + 1, () => sprite(c, "cornerPost" + rf, x, y + 4, x > 0));
+      } else DL.Camp.ring(R, 46).forEach(({ x, y }, i) => {
         if (DL.Camp.nearestGate(x, y).arc < DL.Camp.GATE_HALF + 22) return;
-        put(y, () => sprite(c, u.stakes >= 3 && Art.sprites.palisade2 ? "palisade2" : "palisade", x, y + 4, i % 2 === 0));
+        put(y, () => sprite(c, "palisade" + rf, x, y + 4, i % 2 === 0));
       });
       for (const g of DL.Camp.GATES) for (const sgn of [-1, 1]) {
         const { x, y } = DL.Camp.gatePoint(g, sgn * (DL.Camp.GATE_HALF + 6), 0);
@@ -592,6 +609,7 @@
   const FLAME_FIRE = { 1: -12, 2: -34, 3: -68 };
   const PYLON_LAMPS = { 1: [[-20, -74], [17, -58]], 2: [[-19, -71], [17, -62]], 3: [[-24, -71], [23, -63]] };
   const GATE_LAMP = [31, -56];
+  const SIDE_STEP = 18; // ground each side-on wall strip covers, north to south
   function lampFlame(c, x, y) {
     c.fillStyle = "#ffab3d"; c.fillRect(Math.round(x) - 3, Math.round(y) - 5, 6, 10);
     c.fillStyle = "#fff1c2"; c.fillRect(Math.round(x) - 1, Math.round(y) - 3, 2, 5);
