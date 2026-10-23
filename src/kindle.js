@@ -139,6 +139,7 @@
     p.oil = st.maxOil;
     refillT = K.refillEvery;
     sfx("chime");
+    k.pourAt = performance.now();
     G.effects.push({ type: "kindleRefill", x1: k.x, y1: k.y - 18, x2: p.x, y2: p.y - 28, t: 0, max: 0.6 });
     if (!G.save.kindle.refilled) { G.save.kindle.refilled = true; if (!G.isGuest()) G.persist(); say("Kindle tips some of his flame into your lantern. Your oil is full.", "good"); }
   };

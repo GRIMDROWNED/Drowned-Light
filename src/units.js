@@ -582,6 +582,13 @@
     return sheet;
   }
 
+  // Kindle has no coded sheet (src/render.js draws his stand-in by hand): an empty one for the drawn frames to fill.
+  function kindleSheet() {
+    const blank = Object.assign(Art.mk(1, 1, () => {}), { ax: 0, ay: 0, blank: true }), sheet = {};
+    for (const dir of ["down", "up", "side"]) sheet[dir] = { idle: [blank], walk: [blank], attack: [blank], point: [blank], hurt: [blank], death: [blank] };
+    return sheet;
+  }
+
   /* ---------- sheet building ---------- */
   function fallen(src, dir) {
     // Lay the kneeling frame on its side.
@@ -636,6 +643,7 @@
     sh.hexbearer = buildSheet({ pal: d({ cloth: "#8d9896" }), weapon: "staff", offhand: "lantern", torn: true, drips: 14, seed: 28 });
     sh.boneHound = Art.applyFrames("boneHound", houndSheet());
     sh.derek = Art.applyFrames("derek", golemSheet());
+    sh.kindle = Art.applyFrames("kindle", kindleSheet());
     sh.champion = buildSheet({ pal: d({ cloth: "#c3cbc6", clothMd: "#8d9a99", blade: "#7fa6b0" }), weapon: "greatsword", offhand: "none", bulk: 1, crown: true, drips: 22, seed: 27 });
   };
 
