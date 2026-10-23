@@ -73,7 +73,7 @@
     refuge: { sprite: "refuge", bloom: true, light: 125, hp: 70, rad: 14, name: "Refuge Bloom" },
     sentinel: { sprite: "sentinel", bloom: true, light: 95, hp: 100, rad: 14, turret: true, name: "Sentinel Bloom" },
     // The Bone Wolf den: one in the world (src/den.js).
-    den: { sprite: "boneDen", solid: 30, name: "Bone Wolf Den" },
+    den: { sprite: "boneDen", solid: 40, name: "Bone Wolf Den" },
     root: { sprite: "root", bloom: true, light: 200, hp: 480, rad: 30, solid: 20, name: "Mother Root" },
   };
 
