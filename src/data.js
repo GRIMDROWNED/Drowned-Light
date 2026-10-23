@@ -32,14 +32,30 @@
       pool: { footman: 3, archer: 3, revenant: 3, defiler: 3, blackguard: 3, hexbearer: 3, champion: 0.5 } },
   ];
 
-  // What grows where (weights), per zone index.
+  // What grows where (weights), per zone index. Refuge and Sentinel Blooms grow only in groves (DL.GROVE);
+  // their old weight went to "gap" so everything else keeps its density.
   DL.SPAWN_TABLE = [
     {},
-    { tree: 4, gap: 10, stone: 2.5, sprout: 2, refuge: 1.6, reeds: 4 },
-    { tree: 3, gap: 8.7, stone: 2, iron: 2.5, sprout: 3, refuge: 1.6, sentinel: 0.8, reeds: 3 },
-    { tree: 2.5, gap: 8.5, stone: 1.5, iron: 4, pearl: 1.5, sprout: 3.5, refuge: 1.4, sentinel: 1.2, reeds: 2 },
-    { tree: 2, gap: 8.5, stone: 1.5, iron: 5, pearl: 2, sprout: 4, refuge: 1, sentinel: 1.5, reeds: 1 },
+    { tree: 4, gap: 11.6, stone: 2.5, sprout: 2, reeds: 4 },
+    { tree: 3, gap: 11.1, stone: 2, iron: 2.5, sprout: 3, reeds: 3 },
+    { tree: 2.5, gap: 11.1, stone: 1.5, iron: 4, pearl: 1.5, sprout: 3.5, reeds: 2 },
+    { tree: 2, gap: 11, stone: 1.5, iron: 5, pearl: 2, sprout: 4, reeds: 1 },
   ];
+
+  /* Bloom groves: the glowing plants grow in clumps, at most one per cell of the grove grid, with real
+     darkness between them, so night means choosing a grove and holding it. `cell` = grid size in world px,
+     `chance` = odds a cell has a grove, `spread` = how far its blooms sit from its heart, `clear` = radius kept
+     free of trees and rocks. Per zone: how many Refuge and Sentinel Blooms, and extra Bloom Sprouts (resin). */
+  DL.GROVE = {
+    cell: 1280, margin: 400, chance: 0.8, spread: 150, clear: 190,
+    zones: [
+      null,
+      { refuge: [4, 6], sentinel: [0, 0], sprout: [2, 3] },
+      { refuge: [3, 5], sentinel: [1, 1], sprout: [2, 4] },
+      { refuge: [3, 4], sentinel: [1, 2], sprout: [3, 4] },
+      { refuge: [2, 3], sentinel: [2, 3], sprout: [3, 5] },
+    ],
+  };
 
   // World objects. `solid` = collision radius, `hits` = strikes to mine it. `bloom` objects glow at night and shelter you.
   DL.OBJ = {

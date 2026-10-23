@@ -519,7 +519,7 @@
         <header><h3>Field guide</h3></header>
         <ul class="guide">
           <li><b class="warm">Firelight</b> (camp, torches, Illuminate) reverses corruption and refills your lantern.</li>
-          <li><b class="cold">Bloomlight</b> (Refuge, Sentinel, Mother Root) only halts it. Blooms wake at night.</li>
+          <li><b class="cold">Bloomlight</b> (Refuge, Sentinel, Mother Root) only halts it. Blooms wake at night and grow in groves, with darkness between them: pick one before dusk and hold it.</li>
           <li>Your <b>lantern oil</b> halves corruption in the dark until it runs dry.</li>
           <li><b>Amethyst</b> deposits glow purple in the Drowned Reaches and the Abyss, farther out than iron. They stay day and night and regrow at dawn.</li>
           <li>Defend a <b>Mother Root</b> until dawn for a rich reward.</li>
