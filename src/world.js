@@ -14,6 +14,7 @@
     ground: new Map(),
 
     zoneIndex(x, y) {
+      if (DL.Cave.inRegion(x, y)) return DL.CAVE.zone; // Derek's Hollow, far off the map
       const d = Math.hypot(x, y);
       let z = 0;
       for (let i = 0; i < DL.ZONES.length; i++) if (d >= DL.ZONES[i].r) z = i;
@@ -22,8 +23,8 @@
     zone(x, y) { return DL.ZONES[this.zoneIndex(x, y)]; },
 
     waterVal(x, y) { return DL.fbm(x / 260, y / 260, 11); },
-    isWater(x, y) { return DL.Camp.sq(x, y) > 260 && this.waterVal(x, y) < WATER; },
-    isShore(x, y) { const w = this.waterVal(x, y); return DL.Camp.sq(x, y) > 260 && w >= WATER && w < SHORE; },
+    isWater(x, y) { return DL.Camp.sq(x, y) > 260 && !DL.Cave.inRegion(x, y) && this.waterVal(x, y) < WATER; },
+    isShore(x, y) { const w = this.waterVal(x, y); return DL.Camp.sq(x, y) > 260 && !DL.Cave.inRegion(x, y) && w >= WATER && w < SHORE; },
 
     chunk(cx, cy) {
       const key = cx + "," + cy;
@@ -35,6 +36,7 @@
     gen(cx, cy) {
       const objs = [];
       const mx = (cx + 0.5) * CH, my = (cy + 0.5) * CH;
+      if (DL.Cave.inRegion(mx, my)) return []; // the Hollow's cave floor is bare
       const zi = Math.max(1, this.zoneIndex(mx, my));
       const D = DL.Game.diff();
       // Each chunk lies inside exactly one cell of the grove grid (the cell is a whole number of chunks).
@@ -44,7 +46,7 @@
       const n = Math.round(DL.ZONES[zi].density * D.density * (0.7 + DL.hash(cx, cy, 5) * 0.6));
       for (let i = 0; i < n; i++) {
         const x = (cx + DL.hash(cx, cy, i * 3 + 1)) * CH, y = (cy + DL.hash(cx, cy, i * 3 + 2)) * CH;
-        if (DL.Camp.sq(x, y) < CAMP_CLEAR) continue;
+        if (DL.Camp.sq(x, y) < CAMP_CLEAR || DL.Cave.clears(x, y)) continue;
         const ozi = Math.max(1, this.zoneIndex(x, y));
         let type = DL.weighted(DL.SPAWN_TABLE[ozi], DL.hash(cx, cy, i * 3 + 3));
         // "gap" is where driftwood used to lie: nothing spawns there, so the ground is clearer
@@ -60,11 +62,11 @@
       }
       // The blooms of this chunk's grove that stand inside it.
       if (grove) for (const g of grove.items) {
-        if (Math.floor(g.x / CH) === cx && Math.floor(g.y / CH) === cy) objs.push(this.makeObj(g.type, g.x, g.y, g.id, grove.zi, g.h));
+        if (Math.floor(g.x / CH) === cx && Math.floor(g.y / CH) === cy && !DL.Cave.clears(g.x, g.y)) objs.push(this.makeObj(g.type, g.x, g.y, g.id, grove.zi, g.h));
       }
       if (Math.floor(den.x / CH) === cx && Math.floor(den.y / CH) === cy) objs.push(this.makeObj("den", den.x, den.y, `${cx},${cy},den`, zi, 0.3));
       // Rare Mother Roots in the Mire and deeper.
-      if (zi >= 2 && DL.hash(cx, cy, 77) < 0.06 * D.bloom && !this.isWater(mx, my) && !denHere) objs.push(this.makeObj("root", mx, my, `${cx},${cy},root`, zi, 0.5));
+      if (zi >= 2 && DL.hash(cx, cy, 77) < 0.06 * D.bloom && !this.isWater(mx, my) && !denHere && !DL.Cave.clears(mx, my)) objs.push(this.makeObj("root", mx, my, `${cx},${cy},root`, zi, 0.5));
       return objs;
     },
 
@@ -127,6 +129,7 @@
 
     // Push a circle out of solid objects (trees, rocks, pillars, roots).
     collide(ent, r) {
+      DL.Cave.collide(ent, r); // the cave mouth's mound, and the Hollow's walls
       this.near(ent.x, ent.y, 60, (o) => {
         const s = o.def.solid;
         if (!s || o.harvested) return;
@@ -149,7 +152,7 @@
     tex: {},
     canvases: {},
     loadGround() {
-      for (const n of ["campEarth", "campFlags", "campPaving", "grass", "dirt", "shore", "shallow", "deep", "boardwalk"]) {
+      for (const n of ["campEarth", "campFlags", "campPaving", "grass", "dirt", "shore", "shallow", "deep", "boardwalk", "caveFloor"]) {
         const img = new Image();
         img.onload = () => {
           const c = document.createElement("canvas");
@@ -197,6 +200,7 @@
     },
 
     groundColor(x, y) {
+      if (DL.Cave.inRegion(x, y)) return DL.Cave.groundColor(x, y);
       const d = Math.hypot(x, y);
       const depth = Math.min(1, d / 5000);
       const h = DL.hash(x >> 1, y >> 1, 3);

@@ -32,6 +32,8 @@
     hound: 0, // 1 once your Bone Hound is won at the den (it can't die, so it always comes back)
     den: { found: false, cleared: false, bodies: [] }, // the Bone Wolf den: carcasses [x, y, angle] of the pack you killed
     golem: 0, // 1 once Derek is yours (he can't fall, so he always comes back)
+    caveFound: 0, // 1 once you've come upon the mouth of Derek's Hollow
+    caveFail: -1, // the night (nights survived so far) a trial in the Hollow was lost: it stays sealed until the next
     started: false,
     lastPlayed: 0,
   });
@@ -193,6 +195,7 @@
     DL.Hounds.reset();
     DL.Golems.reset();
     DL.Den.reset();
+    DL.Cave.reset();
     G.state = "play";
   };
 
@@ -229,21 +232,29 @@
     if (G.isGuest()) { guestUpdate(dt); return; }
 
     const wasNight = G.night;
-    G.time += dt;
-    if (G.time >= CYC.total) { G.time -= CYC.total; onNewDay(); }
-    G.nightAmt = nightAmount(G.time);
-    G.night = G.nightAmt >= 0.5;
-    if (G.night && !wasNight) onNightfall();
-    if (!G.night && wasNight) onDawn();
+    if (G.cave) {
+      // the clock stands still while you're down in Derek's Hollow, where it's always dark
+      G.nightAmt = 1; G.night = true;
+    } else {
+      G.time += dt;
+      if (G.time >= CYC.total) { G.time -= CYC.total; onNewDay(); }
+      G.nightAmt = nightAmount(G.time);
+      G.night = G.nightAmt >= 0.5;
+      if (G.night && !wasNight) onNightfall();
+      if (!G.night && wasNight) onDawn();
+    }
 
     collectBlooms();
     buildLights();
-    updatePlayer(dt);
-    if (G.state === "dying") return;
-    updateCorruption(dt);
-    if (G.state === "dying") return;
+    if (!(G.player.downT > 0)) { // down in the Hollow: just watch
+      updatePlayer(dt);
+      if (G.state === "dying") return;
+      updateCorruption(dt);
+      if (G.state === "dying") return;
+    }
     updateSpawning(dt);
     DL.Den.update(dt);
+    DL.Cave.update(dt);
     updateEnemies(dt);
     DL.Hounds.update(dt);
     DL.Golems.update(dt);
@@ -261,8 +272,8 @@
   // The guest runs only its own knight; the host's snapshots move the world (src/net.js).
   function guestUpdate(dt) {
     const wasNight = G.night;
-    if (!(G.hostState && G.hostState !== "play" && G.hostState !== "camp")) G.time = (G.time + dt) % CYC.total;
-    G.nightAmt = nightAmount(G.time);
+    if (!(G.hostState && G.hostState !== "play" && G.hostState !== "camp") && !G.cave) G.time = (G.time + dt) % CYC.total;
+    G.nightAmt = G.cave ? 1 : nightAmount(G.time);
     G.night = G.nightAmt >= 0.5;
     if (G.night && !wasNight) { sfx("night"); say("Night falls. Stay in the light — or the darkness will take you.", "warn"); }
     if (!G.night && wasNight) { sfx("dawn"); say("Dawn breaks. The Drowned retreat from the sun.", "good"); }
@@ -408,6 +419,7 @@
     }
     for (const pr of G.projectiles) L.push({ x: pr.x, y: pr.y, r: pr.kind === "orb" ? 44 : 26, s: 0.3, col: pr.col, a: 0.8 });
     if (G.walls) DL.Kits.lights(L);
+    if (p) DL.Cave.lights(L);
     G.lights = L;
   }
 
@@ -691,7 +703,7 @@
     const p = a ? { x: a.x, y: a.y, zi: W.zoneIndex(a.x, a.y) } : G.player;
     const Z = DL.ZONES[Math.max(1, p.zi)], dCamp = Math.hypot(p.x, p.y);
     const active = G.night || (Z.abyss && G.nightAmt < 0.5);
-    if (!active) return;
+    if (!active || G.cave) return; // in the Hollow only its waves come (src/cave.js)
 
     const cap = (G.night ? 55 : 14) + G.allies.length * (G.night ? 15 : 4);
     if (G.enemies.length >= cap) return;
@@ -795,9 +807,10 @@
   }
 
   // Each Drowned hunts whichever knight is nearest (host or a co-op friend), or a Bone Hound close by.
-  G.knights = () => [G.player, ...G.allies.filter((a) => !a.down)];
+  G.knights = () => [...(G.player.downT > 0 ? [] : [G.player]), ...G.allies.filter((a) => !a.down)];
   function targetFor(e) {
-    let best = G.player, bd = dist(e.x, e.y, G.player.x, G.player.y);
+    // a knight down in the Hollow is left alone
+    let best = G.player, bd = G.player.downT > 0 ? 1e9 : dist(e.x, e.y, G.player.x, G.player.y);
     for (const a of G.allies) if (!a.down) { const d = dist(e.x, e.y, a.x, a.y); if (d < bd) { bd = d; best = a; } }
     return DL.Hounds.nearest(e.x, e.y, bd) || best;
   }
@@ -1137,7 +1150,7 @@
 
   function hurtPlayer(dmg, ang) {
     const p = G.player;
-    if (p.inv > 0 || p.dashT > 0 || G.state !== "play") return;
+    if (p.inv > 0 || p.dashT > 0 || p.downT > 0 || G.state !== "play") return;
     dmg *= DL.Kits.damageTaken(p);
     p.hp -= dmg;
     p.inv = 0.5;
@@ -1290,7 +1303,7 @@
       const sw = b.hostile && DL.Golems.wallAt(b.x, b.y);
       if (sw) { DL.Golems.hitWall(sw); b.life = 0; } // Derek's walls stop arrows and orbs (a hit each)
       else if (b.hostile) {
-        if (dist(b.x, b.y, p.x, p.y - 22) < 16) {
+        if (!(p.downT > 0) && dist(b.x, b.y, p.x, p.y - 22) < 16) {
           const hp = p.hp;
           hurtPlayer(b.dmg, Math.atan2(b.vy, b.vx));
           if (b.corrupt && p.hp < hp) p.corrupt = clamp(p.corrupt + b.corrupt, 0, 100);
@@ -1354,7 +1367,7 @@
     for (const q of G.hexPools) {
       q.t += dt;
       if (q.t < 0.6) continue; // forming
-      if (G.state === "play" && inside(p, q)) {
+      if (G.state === "play" && !(p.downT > 0) && inside(p, q)) {
         p.corrupt = clamp(p.corrupt + 4 * dt, 0, 100);
         p.hp -= 3 * dt;
         if (p.hp <= 0) { die("wounds"); return; }
@@ -1449,6 +1462,7 @@
   function die(cause) {
     const p = G.player;
     if (G.state !== "play") return;
+    if (DL.Cave.fall()) return; // falling in Derek's Hollow doesn't drown you
     if (G.isGuest()) { if (!(p.downT > 0)) guestDown(); return; }
     G.state = "dying";
     G.dying = 0;
