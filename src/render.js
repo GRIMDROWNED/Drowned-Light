@@ -174,6 +174,8 @@
       list.push({ y: e.y, f: () => drawEnemy(c, e, t) });
     }
     for (const f of G.effects) if (f.type === "dissolve") list.push({ y: f.e.y, f: () => drawDissolve(c, f) });
+    for (const h of G.hounds) list.push({ y: h.y, f: () => drawHound(c, h, t) });
+    for (const f of G.effects) if (f.type === "houndFall") list.push({ y: f.y, f: () => Art.drawUnit(c, "boneHound", "death", Math.min(2, Math.floor(f.t / 0.2)), f.angle, f.x, f.y, 1, { alpha: Math.min(1, (f.max - f.t) / 0.5) }) });
     if (G.player && G.state !== "dead") list.push({ y: G.player.y, f: () => drawPlayer(c, G, t) });
     for (const a of G.allies) list.push({ y: a.y, f: () => drawAlly(c, a, t) });
     list.sort((a, b) => a.y - b.y);
@@ -268,6 +270,7 @@
       c.stroke();
     }
     for (const e of G.enemies) if (e.rise <= 0) drawEyes(c, e, t);
+    for (const h of G.hounds) drawHoundEyes(c, h, t);
     drawMotes(c, G, view, t);
     c.globalCompositeOperation = "source-over";
 
@@ -713,6 +716,37 @@
     Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y, s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1 });
     if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.crawl ? 36 : 84) * s - 4, Math.round(26 * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
     if (e.burn > 0) Art.drawFire(c, e.x + Math.sin(t * 7) * 4, e.y - 10, 0.5, t);
+    if (e.bleed > 0) {
+      // Bone Hound bleed: drops running down to the ground
+      c.fillStyle = "#a3170f";
+      for (let i = 0; i < 4; i++) {
+        const k = (t * 1.4 + i * 0.27 + e.id * 0.13) % 1;
+        c.fillRect(Math.round(e.x + ((i * 7 + e.id * 3) % 17) - 8), Math.round(e.y - (1 - k) * 34 * s), 2, 3);
+      }
+    }
+  }
+
+  // The Bone Hound: bites play its attack, a struck hound flinches.
+  function drawHound(c, h, t) {
+    shadow(c, h.x, h.y, 13, 4);
+    let anim = "idle", fr = Math.floor(t * 1.6 + h.id);
+    if (h.state === "bite") { anim = "attack"; fr = Math.min(2, Math.floor((1 - h.stT / 0.3) * 3)); }
+    else if (h.hurtT > 0) anim = "hurt";
+    else if (h.moving) { anim = "walk"; fr = Math.floor(h.animT * 11); }
+    Art.drawUnit(c, "boneHound", anim, fr, h.angle, h.x, h.y, 1, { flash: h.flash > 0 ? 0.8 : 0, flashColor: "#ffb0a0" });
+    if (h.hp < h.maxHp) bar(c, h.x, h.y - 54, 22, Math.max(0, h.hp) / h.maxHp, "#d9cdae");
+  }
+  // Embers in its eye sockets, so it reads in the dark.
+  function drawHoundEyes(c, h, t) {
+    const { dir, flip } = Art.unitDir(h.angle);
+    if (dir === "up") return;
+    const x = h.x + (dir === "side" ? (flip ? -28 : 28) : 0), y = h.y - (dir === "side" ? 42 : 46);
+    const r = 8, pulse = 0.75 + 0.25 * Math.sin(t * 6 + h.id);
+    const g = c.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(255,80,40,${0.6 * pulse})`);
+    g.addColorStop(1, "rgba(255,80,40,0)");
+    c.fillStyle = g;
+    c.fillRect(x - r, y - r, r * 2, r * 2);
   }
 
   // A soft cyan halo around the visor so the Drowned read in the dark.

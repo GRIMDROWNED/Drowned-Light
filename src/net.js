@@ -202,6 +202,11 @@
       const ok = G.canAfford(DL.TORCH_COST);
       if (ok) { G.pay(DL.TORCH_COST); G.persist(); }
       sendTo(g, { t: "torchMade", ok });
+    } else if (ev.t === "hound") {
+      // a Bone Hound for this friend, paid from the shared stash
+      const ok = !!g && DL.Hounds.grant(g.id);
+      sendTo(g, { t: "houndMade", ok });
+      if (ok) say(`${who} raised a Bone Hound.`, "good");
     } else if (ev.t === "deposit") {
       const parts = [];
       for (const k of DL.RES_KEYS) if (ev.res[k] > 0) { G.save.stash[k] += ev.res[k]; parts.push(`${ev.res[k]} ${DL.RESOURCES[k].name}`); }
@@ -212,6 +217,7 @@
   // Host side: a blow or a pickup that lands on a friend's knight is sent to that friend's device.
   Net.hurtAlly = function (a, dmg, ang) { if (Net.role === "host") sendTo(a.g, { t: "hurt", dmg, ang }); };
   Net.gain = function (a, res, amt) { if (Net.role === "host") sendTo(a.g, { t: "gain", res, amt }); };
+  Net.houndLost = function (owner) { if (Net.role === "host") sendTo(Net.guests.find((g) => g.id === owner), { t: "houndLost" }); };
 
   function objRow(o) { return [o.id, o.harvested ? 1 : 0, o.dead ? 1 : 0, o.hp != null ? Math.round(o.hp) : -1]; }
   function findObj(id) {
@@ -240,7 +246,7 @@
       // every other knight: the host (id 0) and the other friends, with their bolts
       kn: [[0, "Host", hostKnight(), []], ...G.allies.filter((o) => o !== a).map((o) => [o.id, o.label, allyKnight(o), o.proj || []])],
       en: G.enemies.filter((e) => near(e.x, e.y, 1100)).map((e) => [e.id, TYPES.indexOf(e.type), r1(e.x), r1(e.y), r1(e.angle), e.state === "windup" ? 1 : e.state === "recover" ? 2 : 0,
-        r1(e.stT), r1(e.aim || 0), Math.round(e.hp), Math.round(e.maxHp), r1(e.rise), e.moving ? 1 : 0, e.dormant ? 1 : 0, r1(e.burn || 0)]),
+        r1(e.stT), r1(e.aim || 0), Math.round(e.hp), Math.round(e.maxHp), r1(e.rise), e.moving ? 1 : 0, e.dormant ? 1 : 0, r1(e.burn || 0), r1(e.bleed || 0)]),
       pr: G.projectiles.filter((b) => near(b.x, b.y, 900)).map((b) => [r1(b.x), r1(b.y), Math.round(b.vx), Math.round(b.vy), b.kind, b.col, b.hostile ? 1 : 0]),
       to: G.torches.map((o) => [r1(o.x), r1(o.y), r1(o.t), o.max, Math.round(o.r), o.type, Math.round(o.hp)]),
       lz: G.lightZones.map((z) => [r1(z.x), r1(z.y), Math.round(z.r), r1(z.t), z.heal ? 1 : 0, z.fire ? 1 : 0]),
@@ -250,6 +256,9 @@
       pe: G.pearls.filter((q) => near(q.x, q.y, 1000)).map((q) => [q.id, r1(q.x), r1(q.y), q.amount, q.zi]),
       tg: G.telegraphs.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.delay]),
       hx: G.hexPools.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.life]),
+      // Bone Hounds: [id, owner, x, y, angle, moving, hp, maxHp, biting, bite time left, hit flash]
+      hd: G.hounds.filter((h) => near(h.x, h.y, 1100)).map((h) => [h.id, h.owner, r1(h.x), r1(h.y), r1(h.angle), h.moving ? 1 : 0, Math.round(h.hp), h.maxHp,
+        h.state === "bite" ? 1 : 0, r1(h.stT), h.flash > 0 ? 1 : 0]),
       ob: dirty,
     };
   }
@@ -375,7 +384,12 @@
     } else if (m.t === "torchMade") {
       if (m.ok) { G.save.torches += 1; DL.Sound.play("torch"); } else say("Not enough in the stash for a torch.", "warn");
       if (DL.UI.refreshCamp) DL.UI.refreshCamp();
-    } else if (m.t === "snap") applySnap(m);
+    } else if (m.t === "houndMade") {
+      if (m.ok) { DL.Sound.play("growl"); say("A Bone Hound claws its way up out of the mud. It hunts at your side.", "good"); }
+      else say("Couldn't raise a Bone Hound: not enough in the stash, or the Central Flame is too low.", "warn");
+      if (DL.UI.refreshCamp) DL.UI.refreshCamp();
+    } else if (m.t === "houndLost") say("Your Bone Hound falls apart. Raise another at the camp fire.", "warn");
+    else if (m.t === "snap") applySnap(m);
   }
 
   function applySnap(m) {
@@ -412,7 +426,7 @@
       byId.delete(r[0]);
       e.tx = r[2]; e.ty = r[3]; e.angle = r[4];
       e.state = r[5] === 1 ? "windup" : r[5] === 2 ? "recover" : "move";
-      e.stT = r[6]; e.aim = r[7]; e.hp = r[8]; e.maxHp = r[9]; e.rise = r[10]; e.moving = !!r[11]; e.dormant = !!r[12]; e.burn = r[13];
+      e.stT = r[6]; e.aim = r[7]; e.hp = r[8]; e.maxHp = r[9]; e.rise = r[10]; e.moving = !!r[11]; e.dormant = !!r[12]; e.burn = r[13]; e.bleed = r[14];
       next.push(e);
     }
     for (const gone of byId.values()) G.effects.push({ type: "dissolve", e: gone, t: 0, max: 0.6 });
@@ -431,6 +445,17 @@
       .filter((q) => !q.harvested && !Net.mined.has(q.id));
     G.telegraphs = m.tg.map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], delay: q[4], done: true }));
     G.hexPools = (m.hx || []).map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], life: q[4] }));
+    // Bone Hounds: puppets kept between snapshots so they glide and run
+    const hounds = new Map(G.hounds.map((h) => [h.id, h]));
+    G.hounds = (m.hd || []).map((r) => {
+      let h = hounds.get(r[0]);
+      if (!h) h = { id: r[0], hound: true, x: r[2], y: r[3], animT: 0 };
+      hounds.delete(r[0]);
+      Object.assign(h, { owner: r[1], tx: r[2], ty: r[3], angle: r[4], moving: !!r[5], hp: r[6], maxHp: r[7], state: r[8] ? "bite" : "move", stT: r[9], flash: r[10] ? 0.1 : 0 });
+      return h;
+    });
+    // one that vanished close by fell (one that ran out of range just isn't sent)
+    for (const h of hounds.values()) if (Math.hypot(h.x - G.player.x, h.y - G.player.y) < 800) DL.Hounds.fallFx(h);
     applyObjs(m.ob);
   }
 
@@ -442,6 +467,11 @@
       e.x += (e.tx - e.x) * k; e.y += (e.ty - e.y) * k;
       e.animT += dt;
       e.flash = Math.max(0, e.flash - dt);
+    }
+    for (const h of G.hounds) {
+      if (h.tx == null) continue;
+      h.x += (h.tx - h.x) * k; h.y += (h.ty - h.y) * k;
+      h.animT += dt;
     }
   };
 

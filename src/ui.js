@@ -179,6 +179,7 @@
       if (act === "up") G.buyUpgrade(arg);
       else if (act === "train") { const r = DL.Kits.train(); UI.justReached = r && r.milestone ? r.level : 0; }
       else if (act === "torch") G.craftTorch();
+      else if (act === "hound") DL.Hounds.buy();
       else if (act === "rest") { G.restUntilDusk(); UI.closeCamp(); UI.toast("You rest by the fire until dusk.", "warn"); return; }
       UI.renderCamp();
     });
@@ -418,6 +419,12 @@
       const fr = anim === "attack" ? Math.floor(t * 6) % 3 : Math.floor(t * (anim === "walk" ? 8 : 1.6));
       DL.Art.drawUnit(g, id + "1", anim, fr, Math.PI / 2, cv.width / 2, cv.height - 6, cv.width / 88);
     }
+    for (const cv of document.querySelectorAll("canvas[data-hound]")) {
+      const g = cv.getContext("2d");
+      g.clearRect(0, 0, cv.width, cv.height);
+      g.imageSmoothingEnabled = false;
+      DL.Art.drawUnit(g, "boneHound", "idle", 0, 0, cv.width / 2 - 2, cv.height - 4, cv.width / 88);
+    }
   };
 
   /* ---------------- camp menu ---------------- */
@@ -491,6 +498,7 @@
           const lv = DL.MILESTONE_LEVELS[i], got = L >= lv;
           return `<li class="${got ? "got" : ""} ${UI.justReached === lv ? "new" : ""}"><span>Lv ${lv}</span><b>${m.name}</b> ${m.desc}</li>`;
         }).join("")}</ol></article>`;
+      html += houndCard(G);
       const d = G.diff();
       html += `<article class="card"><header><h3>${d.name}</h3><span class="tag">Difficulty</span></header>
         <p class="motto">${d.motto}</p><ul class="guide">${d.notes.map((n) => `<li>${n}</li>`).join("")}</ul></article>`;
@@ -521,6 +529,22 @@
     $("campBody").innerHTML = html;
     UI.drawPortraits(0);
   };
+
+  // The Bone Hound: a summon bought here, one per knight, paid from the (shared) stash.
+  function houndCard(G) {
+    const H = DL.HOUND, st = DL.Hounds.stats(), mine = DL.Hounds.mine(), lock = DL.Hounds.lock();
+    UI.houndShown = !!mine;
+    let action;
+    if (mine) action = `<span class="maxed">At your side · ${Math.ceil(mine.hp)} / ${mine.maxHp}</span>`;
+    else action = `<div class="cost">${costHtml(H.cost)}</div>` + (lock ? `<span class="req">${lock}</span>` : "") +
+      `<button data-act="hound" ${!lock && G.canAfford(H.cost) ? "" : "disabled"}>Raise the hound</button>`;
+    return `<article class="card hound-card">
+      <header><canvas class="portrait" data-hound="1" width="66" height="52"></canvas>
+        <div><span class="tag">Summon · Melee</span><h3>${H.name}</h3><span class="motto">It hunts what runs.</span></div></header>
+      <p>A fast skeletal hound that fights beside you. It runs down the Drowned that strike and fall back first (Tide Archers, Hexbearers, Mire Stalkers), bites, hops clear and comes again. Every bite makes them bleed.</p>
+      <p class="effect">Health ${st.maxHp} · bite ${st.dmg} · bleed ${H.bleedDps}/s, stacking ${H.bleedMax}× · heals in firelight<br>Stays until it falls · one per knight · grows with the Central Flame</p>
+      <footer>${action}</footer></article>`;
+  }
 
   /* ---------------- per-frame HUD ---------------- */
   UI.update = function () {
@@ -604,5 +628,7 @@
     set($("btnMine"), "class", "act small mine" + (manual ? "" : " hidden") + (G.mineTarget ? " ready" : ""));
     document.body.classList.toggle("manual", manual);
     set($("campBtn"), "hidden", !G.inCamp);
+    // the Bone Hound card follows the hound rising or falling while the menu is open
+    if (G.state === "camp" && UI.campTab === "kit" && !!DL.Hounds.mine() !== UI.houndShown) UI.renderCamp();
   };
 })(window.DL);

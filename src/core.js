@@ -230,6 +230,8 @@ window.DL = window.DL || {};
         case "chime": this.tone(1250, 0.18, "triangle", 0.06); this.tone(1870, 0.14, "sine", 0.03, 0, 0.04); break;
         case "shatter": this.noise(0.32, 0.18, 600); this.tone(170, 0.25, "triangle", 0.06, -80); break;
         case "deny": this.tone(140, 0.12, "square", 0.05); break;
+        case "bite": this.noise(0.06, 0.14, 1800); this.tone(260, 0.06, "square", 0.04, -120); break;
+        case "growl": this.tone(70, 0.6, "sawtooth", 0.07, 30); this.noise(0.5, 0.06, 300); break;
       }
     },
   };

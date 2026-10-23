@@ -321,8 +321,8 @@ body.touch .controls-hint .desk { display: none; }
 .menu button .sub { display: block; font: 500 11px var(--font-ui); letter-spacing: 0.02em; color: var(--muted); margin-top: 2px; text-transform: none; }
 
 /* ---------- camp: kit training ---------- */
-.kit-card header { justify-content: flex-start; gap: 12px; }
-.kit-card header > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kit-card header, .hound-card header { justify-content: flex-start; gap: 12px; }
+.kit-card header > div, .hound-card header > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .kit-lvl { margin-left: auto; font: 600 12px var(--font-ui); color: var(--muted); }
 .kit-lvl b { font: 700 26px var(--font-title); color: var(--warm); }
 .lvl-track { position: relative; height: 8px; margin: 18px 6px 14px; background: rgba(0, 0, 0, 0.55); border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.06); }
