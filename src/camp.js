@@ -34,6 +34,7 @@
   // Tier I at Flame 1–2, Tier II at 3–4, Tier III at 5.
   Camp.tier = (up) => (up.flame >= 5 ? 3 : up.flame >= 3 ? 2 : 1);
   Camp.walled = (up) => up.stakes >= 2;
+  Camp.towerCount = (lv) => [0, 1, 2, 4][lv];
 
   let cacheKey = "", cache = null;
   Camp.layout = function (up) {
@@ -51,9 +52,9 @@
     L.armory = up.armory ? { x: 136, y: 16 } : null;
     L.workbench = up.workbench ? { x: -50, y: 150 } : null;
     L.garden = up.garden ? { x: 66, y: 140 } : null;
-    // watchtowers stand in the corners, pylons along the walls either side of the gates
+    // watchtowers stand in the corners (the third level fills all four), pylons along the walls by the gates
     const cn = R - 56;
-    L.towers = [[-1, -1], [1, -1], [-1, 1]].slice(0, up.tower).map(([sx, sy]) => ({ x: sx * cn, y: sy * cn }));
+    L.towers = [[-1, -1], [1, -1], [-1, 1], [1, 1]].slice(0, Camp.towerCount(up.tower)).map(([sx, sy]) => ({ x: sx * cn, y: sy * cn }));
     const pa = [[-PI / 2, -1], [PI / 2, -1], [0, -1], [PI, -1], [-PI / 2, 1], [PI / 2, 1]];
     L.pylons = pa.slice(0, up.pylon * 2).map(([g, o]) => Camp.gatePoint(g, o * 96, -20));
     L.boardwalks = tier >= 2;

@@ -182,7 +182,7 @@
     G.torches = []; G.lightZones = []; G.telegraphs = []; G.hexPools = []; G.decals = []; G.lights = [];
     G.blooms = []; G.amethysts = []; G.walls = []; G.wisp = null; G.hitNodes = [];
     G.flame = { kind: "flame", x: 0, y: 0, rad: 24, hp: st.flameHp, max: st.flameHp, lit: true, hitT: 0 };
-    G.towerCd = [0, 0, 0];
+    G.towerCd = [0, 0, 0, 0];
     G.resetPylons();
     G.siegeT = 5; G.spawnT = 3; G.rootEvent = null; G.selfEnemy = null; G.champSpawned = false;
     G.dying = 0;
