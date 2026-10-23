@@ -65,7 +65,10 @@
     return G.allies.find((a) => a.id === k.owner) || null;
   }
 
+  // One Kindle per knight, ever: a second lighting or joining only gives back the one they have.
   function spawn(owner, x, y) {
+    const had = G.kindles.find((o) => o.owner === owner);
+    if (had) return had;
     const k = { id: ++G.eid, kindle: true, owner, x, y, angle: Math.PI / 2, moving: false, animT: 0 };
     G.kindles.push(k);
     const S = G.save.kindle;
@@ -82,8 +85,11 @@
   // Host: a friend who has lit their Kindle (here or in any world) brings it along.
   Kindle.join = function (owner) {
     const a = G.allies.find((o) => o.id === owner);
-    if (a && !G.kindles.some((k) => k.owner === owner)) spawn(owner, a.x - 26, a.y + 10);
+    if (a) spawn(owner, a.x - 26, a.y + 10);
   };
+  // Host: a friend left, and their Kindle goes with them (so a friend who joins next under the same number
+  // doesn't inherit it).
+  Kindle.leave = function (owner) { G.kindles = G.kindles.filter((k) => k.owner !== owner); };
 
   /* ---------------- feeding the broken lantern (your own device) ---------------- */
   Kindle.feed = function (dt) {
