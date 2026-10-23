@@ -290,7 +290,7 @@
       costs: [{ wood: 12, resin: 6 }, { wood: 20, stone: 10, resin: 12 }, { wood: 30, resin: 20, pearl: 2 }],
       reqFlame: (t) => t + 1 },
     { id: "tower", name: "Watchtowers", max: 3, info: "Crossbow towers that spot and shoot the Drowned at night.",
-      effect: (l) => (l ? `${l} tower${l > 1 ? "s" : ""} · bolt damage ${10 + 6 * l}` : "No towers"),
+      effect: (l) => (l ? `${[0, 1, 2, 4][l]} tower${l > 1 ? "s" : ""} · bolt damage ${10 + 6 * l}` : "No towers"),
       costs: [{ wood: 24, stone: 14 }, { wood: 34, stone: 24, iron: 10 }, { wood: 48, iron: 24, pearl: 3 }],
       reqFlame: (t) => t + 1 },
     { id: "pylon", name: "Lantern Pylons", max: 3, info: "Firelight on the perimeter. Guides the way and slows the encroaching Drowned — but Lantern Reavers hunt them.",

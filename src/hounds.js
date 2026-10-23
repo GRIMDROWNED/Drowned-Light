@@ -87,31 +87,34 @@
      Outside, it runs around the wall rather than into it. */
   function gateWay(h, tx, ty) {
     if (!DL.Camp.walled(G.save.up)) return null;
-    const R = DL.WALL_R, inside = Math.hypot(h.x, h.y) < R;
-    if (inside === Math.hypot(tx, ty) < R) {
+    const C = DL.Camp, R = DL.WALL_R, inside = C.inside(h.x, h.y);
+    // the way round the outside keeps well off the corners, so a straight leg never clips one;
+    // right by the wall, step straight out first
+    const around = (a, turn) => C.onSquare(C.sq(h.x, h.y) < R + 25 ? a : a + turn, R + 90);
+    if (inside === C.inside(tx, ty)) {
       if (inside) return null;
-      // both outside: if the straight line cuts through the camp, circle around the wall toward the target
-      const dx = tx - h.x, dy = ty - h.y, L = Math.hypot(dx, dy) || 1;
-      const u = Math.max(0, Math.min(1, -(h.x * dx + h.y * dy) / (L * L)));
-      // (only when the line really passes over the camp: one just through a gate, hugging the wall
-      // and heading outward, has its closest point at its own feet and goes straight on)
-      if (u <= 0.02 || Math.hypot(h.x + dx * u, h.y + dy * u) > R + 14) return null;
-      const a = Math.atan2(h.y, h.x), turn = DL.angleDiff(a, Math.atan2(ty, tx)) > 0 ? 0.45 : -0.45;
-      return { x: Math.cos(a + turn) * (R + 40), y: Math.sin(a + turn) * (R + 40) };
+      // both outside: if the straight line cuts through the camp, go around the wall toward the target
+      const dx = tx - h.x, dy = ty - h.y;
+      let cuts = false;
+      for (let k = 1; k < 16 && !cuts; k++) cuts = C.sq(h.x + (dx * k) / 16, h.y + (dy * k) / 16) < R + 4;
+      if (!cuts) return null;
+      const a = Math.atan2(h.y, h.x);
+      return around(a, DL.angleDiff(a, Math.atan2(ty, tx)) > 0 ? 0.45 : -0.45);
     }
     let g = null, best = 1e9;
-    for (const ga of DL.Camp.GATES) {
-      const gx = Math.cos(ga) * R, gy = Math.sin(ga) * R, d = Math.hypot(gx - h.x, gy - h.y) + Math.hypot(tx - gx, ty - gy);
+    for (const ga of C.GATES) {
+      const gp = C.gatePoint(ga, 0, 0), d = Math.hypot(gp.x - h.x, gp.y - h.y) + Math.hypot(tx - gp.x, ty - gp.y);
       if (d < best) { best = d; g = ga; }
     }
-    const cx = Math.cos(g), cy = Math.sin(g), arc = Math.abs(DL.angleDiff(Math.atan2(h.y, h.x), g)) * R;
-    const r = arc > 8 ? (inside ? R - 34 : R + 34) : (inside ? R + 40 : R - 40);
-    // still on the far side of the camp from that gate (outside): go around first
+    // how far off the gate's line it stands, measured along the wall
+    const arc = Math.round(Math.cos(g)) ? Math.abs(h.y) : Math.abs(h.x);
+    // still round the side from that gate (outside): go around first
     if (!inside && arc > 8) {
       const a = Math.atan2(h.y, h.x), da = DL.angleDiff(a, g);
-      if (Math.abs(da) > 0.5) return { x: Math.cos(a + Math.sign(da) * 0.45) * (R + 40), y: Math.sin(a + Math.sign(da) * 0.45) * (R + 40) };
+      if (Math.abs(da) > 0.5) return around(a, Math.sign(da) * 0.45);
     }
-    return { x: cx * r, y: cy * r };
+    // line up with the gate on this side, then run straight through until past the wall
+    return C.gatePoint(g, 0, arc > 8 ? (inside ? -34 : 34) : (inside ? 40 : -40));
   }
   Hounds.gateWay = gateWay; // Derek walks the same way (src/golem.js)
 

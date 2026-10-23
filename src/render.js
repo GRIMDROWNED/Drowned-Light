@@ -420,14 +420,14 @@
       c.strokeStyle = "rgba(90,75,55,0.35)";
       c.lineWidth = 3;
       c.setLineDash([6, 10]);
-      c.beginPath(); c.arc(0, 0, DL.CAMP_RADIUS, 0, Math.PI * 2); c.stroke();
+      c.strokeRect(-DL.CAMP_RADIUS, -DL.CAMP_RADIUS, DL.CAMP_RADIUS * 2, DL.CAMP_RADIUS * 2);
       c.setLineDash([]);
       return;
     }
     // trodden perimeter path and a flagstone plaza
     c.strokeStyle = "rgba(66,54,40,0.6)";
     c.lineWidth = 18;
-    c.beginPath(); c.arc(0, 0, R - 34, 0, Math.PI * 2); c.stroke();
+    c.strokeRect(-(R - 34), -(R - 34), (R - 34) * 2, (R - 34) * 2);
     const floor = W.canvases[L.tier >= 3 ? "campPaving" : "campFlags"];
     if (floor) {
       // the drawn floor, one texel per 2 px like the ground, darkened to match it; the Beacon's is wider
@@ -435,7 +435,7 @@
       pat.setTransform(new DOMMatrix().scale(2));
       const rx = L.tier >= 3 ? 104 : 80, ry = rx * 0.7;
       c.fillStyle = pat;
-      c.beginPath(); c.ellipse(0, 6, rx, ry, 0, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.rect(-rx, 6 - ry, rx * 2, ry * 2); c.fill();
       c.fillStyle = "rgba(0,0,0,0.2)"; c.fill();
       c.strokeStyle = "rgba(24,19,14,0.7)"; c.lineWidth = 3; c.stroke();
     } else {
@@ -512,20 +512,14 @@
     });
     // barricade: stakes, then a palisade with four gates
     if (u.stakes === 1) {
-      const n = 34;
-      for (let i = 0; i < n; i++) {
-        const a = (i / n) * Math.PI * 2, x = Math.cos(a) * (R - 10), y = Math.sin(a) * (R - 10);
-        put(y, () => sprite(c, "stake", x, y + 2, i % 2 === 0));
-      }
+      DL.Camp.ring(R - 10, 52).forEach(({ x, y }, i) => put(y, () => sprite(c, "stake", x, y + 2, i % 2 === 0)));
     } else if (u.stakes >= 2) {
-      const n = Math.ceil((Math.PI * 2 * R) / 46);
-      for (let i = 0; i < n; i++) {
-        const a = (i / n) * Math.PI * 2, x = Math.cos(a) * R, y = Math.sin(a) * R;
-        if (DL.Camp.nearestGate(x, y).arc < DL.Camp.GATE_HALF + 22) continue;
+      DL.Camp.ring(R, 46).forEach(({ x, y }, i) => {
+        if (DL.Camp.nearestGate(x, y).arc < DL.Camp.GATE_HALF + 22) return;
         put(y, () => sprite(c, u.stakes >= 3 && Art.sprites.palisade2 ? "palisade2" : "palisade", x, y + 4, i % 2 === 0));
-      }
+      });
       for (const g of DL.Camp.GATES) for (const sgn of [-1, 1]) {
-        const a = g + (sgn * (DL.Camp.GATE_HALF + 6)) / R, x = Math.cos(a) * R, y = Math.sin(a) * R;
+        const { x, y } = DL.Camp.gatePoint(g, sgn * (DL.Camp.GATE_HALF + 6), 0);
         put(y + 1, () => {
           if (u.stakes >= 3 && Art.sprites.gatePost2) {
             // the reinforced post carries its own lamp, hung out on the side away from the gate
@@ -542,7 +536,7 @@
         if (u.stakes >= 3) {
           // spikes flanking each gate on the outside
           for (let k = 0; k < 3; k++) {
-            const b = g + (sgn * (DL.Camp.GATE_HALF + 4 + k * 9)) / R, sx = Math.cos(b) * (R + 22), sy = Math.sin(b) * (R + 22);
+            const { x: sx, y: sy } = DL.Camp.gatePoint(g, sgn * (DL.Camp.GATE_HALF + 4 + k * 9), 22);
             put(sy, () => sprite(c, "stake", sx, sy + 2, k % 2 === 0));
           }
         }

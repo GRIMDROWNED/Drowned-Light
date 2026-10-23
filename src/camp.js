@@ -1,5 +1,5 @@
 /* Drowned Light — base camp layout: where every structure stands at each tier,
-   the palisade ring with its four gates, and how bodies get through them. */
+   the square palisade with a gate in the middle of each side, and how bodies get through them. */
 "use strict";
 (function (DL) {
   const PI = Math.PI;
@@ -8,9 +8,33 @@
   const GATE_HALF = 24;                    // half the gate opening, in world px
   const Camp = (DL.Camp = { GATES, GATE_HALF });
 
+  // The camp is a square of half-side R: its "distance" from the centre is the larger of |x| and |y|.
+  Camp.sq = (x, y) => Math.max(Math.abs(x), Math.abs(y));
+  Camp.inside = (x, y) => Camp.sq(x, y) < R;
+  // A point by gate g: `out` past the wall line (negative is inside), `along` the wall from the gate's middle.
+  Camp.gatePoint = function (g, along, out) {
+    const ux = Math.round(Math.cos(g)), uy = Math.round(Math.sin(g));
+    return { x: ux * (R + out) - uy * along, y: uy * (R + out) + ux * along };
+  };
+  // The point at angle a on the square of half-side s.
+  Camp.onSquare = function (a, s) {
+    const cx = Math.cos(a), cy = Math.sin(a), k = s / Math.max(Math.abs(cx), Math.abs(cy));
+    return { x: cx * k, y: cy * k };
+  };
+  // Points every `step` px around the square of half-side s, corners included.
+  Camp.ring = function (s, step) {
+    const pts = [], n = Math.max(1, Math.round((2 * s) / step));
+    for (let i = 0; i < n; i++) {
+      const t = -s + (2 * s * i) / n;
+      pts.push({ x: t, y: -s }, { x: s, y: t }, { x: -t, y: s }, { x: -s, y: -t });
+    }
+    return pts;
+  };
+
   // Tier I at Flame 1–2, Tier II at 3–4, Tier III at 5.
   Camp.tier = (up) => (up.flame >= 5 ? 3 : up.flame >= 3 ? 2 : 1);
   Camp.walled = (up) => up.stakes >= 2;
+  Camp.towerCount = (lv) => [0, 1, 2, 4][lv];
 
   let cacheKey = "", cache = null;
   Camp.layout = function (up) {
@@ -28,10 +52,11 @@
     L.armory = up.armory ? { x: 136, y: 16 } : null;
     L.workbench = up.workbench ? { x: -50, y: 150 } : null;
     L.garden = up.garden ? { x: 66, y: 140 } : null;
-    const diag = R - 52;
-    L.towers = [[-3 * PI / 4], [-PI / 4], [3 * PI / 4]].slice(0, up.tower).map(([a]) => ({ x: Math.cos(a) * diag, y: Math.sin(a) * diag }));
-    const pa = [[-PI / 2, -0.42], [PI / 2, -0.42], [0, -0.42], [PI, -0.42], [-PI / 2, 0.42], [PI / 2, 0.42]];
-    L.pylons = pa.slice(0, up.pylon * 2).map(([g, o]) => ({ x: Math.cos(g + o) * (R - 20), y: Math.sin(g + o) * (R - 20) }));
+    // watchtowers stand in the corners (the third level fills all four), pylons along the walls by the gates
+    const cn = R - 56;
+    L.towers = [[-1, -1], [1, -1], [-1, 1], [1, 1]].slice(0, Camp.towerCount(up.tower)).map(([sx, sy]) => ({ x: sx * cn, y: sy * cn }));
+    const pa = [[-PI / 2, -1], [PI / 2, -1], [0, -1], [PI, -1], [-PI / 2, 1], [PI / 2, 1]];
+    L.pylons = pa.slice(0, up.pylon * 2).map(([g, o]) => Camp.gatePoint(g, o * 96, -20));
     L.boardwalks = tier >= 2;
     L.solids = [{ x: 0, y: 0, r: 16 }];
     for (const t of L.tents) L.solids.push({ x: t.x, y: t.y, r: 18 });
@@ -45,38 +70,42 @@
     return L;
   };
 
-  // Angular distance (as arc length on the wall) to the nearest gate, and that gate's angle.
+  // Distance along the wall to the nearest gate (the middle of the side the point faces), and that gate's angle.
   Camp.nearestGate = function (x, y) {
-    const a = Math.atan2(y, x);
-    let best = GATES[0], bd = 1e9;
-    for (const g of GATES) {
-      const d = Math.abs(DL.angleDiff(a, g)) * R;
-      if (d < bd) { bd = d; best = g; }
-    }
-    return { angle: best, arc: bd };
+    if (Math.abs(x) >= Math.abs(y)) return { angle: x >= 0 ? 0 : PI, arc: Math.abs(y) };
+    return { angle: y >= 0 ? PI / 2 : -PI / 2, arc: Math.abs(x) };
   };
 
-  // Keep a body (circle radius r) out of the palisade, except through a gate.
+  // Keep a body (circle radius r) out of the palisade, except through a gate. Each side is two stretches of
+  // wall, from the corners to the gate's edge; a body is pushed off the nearest point of each it touches, so
+  // it slides round a corner instead of catching on it.
+  const WALLS = [];
+  for (const g of GATES) for (const sgn of [-1, 1]) {
+    WALLS.push([Camp.gatePoint(g, sgn * (GATE_HALF + 7), 0), Camp.gatePoint(g, sgn * R, 0), Math.round(Math.cos(g)), Math.round(Math.sin(g))]);
+  }
   Camp.collideWall = function (ent, r, up) {
     if (!Camp.walled(up)) return;
-    const d = Math.hypot(ent.x, ent.y);
     const thick = 7 + r;
-    if (Math.abs(d - R) >= thick || d < 1) return;
-    if (Camp.nearestGate(ent.x, ent.y).arc < GATE_HALF - r) return;
-    const nd = d < R ? R - thick : R + thick;
-    ent.x = (ent.x / d) * nd;
-    ent.y = (ent.y / d) * nd;
+    for (const [a, b, nx, ny] of WALLS) {
+      const ex = b.x - a.x, ey = b.y - a.y, k = Math.max(0, Math.min(1, ((ent.x - a.x) * ex + (ent.y - a.y) * ey) / (ex * ex + ey * ey)));
+      const px = a.x + ex * k, py = a.y + ey * k, dx = ent.x - px, dy = ent.y - py, d = Math.hypot(dx, dy);
+      if (d >= thick) continue;
+      // right on the wall line: back out to the side it came from
+      const side = (ent.x * nx + ent.y * ny) < R ? -1 : 1;
+      const ux = d > 0.5 ? dx / d : nx * side, uy = d > 0.5 ? dy / d : ny * side;
+      ent.x = px + ux * thick;
+      ent.y = py + uy * thick;
+    }
   };
 
   /* Where a walker at (x, y) should head to reach (tx, ty) when walls stand between them:
-     line up with the nearest gate first, then walk through. */
+     line up with the nearest gate first, then walk straight through along its line. */
   Camp.route = function (x, y, tx, ty, up) {
     if (!Camp.walled(up)) return null;
-    const inside = Math.hypot(x, y) < R, tInside = Math.hypot(tx, ty) < R;
+    const inside = Camp.inside(x, y), tInside = Camp.inside(tx, ty);
     if (inside === tInside) return null;
     const g = Camp.nearestGate(x, y);
-    if (g.arc < GATE_HALF * 0.6) return null; // already lined up with the gate
-    const rr = inside ? R - 34 : R + 34;
-    return { x: Math.cos(g.angle) * rr, y: Math.sin(g.angle) * rr };
+    if (g.arc < GATE_HALF * 0.6) return Camp.gatePoint(g.angle, 0, inside ? 40 : -40); // lined up: through
+    return Camp.gatePoint(g.angle, 0, inside ? -34 : 34);
   };
 })(window.DL);
