@@ -73,8 +73,29 @@
   function setStatus(msg) { Net.status = msg; if (DL.UI && DL.UI.coopStatus) DL.UI.coopStatus(msg); }
   function newCode() { let c = ""; for (let i = 0; i < 5; i++) c += CODE_CHARS[(Math.random() * CODE_CHARS.length) | 0]; return c; }
 
+  // PeerJS refuses any message over about 16 KB and reports it as a broken link, which dropped
+  // friends (a long-played world's join message, a crowded night's snapshot). Big ones go in pieces.
+  const WHOLE = 12000, PIECE = 6000;
+  function wireSend(c, msg) {
+    const s = JSON.stringify(msg);
+    if (s.length <= WHOLE) { c.send(msg); return; }
+    for (let i = 0; i < s.length; i += PIECE) c.send({ t: "part", d: s.slice(i, i + PIECE), end: i + PIECE >= s.length ? 1 : 0 });
+  }
+  function wireRecv(c, m, fn) {
+    if (!m || m.t !== "part") { fn(m); return; }
+    c.dlBuf = (c.dlBuf || "") + m.d;
+    if (!m.end) return;
+    const s = c.dlBuf;
+    c.dlBuf = "";
+    let whole = null;
+    try { whole = JSON.parse(s); } catch (e) { return; }
+    fn(whole);
+  }
+  // Only a real break ends the link: a message PeerJS turned down is not one.
+  const fatal = (err) => !err || err.type !== "message-too-big";
+
   Net.send = function (msg) {
-    if (Net.conn && Net.connected) { try { Net.conn.send(msg); } catch (e) { /* closed */ } }
+    if (Net.conn && Net.connected) { try { wireSend(Net.conn, msg); } catch (e) { /* closed */ } }
   };
   Net.event = function (ev) { Net.events.push(ev); };
 
@@ -101,9 +122,9 @@
           Net.guests.push(g);
           c.on("open", () => { g.open = true; });
           onLinkFail(c, () => { if (!g.open) say("A friend tried to join, but your devices couldn't link up. Try both on the same Wi-Fi.", "warn"); hostLost(g); });
-          c.on("data", (m) => hostData(g, m));
+          c.on("data", (m) => wireRecv(c, m, (x) => hostData(g, x)));
           c.on("close", () => hostLost(g));
-          c.on("error", () => hostLost(g));
+          c.on("error", (err) => { if (fatal(err)) hostLost(g); });
         });
         peer.on("error", (err) => {
           if (err.type === "unavailable-id" && attempt < 3) { peer.destroy(); tryOpen(attempt + 1); return; }
@@ -116,7 +137,7 @@
   };
 
   function sendTo(g, msg) {
-    if (g && g.open) { try { g.conn.send(msg); } catch (e) { /* closed */ } }
+    if (g && g.open) { try { wireSend(g.conn, msg); } catch (e) { /* closed */ } }
   }
 
   function hostLost(g) {
@@ -302,14 +323,14 @@
           Net.connected = true;
           Net.send({ t: "hello", v: VERSION, kit: Net.joinKit, level: Net.joinLevel(Net.joinKit) });
         });
-        c.on("data", (m) => {
+        c.on("data", (raw) => wireRecv(c, raw, (m) => {
           if (m && m.t === "full") { clearTimeout(timer); fail(`That room is full (${MAX_GUESTS + 1} players).`); return; }
           if (m && (m.t === "version" || (m.t === "welcome" && m.v !== VERSION))) { clearTimeout(timer); fail(updateMsg(m.v)); return; }
           if (m && m.t === "welcome") { clearTimeout(timer); Net.role = "guest"; Net.code = code; Net.myId = m.id; startGuest(m); resolve(true); return; }
           guestData(m);
-        });
+        }));
         c.on("close", () => guestLost());
-        c.on("error", () => guestLost());
+        c.on("error", (err) => { if (fatal(err)) guestLost(); });
       });
     });
   };
