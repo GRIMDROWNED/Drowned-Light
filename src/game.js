@@ -37,6 +37,9 @@
     // Kindle, your walking lantern: torches fed so far, lit for good; for the world: the night its first Kindle was lit
     // (-1: none yet), where they're all leading, and how often they've led where
     kindle: { found: false, fed: 0, lit: false, since: -1, guide: null, led: {}, refilled: false },
+    // Abigail, the soul wraith: soul orbs picked up (by index) and carried, laid to rest at the Abyss graves; 1 once she's yours
+    souls: { found: false, taken: [], held: 0, given: 0 },
+    abigail: 0,
     started: false,
     lastPlayed: 0,
   });
@@ -111,7 +114,7 @@
       maxHp: 100 + 25 * u.armory,
       maxOil: 60 + 25 * u.workbench,
       lanternR: (70 + 14 * u.workbench) * DL.Kits.lanternMult() * G.diff().light,
-      dmgMult: 1 + 0.2 * u.forge,
+      dmgMult: (1 + 0.2 * u.forge) * DL.Abigail.mult(), // Abigail's blessing
       flameR: (180 + 40 * u.flame) * G.diff().light,
       flameHp: 150 + 100 * u.flame,
       torchMax: 3 + u.workbench,
@@ -200,6 +203,7 @@
     DL.Den.reset();
     DL.Cave.reset();
     DL.Kindle.reset();
+    DL.Abigail.reset();
     G.state = "play";
   };
 
@@ -263,6 +267,7 @@
     DL.Hounds.update(dt);
     DL.Golems.update(dt);
     DL.Kindle.update(dt);
+    DL.Abigail.update(dt);
     updateDefenses(dt);
     DL.Kits.update(dt);
     updateProjectiles(dt);
@@ -420,6 +425,7 @@
     for (const h of G.hounds) if (!(h.down > 0)) L.push({ x: h.x, y: h.y - 36, r: 34, s: 0.35, col: "255,70,40", a: 0.6 });
     for (const m of G.golems) L.push({ x: m.x, y: m.y - 12, r: 32, s: 0.4, col: "80,230,240", a: 0.6 });
     DL.Kindle.lights(L);
+    DL.Abigail.lights(L);
     for (const e of G.enemies) {
       if (e.type === "defiler") L.push({ x: e.x, y: e.y - 70, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
       else if (e.def.boss) L.push({ x: e.x, y: e.y - 40, r: 60, s: 0.3, col: "70,230,240", a: 0.6 });
@@ -481,7 +487,7 @@
       DL.Kits.dashTick(p, st, dt);
     } else {
       const wet = W.isWater(p.x, p.y) ? 0.82 : 1;
-      const spd = 150 * wet * (p.corrupt >= 75 ? 0.9 : 1) * (DL.Den.carrying() ? DL.DEN.haulSpeed : 1);
+      const spd = 150 * wet * (p.corrupt >= 75 ? 0.9 : 1) * (DL.Den.carrying() ? DL.DEN.haulSpeed : 1) * DL.Abigail.mult();
       p.moving = inp.m > 0.15;
       p.stillT = p.moving ? 0 : (p.stillT || 0) + dt;
       if (p.moving) {
@@ -1159,6 +1165,7 @@
     const p = G.player;
     if (p.inv > 0 || p.dashT > 0 || p.downT > 0 || G.state !== "play") return;
     dmg *= DL.Kits.damageTaken(p);
+    if (DL.Abigail.buffed()) dmg *= 1 - DL.ABIGAIL.buff; // Abigail's blessing
     p.hp -= dmg;
     p.inv = 0.5;
     p.hurtFlash = 0.3;
@@ -1179,7 +1186,7 @@
       DL.Net.event({ t: "hit", id: e.id, dmg: d, ang, kb, burn: burn || 0 });
       e.flash = 0.12;
       sfx("hit");
-      text(e.x + rand(-8, 8), e.y - 40 * e.def.scale - 20, Math.round(d * (1 - (e.def.armor || 0))) + (crit ? "!" : ""), crit ? "#ffe08a" : "#f3e6cf", crit ? 1.3 : 1);
+      text(e.x + rand(-8, 8), e.y - 40 * e.def.scale - 20, Math.round(d * (1 - (e.def.armor || 0)) * (e.cursed ? 1 + DL.ABIGAIL.curse : 1)) + (crit ? "!" : ""), crit ? "#ffe08a" : "#f3e6cf", crit ? 1.3 : 1);
       for (let i = 0; i < 4; i++) puff(e.x, e.y - 24 * e.def.scale, "rgba(70,210,220,0.7)", 90, 0.35);
       return;
     }
@@ -1190,6 +1197,7 @@
       for (let i = 0; i < 4; i++) spark(e.x + Math.cos(e.angle) * 14, e.y - 24, "200,230,235", 90);
     } else if (!e.def.shield && G.enemies.some((b) => b.def.guard && !b.removed && dist(b.x, b.y, e.x, e.y) < b.def.guard)) d *= 0.75; // guarded by a Bulwark
     d *= 1 - (e.def.armor || 0);
+    if (e.cursed) d *= 1 + DL.ABIGAIL.curse; // weakened by one of Abigail's orbs
     e.hp -= d;
     e.flash = 0.12;
     if (e.dormant) e.dormant = false;
@@ -1326,7 +1334,8 @@
         for (const e of G.enemies) {
           if (e.rise > 0 || e.removed || (b.hit && b.hit.has(e))) continue;
           if (dist(b.x, b.y, e.x, e.y - 20 * e.def.scale) < e.def.radius + (b.r || 8)) {
-            hitEnemy(e, b.dmg * DL.Kits.farShotMult(b), Math.atan2(b.vy, b.vx), 60);
+            if (b.soul) DL.Abigail.curse(e); // first, so this orb already bites harder
+            hitEnemy(e, b.dmg * DL.Kits.farShotMult(b), Math.atan2(b.vy, b.vx), b.soul ? 20 : 60);
             if (b.flare) flare(b.x, b.y, b.dmg);
             if (b.hit) b.hit.add(e);
             if (!b.pierce || b.pierce-- <= 0) { b.life = 0; break; }

@@ -61,9 +61,10 @@
   DL.OBJ = {
     // Trees are the wood: chop one down for a big load; it grows back at dawn.
     tree: { sprite: "tree", solid: 9, res: "wood", base: 6, hits: 5, r: 16 },
-    // Graves and pillars no longer spawn in the wild: they are kept for the entrance to a ruin.
+    // Graves and pillars don't spawn in the wild: they stand only at the Abyss graves, where Abigail is won (src/abigail.js).
     pillar: { sprite: "pillar", solid: 9 },
-    grave: { sprite: "grave" },
+    grave: { sprite: "grave", solid: 6 },
+    headstone: { sprite: "headstone", solid: 8 },
     reeds: { sprite: "reeds" },
     stone: { sprite: "rock", res: "stone", base: 6, hits: 6, r: 12, solid: 7 },
     iron: { sprite: "ironpile", res: "iron", base: 2, hits: 5, r: 14 },
@@ -272,6 +273,21 @@
      nights after the world's first Kindle was lit, every Kindle runs `lead` px ahead of its knight toward the same
      unique place, until that knight is within `reachR` px of it. */
   DL.KINDLE = { dist: 1450, torches: 7, feedR: 46, feedEvery: 0.5, speed: 160, refillEvery: 50, refillBelow: 0.5, guideEvery: 3, lead: 90, reachR: 360 };
+  /* Abigail, the soul wraith familiar (src/abigail.js): every knight wins their own. `orbs` soul orbs lie scattered
+     over the land, per ring [how many, from px, to px] out from camp; each device sees and picks up only its own.
+     Walk within `grab` px of one to take it. Bring them to the graves in the Abyss (`graveDist` px out, a clearing
+     of `clear` px) and they're laid to rest when you come within `giveR` px of the heart of the graves; `need` laid
+     to rest and Abigail rises. She floats at her knight's side and every `cd` seconds sends a homing soul orb
+     (`dmg`, growing by `perFlame` per Central Flame level past `reqFlame`) at a Drowned within `sight` px of her
+     knight. A Drowned an orb hits is weakened for good: `curse` less damage and speed, and takes `curse` more damage
+     (once, it doesn't stack). Every `pulseEvery` seconds she blesses her knight for `buffDur` seconds: `buff` more
+     damage and speed, and `buff` less damage taken. */
+  DL.ABIGAIL = {
+    name: "Abigail", speed: 175, cd: 1.6, sight: 300, dmg: 6, perFlame: 0.15, reqFlame: 2,
+    orbSpeed: 240, orbLife: 2.4, curse: 0.1, pulseEvery: 20, buffDur: 10, buff: 0.1,
+    need: 10, orbs: [[3, 550, 1250], [4, 1400, 2550], [3, 2700, 3900], [2, 4150, 4700]], grab: 28,
+    graveDist: 4400, clear: 190, giveR: 120,
+  };
   /* Derek, the stone golem familiar (src/golem.js): won in Derek's Hollow (DL.CAVE), one per knight.
      He can't be hurt. Every `buildCd` seconds, when a Drowned comes within `trigger` px of his knight,
      he raises a stone wall `len` px long across its path, `gap` px out from the knight. Drowned within

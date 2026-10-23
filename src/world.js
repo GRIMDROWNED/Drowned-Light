@@ -45,6 +45,8 @@
       const den = DL.Den.spot(), denR = DL.DEN.clear, denHere = Math.hypot(mx - den.x, my - den.y) < CH + denR;
       // and Kindle's resting place a smaller one, so he isn't lost under a tree (src/kindle.js)
       const kin = DL.Kindle.spot(), kinHere = Math.hypot(mx - kin.x, my - kin.y) < CH + 70;
+      // and the Abyss graves a clearing for their stones (src/abigail.js)
+      const gs = DL.Abigail.graveSpot(), gsR = DL.ABIGAIL.clear, gsHere = Math.hypot(mx - gs.x, my - gs.y) < CH + gsR;
       const n = Math.round(DL.ZONES[zi].density * D.density * (0.7 + DL.hash(cx, cy, 5) * 0.6));
       for (let i = 0; i < n; i++) {
         const x = (cx + DL.hash(cx, cy, i * 3 + 1)) * CH, y = (cy + DL.hash(cx, cy, i * 3 + 2)) * CH;
@@ -61,6 +63,7 @@
         if (grove && DL.OBJ[type].solid && Math.hypot(x - grove.x, y - grove.y) < DL.GROVE.clear) continue;
         if (denHere && Math.hypot(x - den.x, y - den.y) < denR) continue;
         if (kinHere && Math.hypot(x - kin.x, y - kin.y) < 70) continue;
+        if (gsHere && Math.hypot(x - gs.x, y - gs.y) < gsR) continue;
         objs.push(this.makeObj(type, x, y, `${cx},${cy},${i}`, ozi, DL.hash(cx, cy, i * 5 + 4)));
       }
       // The blooms of this chunk's grove that stand inside it.
@@ -68,8 +71,11 @@
         if (Math.floor(g.x / CH) === cx && Math.floor(g.y / CH) === cy && !DL.Cave.clears(g.x, g.y)) objs.push(this.makeObj(g.type, g.x, g.y, g.id, grove.zi, g.h));
       }
       if (Math.floor(den.x / CH) === cx && Math.floor(den.y / CH) === cy) objs.push(this.makeObj("den", den.x, den.y, `${cx},${cy},den`, zi, 0.3));
+      if (gsHere) for (const g of DL.Abigail.graves()) {
+        if (Math.floor(g.x / CH) === cx && Math.floor(g.y / CH) === cy) objs.push(this.makeObj(g.type, g.x, g.y, `${cx},${cy},grave${g.i}`, zi, (g.i * 0.37) % 1));
+      }
       // Rare Mother Roots in the Mire and deeper.
-      if (zi >= 2 && DL.hash(cx, cy, 77) < 0.06 * D.bloom && !this.isWater(mx, my) && !denHere && !DL.Cave.clears(mx, my)) objs.push(this.makeObj("root", mx, my, `${cx},${cy},root`, zi, 0.5));
+      if (zi >= 2 && DL.hash(cx, cy, 77) < 0.06 * D.bloom && !this.isWater(mx, my) && !denHere && !gsHere && !DL.Cave.clears(mx, my)) objs.push(this.makeObj("root", mx, my, `${cx},${cy},root`, zi, 0.5));
       return objs;
     },
 

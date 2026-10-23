@@ -46,6 +46,7 @@
   Kindle.sites = function () {
     const list = [{ id: "den", name: "the Bone Wolf den", at: DL.Den.spot, found: () => !!G.save.den.found }];
     if (DL.Cave && DL.Cave.mouth) list.push({ id: "cave", name: "the mouth of Derek's cave", at: DL.Cave.mouth, found: () => !!G.save.caveFound });
+    if (DL.Abigail) list.push({ id: "graves", name: "the old graves in the Abyss", at: DL.Abigail.graveSpot, found: () => !!G.save.souls.found });
     return list;
   };
   const site = (id) => Kindle.sites().find((s) => s.id === id) || null;
