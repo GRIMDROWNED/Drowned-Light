@@ -101,10 +101,10 @@
     derek(),
   ];
 
-  // Derek the golem familiar, cut at res 4 so he stands a quarter of the knight's height. His cast is drawn
+  // Derek the golem familiar, cut at res 4, 30 px tall (about 3/8 of the knight). His cast is drawn
   // facing you (fists up, slam, rise) and from the side; from behind he just stamps. He is never hurt.
   function derek() {
-    const set = Object.assign(walking("derek", [22, 45], [22, 42], [24, 45], 4), { path: "assets/sprites/derek/", keys: { derek: [0, false] } });
+    const set = Object.assign(walking("derek", [33, 67], [33, 62], [35, 66], 4), { path: "assets/sprites/derek/", keys: { derek: [0, false] } });
     set.views.side.attack = ["side/castUp", "side/castSlam", "side/castSlam"];
     set.views.up.attack = ["back", "back@bob", "back"];
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]]) Object.assign(set.views[dir], { hurt: [p], death: [p, p, p + "@fall"] });

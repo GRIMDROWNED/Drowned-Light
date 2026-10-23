@@ -577,7 +577,7 @@
     for (const dir of ["down", "up", "side"]) {
       sheet[dir] = {};
       for (const anim in GOLEM_ANIMS) sheet[dir][anim] = GOLEM_ANIMS[anim].map((pose) =>
-        Object.assign(Art.mk(GW, GH, (P) => golem(P, dir, pose), GOLEM.outline), { ax: GX, ay: GG, res: 3.7 })); // shown 20 px tall, like the drawn ones
+        Object.assign(Art.mk(GW, GH, (P) => golem(P, dir, pose), GOLEM.outline), { ax: GX, ay: GG, res: 2.47 })); // shown 30 px tall, like the drawn ones
     }
     return sheet;
   }

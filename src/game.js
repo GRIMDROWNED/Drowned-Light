@@ -397,7 +397,7 @@
     }
     for (const a of G.allies) if (!a.down) L.push({ x: a.x, y: a.y - 28, r: 80, s: 0.8, col: "255,180,90", a: 0.7, flick: 1 });
     for (const h of G.hounds) L.push({ x: h.x, y: h.y - 36, r: 34, s: 0.35, col: "255,70,40", a: 0.6 });
-    for (const m of G.golems) L.push({ x: m.x, y: m.y - 8, r: 26, s: 0.4, col: "80,230,240", a: 0.6 });
+    for (const m of G.golems) L.push({ x: m.x, y: m.y - 12, r: 32, s: 0.4, col: "80,230,240", a: 0.6 });
     for (const e of G.enemies) {
       if (e.type === "defiler") L.push({ x: e.x, y: e.y - 70, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
       else if (e.def.boss) L.push({ x: e.x, y: e.y - 40, r: 60, s: 0.3, col: "70,230,240", a: 0.6 });

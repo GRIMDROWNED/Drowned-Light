@@ -57,8 +57,8 @@ CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
               'bone-hound/08_attackA': 1.25, 'bone-hound/09_attackB': 1.25, 'bone-hound/10_attackC': 1.25}
 
 HOUND_H = 60
-DEREK_H = 40  # cut at 4 file px per art pixel (res: 4): drawn 20 px tall, a quarter of the knight
-DEREK_SIDE_H = 41
+DEREK_H = 60  # cut at 4 file px per art pixel (res: 4): drawn 30 px tall, about 3/8 of the knight
+DEREK_SIDE_H = 62
 SETS = {
     'lantern-knight': ('lantern-knight', 'knight-front.png', 80, 3, {
         'knight-front.png': 'front',
