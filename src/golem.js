@@ -91,7 +91,7 @@
       const x = x1 + ((x2 - x1) * i) / 6, y = y1 + ((y2 - y1) * i) / 6;
       G.puff(x + rand(-4, 4), y, "rgba(110,100,85,0.7)", 50, 0.7, -20);
     }
-    if (m) G.effects.push({ type: "golemBeam", x1: m.x, y1: m.y - 8, x2: w.x, y2: w.y - 10, t: 0, max: 0.45 });
+    if (m) G.effects.push({ type: "golemBeam", x1: m.x, y1: m.y - 12, x2: w.x, y2: w.y - 10, t: 0, max: 0.45 });
     sfx("rise");
   };
 
@@ -192,8 +192,8 @@
     m.x += (mx / md) * spd * dt;
     m.y += (my / md) * spd * dt;
     m.angle = Math.atan2(my, mx);
-    DL.World.collide(m, 5);
-    G.collideCamp(m, 5);
+    DL.World.collide(m, 7);
+    G.collideCamp(m, 7);
   }
 
   Golems.update = function (dt) {

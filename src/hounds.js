@@ -93,7 +93,9 @@
       // both outside: if the straight line cuts through the camp, circle around the wall toward the target
       const dx = tx - h.x, dy = ty - h.y, L = Math.hypot(dx, dy) || 1;
       const u = Math.max(0, Math.min(1, -(h.x * dx + h.y * dy) / (L * L)));
-      if (Math.hypot(h.x + dx * u, h.y + dy * u) > R + 14) return null;
+      // (only when the line really passes over the camp: one just through a gate, hugging the wall
+      // and heading outward, has its closest point at its own feet and goes straight on)
+      if (u <= 0.02 || Math.hypot(h.x + dx * u, h.y + dy * u) > R + 14) return null;
       const a = Math.atan2(h.y, h.x), turn = DL.angleDiff(a, Math.atan2(ty, tx)) > 0 ? 0.45 : -0.45;
       return { x: Math.cos(a + turn) * (R + 40), y: Math.sin(a + turn) * (R + 40) };
     }
