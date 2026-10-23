@@ -350,6 +350,178 @@
     drips(P, S, c, top + 8);
   }
 
+  /* ---------- the Bone Hound: a summoned skeletal hound in a torn red mantle ----------
+     Its own frame size; side views face right. Coded stand-in until its drawn sheets arrive. */
+  const HW = 44, HH = 34, HX = 22, HG = 31;
+  const HOUND = {
+    bone: "#d9cdae", boneMd: "#ab9e80", boneDk: "#6f6551", hollow: "#231c19", red: "#8f201b", redMd: "#6a1713",
+    redDk: "#430d0b", eye: "#ff4b2b", leather: "#4b3427", gold: "#a8813f", outline: "#0b0908",
+  };
+  // Leg tracks [front near, front far, hind near, hind far] as [x shift, foot lift], plus body bob.
+  const HOUND_ANIMS = {
+    idle: [{ legs: [[2, 0], [3, 0], [-1, 0], [0, 0]] }, { legs: [[2, 0], [3, 0], [-1, 0], [0, 0]], bob: 1, tail: 1 }],
+    // a gallop in four sharply different beats: stretched out, front planted, gathered, hind planted
+    walk: [
+      { legs: [[7, 1], [5, 0], [-7, 0], [-5, 1]], tail: -1 },
+      { legs: [[1, 0], [3, 0], [-3, 3], [-1, 2]], bob: -1 },
+      { legs: [[-3, 2], [-1, 1], [3, 1], [5, 2]], bob: -2, arch: 2, tail: 1 },
+      { legs: [[5, 4], [7, 3], [0, 0], [-2, 0]], bob: -1, head: -1 },
+    ],
+    attack: [
+      { legs: [[4, 0], [5, 0], [-3, 0], [-2, 0]], bob: 2, head: 2, push: -2 },
+      { legs: [[9, 3], [8, 2], [-8, 0], [-6, 1]], bob: -1, push: 4, jaw: 3, head: 1 },
+      { legs: [[4, 0], [5, 0], [-4, 0], [-3, 0]], push: 2, jaw: 1 },
+    ],
+    hurt: [{ legs: [[0, 0], [1, 0], [-3, 0], [-2, 0]], push: -3, head: -2, jaw: 1 }],
+    death: [{ legs: [[5, 0], [6, 0], [-6, 0], [-5, 0]], bob: 4, head: 3 }, { pile: 1 }, { pile: 2 }],
+  };
+
+  function houndBone(P, pts, w, col) {
+    P.line(pts, w, col);
+  }
+  function houndLeg(P, hx, hy, fx, fy, hind, col, dk) {
+    if (hind) {
+      // thigh forward to the knee, shin back to the hock, then down to the paw
+      const kx = hx + 3, ky = hy + Math.round((fy - hy) * 0.35), ax = fx - 2, ay = fy - 3;
+      houndBone(P, [hx, hy, kx, ky, ax, ay, fx, fy - 1], 2, col);
+      P.px(kx, ky, dk);
+    } else {
+      const ex = hx - 1, ey = hy + Math.round((fy - hy) * 0.5);
+      houndBone(P, [hx, hy, ex, ey, fx, fy - 1], 2, col);
+      P.px(ex, ey, dk);
+    }
+    P.rect(fx - 1, fy - 1, 4, 1, col);
+    P.px(fx + 3, fy - 1, dk);
+  }
+  function houndSkullSide(P, p, x, y, jaw) {
+    // horns sweeping back off the crown
+    P.poly([x + 1, y - 2, x + 3, y - 3, x - 3, y - 8], p.boneMd);
+    P.poly([x + 3, y - 3, x + 6, y - 3, x + 1, y - 9], p.bone);
+    // cranium and snout
+    P.poly([x - 1, y, x + 1, y - 3, x + 6, y - 4, x + 8, y - 2, x + 12, y - 1, x + 12, y + 2, x + 5, y + 2, x, y + 2], p.bone);
+    P.rect(x + 1, y + 1, 10, 1, p.boneMd);
+    // lower jaw, hinged at the back
+    P.poly([x + 1, y + 2, x + 11, y + 2 + jaw, x + 10, y + 4 + jaw, x + 2, y + 4], p.boneMd);
+    for (let i = 0; i < 4; i++) { P.px(x + 4 + i * 2, y + 2, p.bone); if (jaw > 1) P.px(x + 5 + i * 2, y + 2 + Math.round(jaw * (0.4 + i * 0.15)), p.bone); }
+    if (jaw > 1) P.rect(x + 3, y + 3, 7, jaw - 1, p.redDk);
+    // eye socket and its ember
+    P.rect(x + 4, y - 2, 3, 2, p.hollow);
+    P.px(x + 5, y - 2, p.eye);
+    P.px(x + 11, y, p.hollow);
+  }
+  function houndPile(P, p, n) {
+    const G = HG, c = HX;
+    P.line([c - 10, G - 2, c + 6, G - 3], 2, p.boneMd);
+    for (let i = 0; i < 5; i++) P.line([c - 8 + i * 3, G - 3, c - 7 + i * 3 + (i % 2), G - 6 - (i % 2)], 1, p.bone);
+    P.poly([c - 4, G - 5, c + 3, G - 6, c + 2, G - 2, c - 5, G - 1], p.red);
+    P.line([c - 14, G - 1, c - 9, G - 2], 1, p.boneMd);
+    P.line([c + 9, G - 1, c + 14, G], 2, p.boneDk);
+    houndSkullSide(P, p, c + 4 + (n > 1 ? 1 : 0), G - 5 + (n > 1 ? 1 : 0), 1);
+  }
+
+  function hound(P, dir, pose) {
+    const p = HOUND, G = HG, c = HX;
+    if (pose.pile) { houndPile(P, p, pose.pile); return; }
+    const b = pose.bob || 0, push = pose.push || 0, head = pose.head || 0, jaw = pose.jaw || 0, arch = pose.arch || 0;
+    const L = pose.legs;
+    if (dir === "side") {
+      const hip = { x: c - 8 + push, y: G - 13 + b }, sh = { x: c + 6 + push, y: G - 14 + b };
+      // far legs first, in shadow
+      houndLeg(P, sh.x - 1, sh.y, sh.x + L[1][0] - 1, G - L[1][1], false, p.boneDk, p.hollow);
+      houndLeg(P, hip.x + 1, hip.y, hip.x + L[3][0] + 1, G - L[3][1], true, p.boneDk, p.hollow);
+      // tail: a chain of vertebrae curling up
+      const tl = pose.tail || 0;
+      const tail = [hip.x, hip.y, hip.x - 4, hip.y - 3 + tl, hip.x - 7, hip.y - 7 + tl, hip.x - 7 + tl, hip.y - 11];
+      houndBone(P, tail, 1, p.boneMd);
+      for (let i = 2; i < tail.length; i += 2) P.px(tail[i], tail[i + 1], p.bone);
+      // the hollow of the ribcage, then the ribs and spine over it
+      const midY = G - 16 + b - arch;
+      P.poly([hip.x + 2, hip.y + 1, sh.x - 1, sh.y + 1, sh.x - 1, G - 7 + b, hip.x + 4, G - 9 + b], p.hollow);
+      for (let x = hip.x + 4; x <= sh.x - 1; x += 2) P.seg(x, midY + 1 + Math.abs(x - c) / 6, x + 1, G - 8 + b, p.bone);
+      P.line([hip.x + 4, G - 8 + b, sh.x, G - 7 + b], 1, p.boneMd);
+      P.curve(hip.x, hip.y, c - 1 + push, midY, sh.x, sh.y, 2, p.bone);
+      P.ell(hip.x, hip.y + 1, 2.5, 2, p.boneMd);
+      // spines along the back, biggest over the shoulders
+      [[-6, 3], [-3, 4], [0, 5], [3, 6]].forEach(([dx, h]) => {
+        const x = c + dx + push, y = midY + Math.abs(dx) / 4;
+        P.poly([x - 1, y, x + 2, y, x - 2, y - h], dx > 0 ? p.bone : p.boneMd);
+      });
+      // a strap across the ribs with its buckle
+      P.seg(c - 1 + push, midY + 1, c + 1 + push, G - 8 + b, p.leather);
+      P.px(c + push, G - 11 + b, p.gold);
+      // neck and skull
+      const hx = sh.x + 3, hy = sh.y - 4 + head;
+      houndBone(P, [sh.x, sh.y, hx, hy + 1], 2, p.boneMd);
+      // the torn red mantle over the shoulders
+      P.poly([sh.x - 5, sh.y - 2, sh.x + 3, sh.y - 4, sh.x + 4, sh.y, sh.x + 1, G - 8 + b, sh.x - 1, G - 10 + b, sh.x - 3, G - 7 + b, sh.x - 4, G - 11 + b, sh.x - 7, G - 9 + b], p.red);
+      P.poly([sh.x - 5, sh.y - 2, sh.x - 1, sh.y - 3, sh.x - 3, G - 8 + b, sh.x - 7, G - 9 + b], p.redMd);
+      houndSkullSide(P, p, hx, hy - 1, jaw);
+      // near legs on top
+      houndLeg(P, sh.x, sh.y + 1, sh.x + L[0][0], G - L[0][1], false, p.bone, p.boneDk);
+      houndLeg(P, hip.x, hip.y + 1, hip.x + L[2][0], G - L[2][1], true, p.bone, p.boneDk);
+      return;
+    }
+    const face = dir === "down";
+    // front and back views: the legs alternate lifts, the body bobs over them
+    const lift = (i) => L[i][1];
+    const top = G - 14 + b;
+    // hind legs (farther apart, behind)
+    for (const [i, sx] of [[2, -1], [3, 1]]) {
+      const x = c + sx * 6;
+      P.line([x, top + 2, x + sx, G - 1 - lift(i)], 2, face ? p.boneDk : p.boneMd);
+      P.rect(x + sx - 1, G - 1 - lift(i), 3, 1, face ? p.boneDk : p.boneMd);
+    }
+    if (!face) {
+      // pelvis and the tail curling up toward the viewer
+      const tl = pose.tail || 0;
+      P.ell(c, top + 3, 4, 2.5, p.boneMd);
+      houndBone(P, [c, top + 2, c + 1 + tl, top - 3, c - 1 + tl, top - 7], 1, p.boneMd);
+      P.px(c + 1 + tl, top - 3, p.bone); P.px(c - 1 + tl, top - 7, p.bone);
+    }
+    // ribcage
+    P.poly([c - 5, top - 2, c + 5, top - 2, c + 4, top + 5, c - 4, top + 5], p.hollow);
+    for (let y = top - 1; y <= top + 4; y += 2) { P.seg(c - 5, y, c - 1, y + 1, p.bone); P.seg(c + 1, y + 1, c + 5, y, p.bone); }
+    P.line([c, top - 3, c, top + 5], 1, p.boneMd);
+    // spines fanning up from the back
+    [[-4, 4], [-1, 6], [2, 5], [4, 3]].forEach(([dx, h]) => P.poly([c + dx - 1, top - 2, c + dx + 1, top - 2, c + dx + Math.sign(dx || 1), top - 2 - h], face ? p.boneMd : p.bone));
+    // front legs
+    for (const [i, sx] of [[0, -1], [1, 1]]) {
+      const x = c + sx * 4;
+      P.line([x, top + 1, x + sx, top + 6, x, G - 1 - lift(i)], 2, p.bone);
+      P.rect(x - 1, G - 1 - lift(i), 3, 1, p.bone);
+      if (face) P.px(x + sx * 2, G - 1 - lift(i), p.boneDk);
+    }
+    // mantle over the shoulders
+    P.poly([c - 7, top - 4, c + 7, top - 4, c + 6, top + 2, c + 3, top + 6, c + 1, top + 3, c - 2, top + 7, c - 4, top + 2, c - 7, top + 3], p.red);
+    P.poly([c + 1, top - 4, c + 7, top - 4, c + 6, top + 2, c + 3, top + 6, c + 2, top], p.redMd);
+    // skull
+    const hy = top - 7 + head + (pose.push > 0 ? 2 : 0);
+    P.poly([c - 6, hy - 6, c - 3, hy - 3, c - 5, hy - 2], p.boneMd);
+    P.poly([c + 6, hy - 6, c + 3, hy - 3, c + 5, hy - 2], p.boneMd);
+    if (face) {
+      P.poly([c - 4, hy - 4, c + 4, hy - 4, c + 5, hy, c + 3, hy + 3, c + 2, hy + 6, c - 2, hy + 6, c - 3, hy + 3, c - 5, hy], p.bone);
+      P.rect(c - 3, hy - 1, 2, 2, p.hollow); P.rect(c + 1, hy - 1, 2, 2, p.hollow);
+      P.px(c - 2, hy - 1, p.eye); P.px(c + 2, hy - 1, p.eye);
+      P.px(c - 1, hy + 4, p.hollow); P.px(c + 1, hy + 4, p.hollow);
+      P.rect(c - 2, hy + 6, 5, 1 + jaw, jaw ? p.redDk : p.boneMd);
+      P.rect(c - 2, hy + 6 + jaw, 5, 1, p.boneMd);
+      if (jaw) { P.px(c - 2, hy + 6, p.bone); P.px(c + 2, hy + 6, p.bone); }
+    } else {
+      P.poly([c - 4, hy - 4, c + 4, hy - 4, c + 5, hy, c + 3, hy + 2, c - 3, hy + 2, c - 5, hy], p.boneMd);
+      P.rect(c - 2, hy - 3, 4, 1, p.bone);
+    }
+  }
+
+  function houndSheet() {
+    const sheet = {};
+    for (const dir of ["down", "up", "side"]) {
+      sheet[dir] = {};
+      for (const anim in HOUND_ANIMS) sheet[dir][anim] = HOUND_ANIMS[anim].map((pose) =>
+        Object.assign(Art.mk(HW, HH, (P) => hound(P, pose.pile ? "side" : dir, pose), HOUND.outline), { ax: HX, ay: HG + 1 }));
+    }
+    return sheet;
+  }
+
   /* ---------- sheet building ---------- */
   function fallen(src, dir) {
     // Lay the kneeling frame on its side.
@@ -402,6 +574,7 @@
     sh.defiler = buildSheet({ pal: d({ cloth: "#99a3a0" }), weapon: "pole", offhand: "none", torn: true, drips: 12, seed: 25 });
     sh.blackguard = buildSheet({ pal: d({ cloth: "#4a5559", clothMd: "#36424a", metal: "#2c3840", metalHi: "#55707a" }), weapon: "sword", offhand: "tower", bulk: 2, drips: 10, seed: 26 });
     sh.hexbearer = buildSheet({ pal: d({ cloth: "#8d9896" }), weapon: "staff", offhand: "lantern", torn: true, drips: 14, seed: 28 });
+    sh.boneHound = Art.applyFrames("boneHound", houndSheet());
     sh.champion = buildSheet({ pal: d({ cloth: "#c3cbc6", clothMd: "#8d9a99", blade: "#7fa6b0" }), weapon: "greatsword", offhand: "none", bulk: 1, crown: true, drips: 22, seed: 27 });
   };
 

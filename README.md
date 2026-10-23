@@ -130,6 +130,8 @@ Levels **5, 10, 15 and 20** are milestones. Each one unlocks a new mechanic for 
 
 Reaching a milestone triggers a pillar of the kit's light.
 
+**Bone Hound:** a summoned ally raised from the camp menu's Kit tab once the Central Flame is level 2 (16 stone, 12 iron, 8 bloom resin). One per knight, paid from the shared stash in co-op. It runs down the Drowned that strike and fall back first (Tide Archers, Hexbearers, Mire Stalkers), bites, hops clear and comes again. Each bite (6 damage) adds a stack of bleeding, 2.5 damage a second for 4 seconds that ignores armour, up to 3 stacks. It has 80 health, heals in firelight, and some Drowned turn on it. It stays until it falls, comes back with you when you rise or reload, and its health and bite grow 15% per Central Flame level after 2.
+
 **Difficulties:**
 
 | | Supplies | The Drowned | Light |
@@ -163,10 +165,11 @@ No build step, no dependencies. These are plain scripts loaded in order:
 | `src/kits.js` | the five kits in play: attacks, dashes, abilities, passives, training and milestone effects |
 | `src/camp.js` | base camp layout per tier, palisade walls, gate pathing |
 | `src/art.js` | procedural pixel sprites for the world, camp and effects |
-| `src/units.js` | the knight and Drowned Knight sprite sheets (all animations, corruption stages) |
+| `src/units.js` | the knight, Drowned Knight and Bone Hound sprite sheets (all animations, corruption stages) |
 | `src/sprites.js` | loads hand-drawn PNG art over the coded sprites and sheets |
 | `src/world.js` | endless chunked wetland: ground texture, resources, blooms, collisions |
 | `src/game.js` | simulation: player, corruption, spawning, enemy AI, combat, camp economy, saving |
+| `src/hounds.js` | the Bone Hound summon: buying, its hunt and bite, bleeding, co-op ownership |
 | `src/render.js` | drawing, the darkness/light compositing, effects |
 | `src/ui.js` | HUD, camp menu, title, pause and death screens |
 | `src/main.js` | boot + main loop |

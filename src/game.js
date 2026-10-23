@@ -29,6 +29,7 @@
     torches: 2,
     carried: emptyRes(), // what the knight had on them when the game was last saved
     drownedSelf: null,
+    hound: 0, // 1 while your Bone Hound stands (it comes back with you when you reload or rise)
     started: false,
     lastPlayed: 0,
   });
@@ -187,6 +188,7 @@
     G.camera = { x: 0, y: 70, shake: 0 };
     G.nightAmt = 0; G.night = false;
     W.resetDay();
+    DL.Hounds.reset();
     G.state = "play";
   };
 
@@ -238,6 +240,7 @@
     if (G.state === "dying") return;
     updateSpawning(dt);
     updateEnemies(dt);
+    DL.Hounds.update(dt);
     updateDefenses(dt);
     DL.Kits.update(dt);
     updateProjectiles(dt);
@@ -386,6 +389,7 @@
       L.push({ x: p.x, y: p.y - 28, r: 80, s: 0.8, col: "255,180,90", a: 0.75, flick: 1 });
     }
     for (const a of G.allies) if (!a.down) L.push({ x: a.x, y: a.y - 28, r: 80, s: 0.8, col: "255,180,90", a: 0.7, flick: 1 });
+    for (const h of G.hounds) L.push({ x: h.x, y: h.y - 36, r: 34, s: 0.35, col: "255,70,40", a: 0.6 });
     for (const e of G.enemies) {
       if (e.type === "defiler") L.push({ x: e.x, y: e.y - 70, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
       else if (e.def.boss) L.push({ x: e.x, y: e.y - 40, r: 60, s: 0.3, col: "70,230,240", a: 0.6 });
@@ -620,6 +624,7 @@
 
   // Camp tents and buildings are solid, and the palisade only opens at its gates.
   G.campSolids = () => DL.Camp.layout(G.save.up).solids;
+  G.collideCamp = (ent, r) => collideCamp(ent, r);
   function collideCamp(ent, r) {
     if (Math.hypot(ent.x, ent.y) > 280) return;
     DL.Camp.collideWall(ent, r, G.save.up);
@@ -783,15 +788,16 @@
     return best;
   }
 
-  // Each Drowned hunts whichever knight is nearest (host or a co-op friend).
+  // Each Drowned hunts whichever knight is nearest (host or a co-op friend), or a Bone Hound close by.
   G.knights = () => [G.player, ...G.allies.filter((a) => !a.down)];
   function targetFor(e) {
     let best = G.player, bd = dist(e.x, e.y, G.player.x, G.player.y);
     for (const a of G.allies) if (!a.down) { const d = dist(e.x, e.y, a.x, a.y); if (d < bd) { bd = d; best = a; } }
-    return best;
+    return DL.Hounds.nearest(e.x, e.y, bd) || best;
   }
   function hurtKnight(k, dmg, ang) {
-    if (k !== G.player) DL.Net.hurtAlly(k, dmg, ang);
+    if (k.hound) DL.Hounds.hurt(k, dmg, ang);
+    else if (k !== G.player) DL.Net.hurtAlly(k, dmg, ang);
     else hurtPlayer(dmg, ang);
   }
   // More knights, more Drowned: siege waves grow by a third per friend (and each Drowned has 15% more health per friend, in makeEnemy).
@@ -817,6 +823,12 @@
         e.burn -= dt;
         e.hp -= e.burnDps * dt;
         if (Math.random() < 0.3) spark(e.x + rand(-6, 6), e.y - rand(10, 40), "255,130,50", 40);
+        if (e.hp <= 0) { kill(e, true); continue; }
+      }
+      if (e.bleed > 0) {
+        // Bone Hound bites: bleeding ignores armour
+        e.bleed -= dt;
+        e.hp -= DL.HOUND.bleedDps * (e.bleedN || 1) * dt;
         if (e.hp <= 0) { kill(e, true); continue; }
       }
       const dp = dist(e.x, e.y, p.x, p.y);
@@ -938,6 +950,10 @@
       for (const k of G.knights()) {
         const dx = a.x - k.x, dy = a.y - k.y, d = Math.hypot(dx, dy) || 0.01, min = a.def.radius + 9;
         if (d < min) { a.x = k.x + (dx / d) * min; a.y = k.y + (dy / d) * min; }
+      }
+      for (const h of G.hounds) {
+        const dx = a.x - h.x, dy = a.y - h.y, d = Math.hypot(dx, dy) || 0.01, min = a.def.radius + 6;
+        if (d < min) { a.x = h.x + (dx / d) * min; a.y = h.y + (dy / d) * min; }
       }
       W.collide(a, a.def.radius * 0.6);
       collideCamp(a, a.def.radius * 0.6);
@@ -1260,7 +1276,9 @@
         }
         else {
           const a = G.allies.find((k) => !k.down && dist(b.x, b.y, k.x, k.y - 22) < 16);
+          const h = a ? null : G.hounds.find((k) => dist(b.x, b.y, k.x, k.y - 14) < 13);
           if (a) { DL.Net.hurtAlly(a, b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
+          else if (h) { DL.Hounds.hurt(h, b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
         }
       } else {
         for (const e of G.enemies) {
@@ -1299,6 +1317,7 @@
         t.done = true;
         if (dist(t.x, t.y, p.x, p.y) < t.r + 6) hurtPlayer(t.dmg, Math.atan2(p.y - t.y, p.x - t.x));
         for (const a of G.allies) if (!a.down && dist(t.x, t.y, a.x, a.y) < t.r + 6) DL.Net.hurtAlly(a, t.dmg, Math.atan2(a.y - t.y, a.x - t.x));
+        for (const h of G.hounds.slice()) if (dist(t.x, t.y, h.x, h.y) < t.r + 4) DL.Hounds.hurt(h, t.dmg, Math.atan2(h.y - t.y, h.x - t.x));
         for (let i = 0; i < 10; i++) spark(t.x + rand(-t.r, t.r) * 0.6, t.y + rand(-t.r, t.r) * 0.3, "90,235,245", 120);
         G.effects.push({ type: "spikes", x: t.x, y: t.y, r: t.r, t: 0, max: 0.5 });
       }

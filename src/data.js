@@ -223,6 +223,17 @@
   DL.DIFF_ORDER = ["dim", "dark", "pitch", "abyss"];
 
   DL.TORCH_COST = { wood: 3, resin: 1 };
+
+  /* Bone Hound: a summoned ally bought at the camp fire (Kit tab), one per knight. It runs down
+     the Drowned that strike and fall back (Tide Archers, Hexbearers, Mire Stalkers) first, bites
+     and hops clear, and every bite opens a bleed that ignores armour and stacks up to `bleedMax`.
+     It stays until it falls; health and bite grow by `perFlame` for each Central Flame level past `reqFlame`. */
+  DL.HOUND = {
+    name: "Bone Hound", reqFlame: 2, cost: { stone: 8, iron: 6, resin: 4 },
+    hp: 80, dmg: 6, cd: 0.8, range: 22, speed: 185, lunge: 360, perFlame: 0.15,
+    bleedDps: 2.5, bleedDur: 4, bleedMax: 3,
+    sight: 320, leash: 400, regen: 5, radius: 9,
+  };
   DL.scaleCost = scaleCost;
 
   // Camp buildings. costs[level] = price to go from `level` to `level + 1`.
@@ -266,6 +277,7 @@
   ];
 
   for (const u of DL.UPGRADES) u.costs = u.costs.map((c) => (c ? scaleCost(c) : c));
+  DL.HOUND.cost = scaleCost(DL.HOUND.cost);
 
   // Camp siege waves get nastier each night.
   DL.campPool = function (day) {
