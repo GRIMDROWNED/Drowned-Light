@@ -174,7 +174,7 @@
     h.hp -= dmg;
     h.inv = 0.25; h.flash = 0.15; h.hurtT = 0.2;
     h.kx += Math.cos(ang) * 120; h.ky += Math.sin(ang) * 120;
-    G.text(h.x, h.y - 46, "-" + Math.round(dmg), "#ff8a7a", 0.9);
+    G.text(h.x, h.y - 66, "-" + Math.round(dmg), "#ff8a7a", 0.9);
     if (h.hp <= 0) fall(h);
   };
 
