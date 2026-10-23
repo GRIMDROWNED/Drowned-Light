@@ -94,6 +94,8 @@
       // six drawn reed clumps when their art is loaded, one picked per spot
       case "reeds": return Art.sprites.reeds1 ? "reeds" + (o.reed || (o.reed = 1 + Math.floor(DL.hash(o.x | 0, o.y | 0, 9) * 6))) : "reeds";
       // the drawn den: eyes in its mouth while the pack lives, empty once it's broken; else the coded one
+      // the drawn graves come in two kinds, one picked per stone
+      case "grave": return Art.sprites.grave2 && DL.hash(o.x | 0, o.y | 0, 11) < 0.4 ? "grave2" : "grave";
       case "den": return Art.sprites.denGuarded ? (DL.Den.state().cleared ? "denCleared" : "denGuarded") : "boneDen";
       default: return o.def.sprite;
     }
@@ -1055,7 +1057,21 @@
     const { dir, flip } = Art.unitDir(w.angle);
     return { x: Math.round(w.x), y: Math.round(w.y - 14 + Math.sin(t * 2.2 + w.id) * 3), dir, flip };
   }
+  // Drawn frames, once they've loaded (otherwise the coded stand-in below).
+  const wraithDrawn = () => !Art.sheet("abigail").down.idle[0].blank;
+  // Throwing (arm up, then the throw), blessing her knight just now (facing you, arms raised), drifting, or floating still.
+  function wraithAnim(w, t) {
+    if (w.state === "cast") return ["attack", Math.max(0, Math.min(2, Math.floor((1 - w.stT / 0.45) * 3))), w.angle];
+    if (w.buff > DL.ABIGAIL.buffDur - 0.9) return ["bless", 0, Math.PI / 2];
+    if (w.moving) return ["walk", Math.floor(w.animT * walkRate("abigail", 7)), w.angle];
+    return ["idle", 0, w.angle];
+  }
   function drawWraith(c, w, t) {
+    if (wraithDrawn()) {
+      shadow(c, w.x, w.y, 10, 3, 0.22);
+      const [anim, fr, ang] = wraithAnim(w, t);
+      return Art.drawUnit(c, "abigail", anim, fr, ang, w.x, w.y - 10 + Math.sin(t * 2.2 + w.id) * 3, 1);
+    }
     const P = wraithPose(w, t), sway = Math.sin(t * 3 + w.id) * 3, side = P.dir === "side", back = P.dir === "up";
     shadow(c, w.x, w.y, 10, 3, 0.22);
     c.save();
@@ -1098,13 +1114,25 @@
   // Her eyes, as world points (none from behind).
   function wraithEyes(w, t) {
     const P = wraithPose(w, t);
-    if (P.dir === "up") return [];
+    if (P.dir === "up" || wraithDrawn()) return []; // the drawn eyes glow on their own
     if (P.dir === "side") return [[P.x + (P.flip ? -4.5 : 4.5), P.y - 37]];
     return [[P.x - 2.2, P.y - 37], [P.x + 2.2, P.y - 37]];
   }
   R.drawWraith = drawWraith;
   // A soul orb: a dark round soul with two pale eyes in a teal halo (`s` scales it, `ph` sets its flicker).
   function soulOrb(c, x, y, s, ph) {
+    const sp = Art.sprites.soulOrb;
+    if (sp) {
+      // the drawn one: a soft halo, then the orb with its wisp curling up (its centre is near the bottom)
+      const r = 11 * s, g = c.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgba(${SOUL},0.5)`); g.addColorStop(1, `rgba(${SOUL},0)`);
+      c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2);
+      const op = c.globalCompositeOperation, w = sp.w * PS * s, h = sp.h * PS * s;
+      c.globalCompositeOperation = "source-over";
+      c.drawImage(sp.c, Math.round(x - w / 2), Math.round(y + 6 * s - h), w, h);
+      c.globalCompositeOperation = op;
+      return;
+    }
     const r = 13 * s, g = c.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, `rgba(${SOUL},0.95)`); g.addColorStop(0.45, `rgba(${SOUL},0.5)`); g.addColorStop(1, `rgba(${SOUL},0)`);
     c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2);
@@ -1182,6 +1210,20 @@
     if (b.kind === "soul") {
       // Abigail's soul orb: a teal wisp trailing behind a dark round soul with two pale eyes
       const tt = DL.Game.t;
+      const fly = Art.sprites[Math.floor(tt * 10) % 2 ? "soulFly2" : "soulFly1"];
+      if (fly) {
+        // the drawn orb streaming its tail behind it, turned the way it flies (its head is at the right end)
+        const w = fly.w * PS * 0.75, h = fly.h * PS * 0.75, g = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, 14);
+        g.addColorStop(0, `rgba(${SOUL},0.55)`); g.addColorStop(1, `rgba(${SOUL},0)`);
+        c.fillStyle = g; c.fillRect(b.x - 14, b.y - 14, 28, 28);
+        c.save();
+        c.globalCompositeOperation = "source-over";
+        c.translate(b.x, b.y); c.rotate(a);
+        if (Math.cos(a) < 0) c.scale(1, -1); // keep it upright going left
+        c.drawImage(fly.c, -w + 6, -h / 2, w, h);
+        c.restore();
+        return;
+      }
       for (let i = 1; i <= 6; i++) {
         const w = Math.sin(tt * 18 + i * 1.3) * 2.5 * (i / 6);
         c.fillStyle = `rgba(${SOUL},${0.55 * (1 - i / 7)})`;
