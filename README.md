@@ -54,7 +54,7 @@ The camp grows through three tiers as the Central Flame levels up:
 | Barricade & Gate | Level 1 is a stake ring. Level 2 is a palisade with four gates, so the Drowned must path through them and take stake damage. Level 3 reinforces it with gate lanterns and spikes |
 
 ### High-risk reasons to leave the light
-- **Amethyst** deposits surface only in darkness (the Mire and deeper). You need them for top-tier upgrades.
+- **Amethyst** deposits glow purple in the Drowned Reaches and the Abyss, farther out than iron, and stay day and night like the other supplies. You need them for top-tier upgrades.
 - **Torches** you plant burn out, and Lantern Reavers snuff them out.
 - **Mother Roots**: defend one until dawn for a big reward.
 - **Your drowned self**: when you fall, a Drowned version of you keeps everything you carried. Kill it to get your supplies back. If you die again first, they're gone.
@@ -71,7 +71,7 @@ Title screen → **Play with a friend**.
 - **Join:** pick the kit you'll bring (any of the five), type the code, and you play in the host's world: their camp, difficulty, day and stash. The kit joins at its co-op level, or your best level for it in your own saves. Kit levels you train in co-op are kept on your device for your next co-op game. Your own saves never change.
 
 What's shared:
-- The Drowned hunt whichever knight is nearer, and night waves and pearls also turn up near a friend who wanders off.
+- The Drowned hunt whichever knight is nearer, and night waves also turn up near a friend who wanders off.
 - Supplies the guest mines or picks up are theirs to carry, and go into the host's stash when they reach camp.
 - Lights, torches and Flame Bastion walls the guest raises are real for both players.
 
@@ -89,7 +89,7 @@ What's shared:
 **How it works:** the host's device runs the world and sends snapshots about 15 times a second. A snapshot holds only what's near the guest, and a beat is skipped when the connection is backed up. The guest's device runs its own knight and reports hits, mining and deposits (`src/net.js`). The free public PeerJS server introduces the two devices, and the game data then goes directly between them over WebRTC. The PeerJS library is loaded only when co-op is used, so solo play still works offline. Some strict networks (schools, offices, some mobile carriers) block direct connections.
 
 ### Mining
-Supply nodes take several hits to break: trees 5, boulders 6, iron 5, bloom sprouts 2, pearls 2. Each strike shakes and cracks the node and throws chips. The last strike shatters it into pieces of its sprite, and the supplies spill out as pickups that fly to you. In auto mode the knight mines a node you stand beside whenever no Drowned are in reach. In manual mode mining has its own control (Mine / G / right-click), so Attack never mines by mistake.
+Supply nodes take several hits to break: trees 5, boulders 6, iron 5, bloom sprouts 2, amethyst 4. Each strike shakes and cracks the node and throws chips. The last strike shatters it into pieces of its sprite, and the supplies spill out as pickups that fly to you. In auto mode the knight mines a node you stand beside whenever no Drowned are in reach. In manual mode mining has its own control (Mine / G / right-click), so Attack never mines by mistake.
 
 ### View
 **Auto** follows the device. **Portrait** and **Landscape** lock the screen rotation in the installed app. Where a lock isn't possible:

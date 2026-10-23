@@ -178,12 +178,12 @@
     };
     G.time = 4;
     G.enemies = []; G.projectiles = []; G.pickups = []; G.effects = []; G.texts = [];
-    G.torches = []; G.lightZones = []; G.telegraphs = []; G.hexPools = []; G.pearls = []; G.decals = []; G.lights = [];
-    G.blooms = []; G.walls = []; G.wisp = null; G.hitNodes = [];
+    G.torches = []; G.lightZones = []; G.telegraphs = []; G.hexPools = []; G.decals = []; G.lights = [];
+    G.blooms = []; G.amethysts = []; G.walls = []; G.wisp = null; G.hitNodes = [];
     G.flame = { kind: "flame", x: 0, y: 0, rad: 24, hp: st.flameHp, max: st.flameHp, lit: true, hitT: 0 };
     G.towerCd = [0, 0, 0];
     G.resetPylons();
-    G.siegeT = 5; G.spawnT = 3; G.pearlT = 2; G.rootEvent = null; G.selfEnemy = null; G.champSpawned = false;
+    G.siegeT = 5; G.spawnT = 3; G.rootEvent = null; G.selfEnemy = null; G.champSpawned = false;
     G.dying = 0;
     G.camera = { x: 0, y: 70, shake: 0 };
     G.nightAmt = 0; G.night = false;
@@ -334,21 +334,22 @@
   function onNewDay() {
     G.save.day += 1;
     W.resetDay();
-    G.pearls = G.pearls.filter((p) => DL.ZONES[W.zoneIndex(p.x, p.y)].abyss);
     G.persist();
     say(`Day ${G.save.day}. The wetland stirs — supplies have regrown.`);
   }
 
   /* ---------------- light ---------------- */
   function collectBlooms() {
-    const p = G.player, out = [];
+    const p = G.player, out = [], gems = [];
     W.near(p.x, p.y, 1000, (o) => {
+      if (o.type === "pearl") { if (!o.harvested) gems.push(o); return; }
       if (o.def.bloom || o.type === "sprout") {
         o.active = !o.dead && (G.nightAmt > 0.3 || DL.ZONES[o.zi].abyss);
         out.push(o);
       }
     });
     G.blooms = out;
+    G.amethysts = gems;
   }
 
   function buildLights() {
@@ -381,7 +382,7 @@
       if (o.type === "sprout") { if (!o.harvested) L.push({ x: o.x + 6, y: o.y - 30, r: 46, s: 0.45, col: "80,230,240", a: 0.6 }); continue; }
       L.push({ x: o.x, y: o.y - 24, r: o.def.light * G.diff().light, s: 0.92, col: "80,230,240", a: 0.95, kind: "bloom", obj: o });
     }
-    for (const pr of G.pearls) L.push({ x: pr.x, y: pr.y - 4, r: 34, s: 0.45, col: "190,160,255", a: 0.9 });
+    for (const o of G.amethysts) if (!o.harvested) L.push({ x: o.x, y: o.y - 4, r: 34, s: 0.45, col: "190,160,255", a: 0.9 });
     if (p && G.state !== "title") {
       const lr = st.lanternR * (p.oil > 0 ? 1 : 0.4);
       L.push({ x: p.x, y: p.y - 28, r: lr, s: 0.8, col: "255,180,90", a: p.oil > 0 ? 0.75 : 0.3, flick: 1, lantern: true });
@@ -575,7 +576,6 @@
       if (d < (o.def.r || 12) + R && d < bd) { bd = d; best = o; }
     };
     W.near(p.x, p.y, 70, check);
-    for (const pr of G.pearls) check(pr);
     return best;
   }
 
@@ -618,7 +618,6 @@
       dropRes(o.x, o.y - 6, o.def.res, o.amount);
       G.dirty.add(o);
     }
-    if (o.type === "pearl") G.pearls = G.pearls.filter((x) => x !== o);
   }
   G.shatter = shatter;
 
@@ -674,20 +673,6 @@
     const p = a ? { x: a.x, y: a.y, zi: W.zoneIndex(a.x, a.y) } : G.player;
     const Z = DL.ZONES[Math.max(1, p.zi)], dCamp = Math.hypot(p.x, p.y);
     const active = G.night || (Z.abyss && G.nightAmt < 0.5);
-
-    // Abyssal pearls surface only in darkness.
-    G.pearlT -= dt;
-    if (G.pearlT <= 0) {
-      G.pearlT = 2.5;
-      if ((G.night || Z.abyss) && p.zi >= 2 && G.pearls.length < 5) {
-        const a = rand(0, TAU), r = rand(280, 600), x = p.x + Math.cos(a) * r, y = p.y + Math.sin(a) * r;
-        if (!G.protectionAt(x, y) && W.zoneIndex(x, y) >= 2 && !W.isWater(x, y)) {
-          const zi = W.zoneIndex(x, y);
-          G.pearls.push({ id: "pearl" + G.t, type: "pearl", def: DL.OBJ.pearl, x, y, zi, amount: Math.max(1, Math.round(DL.ZONES[zi].yield * 0.6 * G.diff().yield)), harvested: false });
-        }
-      }
-    }
-    if (!G.night && !Z.abyss) { G.pearls.length = 0; }
     if (!active) return;
 
     const cap = (G.night ? 55 : 14) + G.allies.length * (G.night ? 15 : 4);

@@ -37,8 +37,8 @@
     {},
     { tree: 4, gap: 10, stone: 2.5, sprout: 2, refuge: 1.6, reeds: 4 },
     { tree: 3, gap: 8.7, stone: 2, iron: 2.5, sprout: 3, refuge: 1.6, sentinel: 0.8, reeds: 3 },
-    { tree: 2.5, gap: 8.5, stone: 1.5, iron: 4, sprout: 3.5, refuge: 1.4, sentinel: 1.2, reeds: 2 },
-    { tree: 2, gap: 8.5, stone: 1.5, iron: 5, sprout: 4, refuge: 1, sentinel: 1.5, reeds: 1 },
+    { tree: 2.5, gap: 8.5, stone: 1.5, iron: 4, pearl: 1.5, sprout: 3.5, refuge: 1.4, sentinel: 1.2, reeds: 2 },
+    { tree: 2, gap: 8.5, stone: 1.5, iron: 5, pearl: 2, sprout: 4, refuge: 1, sentinel: 1.5, reeds: 1 },
   ];
 
   // World objects. `solid` = collision radius, `hits` = strikes to mine it. `bloom` objects glow at night and shelter you.
@@ -52,7 +52,8 @@
     stone: { sprite: "rock", res: "stone", base: 6, hits: 6, r: 12, solid: 7 },
     iron: { sprite: "ironpile", res: "iron", base: 2, hits: 5, r: 14 },
     sprout: { sprite: "sprout", res: "resin", base: 2, hits: 2, r: 10 },
-    pearl: { sprite: "pearl", res: "pearl", base: 1, hits: 2, r: 8 },
+    // Amethyst grows from the Drowned Reaches outward, beyond where iron begins.
+    pearl: { sprite: "pearl", res: "pearl", base: 1, hits: 4, r: 10 },
     refuge: { sprite: "refuge", bloom: true, light: 125, hp: 70, rad: 14, name: "Refuge Bloom" },
     sentinel: { sprite: "sentinel", bloom: true, light: 95, hp: 100, rad: 14, turret: true, name: "Sentinel Bloom" },
     root: { sprite: "root", bloom: true, light: 200, hp: 480, rad: 30, solid: 20, name: "Mother Root" },
