@@ -34,6 +34,9 @@
     golem: 0, // 1 once Derek is yours (he can't fall, so he always comes back)
     caveFound: 0, // 1 once you've come upon the mouth of Derek's Hollow
     caveFail: -1, // the night (nights survived so far) a trial in the Hollow was lost: it stays sealed until the next
+    // Kindle, your walking lantern: torches fed so far, lit for good; for the world: the night its first Kindle was lit
+    // (-1: none yet), where they're all leading, and how often they've led where
+    kindle: { found: false, fed: 0, lit: false, since: -1, guide: null, led: {}, refilled: false },
     started: false,
     lastPlayed: 0,
   });
@@ -196,6 +199,7 @@
     DL.Golems.reset();
     DL.Den.reset();
     DL.Cave.reset();
+    DL.Kindle.reset();
     G.state = "play";
   };
 
@@ -258,6 +262,7 @@
     updateEnemies(dt);
     DL.Hounds.update(dt);
     DL.Golems.update(dt);
+    DL.Kindle.update(dt);
     updateDefenses(dt);
     DL.Kits.update(dt);
     updateProjectiles(dt);
@@ -327,6 +332,7 @@
     G.save.nights += 1;
     say("Dawn breaks. The Drowned retreat from the sun.", "good");
     DL.Den.dawn();
+    DL.Kindle.dawn();
     if (G.rootEvent) {
       const o = G.rootEvent.obj;
       if (!o.dead) {
@@ -413,6 +419,7 @@
     for (const a of G.allies) if (!a.down) L.push({ x: a.x, y: a.y - 28, r: 80, s: 0.8, col: "255,180,90", a: 0.7, flick: 1 });
     for (const h of G.hounds) if (!(h.down > 0)) L.push({ x: h.x, y: h.y - 36, r: 34, s: 0.35, col: "255,70,40", a: 0.6 });
     for (const m of G.golems) L.push({ x: m.x, y: m.y - 12, r: 32, s: 0.4, col: "80,230,240", a: 0.6 });
+    DL.Kindle.lights(L);
     for (const e of G.enemies) {
       if (e.type === "defiler") L.push({ x: e.x, y: e.y - 70, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
       else if (e.def.boss) L.push({ x: e.x, y: e.y - 40, r: 60, s: 0.3, col: "70,230,240", a: 0.6 });

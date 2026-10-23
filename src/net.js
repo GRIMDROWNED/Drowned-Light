@@ -178,6 +178,7 @@
       G.allies.push(a);
       if (m.hound) DL.Hounds.join(g.id); // a friend who won a Bone Hound brings it along
       if (m.golem) DL.Golems.give(g.id); // they won Derek in a Hollow before: he comes along
+      if (m.kindle) DL.Kindle.join(g.id); // and one who lit their Kindle, theirs
       const harvested = [];
       for (const c of DL.World.chunks.values()) for (const o of c.objects) if (o.harvested || o.dead || (o.maxHp && o.hp < o.maxHp)) harvested.push(objRow(o));
       sendTo(g, { t: "welcome", v: VERSION, id: g.id, up: G.save.up, difficulty: G.save.difficulty, day: G.save.day, nights: G.save.nights, time: G.time, ob: harvested });
@@ -223,6 +224,10 @@
       const ok = G.canAfford(DL.TORCH_COST);
       if (ok) { G.pay(DL.TORCH_COST); G.persist(); }
       sendTo(g, { t: "torchMade", ok });
+    } else if (ev.t === "kindle") {
+      // a friend fed their seventh torch to the broken lantern: their Kindle rises beside them
+      DL.Kindle.join(g.id);
+      if (g && g.ally) say(`${who} lit their Kindle.`, "good");
     } else if (ev.t === "deposit") {
       const parts = [];
       for (const k of DL.RES_KEYS) if (ev.res[k] > 0) { G.save.stash[k] += ev.res[k]; parts.push(`${ev.res[k]} ${DL.RESOURCES[k].name}`); }
@@ -290,6 +295,8 @@
       gm: G.golems.filter((m) => near(m.x, m.y, 1100)).map((m) => [m.id, m.owner, r1(m.x), r1(m.y), r1(m.angle), m.moving ? 1 : 0, m.state === "cast" ? 1 : 0, r1(m.stT)]),
       sw: G.stoneWalls.filter((w) => near(w.x, w.y, 1100)).map((w) => [w.id, w.owner, r1(w.x), r1(w.y), r1(w.ang), w.len, w.hits, r1(w.t)]),
       cv: DL.Cave.snap(), // Derek's Hollow: [wave, fighting, seconds to the next wave, Drowned still to come]
+      // Kindles, one per knight who lit theirs: [id, owner, x, y, angle, moving, angle he leads toward or null]
+      kd: DL.Kindle.rows(),
       ob: dirty,
     };
   }
@@ -310,6 +317,8 @@
 
   // A Bone Hound won in co-op, or in any of your own save slots, comes with you into a friend's world.
   Net.hasHound = () => !!Net.profile().hound || G.listSlots().some(({ save }) => save && save.hound);
+  // The same for a Kindle you lit.
+  Net.hasKindle = () => !!Net.profile().kindle || G.listSlots().some(({ save }) => save && save.kindle && save.kindle.lit);
 
   Net.join = async function (code, kit) {
     Net.joinKit = DL.KITS[kit] ? kit : G.save.kit;
@@ -338,7 +347,7 @@
         if (c.peerConnection) c.peerConnection.addEventListener("signalingstatechange", () => { if (c.peerConnection.signalingState === "stable") reached = true; });
         c.on("open", () => {
           Net.connected = true;
-          Net.send({ t: "hello", v: VERSION, kit: Net.joinKit, level: Net.joinLevel(Net.joinKit), hound: Net.hasHound() ? 1 : 0, golem: Net.profile().golem ? 1 : 0 });
+          Net.send({ t: "hello", v: VERSION, kit: Net.joinKit, level: Net.joinLevel(Net.joinKit), hound: Net.hasHound() ? 1 : 0, golem: Net.profile().golem ? 1 : 0, kindle: Net.hasKindle() ? 1 : 0 });
         });
         c.on("data", (raw) => wireRecv(c, raw, (m) => {
           if (m && m.t === "full") { clearTimeout(timer); fail(`That room is full (${MAX_GUESTS + 1} players).`); return; }
@@ -491,6 +500,7 @@
       return h;
     });
     DL.Den.apply(m.dn);
+    DL.Kindle.apply(m.kd);
     // Derek and his walls: a wall that appears rises with its dust, one that vanishes close by crumbles
     const golems = new Map(G.golems.map((o) => [o.id, o]));
     G.golems = (m.gm || []).map((r) => {
@@ -530,6 +540,7 @@
       if (o.state === "cast") o.stT -= dt;
     }
     for (const w of G.stoneWalls) { w.t += dt; w.hitT = Math.max(0, w.hitT - dt); }
+    DL.Kindle.guest(dt, k);
   };
 
   // Lights, walls and torches the guest makes become the host's; the guest sees them come back in the next snapshot.
