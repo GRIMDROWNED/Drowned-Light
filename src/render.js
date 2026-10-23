@@ -727,26 +727,66 @@
   }
 
   // The Bone Hound: bites play its attack, a struck hound flinches.
+  function houndAnim(h, t) {
+    if (h.state === "bite") return ["attack", Math.min(2, Math.floor((1 - h.stT / 0.3) * 3))];
+    if (h.hurtT > 0) return ["hurt", 0];
+    if (h.moving) return ["walk", Math.floor(h.animT * walkRate("boneHound", 11))];
+    return ["idle", Math.floor(t * 1.6 + h.id)];
+  }
   function drawHound(c, h, t) {
     shadow(c, h.x, h.y, 18, 5);
-    let anim = "idle", fr = Math.floor(t * 1.6 + h.id);
-    if (h.state === "bite") { anim = "attack"; fr = Math.min(2, Math.floor((1 - h.stT / 0.3) * 3)); }
-    else if (h.hurtT > 0) anim = "hurt";
-    else if (h.moving) { anim = "walk"; fr = Math.floor(h.animT * walkRate("boneHound", 11)); }
+    const [anim, fr] = houndAnim(h, t);
     Art.drawUnit(c, "boneHound", anim, fr, h.angle, h.x, h.y, 1, { flash: h.flash > 0 ? 0.8 : 0, flashColor: "#ffb0a0" });
     if (h.hp < h.maxHp) bar(c, h.x, h.y - 70, 22, Math.max(0, h.hp) / h.maxHp, "#d9cdae");
   }
-  // Embers in its eye sockets, so it reads in the dark.
+  /* Where a side-view hound frame's eyes are, from its feet in world px (found once per frame): the red
+     pixels highest and farthest forward (the mantle sits lower and farther back). */
+  function houndEye(f) {
+    if (f.eye !== undefined) return f.eye;
+    const w = f.c.width, h = f.c.height, d = f.c.getContext("2d").getImageData(0, 0, w, h).data;
+    const red = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      if (d[i + 3] && d[i] > 110 && d[i] - d[i + 1] > 90 && d[i] - d[i + 2] > 90) red.push([x, y]);
+    }
+    const ax = f.ax != null ? f.ax : Art.UNIT.CX, ay = f.ay != null ? f.ay : Art.UNIT.GY, k = Art.UNIT.PS / (f.res || 1);
+    let best = null;
+    for (const p of red) if (!best || p[0] - p[1] * 0.5 > best[0] - best[1] * 0.5) best = p;
+    if (!best) return (f.eye = null);
+    const near = red.filter(([x, y]) => Math.abs(x - best[0]) <= 4 * (f.res || 1) && Math.abs(y - best[1]) <= 3 * (f.res || 1));
+    const mx = near.reduce((s, p) => s + p[0], 0) / near.length, my = near.reduce((s, p) => s + p[1], 0) / near.length;
+    return (f.eye = { x: (mx + 0.5 - ax) * k, y: (my + 0.5 - ay) * k });
+  }
+  // Facing you, the drawn hound's eyes sit right of its feet and move with its head: the standing pose, then each
+  // of the four front run frames (world px from the feet). The coded fallback holds its head still.
+  const HOUND_FRONT_EYES = { idle: [[6.5, -36]], walk: [[4.5, -38], [7, -25], [5.5, -37], [5, -45]] };
+  // Embers in its eye sockets, so it reads in the dark. They follow the head through every frame.
   function drawHoundEyes(c, h, t) {
     const { dir, flip } = Art.unitDir(h.angle);
     if (dir === "up") return;
-    const x = h.x + (dir === "side" ? (flip ? -32 : 32) : 0), y = h.y - (dir === "side" ? 47 : 46);
-    const r = 8, pulse = 0.75 + 0.25 * Math.sin(t * 6 + h.id);
-    const g = c.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(255,80,40,${0.6 * pulse})`);
-    g.addColorStop(1, "rgba(255,80,40,0)");
-    c.fillStyle = g;
-    c.fillRect(x - r, y - r, r * 2, r * 2);
+    const [anim, fr] = houndAnim(h, t);
+    const frames = Art.sheet("boneHound")[dir][anim], i = ((fr % frames.length) + frames.length) % frames.length, f = frames[i];
+    const drawn = !!f.res, front = dir === "down" && (anim === "idle" || anim === "walk" || !drawn);
+    let eyes;
+    if (front) {
+      // two eyes facing you
+      const [ex, ey] = drawn ? HOUND_FRONT_EYES[anim][anim === "walk" ? Math.floor(i / 2) % 4 : 0] : [0, -46];
+      eyes = [[ex - 4, ey], [ex + 4, ey]];
+    } else {
+      // side on (the front view borrows the side frames for attack, hurt and death)
+      const eye = houndEye(f);
+      if (!eye) return;
+      eyes = [[dir === "side" && flip ? -eye.x : eye.x, eye.y]];
+    }
+    const r = front ? 6 : 8, pulse = 0.75 + 0.25 * Math.sin(t * 6 + h.id);
+    for (const [ex, ey] of eyes) {
+      const x = h.x + ex, y = h.y + ey;
+      const g = c.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgba(255,80,40,${0.6 * pulse})`);
+      g.addColorStop(1, "rgba(255,80,40,0)");
+      c.fillStyle = g;
+      c.fillRect(x - r, y - r, r * 2, r * 2);
+    }
   }
 
   // A soft cyan halo around the visor so the Drowned read in the dark.
