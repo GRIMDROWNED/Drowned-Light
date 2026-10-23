@@ -245,6 +245,8 @@ PROP_GRIDS = {
     'camp/pylons.png': (3, 1, ['pylon1', 'pylon2', 'pylon3']),
     # these keep the coded sprites' names, so the drawn ones simply replace them
     'camp/barricade.png': (5, 1, ['stake', 'palisade', 'gatePost', 'gatePost2', 'palisade2']),
+    # the east and west walls, seen from the side (running away from the viewer), and the corner posts
+    'camp/side-walls.png': (4, 1, ['palisadeSide', 'palisadeSide2', 'cornerPost', 'cornerPost2']),
     'camp/tent-banner.png': (2, 1, ['tent', 'banner']),
     'camp/torches.png': (3, 1, ['torch', 'burnt', 'brazier']),
     # the fire's animation frames (Art.drawFire)
@@ -289,6 +291,7 @@ PROP_SAME = {'caveSealed': 'caveOpen', 'swampTree1': 'swampTree2', 'swampTree3':
             'workbench1': 'workbench4', 'workbench2': 'workbench4', 'workbench3': 'workbench4',
             'tower1': 'tower3', 'tower2': 'tower3',
             'pylon1': 'pylon3', 'pylon2': 'pylon3', 'palisade2': 'palisade', 'gatePost2': 'gatePost',
+            'palisadeSide': 'palisade', 'palisadeSide2': 'palisade', 'cornerPost': 'palisade', 'cornerPost2': 'palisade',
             'burnt': 'torch', 'fire1': 'fire3', 'fire2': 'fire3', 'fire4': 'fire3', 'fire5': 'fire3', 'fire6': 'fire3',
             'iron12': 'iron11', 'iron13': 'iron11', 'iron21': 'iron11', 'iron22': 'iron11', 'iron23': 'iron11', 'iron31': 'iron11', 'iron32': 'iron11', 'iron33': 'iron11',
             'amethyst12': 'amethyst11', 'amethyst13': 'amethyst11', 'amethyst21': 'amethyst11', 'amethyst22': 'amethyst11', 'amethyst23': 'amethyst11', 'amethyst31': 'amethyst11', 'amethyst32': 'amethyst11', 'amethyst33': 'amethyst11',
