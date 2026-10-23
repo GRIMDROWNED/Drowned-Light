@@ -96,6 +96,8 @@
     Object.assign(walking("ashenArbalist", [57, 81], [35, 85], [42, 86]), { path: "assets/sprites/ashen-arbalist/", keys: stages("ashenArbalist") }),
     Object.assign(walking("relicBearer", [57, 105], [39, 101], [40, 101]), { path: "assets/sprites/relic-bearer/", keys: stages("relicBearer") }),
     Object.assign(walking("flameBastion", [53, 86], [37, 86], [34, 86]), { path: "assets/sprites/flame-bastion/", keys: stages("flameBastion") }),
+    // the Bone Hound summon: the same 12 poses and walk sheets, its side walk a four-legged gallop
+    Object.assign(walking("boneHound", [55, 55], [27, 64], [26, 66]), { path: "assets/sprites/bone-hound/", keys: { boneHound: [0, false] } }),
   ];
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.

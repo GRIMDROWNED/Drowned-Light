@@ -351,7 +351,7 @@
   }
 
   /* ---------- the Bone Hound: a summoned skeletal hound in a torn red mantle ----------
-     Its own frame size; side views face right. Coded stand-in until its drawn sheets arrive. */
+     Its own frame size; side views face right. Coded fallback under the drawn sheets (src/sprites.js). */
   const HW = 44, HH = 34, HX = 22, HG = 31;
   const HOUND = {
     bone: "#d9cdae", boneMd: "#ab9e80", boneDk: "#6f6551", hollow: "#231c19", red: "#8f201b", redMd: "#6a1713",

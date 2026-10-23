@@ -46,10 +46,15 @@ GRIDS = {
     'relic-bearer/poses-b.png': (3, 2, POSES_B),
     'flame-bastion/poses-a.png': (3, 2, POSES_A),
     'flame-bastion/poses-b.png': (3, 2, POSES_B),
+    'bone-hound/poses-a.png': (3, 2, POSES_A),
+    'bone-hound/poses-b.png': (3, 2, POSES_B),
 }
 # Cells the AI drew at another scale than the rest of their sheet: cell -> factor to resize it by.
-CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05}
+CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
+              # the hound's attack row came out smaller than its standing row
+              'bone-hound/08_attackA': 1.25, 'bone-hound/09_attackB': 1.25, 'bone-hound/10_attackC': 1.25}
 
+HOUND_H = 60
 SETS = {
     'lantern-knight': ('lantern-knight', 'knight-front.png', 80, 3, {
         'knight-front.png': 'front',
@@ -108,6 +113,8 @@ SETS = {
     'relic-bearer': ('relic-bearer', 'relic-bearer/01_front.png', 98, 1, twelve('relic-bearer', TWELVE_FILES)),
     # the heaviest kit (bulk 1 in src/units.js), a little bigger than the Lantern Knight
     'flame-bastion': ('flame-bastion', 'flame-bastion/01_front.png', 84, 1, twelve('flame-bastion', TWELVE_FILES)),
+    # the Bone Hound summon: a dog, so shorter than a knight (its spines and raised tail make up the height)
+    'bone-hound': ('bone-hound', 'bone-hound/01_front.png', HOUND_H, 1, twelve('bone-hound', TWELVE_FILES)),
 }
 
 # Animation sheets: character -> [(sheet, columns, rows, height of the first frame's figure, output prefix[, row])].
@@ -179,6 +186,12 @@ SHEETS = {
         ('flame-bastion/walk-side-4.png', 4, 1, 82, 'side/walk'),
         ('flame-bastion/walk-front-4.png', 4, 1, 84, 'walkF'),
         ('flame-bastion/walk-back-4.png', 4, 1, 84, 'walkB'),
+    ],
+    # the side gallop's first frame is stretched out low, so it is much shorter than the standing pose
+    'bone-hound': [
+        ('bone-hound/walk-side-4.png', 4, 1, 40, 'side/walk'),
+        ('bone-hound/walk-front-4.png', 4, 1, 62, 'walkF'),
+        ('bone-hound/walk-back-4.png', 4, 1, 64, 'walkB'),
     ],
 }
 

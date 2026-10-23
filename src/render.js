@@ -728,19 +728,19 @@
 
   // The Bone Hound: bites play its attack, a struck hound flinches.
   function drawHound(c, h, t) {
-    shadow(c, h.x, h.y, 13, 4);
+    shadow(c, h.x, h.y, 18, 5);
     let anim = "idle", fr = Math.floor(t * 1.6 + h.id);
     if (h.state === "bite") { anim = "attack"; fr = Math.min(2, Math.floor((1 - h.stT / 0.3) * 3)); }
     else if (h.hurtT > 0) anim = "hurt";
-    else if (h.moving) { anim = "walk"; fr = Math.floor(h.animT * 11); }
+    else if (h.moving) { anim = "walk"; fr = Math.floor(h.animT * walkRate("boneHound", 11)); }
     Art.drawUnit(c, "boneHound", anim, fr, h.angle, h.x, h.y, 1, { flash: h.flash > 0 ? 0.8 : 0, flashColor: "#ffb0a0" });
-    if (h.hp < h.maxHp) bar(c, h.x, h.y - 54, 22, Math.max(0, h.hp) / h.maxHp, "#d9cdae");
+    if (h.hp < h.maxHp) bar(c, h.x, h.y - 70, 22, Math.max(0, h.hp) / h.maxHp, "#d9cdae");
   }
   // Embers in its eye sockets, so it reads in the dark.
   function drawHoundEyes(c, h, t) {
     const { dir, flip } = Art.unitDir(h.angle);
     if (dir === "up") return;
-    const x = h.x + (dir === "side" ? (flip ? -28 : 28) : 0), y = h.y - (dir === "side" ? 42 : 46);
+    const x = h.x + (dir === "side" ? (flip ? -32 : 32) : 0), y = h.y - (dir === "side" ? 47 : 46);
     const r = 8, pulse = 0.75 + 0.25 * Math.sin(t * 6 + h.id);
     const g = c.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, `rgba(255,80,40,${0.6 * pulse})`);
