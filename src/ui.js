@@ -430,7 +430,7 @@
       const g = cv.getContext("2d");
       g.clearRect(0, 0, cv.width, cv.height);
       g.imageSmoothingEnabled = false;
-      DL.Art.drawUnit(g, "derek", "idle", Math.floor(t * 1.6), Math.PI / 2, cv.width / 2, cv.height - 4, cv.width / 88);
+      DL.Art.drawUnit(g, "derek", "idle", Math.floor(t * 1.6), Math.PI / 2, cv.width / 2, cv.height - 4, 2.2); // he's tiny: drawn big here
     }
   };
 
