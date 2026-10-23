@@ -37,30 +37,69 @@
       const mx = (cx + 0.5) * CH, my = (cy + 0.5) * CH;
       const zi = Math.max(1, this.zoneIndex(mx, my));
       const D = DL.Game.diff();
+      // Each chunk lies inside exactly one cell of the grove grid (the cell is a whole number of chunks).
+      const grove = this.grove(Math.floor(mx / DL.GROVE.cell), Math.floor(my / DL.GROVE.cell), D);
       const n = Math.round(DL.ZONES[zi].density * D.density * (0.7 + DL.hash(cx, cy, 5) * 0.6));
       for (let i = 0; i < n; i++) {
         const x = (cx + DL.hash(cx, cy, i * 3 + 1)) * CH, y = (cy + DL.hash(cx, cy, i * 3 + 2)) * CH;
         if (Math.hypot(x, y) < CAMP_CLEAR) continue;
         const ozi = Math.max(1, this.zoneIndex(x, y));
-        let type = DL.weighted(this.spawnTable(ozi, D), DL.hash(cx, cy, i * 3 + 3));
+        let type = DL.weighted(DL.SPAWN_TABLE[ozi], DL.hash(cx, cy, i * 3 + 3));
         // "gap" is where driftwood used to lie: nothing spawns there, so the ground is clearer
         if (type === "gap") continue;
         // nothing grows in the water; reeds grow only on its edge, and half of what lands there turns to reeds
         if (this.isWater(x, y)) continue;
         if (this.isShore(x, y)) { if (DL.hash(cx, cy, i * 7 + 9) < 0.5) type = "reeds"; }
         else if (type === "reeds") continue;
+        // a grove's heart is a clearing: no trees or rocks crowd its light
+        if (grove && DL.OBJ[type].solid && Math.hypot(x - grove.x, y - grove.y) < DL.GROVE.clear) continue;
         objs.push(this.makeObj(type, x, y, `${cx},${cy},${i}`, ozi, DL.hash(cx, cy, i * 5 + 4)));
+      }
+      // The blooms of this chunk's grove that stand inside it.
+      if (grove) for (const g of grove.items) {
+        if (Math.floor(g.x / CH) === cx && Math.floor(g.y / CH) === cy) objs.push(this.makeObj(g.type, g.x, g.y, g.id, grove.zi, g.h));
       }
       // Rare Mother Roots in the Mire and deeper.
       if (zi >= 2 && DL.hash(cx, cy, 77) < 0.06 * D.bloom && !this.isWater(mx, my)) objs.push(this.makeObj("root", mx, my, `${cx},${cy},root`, zi, 0.5));
       return objs;
     },
 
-    // Difficulty shifts the mix: more or fewer blooms (light) among the supplies.
-    spawnTable(zi, D) {
-      const t = Object.assign({}, DL.SPAWN_TABLE[zi]);
-      for (const k of ["refuge", "sentinel"]) if (t[k]) t[k] *= D.bloom;
-      return t;
+    /* The bloom grove of grove-grid cell (gx, gy), or null. Its heart sits well inside the cell, so neighbouring
+       groves are at least 2 * margin apart and the land between them is dark at night. Difficulty scales how
+       many cells have one and how many blooms each holds. Deterministic, so every visit and every co-op peer
+       sees the same groves. */
+    grove(gx, gy, D) {
+      const GR = DL.GROVE, span = GR.cell - 2 * GR.margin;
+      if (DL.hash(gx, gy, 1001) >= GR.chance * D.bloom) return null;
+      let x, y, zi = 0;
+      for (let t = 0; t < 4 && !zi; t++) {
+        x = gx * GR.cell + GR.margin + DL.hash(gx, gy, 1002 + t * 2) * span;
+        y = gy * GR.cell + GR.margin + DL.hash(gx, gy, 1003 + t * 2) * span;
+        if (Math.hypot(x, y) > CAMP_CLEAR + GR.spread + 80 && !this.isWater(x, y)) zi = Math.max(1, this.zoneIndex(x, y));
+      }
+      if (!zi) return null;
+      const Z = GR.zones[zi], items = [];
+      const count = (r, s, scale) => Math.round((r[0] + Math.floor(DL.hash(gx, gy, s) * (r[1] - r[0] + 1))) * scale);
+      const lights = [];
+      const nRefuge = Math.max(1, count(Z.refuge, 1020, Math.sqrt(D.bloom)));
+      const nSentinel = count(Z.sentinel, 1021, Math.sqrt(D.bloom));
+      for (let k = 0; k < nRefuge; k++) lights.push("refuge");
+      for (let k = 0; k < nSentinel; k++) lights.splice(1 + Math.floor(DL.hash(gx, gy, 1030 + k) * lights.length), 0, "sentinel");
+      // Blooms on a jittered sunflower spiral round the heart, so they clump without stacking.
+      const turn = DL.hash(gx, gy, 1022) * Math.PI * 2;
+      lights.forEach((type, k) => {
+        const a = turn + k * 2.39996 + (DL.hash(gx, gy, 1100 + k) - 0.5) * 0.6;
+        const r = GR.spread * Math.sqrt((k + 0.4) / lights.length) * (0.85 + 0.3 * DL.hash(gx, gy, 1200 + k));
+        items.push({ type, x: x + Math.cos(a) * r, y: y + Math.sin(a) * r, id: `grove${gx},${gy},${k}`, h: DL.hash(gx, gy, 1300 + k) });
+      });
+      // Bloom Sprouts (resin) grow in the gaps between them, so there is work to do while you hold the grove.
+      const nSprout = count(Z.sprout, 1023, 1);
+      for (let k = 0; k < nSprout; k++) {
+        const a = turn + 1.2 + (k / nSprout) * Math.PI * 2 + (DL.hash(gx, gy, 1400 + k) - 0.5) * 0.8;
+        const r = GR.spread * (0.55 + 0.5 * DL.hash(gx, gy, 1500 + k));
+        items.push({ type: "sprout", x: x + Math.cos(a) * r, y: y + Math.sin(a) * r, id: `grove${gx},${gy},s${k}`, h: DL.hash(gx, gy, 1600 + k) });
+      }
+      return { x, y, zi, items: items.filter((g) => !this.isWater(g.x, g.y)) };
     },
 
     makeObj(type, x, y, id, zi, h) {

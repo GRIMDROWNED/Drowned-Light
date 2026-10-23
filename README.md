@@ -31,7 +31,7 @@ A top-down dark-fantasy survival game for the browser and phones. You are a lant
 1. **Day: venture out.** Chop down trees for wood, and gather stone, bloom resin and iron scrap. Felled trees and mined supplies grow back at dawn. Rings of land get darker and richer the farther you go: *The Shallows → The Mire → Drowned Reaches → The Abyss*.
 2. **Night: stay in the light.** Outside light, **corruption** rises. It has four visible stages, and at 100% you become a Drowned Knight.
    - **Firelight** (camp, torches, Illuminate) *reverses* corruption, heals you and refills your lantern.
-   - **Bloomlight** (Refuge Blooms, Sentinel Blooms, Mother Roots) only *halts* it. Blooms wake at night, and the Drowned come to tear them down.
+   - **Bloomlight** (Refuge Blooms, Sentinel Blooms, Mother Roots) only *halts* it. Blooms wake at night, and the Drowned come to tear them down. Refuge and Sentinel Blooms grow only in **groves**: a clearing of 2 to 7 blooms plus a few bloom sprouts, at most one per 1280 px cell of a grid and at least 800 px from the next, so the land between groves is dark. Pick a grove before dusk and hold it (`DL.GROVE` in `src/data.js`, `World.grove` in `src/world.js`).
    - **Lantern oil** halves corruption in the dark until it runs dry.
 3. **Return and build.** Supplies you carry are stored automatically when you reach camp. Spend them on camp structures or on training your kit.
 4. **Defend.** If you're at camp at night, waves march on the Central Flame. If it goes out, your home goes dark until dawn.
