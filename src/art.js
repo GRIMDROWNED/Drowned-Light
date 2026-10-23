@@ -135,6 +135,39 @@
       P.rect(1, 17, 3, 2, C.moss);
     });
 
+    // The Bone Wolf den (coded stand-in until its drawn art arrives): a low earth-and-rock mound with a black
+    // mouth facing you, ribs and bones strewn round it, a big skull on top.
+    S.boneDen = mk(76, 48, (P) => {
+      const bone = "#cfc3a2", boneDk = "#8f846b", earth = "#3a3128", earthHi = "#52463a";
+      P.ell(38, 34, 36, 14, earth);
+      P.ell(38, 26, 30, 18, earth);
+      P.ell(30, 20, 16, 11, earthHi);
+      P.poly([8, 34, 12, 22, 20, 24, 18, 36], C.stoneDk);
+      P.poly([56, 36, 60, 22, 68, 26, 70, 36], C.stone);
+      P.rect(60, 24, 3, 8, C.stoneHi);
+      P.poly([14, 22, 20, 14, 26, 18, 22, 26], C.stone);
+      // the mouth
+      P.ell(38, 37, 13, 10, "#0b0908");
+      P.rect(25, 37, 26, 9, "#0b0908");
+      P.ell(38, 38, 9, 7, "#020202");
+      // jaw-like stones framing it
+      for (let i = 0; i < 5; i++) P.poly([27 + i * 5, 28 + Math.abs(i - 2), 29 + i * 5, 32 + Math.abs(i - 2), 31 + i * 5, 28 + Math.abs(i - 2)], bone);
+      // ribs arching over the mound
+      for (let i = 0; i < 4; i++) P.curve(22 + i * 8, 30, 24 + i * 8, 6 + i, 30 + i * 8, 14 + (i % 2) * 3, 2, i % 2 ? boneDk : bone);
+      // the skull on top
+      P.ell(40, 9, 7, 5, bone);
+      P.rect(36, 11, 9, 4, bone);
+      P.rect(37, 8, 2, 2, "#140f0c"); P.rect(42, 8, 2, 2, "#140f0c");
+      P.rect(38, 14, 1, 2, boneDk); P.rect(41, 14, 1, 2, boneDk);
+      // bones strewn on the ground
+      P.line([4, 42, 12, 40], 2, bone); P.rect(3, 41, 2, 2, bone); P.rect(12, 39, 2, 2, bone);
+      P.line([60, 44, 70, 43], 2, boneDk); P.rect(69, 42, 2, 2, bone);
+      P.line([16, 46, 22, 44], 1, bone);
+      P.rect(52, 45, 3, 2, bone);
+      grass(P, 6, 36, 3, "#2c4230"); grass(P, 64, 38, 3, "#2c4230");
+      P.rect(48, 18, 4, 3, C.moss); P.rect(20, 28, 3, 2, C.mossHi);
+    });
+
     S.reeds = mk(16, 18, (P) => {
       for (let i = 0; i < 7; i++) P.line([2 + i * 2, 17, 1 + i * 2 + (i % 3) - 1, 5 + (i * 5) % 6], 1, i % 2 ? "#2c3d2c" : "#3e5236");
       P.rect(4, 4, 2, 4, "#5a4030"); P.rect(10, 6, 2, 4, "#5a4030");

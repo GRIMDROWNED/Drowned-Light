@@ -179,7 +179,10 @@
       const u = (i - 1) / 3, x = w.x + Math.cos(w.ang) * w.len * u, y = w.y + Math.sin(w.ang) * w.len * u;
       list.push({ y, f: () => drawWallRock(c, w, i, x, y, t) });
     }
-    for (const f of G.effects) if (f.type === "houndFall") list.push({ y: f.y, f: () => Art.drawUnit(c, "boneHound", "death", Math.min(2, Math.floor(f.t / 0.2)), f.angle, f.x, f.y, 1, { alpha: Math.min(1, (f.max - f.t) / 0.5) }) });
+    const den = DL.Den.state();
+    for (const b of den.bodies) list.push({ y: b[1], f: () => drawCarcass(c, b) });
+    const me = G.isGuest() ? DL.Net.myId : 0;
+    for (const [id, k] of [[me, G.player], ...G.allies.map((a) => [a.id, a])]) if (k && den.carriers.includes(id)) list.push({ y: k.y + 1, f: () => drawHauled(c, k) });
     if (G.player && G.state !== "dead") list.push({ y: G.player.y, f: () => drawPlayer(c, G, t) });
     for (const a of G.allies) list.push({ y: a.y, f: () => drawAlly(c, a, t) });
     list.sort((a, b) => a.y - b.y);
@@ -284,6 +287,13 @@
     }
     for (const e of G.enemies) if (e.rise <= 0) drawEyes(c, e, t);
     for (const h of G.hounds) drawHoundEyes(c, h, t);
+    // once the pack is broken, the carcasses glow faintly so you can find one to carry home
+    if (den.cleared && !DL.Hounds.mine()) for (const b of den.bodies) {
+      const a = 0.25 + 0.12 * Math.sin(t * 3 + b[0]), g = c.createRadialGradient(b[0], b[1] - 10, 0, b[0], b[1] - 10, 30);
+      g.addColorStop(0, `rgba(230,215,170,${a})`); g.addColorStop(1, "rgba(230,215,170,0)");
+      c.fillStyle = g;
+      c.fillRect(b[0] - 30, b[1] - 40, 60, 60);
+    }
     for (const m of G.golems) drawGolemHeart(c, m, t);
     drawMotes(c, G, view, t);
     c.globalCompositeOperation = "source-over";
@@ -349,7 +359,7 @@
 
   /* ---------- scene pieces ---------- */
   function drawObject(c, G, o, name) {
-    const sh = o.type === "tree" ? 20 : o.type === "root" ? 40 : (o.type === "stone" && name !== "rock") || (o.type === "iron" && name !== "ironpile") ? 18 : 12;
+    const sh = o.type === "tree" ? 20 : o.type === "root" ? 40 : o.type === "den" ? 62 : (o.type === "stone" && name !== "rock") || (o.type === "iron" && name !== "ironpile") ? 18 : 12;
     shadow(c, o.x, o.y, sh, sh * 0.35, 0.3);
     let x = o.x;
     const hit = o.hitT > 0 ? o.hitT / 0.18 : 0;
@@ -677,7 +687,7 @@
     if (!a.down) bar(c, a.x, a.y - 84, 26, Math.max(0, a.hp) / (a.maxHp || 100), "#c8484e");
   }
 
-  const unitKey = (e) => (e.isSelf ? "self_" + DL.Game.save.kit : e.type);
+  const unitKey = (e) => (e.isSelf ? "self_" + DL.Game.save.kit : e.def.beast ? "boneHound" : e.type);
 
   function enemyAnim(e, t) {
     if (e.state === "windup") return ["attack", 0, e.aim];
@@ -718,11 +728,12 @@
       }
       c.restore();
     }
-    const flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : 0;
-    const flashColor = e.flash > 0 ? "#ffffff" : "#7ff6ff";
+    // Bone Wolves wear the hound's bones with a drowned, cyan cast
+    const flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : d.beast ? WOLF_TINT : 0;
+    const flashColor = e.flash > 0 ? "#ffffff" : d.beast && e.state !== "windup" ? WOLF_CAST : "#7ff6ff";
     const [anim, fr, ang] = enemyAnim(e, t);
     Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y, s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1 });
-    if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.crawl ? 36 : 84) * s - 4, Math.round(26 * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
+    if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.crawl ? 36 : d.beast ? 66 : 84) * s - 4, Math.round(26 * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
     if (e.burn > 0) Art.drawFire(c, e.x + Math.sin(t * 7) * 4, e.y - 10, 0.5, t);
     if (e.bleed > 0) {
       // Bone Hound bleed: drops running down to the ground
@@ -734,8 +745,9 @@
     }
   }
 
-  // The Bone Hound: bites play its attack, a struck hound flinches.
+  // The Bone Hound: bites play its attack, a struck hound flinches, a knocked-out one collapses and lies there.
   function houndAnim(h, t) {
+    if (h.down > 0) return ["death", Math.min(2, Math.floor((DL.HOUND.downTime - h.down) / 0.2))];
     if (h.state === "bite") return ["attack", Math.min(2, Math.floor((1 - h.stT / 0.3) * 3))];
     if (h.hurtT > 0) return ["hurt", 0];
     if (h.moving) return ["walk", Math.floor(h.animT * walkRate("boneHound", 11))];
@@ -745,7 +757,18 @@
     shadow(c, h.x, h.y, 18, 5);
     const [anim, fr] = houndAnim(h, t);
     Art.drawUnit(c, "boneHound", anim, fr, h.angle, h.x, h.y, 1, { flash: h.flash > 0 ? 0.8 : 0, flashColor: "#ffb0a0" });
-    if (h.hp < h.maxHp) bar(c, h.x, h.y - 70, 22, Math.max(0, h.hp) / h.maxHp, "#d9cdae");
+    // knocked out: the bar fills as it pulls itself back together
+    if (h.down > 0) bar(c, h.x, h.y - 34, 22, 1 - h.down / DL.HOUND.downTime, "#8f846b");
+    else if (h.hp < h.maxHp) bar(c, h.x, h.y - 70, 22, Math.max(0, h.hp) / h.maxHp, "#d9cdae");
+  }
+  const WOLF_TINT = 0.22, WOLF_CAST = "#4fb8bf";
+  // A Bone Wolf's carcass at the den, and one hauled on a knight's back.
+  function drawCarcass(c, b) {
+    shadow(c, b[0], b[1], 16, 4, 0.3);
+    Art.drawUnit(c, "boneHound", "death", 2, b[2], b[0], b[1], 1, { flash: WOLF_TINT, flashColor: WOLF_CAST });
+  }
+  function drawHauled(c, k) {
+    Art.drawUnit(c, "boneHound", "death", 2, Math.cos(k.angle || 0) < 0 ? Math.PI : 0, k.x, k.y - 26, 0.6, { flash: WOLF_TINT, flashColor: WOLF_CAST });
   }
   // Derek: casting plays his attack (fists up, then slammed down), otherwise he plods or stands.
   function golemAnim(m, t) {
@@ -805,9 +828,14 @@
   const HOUND_FRONT_EYES = { idle: [[6.5, -36]], walk: [[4.5, -38], [7, -25], [5.5, -37], [5, -45]] };
   // Embers in its eye sockets, so it reads in the dark. They follow the head through every frame.
   function drawHoundEyes(c, h, t) {
-    const { dir, flip } = Art.unitDir(h.angle);
-    if (dir === "up") return;
+    if (h.down > 0) return;
     const [anim, fr] = houndAnim(h, t);
+    beastEyes(c, h.x, h.y, h.angle, anim, fr, h.id, "255,80,40", t);
+  }
+  // The same for any unit drawn from the hound's sheet (the Bone Wolves at the den burn cyan, like the Drowned).
+  function beastEyes(c, hx, hy, ang, anim, fr, id, rgb, t) {
+    const { dir, flip } = Art.unitDir(ang);
+    if (dir === "up") return;
     const frames = Art.sheet("boneHound")[dir][anim], i = ((fr % frames.length) + frames.length) % frames.length, f = frames[i];
     const drawn = !!f.res, front = dir === "down" && (anim === "idle" || anim === "walk" || !drawn);
     let eyes;
@@ -821,12 +849,12 @@
       if (!eye) return;
       eyes = [[dir === "side" && flip ? -eye.x : eye.x, eye.y]];
     }
-    const r = front ? 6 : 8, pulse = 0.75 + 0.25 * Math.sin(t * 6 + h.id);
+    const r = front ? 6 : 8, pulse = 0.75 + 0.25 * Math.sin(t * 6 + id);
     for (const [ex, ey] of eyes) {
-      const x = h.x + ex, y = h.y + ey;
+      const x = hx + ex, y = hy + ey;
       const g = c.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, `rgba(255,80,40,${0.6 * pulse})`);
-      g.addColorStop(1, "rgba(255,80,40,0)");
+      g.addColorStop(0, `rgba(${rgb},${0.6 * pulse})`);
+      g.addColorStop(1, `rgba(${rgb},0)`);
       c.fillStyle = g;
       c.fillRect(x - r, y - r, r * 2, r * 2);
     }
@@ -834,6 +862,7 @@
 
   // A soft cyan halo around the visor so the Drowned read in the dark.
   function drawEyes(c, e, t) {
+    if (e.def.beast) { const [anim, fr, ang] = enemyAnim(e, t); beastEyes(c, e.x, e.y, ang, anim, fr, e.id, "80,235,245", t); return; }
     const s = e.def.scale;
     const ang = e.state === "move" ? e.angle : e.aim;
     const { dir, flip } = Art.unitDir(ang);

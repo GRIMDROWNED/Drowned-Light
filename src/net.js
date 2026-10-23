@@ -176,6 +176,7 @@
       a.label = kitLabel(a.kit);
       a.g = g;
       G.allies.push(a);
+      if (m.hound) DL.Hounds.join(g.id); // a friend who won a Bone Hound brings it along
       const harvested = [];
       for (const c of DL.World.chunks.values()) for (const o of c.objects) if (o.harvested || o.dead || (o.maxHp && o.hp < o.maxHp)) harvested.push(objRow(o));
       sendTo(g, { t: "welcome", v: VERSION, id: g.id, up: G.save.up, difficulty: G.save.difficulty, day: G.save.day, nights: G.save.nights, time: G.time, ob: harvested });
@@ -221,11 +222,6 @@
       const ok = G.canAfford(DL.TORCH_COST);
       if (ok) { G.pay(DL.TORCH_COST); G.persist(); }
       sendTo(g, { t: "torchMade", ok });
-    } else if (ev.t === "hound") {
-      // a Bone Hound for this friend, paid from the shared stash
-      const ok = !!g && DL.Hounds.grant(g.id);
-      sendTo(g, { t: "houndMade", ok });
-      if (ok) say(`${who} raised a Bone Hound.`, "good");
     } else if (ev.t === "golem") {
       // Derek for this friend, paid from the shared stash
       const ok = !!g && DL.Golems.grant(g.id);
@@ -243,7 +239,14 @@
   // Host: show a notice on every friend's screen too.
   Net.say = function (msg, kind) { if (Net.role === "host") for (const g of Net.guests) sendTo(g, { t: "say", m: msg, k: kind }); };
   Net.gain = function (a, res, amt) { if (Net.role === "host") sendTo(a.g, { t: "gain", res, amt }); };
-  Net.houndLost = function (owner) { if (Net.role === "host") sendTo(Net.guests.find((g) => g.id === owner), { t: "houndLost" }); };
+  // Host: a notice for one friend only.
+  Net.tell = function (id, msg, kind) { if (Net.role === "host") sendTo(Net.guests.find((g) => g.id === id), { t: "say", m: msg, k: kind }); };
+  // Host: a friend carried a Bone Wolf's carcass into the camp and it rose as their hound.
+  Net.houndMade = function (id) {
+    const g = Net.guests.find((x) => x.id === id);
+    sendTo(g, { t: "houndMade" });
+    if (g && g.ally) say(`The ${g.ally.label} brought back a Bone Wolf. It rises as their Bone Hound.`, "good");
+  };
 
   function objRow(o) { return [o.id, o.harvested ? 1 : 0, o.dead ? 1 : 0, o.hp != null ? Math.round(o.hp) : -1]; }
   function findObj(id) {
@@ -280,9 +283,11 @@
       pk: G.pickups.filter((k) => near(k.x, k.y, 800)).map((k) => [k.id, r1(k.x), r1(k.y), k.res]),
       tg: G.telegraphs.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.delay]),
       hx: G.hexPools.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.life]),
-      // Bone Hounds: [id, owner, x, y, angle, moving, hp, maxHp, biting, bite time left, hit flash]
+      // Bone Hounds: [id, owner, x, y, angle, moving, hp, maxHp, biting, bite time left, hit flash, knocked out for]
       hd: G.hounds.filter((h) => near(h.x, h.y, 1100)).map((h) => [h.id, h.owner, r1(h.x), r1(h.y), r1(h.angle), h.moving ? 1 : 0, Math.round(h.hp), h.maxHp,
-        h.state === "bite" ? 1 : 0, r1(h.stT), h.flash > 0 ? 1 : 0]),
+        h.state === "bite" ? 1 : 0, r1(h.stT), h.flash > 0 ? 1 : 0, r1(h.down || 0)]),
+      // the Bone Wolf den: [pack broken, carcasses lying there, who hauls one]
+      dn: DL.Den.row(),
       // Derek: [id, owner, x, y, angle, moving, casting, cast time left]; his walls: [id, owner, x, y, angle, length, hits left, age]
       gm: G.golems.filter((m) => near(m.x, m.y, 1100)).map((m) => [m.id, m.owner, r1(m.x), r1(m.y), r1(m.angle), m.moving ? 1 : 0, m.state === "cast" ? 1 : 0, r1(m.stT)]),
       sw: G.stoneWalls.filter((w) => near(w.x, w.y, 1100)).map((w) => [w.id, w.owner, r1(w.x), r1(w.y), r1(w.ang), w.len, w.hits, r1(w.t)]),
@@ -303,6 +308,9 @@
     for (const { save } of G.listSlots()) if (save && save.kit === kit) best = Math.max(best, save.kitLevel);
     return best;
   };
+
+  // A Bone Hound won in co-op, or in any of your own save slots, comes with you into a friend's world.
+  Net.hasHound = () => !!Net.profile().hound || G.listSlots().some(({ save }) => save && save.hound);
 
   Net.join = async function (code, kit) {
     Net.joinKit = DL.KITS[kit] ? kit : G.save.kit;
@@ -331,7 +339,7 @@
         if (c.peerConnection) c.peerConnection.addEventListener("signalingstatechange", () => { if (c.peerConnection.signalingState === "stable") reached = true; });
         c.on("open", () => {
           Net.connected = true;
-          Net.send({ t: "hello", v: VERSION, kit: Net.joinKit, level: Net.joinLevel(Net.joinKit) });
+          Net.send({ t: "hello", v: VERSION, kit: Net.joinKit, level: Net.joinLevel(Net.joinKit), hound: Net.hasHound() ? 1 : 0 });
         });
         c.on("data", (raw) => wireRecv(c, raw, (m) => {
           if (m && m.t === "full") { clearTimeout(timer); fail(`That room is full (${MAX_GUESTS + 1} players).`); return; }
@@ -413,15 +421,17 @@
       if (m.ok) { G.save.torches += 1; DL.Sound.play("torch"); } else say("Not enough in the stash for a torch.", "warn");
       if (DL.UI.refreshCamp) DL.UI.refreshCamp();
     } else if (m.t === "houndMade") {
-      if (m.ok) { DL.Sound.play("growl"); say("A Bone Hound claws its way up out of the mud. It hunts at your side.", "good"); }
-      else say("Couldn't raise a Bone Hound: not enough in the stash, or the Central Flame is too low.", "warn");
+      const pr = Net.profile();
+      pr.hound = 1;
+      Net.saveProfile(pr);
+      DL.Sound.play("growl");
+      say("The carcass shudders, and the bones knit. A Bone Hound rises to hunt at your side.", "good");
       if (DL.UI.refreshCamp) DL.UI.refreshCamp();
     } else if (m.t === "golemMade") {
       if (m.ok) { DL.Sound.play("build"); say("Derek heaves himself up out of the stones. He'll wall the Drowned off from you.", "good"); }
       else say("Couldn't raise Derek: not enough in the stash, or the Central Flame is too low.", "warn");
       if (DL.UI.refreshCamp) DL.UI.refreshCamp();
-    } else if (m.t === "houndLost") say("Your Bone Hound falls apart. Raise another at the camp fire.", "warn");
-    else if (m.t === "snap") applySnap(m);
+    } else if (m.t === "snap") applySnap(m);
   }
 
   function applySnap(m) {
@@ -461,7 +471,8 @@
       e.stT = r[6]; e.aim = r[7]; e.hp = r[8]; e.maxHp = r[9]; e.rise = r[10]; e.moving = !!r[11]; e.dormant = !!r[12]; e.burn = r[13]; e.bleed = r[14];
       next.push(e);
     }
-    for (const gone of byId.values()) G.effects.push({ type: "dissolve", e: gone, t: 0, max: 0.6 });
+    // a Bone Wolf leaves its carcass (sent with the den) instead of dissolving
+    for (const gone of byId.values()) if (!gone.def.den) G.effects.push({ type: "dissolve", e: gone, t: 0, max: 0.6 });
     G.enemies = next;
 
     // world lights and objects
@@ -479,11 +490,10 @@
       let h = hounds.get(r[0]);
       if (!h) h = { id: r[0], hound: true, x: r[2], y: r[3], animT: 0 };
       hounds.delete(r[0]);
-      Object.assign(h, { owner: r[1], tx: r[2], ty: r[3], angle: r[4], moving: !!r[5], hp: r[6], maxHp: r[7], state: r[8] ? "bite" : "move", stT: r[9], flash: r[10] ? 0.1 : 0 });
+      Object.assign(h, { owner: r[1], tx: r[2], ty: r[3], angle: r[4], moving: !!r[5], hp: r[6], maxHp: r[7], state: r[8] ? "bite" : "move", stT: r[9], flash: r[10] ? 0.1 : 0, down: r[11] || 0 });
       return h;
     });
-    // one that vanished close by fell (one that ran out of range just isn't sent)
-    for (const h of hounds.values()) if (Math.hypot(h.x - G.player.x, h.y - G.player.y) < 800) DL.Hounds.fallFx(h);
+    DL.Den.apply(m.dn);
     // Derek and his walls: a wall that appears rises with its dust, one that vanishes close by crumbles
     const golems = new Map(G.golems.map((o) => [o.id, o]));
     G.golems = (m.gm || []).map((r) => {
@@ -578,6 +588,7 @@
     Object.assign(Net, { role: null, code: null, peer: null, conn: null, connected: false, guests: [], events: [], acc: 0, mined: new Set(), myId: 0 });
     G.allies = [];
     G.netProjectiles = null;
+    DL.Den.view = null;
     if (was === "guest") { G.save = G.load(); DL.World.chunks.clear(); }
     if (!quiet && was) say("Co-op session ended.");
   };

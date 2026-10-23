@@ -179,7 +179,6 @@
       if (act === "up") G.buyUpgrade(arg);
       else if (act === "train") { const r = DL.Kits.train(); UI.justReached = r && r.milestone ? r.level : 0; }
       else if (act === "torch") G.craftTorch();
-      else if (act === "hound") DL.Hounds.buy();
       else if (act === "golem") DL.Golems.buy();
       else if (act === "rest") { G.restUntilDusk(); UI.closeCamp(); UI.toast("You rest by the fire until dusk.", "warn"); return; }
       UI.renderCamp();
@@ -531,6 +530,7 @@
           <li>Your <b>lantern oil</b> halves corruption in the dark until it runs dry.</li>
           <li><b>Amethyst</b> deposits glow purple in the Drowned Reaches and the Abyss, farther out than iron. They stay day and night and regrow at dawn.</li>
           <li>Defend a <b>Mother Root</b> until dawn for a rich reward.</li>
+          <li>Bone Wolves den in the Mire, to the ${DL.Den.direction()}. Break the pack and carry a carcass home: it rises as your <b>Bone Hound</b>.</li>
           <li>Fall, and your <b>drowned self</b> keeps your supplies. Slay it to get them back.</li>
         </ul></article>`;
     }
@@ -538,19 +538,23 @@
     UI.drawPortraits(0);
   };
 
-  // The Bone Hound: a summon bought here, one per knight, paid from the (shared) stash.
+  // The Bone Hound: won at the Bone Wolf den (src/den.js), one per knight. This card says where the den is and how it's going.
+  const houndState = (h) => (h ? (h.down > 0 ? "down" : "up") : DL.Den.carrying() ? "carry" : "none");
   function houndCard(G) {
-    const H = DL.HOUND, st = DL.Hounds.stats(), mine = DL.Hounds.mine(), lock = DL.Hounds.lock();
-    UI.houndShown = !!mine;
+    const H = DL.HOUND, st = DL.Hounds.stats(), mine = DL.Hounds.mine(), den = DL.Den.state();
+    UI.houndShown = houndState(mine);
     let action;
-    if (mine) action = `<span class="maxed">At your side · ${Math.ceil(mine.hp)} / ${mine.maxHp}</span>`;
-    else action = `<div class="cost">${costHtml(H.cost)}</div>` + (lock ? `<span class="req">${lock}</span>` : "") +
-      `<button data-act="hound" ${!lock && G.canAfford(H.cost) ? "" : "disabled"}>Raise the hound</button>`;
+    if (mine && mine.down > 0) action = `<span class="req">Knocked out · gets up in ${Math.ceil(mine.down)} s</span>`;
+    else if (mine) action = `<span class="maxed">At your side · ${Math.ceil(mine.hp)} / ${mine.maxHp}</span>`;
+    else if (DL.Den.carrying()) action = `<span class="req">You carry a carcass: bring it into the camp</span>`;
+    else if (den.cleared && den.bodies.length) action = `<span class="req">The pack is broken: ${den.bodies.length} carcass${den.bodies.length > 1 ? "es lie" : " lies"} at the den, to the ${DL.Den.direction()}</span>`;
+    else action = `<span class="req">Hunt the pack: the den lies in the Mire, to the ${DL.Den.direction()} of the camp</span>`;
     return `<article class="card hound-card">
       <header><canvas class="portrait" data-hound="1" width="66" height="52"></canvas>
-        <div><span class="tag">Summon · Melee</span><h3>${H.name}</h3><span class="motto">It hunts what runs.</span></div></header>
-      <p>A fast skeletal hound that fights beside you. It hunts any Drowned that retreats first (Mire Stalkers, anything backing away), then anything that shoots (Tide Archers, Hexbearers), then whatever is nearest. It bites, hops clear and comes again, and stays on the heels of prey that runs. Every bite makes them bleed.</p>
-      <p class="effect">Health ${st.maxHp} · bite ${st.dmg} · bleed ${H.bleedDps}/s, stacking ${H.bleedMax}× · heals in firelight<br>Stays until it falls · one per knight · grows with the Central Flame</p>
+        <div><span class="tag">Ally · Melee</span><h3>${H.name}</h3><span class="motto">It hunts what runs.</span></div></header>
+      <p>Five Bone Wolves sleep at their den out in the Mire, by day and by night. Kill all five, then carry one of their carcasses back into the camp and it rises as your own hound. In co-op every knight carries their own.</p>
+      <p>It hunts any Drowned that retreats first (Mire Stalkers, anything backing away), then anything that shoots (Tide Archers, Hexbearers), then whatever is nearest. Every bite makes them bleed.</p>
+      <p class="effect">Health ${st.maxHp} · bite ${st.dmg} · bleed ${H.bleedDps}/s, stacking ${H.bleedMax}× · heals in firelight<br>Never dies: beaten down, it gets up again after ${H.downTime} s · one per knight · grows with the Central Flame</p>
       <footer>${action}</footer></article>`;
   }
 
@@ -652,7 +656,7 @@
     set($("btnMine"), "class", "act small mine" + (manual ? "" : " hidden") + (G.mineTarget ? " ready" : ""));
     document.body.classList.toggle("manual", manual);
     set($("campBtn"), "hidden", !G.inCamp);
-    // the Bone Hound card follows the hound rising or falling while the menu is open
-    if (G.state === "camp" && UI.campTab === "kit" && (!!DL.Hounds.mine() !== UI.houndShown || !!DL.Golems.mine() !== UI.golemShown)) UI.renderCamp();
+    // the Bone Hound card follows the hound rising, going down or getting up while the menu is open
+    if (G.state === "camp" && UI.campTab === "kit" && (houndState(DL.Hounds.mine()) !== UI.houndShown || !!DL.Golems.mine() !== UI.golemShown)) UI.renderCamp();
   };
 })(window.DL);
