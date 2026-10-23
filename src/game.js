@@ -30,6 +30,7 @@
     carried: emptyRes(), // what the knight had on them when the game was last saved
     drownedSelf: null,
     hound: 0, // 1 while your Bone Hound stands (it comes back with you when you reload or rise)
+    golem: 0, // 1 once Derek is yours (he can't fall, so he always comes back)
     started: false,
     lastPlayed: 0,
   });
@@ -189,6 +190,7 @@
     G.nightAmt = 0; G.night = false;
     W.resetDay();
     DL.Hounds.reset();
+    DL.Golems.reset();
     G.state = "play";
   };
 
@@ -241,6 +243,7 @@
     updateSpawning(dt);
     updateEnemies(dt);
     DL.Hounds.update(dt);
+    DL.Golems.update(dt);
     updateDefenses(dt);
     DL.Kits.update(dt);
     updateProjectiles(dt);
@@ -394,6 +397,7 @@
     }
     for (const a of G.allies) if (!a.down) L.push({ x: a.x, y: a.y - 28, r: 80, s: 0.8, col: "255,180,90", a: 0.7, flick: 1 });
     for (const h of G.hounds) L.push({ x: h.x, y: h.y - 36, r: 34, s: 0.35, col: "255,70,40", a: 0.6 });
+    for (const m of G.golems) L.push({ x: m.x, y: m.y - 26, r: 40, s: 0.4, col: "80,230,240", a: 0.6 });
     for (const e of G.enemies) {
       if (e.type === "defiler") L.push({ x: e.x, y: e.y - 70, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
       else if (e.def.boss) L.push({ x: e.x, y: e.y - 40, r: 60, s: 0.3, col: "70,230,240", a: 0.6 });
@@ -837,7 +841,10 @@
 
       // Choose what to chase.
       let goal = null;
-      if (e.def.targetsLight) {
+      DL.Golems.lure(e);
+      if (e.goal && e.goal.stoneWall && goalValid(e.goal)) {
+        goal = e.goal; // one of Derek's walls: nothing else matters until it's down
+      } else if (e.def.targetsLight) {
         if (!goalValid(e.goal)) e.goal = nearestLightTarget(e.x, e.y, 700);
         goal = dp < 60 ? null : e.goal;
       } else if (goalValid(e.goal)) {
@@ -845,6 +852,7 @@
       } else e.goal = null;
       if (goal && !goalValid(goal)) goal = null;
       let tx = goal ? goal.x : p.x, ty = goal ? goal.y : p.y;
+      if (goal && goal.stoneWall) ({ x: tx, y: ty } = DL.Golems.closest(goal, e.x, e.y)); // the nearest stretch of the wall
       if (e.def.surround && !goal && dp > 70) { tx += Math.cos(e.id * 2.4) * 36; ty += Math.sin(e.id * 2.4) * 36; } // revenants close in from all sides
       const dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy) || 1;
       const reach = e.def.range + (goal ? goal.rad || 12 : 10);
@@ -954,6 +962,7 @@
         const dx = a.x - h.x, dy = a.y - h.y, d = Math.hypot(dx, dy) || 0.01, min = a.def.radius + 6;
         if (d < min) { a.x = h.x + (dx / d) * min; a.y = h.y + (dy / d) * min; }
       }
+      DL.Golems.push(a, a.def.radius * 0.6);
       W.collide(a, a.def.radius * 0.6);
       collideCamp(a, a.def.radius * 0.6);
     }
@@ -1059,6 +1068,10 @@
     }
     G.effects.push({ type: "slash", x: e.x, y: e.y - 18, ang: e.aim, arc: 1.9, r: e.def.range + 8, t: 0, max: 0.18, col: "90,230,240", w: 4 + e.def.scale * 3 });
     const g = e.aimGoal;
+    if (g && g.stoneWall) {
+      if (!g.dead && DL.Golems.distTo(g, e.x, e.y) < e.def.range + g.rad + 14) DL.Golems.hitWall(g);
+      return;
+    }
     if (g && goalValid(g)) {
       if (dist(e.x, e.y, g.x, g.y) < e.def.range + (g.rad || 12) + 14) damageLight(g, e.def.lightDmg || e.dmg);
       return;
@@ -1267,7 +1280,9 @@
         }
       }
       b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
-      if (b.hostile) {
+      const sw = b.hostile && DL.Golems.wallAt(b.x, b.y);
+      if (sw) { DL.Golems.hitWall(sw); b.life = 0; } // Derek's walls stop arrows and orbs (a hit each)
+      else if (b.hostile) {
         if (dist(b.x, b.y, p.x, p.y - 22) < 16) {
           const hp = p.hp;
           hurtPlayer(b.dmg, Math.atan2(b.vy, b.vx));

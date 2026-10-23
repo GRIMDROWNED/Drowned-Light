@@ -252,6 +252,16 @@
     bleedDps: 2.5, bleedDur: 4, bleedMax: 3,
     sight: 320, chase: 480, leash: 650, regen: 5, radius: 9,
   };
+  /* Derek, the stone golem familiar (src/golem.js): bought at the camp fire's Kit tab, one per knight.
+     He can't be hurt. Every `buildCd` seconds, when a Drowned comes within `trigger` px of his knight,
+     he raises a stone wall `len` px long across its path, `gap` px out from the knight. Drowned within
+     `lure` px of a wall drop everything to smash it (arrows and orbs stop on it too); `hits` blows break it,
+     and it crumbles on its own after `life` seconds. At most `maxWalls` stand for each Derek. */
+  DL.GOLEM = {
+    name: "Derek", reqFlame: 3, cost: { stone: 12, iron: 6, resin: 6 },
+    speed: 150, buildCd: 9, trigger: 300, gap: 90, len: 76, hits: 2, life: 20, maxWalls: 2,
+    lure: 230, castRange: 260,
+  };
   DL.scaleCost = scaleCost;
 
   // Camp buildings. costs[level] = price to go from `level` to `level + 1`.
@@ -296,6 +306,7 @@
 
   for (const u of DL.UPGRADES) u.costs = u.costs.map((c) => (c ? scaleCost(c) : c));
   DL.HOUND.cost = scaleCost(DL.HOUND.cost);
+  DL.GOLEM.cost = scaleCost(DL.GOLEM.cost);
 
   // Camp siege waves get nastier each night.
   DL.campPool = function (day) {

@@ -174,6 +174,11 @@
     }
     for (const f of G.effects) if (f.type === "dissolve") list.push({ y: f.e.y, f: () => drawDissolve(c, f) });
     for (const h of G.hounds) list.push({ y: h.y, f: () => drawHound(c, h, t) });
+    for (const m of G.golems) list.push({ y: m.y, f: () => drawGolem(c, m, t) });
+    for (const w of G.stoneWalls) for (let i = 0; i < 3; i++) {
+      const u = (i - 1) / 3, x = w.x + Math.cos(w.ang) * w.len * u, y = w.y + Math.sin(w.ang) * w.len * u;
+      list.push({ y, f: () => drawWallRock(c, w, i, x, y, t) });
+    }
     for (const f of G.effects) if (f.type === "houndFall") list.push({ y: f.y, f: () => Art.drawUnit(c, "boneHound", "death", Math.min(2, Math.floor(f.t / 0.2)), f.angle, f.x, f.y, 1, { alpha: Math.min(1, (f.max - f.t) / 0.5) }) });
     if (G.player && G.state !== "dead") list.push({ y: G.player.y, f: () => drawPlayer(c, G, t) });
     for (const a of G.allies) list.push({ y: a.y, f: () => drawAlly(c, a, t) });
@@ -216,6 +221,15 @@
         c.beginPath(); c.ellipse(f.x, f.y, r, r * 0.7, 0, 0, Math.PI * 2); c.stroke();
       } else if (f.type === "slash") {
         drawSlash(c, f.x, f.y, f.ang, f.arc, f.r, f.t / f.max, f.col, f.w, false);
+      } else if (f.type === "golemBeam") {
+        // Derek calling a wall up: a cyan thread from his heart to the ground where it rises
+        const k = f.t / f.max;
+        c.strokeStyle = `rgba(90,235,245,${0.9 * (1 - k)})`;
+        c.lineWidth = 4 * (1 - k) + 1;
+        c.beginPath(); c.moveTo(f.x1, f.y1); c.lineTo(f.x2, f.y2); c.stroke();
+        c.strokeStyle = `rgba(90,235,245,${0.7 * (1 - k)})`;
+        c.lineWidth = 2;
+        c.beginPath(); c.ellipse(f.x2, f.y2 + 10, 20 + 30 * k, (20 + 30 * k) * 0.5, 0, 0, Math.PI * 2); c.stroke();
       } else if (f.type === "pillar") {
         // level-up: a column of the kit's light rising from the knight
         const k = f.t / f.max, a = Math.sin(Math.PI * Math.min(1, k * 1.4)) * (1 - k * 0.5);
@@ -270,6 +284,7 @@
     }
     for (const e of G.enemies) if (e.rise <= 0) drawEyes(c, e, t);
     for (const h of G.hounds) drawHoundEyes(c, h, t);
+    for (const m of G.golems) drawGolemHeart(c, m, t);
     drawMotes(c, G, view, t);
     c.globalCompositeOperation = "source-over";
 
@@ -737,6 +752,41 @@
     const [anim, fr] = houndAnim(h, t);
     Art.drawUnit(c, "boneHound", anim, fr, h.angle, h.x, h.y, 1, { flash: h.flash > 0 ? 0.8 : 0, flashColor: "#ffb0a0" });
     if (h.hp < h.maxHp) bar(c, h.x, h.y - 70, 22, Math.max(0, h.hp) / h.maxHp, "#d9cdae");
+  }
+  // Derek: casting plays his attack (fists up, then slammed down), otherwise he plods or stands.
+  function golemAnim(m, t) {
+    if (m.state === "cast") return ["attack", Math.max(0, Math.min(2, Math.floor((1 - m.stT / 0.7) * 3)))];
+    if (m.moving) return ["walk", Math.floor(m.animT * walkRate("derek", 7))];
+    return ["idle", Math.floor(t * 1.6 + m.id)];
+  }
+  function drawGolem(c, m, t) {
+    shadow(c, m.x, m.y, 20, 6);
+    const [anim, fr] = golemAnim(m, t);
+    Art.drawUnit(c, "derek", anim, fr, m.angle, m.x, m.y, 1);
+  }
+  // His heart glows over the dark, brighter while he calls up a wall (hidden when he walks away from you).
+  function drawGolemHeart(c, m, t) {
+    const { dir, flip } = Art.unitDir(m.angle);
+    if (dir === "up") return;
+    const x = m.x + (dir === "side" ? (flip ? -12 : 12) : 0), y = m.y - 34;
+    const a = (m.state === "cast" ? 0.9 : 0.45) + 0.1 * Math.sin(t * 3 + m.id), r = m.state === "cast" ? 16 : 10;
+    const g = c.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(150,250,255,${a})`); g.addColorStop(1, "rgba(90,235,245,0)");
+    c.fillStyle = g;
+    c.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  // One of the three boulders in a wall Derek raised: it rises out of the ground, cracks after the first blow.
+  function drawWallRock(c, w, i, x, y, t) {
+    const v = 1 + ((w.id + i) % 4), name = Art.sprites.boulder11 ? "boulder" + v + (w.hits >= 2 ? 1 : 2) : "rock";
+    const s = Art.sprites[name];
+    if (!s) return;
+    const k = Math.min(1, w.t / 0.4), sc = (Art.sprites.boulder11 ? 0.62 : 0.9) * PS, wd = s.w * sc, h = s.h * sc;
+    const shake = w.hitT > 0 ? Math.sin(t * 80 + i) * 2.5 * (w.hitT / 0.2) : 0;
+    shadow(c, x, y, wd * 0.42, wd * 0.14, 0.3 * k);
+    c.save();
+    c.beginPath(); c.rect(x - wd, y - h - 4, wd * 2, h + 6); c.clip(); // rising out of the ground
+    c.drawImage(s.c, Math.round(x - wd / 2 + shake), Math.round(y + 2 - h + (1 - k) * h), wd, h);
+    c.restore();
   }
   /* Where a side-view hound frame's eyes are, from its feet in world px (found once per frame): the red
      pixels highest and farthest forward (the mantle sits lower and farther back). */

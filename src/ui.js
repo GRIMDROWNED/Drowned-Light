@@ -180,6 +180,7 @@
       else if (act === "train") { const r = DL.Kits.train(); UI.justReached = r && r.milestone ? r.level : 0; }
       else if (act === "torch") G.craftTorch();
       else if (act === "hound") DL.Hounds.buy();
+      else if (act === "golem") DL.Golems.buy();
       else if (act === "rest") { G.restUntilDusk(); UI.closeCamp(); UI.toast("You rest by the fire until dusk.", "warn"); return; }
       UI.renderCamp();
     });
@@ -425,6 +426,12 @@
       g.imageSmoothingEnabled = false;
       DL.Art.drawUnit(g, "boneHound", "idle", 0, 0, cv.width / 2 - 2, cv.height - 4, cv.width / 88);
     }
+    for (const cv of document.querySelectorAll("canvas[data-golem]")) {
+      const g = cv.getContext("2d");
+      g.clearRect(0, 0, cv.width, cv.height);
+      g.imageSmoothingEnabled = false;
+      DL.Art.drawUnit(g, "derek", "idle", Math.floor(t * 1.6), Math.PI / 2, cv.width / 2, cv.height - 4, cv.width / 88);
+    }
   };
 
   /* ---------------- camp menu ---------------- */
@@ -499,6 +506,7 @@
           return `<li class="${got ? "got" : ""} ${UI.justReached === lv ? "new" : ""}"><span>Lv ${lv}</span><b>${m.name}</b> ${m.desc}</li>`;
         }).join("")}</ol></article>`;
       html += houndCard(G);
+      html += golemCard(G);
       const d = G.diff();
       html += `<article class="card"><header><h3>${d.name}</h3><span class="tag">Difficulty</span></header>
         <p class="motto">${d.motto}</p><ul class="guide">${d.notes.map((n) => `<li>${n}</li>`).join("")}</ul></article>`;
@@ -543,6 +551,22 @@
         <div><span class="tag">Summon · Melee</span><h3>${H.name}</h3><span class="motto">It hunts what runs.</span></div></header>
       <p>A fast skeletal hound that fights beside you. It hunts any Drowned that retreats first (Mire Stalkers, anything backing away), then anything that shoots (Tide Archers, Hexbearers), then whatever is nearest. It bites, hops clear and comes again, and stays on the heels of prey that runs. Every bite makes them bleed.</p>
       <p class="effect">Health ${st.maxHp} · bite ${st.dmg} · bleed ${H.bleedDps}/s, stacking ${H.bleedMax}× · heals in firelight<br>Stays until it falls · one per knight · grows with the Central Flame</p>
+      <footer>${action}</footer></article>`;
+  }
+
+  // Derek: a stone golem familiar, one per knight, who walls the Drowned off.
+  function golemCard(G) {
+    const H = DL.GOLEM, mine = DL.Golems.mine(), lock = DL.Golems.lock();
+    UI.golemShown = !!mine;
+    let action;
+    if (mine) action = `<span class="maxed">At your side</span>`;
+    else action = `<div class="cost">${costHtml(H.cost)}</div>` + (lock ? `<span class="req">${lock}</span>` : "") +
+      `<button data-act="golem" ${!lock && G.canAfford(H.cost) ? "" : "disabled"}>Raise Derek</button>`;
+    return `<article class="card hound-card">
+      <header><canvas class="portrait" data-golem="1" width="66" height="52"></canvas>
+        <div><span class="tag">Familiar · Defender</span><h3>${H.name}</h3><span class="motto">Stone between you and the dark.</span></div></header>
+      <p>A mossy stone golem with a glowing heart who follows you everywhere. When the Drowned close in, he raises a stone wall across their path. Any Drowned near a wall stops chasing you to smash it, and arrows and orbs break on it too.</p>
+      <p class="effect">A wall every ${H.buildCd} s · ${H.hits} hits to break · lasts ${H.life} s · up to ${H.maxWalls} at once<br>Can't be hurt · stays with you for good · one per knight</p>
       <footer>${action}</footer></article>`;
   }
 
@@ -629,6 +653,6 @@
     document.body.classList.toggle("manual", manual);
     set($("campBtn"), "hidden", !G.inCamp);
     // the Bone Hound card follows the hound rising or falling while the menu is open
-    if (G.state === "camp" && UI.campTab === "kit" && !!DL.Hounds.mine() !== UI.houndShown) UI.renderCamp();
+    if (G.state === "camp" && UI.campTab === "kit" && (!!DL.Hounds.mine() !== UI.houndShown || !!DL.Golems.mine() !== UI.golemShown)) UI.renderCamp();
   };
 })(window.DL);
