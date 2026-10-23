@@ -54,7 +54,7 @@ The camp grows through three tiers as the Central Flame levels up:
 | Barricade & Gate | Level 1 is a stake ring. Level 2 is a palisade with four gates, so the Drowned must path through them and take stake damage. Level 3 reinforces it with gate lanterns and spikes |
 
 ### High-risk reasons to leave the light
-- **Amethyst** deposits grow in the Drowned Reaches, farther out than iron but short of the Abyss, and stay day and night like the other supplies. You need them for top-tier upgrades.
+- **Amethyst** deposits glow purple in the Drowned Reaches and the Abyss, farther out than iron, and stay day and night like the other supplies. You need them for top-tier upgrades.
 - **Torches** you plant burn out, and Lantern Reavers snuff them out.
 - **Mother Roots**: defend one until dawn for a big reward.
 - **Your drowned self**: when you fall, a Drowned version of you keeps everything you carried. Kill it to get your supplies back. If you die again first, they're gone.

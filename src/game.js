@@ -179,7 +179,7 @@
     G.time = 4;
     G.enemies = []; G.projectiles = []; G.pickups = []; G.effects = []; G.texts = [];
     G.torches = []; G.lightZones = []; G.telegraphs = []; G.hexPools = []; G.decals = []; G.lights = [];
-    G.blooms = []; G.walls = []; G.wisp = null; G.hitNodes = [];
+    G.blooms = []; G.amethysts = []; G.walls = []; G.wisp = null; G.hitNodes = [];
     G.flame = { kind: "flame", x: 0, y: 0, rad: 24, hp: st.flameHp, max: st.flameHp, lit: true, hitT: 0 };
     G.towerCd = [0, 0, 0];
     G.resetPylons();
@@ -340,14 +340,16 @@
 
   /* ---------------- light ---------------- */
   function collectBlooms() {
-    const p = G.player, out = [];
+    const p = G.player, out = [], gems = [];
     W.near(p.x, p.y, 1000, (o) => {
+      if (o.type === "pearl") { if (!o.harvested) gems.push(o); return; }
       if (o.def.bloom || o.type === "sprout") {
         o.active = !o.dead && (G.nightAmt > 0.3 || DL.ZONES[o.zi].abyss);
         out.push(o);
       }
     });
     G.blooms = out;
+    G.amethysts = gems;
   }
 
   function buildLights() {
@@ -380,6 +382,7 @@
       if (o.type === "sprout") { if (!o.harvested) L.push({ x: o.x + 6, y: o.y - 30, r: 46, s: 0.45, col: "80,230,240", a: 0.6 }); continue; }
       L.push({ x: o.x, y: o.y - 24, r: o.def.light * G.diff().light, s: 0.92, col: "80,230,240", a: 0.95, kind: "bloom", obj: o });
     }
+    for (const o of G.amethysts) if (!o.harvested) L.push({ x: o.x, y: o.y - 4, r: 34, s: 0.45, col: "190,160,255", a: 0.9 });
     if (p && G.state !== "title") {
       const lr = st.lanternR * (p.oil > 0 ? 1 : 0.4);
       L.push({ x: p.x, y: p.y - 28, r: lr, s: 0.8, col: "255,180,90", a: p.oil > 0 ? 0.75 : 0.3, flick: 1, lantern: true });
