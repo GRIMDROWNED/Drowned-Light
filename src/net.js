@@ -146,6 +146,7 @@
     try { g.conn.close(); } catch (e) { /* ignore */ }
     if (g.ally) {
       G.allies = G.allies.filter((a) => a !== g.ally);
+      DL.Kindle.leave(g.id);
       say(`The ${g.ally.label} left the game.`, "warn");
     }
   }

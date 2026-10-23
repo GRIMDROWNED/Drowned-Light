@@ -50,6 +50,8 @@ GRIDS = {
     'bone-hound/poses-b.png': (3, 2, POSES_B),
     'derek/poses-a.png': (3, 2, POSES_A),
     'derek/poses-b.png': (3, 2, POSES_B),
+    'kindle/poses-a.png': (3, 2, POSES_A),
+    'kindle/poses-b.png': (3, 2, POSES_B),
 }
 # Cells the AI drew at another scale than the rest of their sheet: cell -> factor to resize it by.
 CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
@@ -59,6 +61,7 @@ CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
 HOUND_H = 60
 DEREK_H = 60  # cut at 4 file px per art pixel (res: 4): drawn 30 px tall, about 3/8 of the knight
 DEREK_SIDE_H = 62
+KINDLE_H = 64  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
 SETS = {
     'lantern-knight': ('lantern-knight', 'knight-front.png', 80, 3, {
         'knight-front.png': 'front',
@@ -126,6 +129,14 @@ SETS = {
         'derek/04_walk.png': 'side/walk1', 'derek/05_walk.png': 'side/walk2', 'derek/06_walk.png': 'side/walk3', 'derek/07_walk.png': 'side/walk4',
         'derek/08_attackA.png': 'attackA', 'derek/09_attackB.png': 'attackB', 'derek/10_attackC.png': 'attackC',
         'derek/11_hurt.png': 'side/castUp', 'derek/12_death.png': 'side/castSlam'}),
+    # Kindle the walking lantern: his sheets put the broken lantern (lying on its side), a pour (refilling a
+    # lantern) and a point (leading the way) where the 12-pose prompt has its attacks, and a crouch and a hop
+    # where it has hurt and death.
+    'kindle': ('kindle', 'kindle/01_front.png', KINDLE_H, 1, {
+        'kindle/01_front.png': 'front', 'kindle/02_back.png': 'back', 'kindle/03_right.png': 'right',
+        'kindle/04_walk.png': 'side/walk1', 'kindle/05_walk.png': 'side/walk2', 'kindle/06_walk.png': 'side/walk3', 'kindle/07_walk.png': 'side/walk4',
+        'kindle/08_attackA.png': 'broken', 'kindle/09_attackB.png': 'pour', 'kindle/10_attackC.png': 'side/point',
+        'kindle/11_hurt.png': 'side/crouch', 'kindle/12_death.png': 'side/hop'}),
 }
 
 # Animation sheets: character -> [(sheet, columns, rows, height of the first frame's figure, output prefix[, row])].
@@ -208,6 +219,11 @@ SHEETS = {
         ('derek/walk-side-4.png', 4, 1, DEREK_SIDE_H, 'side/walk'),
         ('derek/walk-front-4.png', 4, 1, DEREK_H, 'walkF'),
         ('derek/walk-back-4.png', 4, 1, DEREK_H, 'walkB'),
+    ],
+    'kindle': [
+        ('kindle/walk-side-4.png', 4, 1, KINDLE_H, 'side/walk'),
+        ('kindle/walk-front-4.png', 4, 1, KINDLE_H, 'walkF'),
+        ('kindle/walk-back-4.png', 4, 1, KINDLE_H, 'walkB'),
     ],
 }
 

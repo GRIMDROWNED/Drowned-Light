@@ -99,6 +99,7 @@
     // the Bone Hound summon: the same 12 poses and walk sheets, its side walk a four-legged gallop
     Object.assign(walking("boneHound", [55, 55], [27, 64], [26, 66]), { path: "assets/sprites/bone-hound/", keys: { boneHound: [0, false] } }),
     derek(),
+    kindle(),
   ];
 
   // Derek the golem familiar, cut at res 4, 30 px tall (about 3/8 of the knight). His cast is drawn
@@ -108,6 +109,16 @@
     set.views.side.attack = ["side/castUp", "side/castSlam", "side/castSlam"];
     set.views.up.attack = ["back", "back@bob", "back"];
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]]) Object.assign(set.views[dir], { hurt: [p], death: [p, p, p + "@fall"] });
+    return set;
+  }
+
+  // Kindle the walking lantern, cut at res 4, 32 px tall with his ring. He idles and scuttles in all three
+  // views; "attack" is him pouring flame into a lantern, "point" leads the way, and "death" is the broken
+  // lantern lying on its side (before he is lit).
+  function kindle() {
+    const set = Object.assign(walking("kindle", [39, 72], [34, 69], [34, 66], 4), { path: "assets/sprites/kindle/", keys: { kindle: [0, false] } });
+    for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
+      Object.assign(set.views[dir], { attack: ["pour"], point: [dir === "side" ? "side/point" : p], hurt: ["side/crouch"], death: ["broken"] });
     return set;
   }
 

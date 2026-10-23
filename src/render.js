@@ -880,9 +880,12 @@
     c.fillStyle = KINDLE_RIM; // the bars
     for (const x of [-6, -1, 4]) c.fillRect(x, -21, 2, 17);
   }
+  // Drawn frames, once they've loaded (otherwise the coded stand-in below).
+  const kindleDrawn = () => !Art.sheet("kindle").down.idle[0].blank;
   // Your broken lantern, until you light it: tipped over, legs curled up.
   function drawKindleBroken(c, b, t) {
-    shadow(c, b.x, b.y, 11, 4);
+    shadow(c, b.x, b.y, 13, 4);
+    if (kindleDrawn()) return Art.drawUnit(c, "kindle", "death", 0, Math.PI / 2, b.x, b.y, 1);
     c.save();
     c.translate(Math.round(b.x), Math.round(b.y));
     c.rotate(-1.25);
@@ -891,8 +894,19 @@
     kindleBody(c, false, b.fed, t);
     c.restore();
   }
+  // Pouring flame into a lantern just now, leading the way and waiting for you (pointing), scuttling, or standing.
+  function kindleAnim(k) {
+    if (k.pourAt && performance.now() - k.pourAt < 700) return ["attack", 0, k.angle];
+    if (k.moving) return ["walk", Math.floor(k.animT * walkRate("kindle", 12)), k.angle];
+    if (k.lead != null) return ["point", 0, k.lead];
+    return ["idle", 0, k.angle];
+  }
   function drawKindle(c, k, t) {
     shadow(c, k.x, k.y, 11, 4);
+    if (kindleDrawn()) {
+      const [anim, fr, ang] = kindleAnim(k);
+      return Art.drawUnit(c, "kindle", anim, fr, ang, k.x, k.y, 1);
+    }
     c.save();
     c.translate(Math.round(k.x), Math.round(k.y));
     const bob = k.moving ? Math.abs(Math.sin(k.animT * 13)) * 1.5 : Math.sin(t * 2) * 0.6;
@@ -903,7 +917,7 @@
   }
   // Over the dark: his flame, and while he leads the way, a trail of embers pointing where.
   function drawKindleGlow(c, k, t) {
-    const x = k.x, y = k.y - 18, r = 14 + Math.sin(t * 9) * 1.5, g = c.createRadialGradient(x, y, 0, x, y, r);
+    const x = k.x, y = k.y - (kindleDrawn() ? 13 : 18), r = 14 + Math.sin(t * 9) * 1.5, g = c.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, "rgba(255,210,120,0.75)"); g.addColorStop(1, "rgba(255,150,60,0)");
     c.fillStyle = g;
     c.fillRect(x - r, y - r, r * 2, r * 2);
