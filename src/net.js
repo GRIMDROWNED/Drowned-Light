@@ -76,8 +76,7 @@
   Net.send = function (msg) {
     if (Net.conn && Net.connected) { try { Net.conn.send(msg); } catch (e) { /* closed */ } }
   };
-  Net.event = function (ev) { Net.events.push(ev); if (ev.t === "mined") Net.mined.add(ev.id); };
-  Net.mined = new Set(); // what the guest broke, so it doesn't pop back before the host hears
+  Net.event = function (ev) { Net.events.push(ev); };
 
   /* ---------------- host ---------------- */
   Net.host = async function () {
@@ -186,7 +185,6 @@
     else if (ev.t === "mined") {
       const o = findObj(ev.id);
       if (o && !o.harvested) { o.harvested = true; G.dirty.add(o); }
-      if (o && o.type === "pearl") G.pearls = G.pearls.filter((x) => x !== o);
     } else if (ev.t === "build") {
       const u = DL.UPGRADES.find((x) => x.id === ev.id);
       const ok = !!u && G.buyUpgrade(ev.id);
@@ -222,7 +220,6 @@
   function objRow(o) { return [o.id, o.harvested ? 1 : 0, o.dead ? 1 : 0, o.hp != null ? Math.round(o.hp) : -1]; }
   function findObj(id) {
     if (typeof id !== "string") return null;
-    if (id.startsWith("pearl")) return G.pearls.find((p) => p.id === id) || null;
     const [cx, cy] = id.split(",").map(Number);
     return DL.World.chunk(cx, cy).objects.find((o) => o.id === id) || null;
   }
@@ -253,7 +250,6 @@
       wa: G.walls.map((w) => [r1(w.x1), r1(w.y1), r1(w.x2), r1(w.y2), r1(w.t), w.max]),
       py: G.pylons.map((q) => [Math.round(q.hp), q.lit ? 1 : 0]),
       pk: G.pickups.filter((k) => near(k.x, k.y, 800)).map((k) => [k.id, r1(k.x), r1(k.y), k.res]),
-      pe: G.pearls.filter((q) => near(q.x, q.y, 1000)).map((q) => [q.id, r1(q.x), r1(q.y), q.amount, q.zi]),
       tg: G.telegraphs.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.delay]),
       hx: G.hexPools.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.life]),
       // Bone Hounds: [id, owner, x, y, angle, moving, hp, maxHp, biting, bite time left, hit flash]
@@ -439,10 +435,6 @@
     G.walls = m.wa.map((w) => ({ x1: w[0], y1: w[1], x2: w[2], y2: w[3], t: w[4], max: w[5], dps: 0, net: 1 }));
     m.py.forEach((q, i) => { if (G.pylons[i]) { G.pylons[i].hp = q[0]; G.pylons[i].lit = !!q[1]; } });
     G.pickups = m.pk.map((k) => ({ id: k[0], x: k[1], y: k[2], res: k[3], t: 1, vx: 0, vy: 0 }));
-    // Keep the same amethyst objects between snapshots so hits on them add up (they take two).
-    const pearlById = new Map(G.pearls.map((q) => [q.id, q]));
-    G.pearls = m.pe.map((q) => Object.assign(pearlById.get(q[0]) || { id: q[0], type: "pearl", def: DL.OBJ.pearl, harvested: false }, { x: q[1], y: q[2], amount: q[3], zi: q[4] }))
-      .filter((q) => !q.harvested && !Net.mined.has(q.id));
     G.telegraphs = m.tg.map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], delay: q[4], done: true }));
     G.hexPools = (m.hx || []).map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], life: q[4] }));
     // Bone Hounds: puppets kept between snapshots so they glide and run

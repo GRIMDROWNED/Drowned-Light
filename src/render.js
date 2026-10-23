@@ -157,7 +157,6 @@
       const name = objSprite(o);
       if (name) list.push({ y: o.y, f: () => drawObject(c, G, o, name) });
     });
-    for (const pr of G.pearls) if (!pr.harvested) list.push({ y: pr.y, f: () => drawObject(c, G, pr, amethystSprite(pr)) });
     pushCamp(list, G, c, t);
     for (const tr of G.torches) list.push({ y: tr.y, f: () => drawTorch(c, tr, t) });
     for (const w of G.walls || []) {
