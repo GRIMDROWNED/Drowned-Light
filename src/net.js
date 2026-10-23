@@ -177,6 +177,7 @@
       a.g = g;
       G.allies.push(a);
       if (m.hound) DL.Hounds.join(g.id); // a friend who won a Bone Hound brings it along
+      if (m.golem) DL.Golems.give(g.id); // they won Derek in a Hollow before: he comes along
       const harvested = [];
       for (const c of DL.World.chunks.values()) for (const o of c.objects) if (o.harvested || o.dead || (o.maxHp && o.hp < o.maxHp)) harvested.push(objRow(o));
       sendTo(g, { t: "welcome", v: VERSION, id: g.id, up: G.save.up, difficulty: G.save.difficulty, day: G.save.day, nights: G.save.nights, time: G.time, ob: harvested });
@@ -222,11 +223,6 @@
       const ok = G.canAfford(DL.TORCH_COST);
       if (ok) { G.pay(DL.TORCH_COST); G.persist(); }
       sendTo(g, { t: "torchMade", ok });
-    } else if (ev.t === "golem") {
-      // Derek for this friend, paid from the shared stash
-      const ok = !!g && DL.Golems.grant(g.id);
-      sendTo(g, { t: "golemMade", ok });
-      if (ok) say(`${who} raised Derek, a stone golem.`, "good");
     } else if (ev.t === "deposit") {
       const parts = [];
       for (const k of DL.RES_KEYS) if (ev.res[k] > 0) { G.save.stash[k] += ev.res[k]; parts.push(`${ev.res[k]} ${DL.RESOURCES[k].name}`); }
@@ -247,6 +243,8 @@
     sendTo(g, { t: "houndMade" });
     if (g && g.ally) say(`The ${g.ally.label} brought back a Bone Wolf. It rises as their Bone Hound.`, "good");
   };
+  // Host: a message for one friend (by their co-op number).
+  Net.sendTo = function (id, msg) { if (Net.role === "host") sendTo(Net.guests.find((g) => g.id === id), msg); };
 
   function objRow(o) { return [o.id, o.harvested ? 1 : 0, o.dead ? 1 : 0, o.hp != null ? Math.round(o.hp) : -1]; }
   function findObj(id) {
@@ -257,7 +255,7 @@
 
   function hostKnight() {
     const p = G.player;
-    return [r1(p.x), r1(p.y), r1(p.angle), p.moving ? 1 : 0, r1(p.dashT), p.stage, Math.round(p.hp), G.stats().maxHp, G.state === "dying" || G.state === "dead" ? 1 : 0,
+    return [r1(p.x), r1(p.y), r1(p.angle), p.moving ? 1 : 0, r1(p.dashT), p.stage, Math.round(p.hp), G.stats().maxHp, G.state === "dying" || G.state === "dead" || p.downT > 0 ? 1 : 0,
       swingRow(p.swing), castK(p), wispK(), G.save.kit, G.save.kitLevel];
   }
   const allyKnight = (a) => [r1(a.x), r1(a.y), r1(a.angle), a.moving ? 1 : 0, r1(a.dashT), a.stage, Math.round(a.hp), a.maxHp, a.down ? 1 : 0,
@@ -291,6 +289,7 @@
       // Derek: [id, owner, x, y, angle, moving, casting, cast time left]; his walls: [id, owner, x, y, angle, length, hits left, age]
       gm: G.golems.filter((m) => near(m.x, m.y, 1100)).map((m) => [m.id, m.owner, r1(m.x), r1(m.y), r1(m.angle), m.moving ? 1 : 0, m.state === "cast" ? 1 : 0, r1(m.stT)]),
       sw: G.stoneWalls.filter((w) => near(w.x, w.y, 1100)).map((w) => [w.id, w.owner, r1(w.x), r1(w.y), r1(w.ang), w.len, w.hits, r1(w.t)]),
+      cv: DL.Cave.snap(), // Derek's Hollow: [wave, fighting, seconds to the next wave, Drowned still to come]
       ob: dirty,
     };
   }
@@ -339,7 +338,7 @@
         if (c.peerConnection) c.peerConnection.addEventListener("signalingstatechange", () => { if (c.peerConnection.signalingState === "stable") reached = true; });
         c.on("open", () => {
           Net.connected = true;
-          Net.send({ t: "hello", v: VERSION, kit: Net.joinKit, level: Net.joinLevel(Net.joinKit), hound: Net.hasHound() ? 1 : 0 });
+          Net.send({ t: "hello", v: VERSION, kit: Net.joinKit, level: Net.joinLevel(Net.joinKit), hound: Net.hasHound() ? 1 : 0, golem: Net.profile().golem ? 1 : 0 });
         });
         c.on("data", (raw) => wireRecv(c, raw, (m) => {
           if (m && m.t === "full") { clearTimeout(timer); fail(`That room is full (${MAX_GUESTS + 1} players).`); return; }
@@ -427,11 +426,8 @@
       DL.Sound.play("growl");
       say("The carcass shudders, and the bones knit. A Bone Hound rises to hunt at your side.", "good");
       if (DL.UI.refreshCamp) DL.UI.refreshCamp();
-    } else if (m.t === "golemMade") {
-      if (m.ok) { DL.Sound.play("build"); say("Derek heaves himself up out of the stones. He'll wall the Drowned off from you.", "good"); }
-      else say("Couldn't raise Derek: not enough in the stash, or the Central Flame is too low.", "warn");
-      if (DL.UI.refreshCamp) DL.UI.refreshCamp();
-    } else if (m.t === "snap") applySnap(m);
+    } else if (m.t === "cave" || m.t === "caveMend") DL.Cave.guestMsg(m);
+    else if (m.t === "snap") applySnap(m);
   }
 
   function applySnap(m) {
@@ -444,6 +440,7 @@
     G.time = m.time;
     G.hostState = m.state;
     G.flame.hp = m.flame[0]; G.flame.max = m.flame[1]; G.flame.lit = !!m.flame[2];
+    DL.Cave.applySnap(m.cv);
 
     // the host's knight and the other friends': keep the same objects so they glide and animate
     const known = new Map(G.allies.map((a) => [a.id, a]));

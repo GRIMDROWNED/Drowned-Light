@@ -7,7 +7,7 @@ const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
   "src/core.js", "src/view.js", "src/data.js", "src/camp.js", "src/art.js", "src/units.js", "src/sprites.js",
-  "src/world.js", "src/game.js", "src/hounds.js", "src/den.js", "src/golem.js", "src/kits.js", "src/net.js", "src/render.js", "src/ui.js", "src/main.js",
+  "src/world.js", "src/game.js", "src/hounds.js", "src/den.js", "src/golem.js", "src/cave.js", "src/kits.js", "src/net.js", "src/render.js", "src/ui.js", "src/main.js",
   "icons/icon-192.png", "icons/icon-512.png", "icons/favicon-32.png", "assets/drowned-games.jpg",
   ...Object.entries({
     "drowned/archer/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],

@@ -1,4 +1,4 @@
-/* Drowned Light — Derek, a stone golem familiar bought at the camp fire (Kit tab). One per knight.
+/* Drowned Light — Derek, a stone golem familiar won in Derek's Hollow (src/cave.js). One per knight.
    He can't be hurt and doesn't fight: every so often, when the Drowned close in on his knight, he
    raises a stone wall across their path. Drowned near a wall turn on it instead of the knight, and
    two blows bring it down. The host's device runs every Derek and every wall, the guests' ones too,
@@ -14,7 +14,6 @@
   G.golems = [];
   G.stoneWalls = [];
 
-  Golems.lock = () => (G.save.up.flame < H.reqFlame ? `Needs Central Flame ${H.reqFlame}` : null);
   const myId = () => (G.isGuest() ? DL.Net.myId : 0);
   Golems.mine = () => G.golems.find((m) => m.owner === myId()) || null;
   function ownerOf(m) {
@@ -22,42 +21,32 @@
     return G.allies.find((a) => a.id === m.owner) || null;
   }
 
-  function spawn(owner, x, y) {
-    const m = { id: ++G.eid, golem: true, owner, x, y, angle: Math.PI / 2, moving: false, animT: 0, state: "move", stT: 0, cd: 2 };
+  function spawn(owner, x, y, trial) {
+    const m = { id: ++G.eid, golem: true, owner, trial: !!trial, x, y, angle: Math.PI / 2, moving: false, animT: 0, state: "move", stT: 0, cd: 2 };
     G.golems.push(m);
     for (let i = 0; i < 16; i++) G.puff(x + rand(-14, 14), y - rand(0, 24), "rgba(120,130,110,0.6)", 50, 0.9, -20);
     for (let i = 0; i < 10; i++) G.spark(x, y - 24, "90,235,245", 80);
     return m;
   }
-  // A new life (or a reload) brings Derek back to your side at the camp.
+  // A new life (or a reload) brings Derek back to your side at the camp, and to every friend who won him.
   Golems.reset = function () {
+    const friends = G.golems.filter((m) => m.owner !== 0 && !m.trial).map((m) => m.owner);
     G.golems = [];
     G.stoneWalls = [];
-    if (!G.isGuest() && G.save.golem && G.player) spawn(0, G.player.x + 28, G.player.y + 8);
+    if (G.isGuest()) return;
+    if (G.save.golem && G.player) spawn(0, G.player.x + 28, G.player.y + 8);
+    for (const a of G.allies) if (friends.includes(a.id)) spawn(a.id, a.x + 28, a.y + 8);
   };
 
-  /* ---------------- buying ---------------- */
-  Golems.buy = function () {
-    if (G.isGuest()) {
-      if (Golems.mine() || Golems.lock()) { sfx("deny"); return false; }
-      DL.Net.event({ t: "golem" }); // the host pays from the shared stash and raises him beside you
-      return true;
-    }
-    return Golems.grant(0);
-  };
-  // Host: raise Derek for a knight, if they don't have him yet and the stash can pay.
-  Golems.grant = function (owner) {
+  /* ---------------- winning him ---------------- */
+  // Host: Derek rises beside a knight (0 = the host, else a friend's co-op number). A `trial` Derek fights in
+  // the Hollow and stays only if the trial is won; a friend who already won him gets him back when they join.
+  Golems.give = function (owner, x, y, trial) {
+    const had = G.golems.find((m) => m.owner === owner);
+    if (had) return had;
     const k = owner === 0 ? G.player : G.allies.find((a) => a.id === owner);
-    if (!k || G.golems.some((m) => m.owner === owner) || Golems.lock() || !G.canAfford(H.cost)) { if (owner === 0) sfx("deny"); return false; }
-    G.pay(H.cost);
-    spawn(owner, k.x + 28, k.y + 8);
-    if (owner === 0) {
-      G.save.golem = 1;
-      sfx("build");
-      say("Derek heaves himself up out of the stones. He'll wall the Drowned off from you.", "good");
-    }
-    G.persist();
-    return true;
+    if (!k) return null;
+    return spawn(owner, x != null ? x : k.x + 28, y != null ? y : k.y + 8, trial);
   };
 
   /* ---------------- walls ---------------- */

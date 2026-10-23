@@ -179,7 +179,6 @@
       if (act === "up") G.buyUpgrade(arg);
       else if (act === "train") { const r = DL.Kits.train(); UI.justReached = r && r.milestone ? r.level : 0; }
       else if (act === "torch") G.craftTorch();
-      else if (act === "golem") DL.Golems.buy();
       else if (act === "rest") { G.restUntilDusk(); UI.closeCamp(); UI.toast("You rest by the fire until dusk.", "warn"); return; }
       UI.renderCamp();
     });
@@ -558,19 +557,21 @@
       <footer>${action}</footer></article>`;
   }
 
-  // Derek: a stone golem familiar, one per knight, who walls the Drowned off.
+  // Derek: a stone golem familiar, one per knight, who walls the Drowned off. He's won in Derek's Hollow.
   function golemCard(G) {
-    const H = DL.GOLEM, mine = DL.Golems.mine(), lock = DL.Golems.lock();
+    const H = DL.GOLEM, mine = DL.Golems.mine(), w = DL.Cave.where(), n = DL.CAVE.waves.length;
     UI.golemShown = !!mine;
     let action;
-    if (mine) action = `<span class="maxed">At your side</span>`;
-    else action = `<div class="cost">${costHtml(H.cost)}</div>` + (lock ? `<span class="req">${lock}</span>` : "") +
-      `<button data-act="golem" ${!lock && G.canAfford(H.cost) ? "" : "disabled"}>Raise Derek</button>`;
+    if (G.cave) action = `<span class="req">Fighting beside you in the Hollow</span>`;
+    else if (mine && !mine.trial) action = `<span class="maxed">At your side</span>`;
+    else action = `<span class="req">${DL.Cave.sealed() ? "The Hollow is sealed until tomorrow night" : `The Hollow lies ${w.m} m ${w.dir} of camp · its stones part at night`}</span>`;
+    const how = mine && !mine.trial ? "" : `<p class="effect"><b>Win him in Derek's Hollow.</b> A cave mouth in the Mire, ${w.m} m ${w.dir} of camp. Walk in at night and Derek wakes beside you: hold out together through ${n} waves of the Drowned, each bringing a kind you haven't faced yet. Clear them all and he's yours for good. Fall, and the Hollow seals until the next night. With friends, everyone is pulled in, and everyone gets their own Derek.</p>`;
     return `<article class="card hound-card">
       <header><canvas class="portrait" data-golem="1" width="66" height="52"></canvas>
         <div><span class="tag">Familiar · Defender</span><h3>${H.name}</h3><span class="motto">Stone between you and the dark.</span></div></header>
       <p>A mossy stone golem with a glowing heart who follows you everywhere. When the Drowned close in, he raises a stone wall across their path. Any Drowned near a wall stops chasing you to smash it, and arrows and orbs break on it too.</p>
       <p class="effect">A wall every ${H.buildCd} s · ${H.hits} hits to break · lasts ${H.life} s · up to ${H.maxWalls} at once<br>Can't be hurt · stays with you for good · one per knight</p>
+      ${how}
       <footer>${action}</footer></article>`;
   }
 
@@ -607,14 +608,22 @@
     set($("phaseIcon"), "class", G.night ? "moon" : "sun");
     set($("clock"), "--prog", String(G.time / DL.CYCLE.total));
 
-    set($("zoneText"), "text", DL.ZONES[p.zi].name);
+    set($("zoneText"), "text", G.cave ? "Derek's Hollow" : DL.ZONES[p.zi].name);
     const N = DL.Net;
     const coopText = !N.role ? "" : N.role === "guest" ? "Co-op · your friend's world" : G.allies.length ? `Co-op · ${G.allies.length + 1} players · room ${N.code}` : `Room ${N.code} · waiting for friends`;
     set($("coopChip"), "text", coopText);
     set($("coopChip"), "hidden", !coopText);
     const d = Math.hypot(p.x, p.y);
     set($("homeArrow"), "transform", `rotate(${(Math.atan2(-p.y, -p.x) * 180) / Math.PI}deg)`);
-    set($("homeDist"), "text", DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`);
+    set($("homeDist"), "text", G.cave ? "Camp: far above" : DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`);
+    // the way to Derek's Hollow, once found, until you've won him
+    const cn = DL.Cave.showNav();
+    set($("caveNav"), "hidden", !cn);
+    if (cn) {
+      const m = DL.Cave.mouth();
+      set($("caveArrow"), "transform", `rotate(${(Math.atan2(m.y - p.y, m.x - p.x) * 180) / Math.PI}deg)`);
+      set($("caveDist"), "text", `Hollow ${Math.round(Math.hypot(m.x - p.x, m.y - p.y) / 10)}m`);
+    }
     const ds = G.save.drownedSelf;
     set($("selfNav"), "hidden", !ds);
     // where your nearest co-op friend is
@@ -636,7 +645,8 @@
 
     // objective banner
     let obj = "";
-    if (G.isGuest() && (G.hostState === "dead" || G.hostState === "dying")) obj = "Your friend has fallen — waiting for them to rise";
+    if (G.cave) obj = DL.Cave.objective();
+    else if (G.isGuest() && (G.hostState === "dead" || G.hostState === "dying")) obj = "Your friend has fallen — waiting for them to rise";
     else if (!G.flame.lit) obj = "The Central Flame is out — survive until dawn";
     else if (G.night && Math.hypot(p.x, p.y) < G.siegeRadius()) obj = `Defend the camp · Flame ${Math.ceil(G.flame.hp)} / ${G.flame.max}`;
     else if (G.rootEvent && !G.rootEvent.obj.dead && Math.hypot(p.x - G.rootEvent.obj.x, p.y - G.rootEvent.obj.y) < 650) obj = `Defend the Mother Root until dawn · ${Math.ceil(G.rootEvent.obj.hp)} / ${Math.round(G.rootEvent.obj.maxHp)}`;

@@ -264,15 +264,33 @@
      are dead, walk over a carcass to haul it (at `haulSpeed`) and bring it into the camp: it rises as your hound.
      The den fills again at the dawn after its last carcass is taken. `clear` keeps trees and rocks off its ground. */
   DL.DEN = { dist: 1750, clear: 190, pack: 5, wake: 240, leash: 560, spawn: 900, forget: 1500, grab: 34, haulSpeed: 0.85 };
-  /* Derek, the stone golem familiar (src/golem.js): bought at the camp fire's Kit tab, one per knight.
+  /* Derek, the stone golem familiar (src/golem.js): won in Derek's Hollow (DL.CAVE), one per knight.
      He can't be hurt. Every `buildCd` seconds, when a Drowned comes within `trigger` px of his knight,
      he raises a stone wall `len` px long across its path, `gap` px out from the knight. Drowned within
      `lure` px of a wall drop everything to smash it (arrows and orbs stop on it too); `hits` blows break it,
      and it crumbles on its own after `life` seconds. At most `maxWalls` stand for each Derek. */
   DL.GOLEM = {
-    name: "Derek", reqFlame: 3, cost: { stone: 12, iron: 6, resin: 6 },
+    name: "Derek",
     speed: 150, buildCd: 9, trigger: 300, gap: 90, len: 76, hits: 2, life: 20, maxWalls: 2,
     lure: 230, castRange: 260,
+  };
+  /* Derek's Hollow (src/cave.js): the cave where Derek is won. Its mouth stands `dist` px from camp in the Mire;
+     the cave arena (`radius` px) lies far off the map at (x, y), and its Drowned are as strong as zone `zone`'s.
+     `intro` seconds before wave 1, `rest` between waves, a group pours out of a tunnel every `burst` seconds.
+     Each wave brings `n` of its new kind plus `mix` of the kinds already met (both scaled by difficulty and party).
+     After a wave everyone heals `heal` of their health and the fallen rise with `rise`; losing leaves you `failHp`. */
+  DL.CAVE = {
+    x: 0, y: 40000, radius: 360, dist: 1750, zone: 2,
+    intro: 6, rest: 8, burst: 1.4, heal: 0.25, rise: 0.5, failHp: 0.35,
+    waves: [
+      { type: "footman", n: 6, mix: 0, name: "Drowned Wretches" },
+      { type: "squire", n: 6, mix: 3, name: "Mire Stalkers" },
+      { type: "archer", n: 4, mix: 5, name: "Tide Archers" },
+      { type: "revenant", n: 12, mix: 4, name: "a swarm of Revenants" },
+      { type: "defiler", n: 4, mix: 6, name: "Lantern Reavers" },
+      { type: "hexbearer", n: 3, mix: 7, name: "Marsh Hexbearers" },
+      { type: "blackguard", n: 3, mix: 9, name: "Bone Bulwarks" },
+    ],
   };
   DL.scaleCost = scaleCost;
 
@@ -317,7 +335,6 @@
   ];
 
   for (const u of DL.UPGRADES) u.costs = u.costs.map((c) => (c ? scaleCost(c) : c));
-  DL.GOLEM.cost = scaleCost(DL.GOLEM.cost);
 
   // Camp siege waves get nastier each night.
   DL.campPool = function (day) {

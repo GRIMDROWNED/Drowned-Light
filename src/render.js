@@ -129,6 +129,7 @@
 
     /* camp ground: paths, plaza, boardwalks */
     drawCampGround(c, G);
+    DL.Cave.drawGround(c, view);
 
     for (const d of G.decals) sprite(c, d.type, d.x, d.y, false, Math.min(1, d.t / 3));
 
@@ -160,6 +161,7 @@
       if (name) list.push({ y: o.y, f: () => drawObject(c, G, o, name) });
     });
     pushCamp(list, G, c, t);
+    DL.Cave.push(list, c, t, view);
     for (const tr of G.torches) list.push({ y: tr.y, f: () => drawTorch(c, tr, t) });
     for (const w of G.walls || []) {
       const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1), n = Math.max(2, Math.round(len / 14)), f = Math.min(1, w.t / 1);
@@ -297,6 +299,7 @@
       c.fillRect(b[0] - 30, b[1] - 40, 60, 60);
     }
     for (const m of G.golems) drawGolemHeart(c, m, t);
+    DL.Cave.drawGlow(c, t);
     drawMotes(c, G, view, t);
     c.globalCompositeOperation = "source-over";
 
