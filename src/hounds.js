@@ -1,7 +1,7 @@
-/* Drowned Light — the Bone Hound, a summoned ally bought at the camp fire (Kit tab).
-   One per knight. The host's device runs every hound, the guests' ones too, and sends them
-   to each guest in its snapshots; a guest's purchase is an event the host pays for from the
-   shared stash. Balance numbers are in DL.HOUND (src/data.js). */
+/* Drowned Light — the Bone Hound, an ally won at the Bone Wolf den (src/den.js): kill the pack, carry
+   a carcass into the camp, and it rises for you. One per knight. It never dies: beaten down, it lies
+   knocked out for a while, then gets up. The host's device runs every hound, the guests' ones too,
+   and sends them to each guest in its snapshots. Balance numbers are in DL.HOUND (src/data.js). */
 "use strict";
 (function (DL) {
   const { dist, rand } = DL;
@@ -17,7 +17,6 @@
     const m = 1 + H.perFlame * Math.max(0, G.save.up.flame - H.reqFlame);
     return { maxHp: Math.round(H.hp * m), dmg: Math.round(H.dmg * m * 10) / 10 };
   };
-  Hounds.lock = () => (G.save.up.flame < H.reqFlame ? `Needs Central Flame ${H.reqFlame}` : null);
   // Whose knight a hound follows: the host is 0, friends by their co-op number.
   const myId = () => (G.isGuest() ? DL.Net.myId : 0);
   Hounds.mine = () => G.hounds.find((h) => h.owner === myId() && !h.gone) || null;
@@ -40,27 +39,22 @@
     G.hounds = [];
     if (!G.isGuest() && G.save.hound && G.player) spawn(0, G.player.x - 26, G.player.y + 8);
   };
-
-  /* ---------------- buying ---------------- */
-  Hounds.buy = function () {
-    if (G.isGuest()) {
-      if (Hounds.mine() || Hounds.lock()) { sfx("deny"); return false; }
-      DL.Net.event({ t: "hound" }); // the host pays from the shared stash and raises it beside you
-      return true;
-    }
-    return Hounds.grant(0);
+  // Host: a friend who won a hound (in any world) brings it along when they join.
+  Hounds.join = function (owner) {
+    const k = G.allies.find((a) => a.id === owner);
+    if (k && !G.hounds.some((h) => h.owner === owner && !h.gone)) spawn(owner, k.x - 26, k.y + 8);
   };
-  // Host: raise a hound for a knight, if they don't have one and the stash can pay.
+
+  // Host: a Bone Wolf's carcass, carried into the camp, rises as this knight's hound.
   Hounds.grant = function (owner) {
     const k = owner === 0 ? G.player : G.allies.find((a) => a.id === owner);
-    if (!k || G.hounds.some((h) => h.owner === owner && !h.gone) || Hounds.lock() || !G.canAfford(H.cost)) { if (owner === 0) sfx("deny"); return false; }
-    G.pay(H.cost);
+    if (!k || G.hounds.some((h) => h.owner === owner && !h.gone)) return false;
     spawn(owner, k.x - 26, k.y + 8);
     if (owner === 0) {
       G.save.hound = 1;
       sfx("growl");
-      say("A Bone Hound claws its way up out of the mud. It hunts at your side.", "good");
-    }
+      say("The carcass shudders, and the bones knit. A Bone Hound rises to hunt at your side.", "good");
+    } else DL.Net.houndMade(owner);
     G.persist();
     return true;
   };
@@ -137,6 +131,17 @@
     h.flash = Math.max(0, h.flash - dt);
     h.inv = Math.max(0, h.inv - dt);
     h.hurtT = Math.max(0, h.hurtT - dt);
+    if (h.down > 0) {
+      // knocked out: it lies in a heap until it pulls itself back together
+      h.down -= dt;
+      Object.assign(h, { moving: false, tgt: null, state: "move", kx: 0, ky: 0 });
+      if (h.down > 0) return;
+      h.down = 0;
+      h.hp = h.maxHp;
+      h.inv = 1;
+      for (let i = 0; i < 10; i++) G.puff(h.x + rand(-10, 10), h.y - rand(0, 20), "rgba(200,190,160,0.6)", 50, 0.8, -20);
+      if (h.owner === 0) { sfx("growl"); say("Your Bone Hound shakes itself back together.", "good"); }
+    }
     h.cd -= dt; h.lungeCd -= dt; h.scanT -= dt;
     // firelight knits its bones back together; out of a fight it mends slowly anywhere
     const heal = G.protectionAt(h.x, h.y) === "human" ? H.regen : h.tgt ? 0 : 1;
@@ -210,34 +215,28 @@
 
   // Host: a Drowned blow, arrow or spike lands on a hound.
   Hounds.hurt = function (h, dmg, ang) {
-    if (G.isGuest() || h.gone || h.inv > 0) return;
+    if (G.isGuest() || h.gone || h.inv > 0 || h.down > 0) return;
     h.hp -= dmg;
     h.inv = 0.25; h.flash = 0.15; h.hurtT = 0.2;
     h.kx += Math.cos(ang) * 120; h.ky += Math.sin(ang) * 120;
     G.text(h.x, h.y - 66, "-" + Math.round(dmg), "#ff8a7a", 0.9);
-    if (h.hp <= 0) fall(h);
+    if (h.hp <= 0) knockOut(h);
   };
 
-  function fall(h) {
-    h.gone = true;
-    Hounds.fallFx(h);
-    if (h.owner === 0) {
-      G.save.hound = 0;
-      G.persist();
-      say("Your Bone Hound falls apart. Raise another at the camp fire.", "warn");
-    } else DL.Net.houndLost(h.owner);
-  }
-  Hounds.fallFx = function (h) {
-    G.effects.push({ type: "houndFall", x: h.x, y: h.y, angle: h.angle, t: 0, max: 1.6 });
+  // It doesn't die: it collapses and lies knocked out for H.downTime seconds.
+  function knockOut(h) {
+    h.hp = 0;
+    h.down = H.downTime;
     for (let i = 0; i < 12; i++) G.puff(h.x + rand(-10, 10), h.y - rand(0, 24), "rgba(200,190,160,0.6)", 50, 0.9, -20);
     sfx("shatter");
-  };
+    if (h.owner === 0) say(`Your Bone Hound is knocked out. It will get up in ${H.downTime} seconds.`, "warn");
+  }
 
   // The Drowned can go for a hound as well as a knight (it counts as a little farther away).
   Hounds.nearest = function (x, y, bd) {
     let best = null;
     for (const h of G.hounds) {
-      if (h.gone) continue;
+      if (h.gone || h.down > 0) continue;
       const d = dist(x, y, h.x, h.y) * 1.2;
       if (d < bd) { bd = d; best = h; }
     }

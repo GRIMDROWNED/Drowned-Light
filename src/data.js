@@ -72,6 +72,8 @@
     pearl: { sprite: "pearl", res: "pearl", base: 1, hits: 4, r: 10 },
     refuge: { sprite: "refuge", bloom: true, light: 125, hp: 70, rad: 14, name: "Refuge Bloom" },
     sentinel: { sprite: "sentinel", bloom: true, light: 95, hp: 100, rad: 14, turret: true, name: "Sentinel Bloom" },
+    // The Bone Wolf den: one in the world (src/den.js).
+    den: { sprite: "boneDen", solid: 30, name: "Bone Wolf Den" },
     root: { sprite: "root", bloom: true, light: 200, hp: 480, rad: 30, solid: 20, name: "Mother Root" },
   };
 
@@ -93,6 +95,9 @@
       radius: 24, mass: 8, armor: 0.2, boss: true, aura: 170, drop: { iron: 1, pearl: 1 } },
     hexbearer: { name: "Marsh Hexbearer", hp: 38, speed: 50, dmg: 8, range: 250, windup: 0.9, cd: 2.6, scale: 1.05,
       radius: 13, mass: 1.1, ranged: true, keep: 200, caster: true, drop: { resin: 0.7, pearl: 0.05 } },
+    // The pack at the Bone Wolf den (src/den.js): wild Bone Hounds that never leave it, by day or night.
+    bonewolf: { name: "Bone Wolf", hp: 30, speed: 140, dmg: 7, range: 26, windup: 0.3, cd: 1.1, scale: 1,
+      radius: 10, mass: 0.8, lunge: 340, den: true, beast: true, drop: {} },
     self: { name: "Your Drowned Self", hp: 200, speed: 70, dmg: 15, range: 44, windup: 0.5, cd: 1.3, scale: 1.05,
       radius: 14, mass: 2, boss: true, drop: {} },
   };
@@ -241,17 +246,24 @@
 
   DL.TORCH_COST = { wood: 3, resin: 1 };
 
-  /* Bone Hound: a summoned ally bought at the camp fire (Kit tab), one per knight. It hunts in order:
+  /* Bone Hound: an ally won at the Bone Wolf den (DL.DEN), one per knight. It hunts in order:
      any Drowned that retreats (Mire Stalkers, and anything backing away), then anything that shoots
      (Tide Archers, Hexbearers), then whatever is nearest. Priority prey is chased out to `chase` px
      from its knight, the rest within `sight`. Every bite opens a bleed that ignores armour and stacks up to `bleedMax`.
-     It stays until it falls; health and bite grow by `perFlame` for each Central Flame level past `reqFlame`. */
+     It never dies: beaten down, it lies knocked out for `downTime` seconds, then gets up whole.
+     Health and bite grow by `perFlame` for each Central Flame level past `reqFlame`. */
   DL.HOUND = {
-    name: "Bone Hound", reqFlame: 2, cost: { stone: 8, iron: 6, resin: 4 },
+    name: "Bone Hound", reqFlame: 2, downTime: 20,
     hp: 80, dmg: 6, cd: 0.8, range: 22, speed: 185, lunge: 360, perFlame: 0.15,
     bleedDps: 2.5, bleedDur: 4, bleedMax: 3,
     sight: 320, chase: 480, leash: 650, regen: 5, radius: 9,
   };
+  /* The Bone Wolf den (src/den.js): one per world, about `dist` px from camp, out in the Mire. `pack` Bone Wolves
+     sleep at its mouth; they wake when a knight comes within `wake` px, run home if their prey gets `leash` px from
+     the den, and the whole pack gathers again if every knight goes `forget` px away before it is broken. Once all
+     are dead, walk over a carcass to haul it (at `haulSpeed`) and bring it into the camp: it rises as your hound.
+     The den fills again at the dawn after its last carcass is taken. `clear` keeps trees and rocks off its ground. */
+  DL.DEN = { dist: 1750, clear: 190, pack: 5, wake: 240, leash: 560, spawn: 900, forget: 1500, grab: 34, haulSpeed: 0.85 };
   /* Derek, the stone golem familiar (src/golem.js): bought at the camp fire's Kit tab, one per knight.
      He can't be hurt. Every `buildCd` seconds, when a Drowned comes within `trigger` px of his knight,
      he raises a stone wall `len` px long across its path, `gap` px out from the knight. Drowned within
@@ -305,7 +317,6 @@
   ];
 
   for (const u of DL.UPGRADES) u.costs = u.costs.map((c) => (c ? scaleCost(c) : c));
-  DL.HOUND.cost = scaleCost(DL.HOUND.cost);
   DL.GOLEM.cost = scaleCost(DL.GOLEM.cost);
 
   // Camp siege waves get nastier each night.

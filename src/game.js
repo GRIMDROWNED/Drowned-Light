@@ -29,7 +29,8 @@
     torches: 2,
     carried: emptyRes(), // what the knight had on them when the game was last saved
     drownedSelf: null,
-    hound: 0, // 1 while your Bone Hound stands (it comes back with you when you reload or rise)
+    hound: 0, // 1 once your Bone Hound is won at the den (it can't die, so it always comes back)
+    den: { found: false, cleared: false, bodies: [] }, // the Bone Wolf den: carcasses [x, y, angle] of the pack you killed
     golem: 0, // 1 once Derek is yours (he can't fall, so he always comes back)
     started: false,
     lastPlayed: 0,
@@ -191,6 +192,7 @@
     W.resetDay();
     DL.Hounds.reset();
     DL.Golems.reset();
+    DL.Den.reset();
     G.state = "play";
   };
 
@@ -241,6 +243,7 @@
     updateCorruption(dt);
     if (G.state === "dying") return;
     updateSpawning(dt);
+    DL.Den.update(dt);
     updateEnemies(dt);
     DL.Hounds.update(dt);
     DL.Golems.update(dt);
@@ -312,6 +315,7 @@
     sfx("dawn");
     G.save.nights += 1;
     say("Dawn breaks. The Drowned retreat from the sun.", "good");
+    DL.Den.dawn();
     if (G.rootEvent) {
       const o = G.rootEvent.obj;
       if (!o.dead) {
@@ -396,7 +400,7 @@
       L.push({ x: p.x, y: p.y - 28, r: 80, s: 0.8, col: "255,180,90", a: 0.75, flick: 1 });
     }
     for (const a of G.allies) if (!a.down) L.push({ x: a.x, y: a.y - 28, r: 80, s: 0.8, col: "255,180,90", a: 0.7, flick: 1 });
-    for (const h of G.hounds) L.push({ x: h.x, y: h.y - 36, r: 34, s: 0.35, col: "255,70,40", a: 0.6 });
+    for (const h of G.hounds) if (!(h.down > 0)) L.push({ x: h.x, y: h.y - 36, r: 34, s: 0.35, col: "255,70,40", a: 0.6 });
     for (const m of G.golems) L.push({ x: m.x, y: m.y - 12, r: 32, s: 0.4, col: "80,230,240", a: 0.6 });
     for (const e of G.enemies) {
       if (e.type === "defiler") L.push({ x: e.x, y: e.y - 70, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
@@ -458,7 +462,7 @@
       DL.Kits.dashTick(p, st, dt);
     } else {
       const wet = W.isWater(p.x, p.y) ? 0.82 : 1;
-      const spd = 150 * wet * (p.corrupt >= 75 ? 0.9 : 1);
+      const spd = 150 * wet * (p.corrupt >= 75 ? 0.9 : 1) * (DL.Den.carrying() ? DL.DEN.haulSpeed : 1);
       p.moving = inp.m > 0.15;
       p.stillT = p.moving ? 0 : (p.stillT || 0) + dt;
       if (p.moving) {
@@ -816,7 +820,7 @@
         continue;
       }
       const eZ = DL.ZONES[W.zoneIndex(e.x, e.y)];
-      if (!G.night && !eZ.abyss && !e.isSelf) {
+      if (!G.night && !eZ.abyss && !e.isSelf && !e.def.den) {
         e.hp -= 30 * dt; // the sun unmakes them
         if (Math.random() < 0.3) puff(e.x + rand(-8, 8), e.y - rand(10, 40), "rgba(40,60,70,0.6)", 30, 0.8);
         if (e.hp <= 0) { kill(e, false); continue; }
@@ -834,8 +838,9 @@
         if (e.hp <= 0) { kill(e, true); continue; }
       }
       const dp = dist(e.x, e.y, p.x, p.y);
+      if (e.def.den && DL.Den.homing(e, p, dt)) continue; // a Bone Wolf whose prey ran too far goes home
       if (e.dormant) {
-        if (dp < 170 || e.hp < e.maxHp) { e.dormant = false; if (e.isSelf) say("Your drowned self rises to meet you.", "danger"); }
+        if (dp < (e.def.den ? DL.DEN.wake : 170) || e.hp < e.maxHp) { e.dormant = false; if (e.isSelf) say("Your drowned self rises to meet you.", "danger"); }
         else continue;
       }
 
@@ -959,6 +964,7 @@
         if (d < min) { a.x = k.x + (dx / d) * min; a.y = k.y + (dy / d) * min; }
       }
       for (const h of G.hounds) {
+        if (h.down > 0) continue; // a knocked-out hound is stepped over
         const dx = a.x - h.x, dy = a.y - h.y, d = Math.hypot(dx, dy) || 0.01, min = a.def.radius + 6;
         if (d < min) { a.x = h.x + (dx / d) * min; a.y = h.y + (dy / d) * min; }
       }
@@ -1184,6 +1190,7 @@
   function kill(e, drops) {
     if (e.removed || G.isGuest()) return;
     e.removed = true;
+    if (e.def.den) { DL.Den.slain(e); return; } // a Bone Wolf leaves its carcass
     sfx("kill");
     G.effects.push({ type: "dissolve", e, t: 0, max: 0.6 });
     for (let i = 0; i < 16; i++) puff(e.x + rand(-10, 10), e.y - rand(0, 50) * e.def.scale, "rgba(60,220,230,0.7)", 50, 0.9, -40);
@@ -1291,7 +1298,7 @@
         }
         else {
           const a = G.allies.find((k) => !k.down && dist(b.x, b.y, k.x, k.y - 22) < 16);
-          const h = a ? null : G.hounds.find((k) => dist(b.x, b.y, k.x, k.y - 14) < 13);
+          const h = a ? null : G.hounds.find((k) => !(k.down > 0) && dist(b.x, b.y, k.x, k.y - 14) < 13);
           if (a) { DL.Net.hurtAlly(a, b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
           else if (h) { DL.Hounds.hurt(h, b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
         }
