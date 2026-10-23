@@ -371,8 +371,8 @@
     if (lay.garden && G.nightAmt > 0.3) L.push({ x: lay.garden.x, y: lay.garden.y - 12, r: 60 + 12 * G.save.up.garden, s: 0.6, col: "80,230,240", a: 0.8 });
     if (G.save.up.stakes >= 3) {
       for (const g of DL.Camp.GATES) for (const sgn of [-1, 1]) {
-        const a = g + (sgn * (DL.Camp.GATE_HALF + 6)) / DL.WALL_R;
-        L.push({ x: Math.cos(a) * DL.WALL_R, y: Math.sin(a) * DL.WALL_R - 40, r: 50, s: 0.5, col: "255,180,90", a: 0.6, flick: 1 });
+        const q = DL.Camp.gatePoint(g, sgn * (DL.Camp.GATE_HALF + 6), 0);
+        L.push({ x: q.x, y: q.y - 40, r: 50, s: 0.5, col: "255,180,90", a: 0.6, flick: 1 });
       }
     }
     for (const t of G.torches) {
@@ -497,7 +497,7 @@
     G.hitNodes = G.hitNodes.filter((o) => o.hitT > 0);
 
     // Deposit carried supplies at camp.
-    const inCamp = Math.hypot(p.x, p.y) < DL.CAMP_RADIUS;
+    const inCamp = DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS;
     G.inCamp = inCamp;
     if (inCamp && DL.RES_KEYS.some((k) => p.carried[k] > 0)) {
       const parts = [];
@@ -632,7 +632,7 @@
   G.campSolids = () => DL.Camp.layout(G.save.up).solids;
   G.collideCamp = (ent, r) => collideCamp(ent, r);
   function collideCamp(ent, r) {
-    if (Math.hypot(ent.x, ent.y) > 280) return;
+    if (DL.Camp.sq(ent.x, ent.y) > 280) return;
     DL.Camp.collideWall(ent, r, G.save.up);
     for (const s of G.campSolids()) {
       const dx = ent.x - s.x, dy = ent.y - s.y, d = Math.hypot(dx, dy), m = s.r + r;
@@ -929,7 +929,7 @@
       // Barricade: stakes wound attackers as they cross the perimeter (at the gates once walls stand).
       const lv = G.save.up.stakes;
       if (lv > 0) {
-        const dc = Math.hypot(e.x, e.y);
+        const dc = DL.Camp.sq(e.x, e.y);
         if (dc < DL.WALL_R + 4) {
           e.slow = Math.max(e.slow, lv >= 3 ? 0.4 : 0.2);
           if (!e.staked && dc > DL.WALL_R - 40) { e.staked = true; hitEnemy(e, [0, 15, 25, 40][lv], Math.atan2(e.y, e.x), 160); if (e.hp <= 0) continue; }

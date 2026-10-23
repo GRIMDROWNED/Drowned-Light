@@ -22,8 +22,8 @@
     zone(x, y) { return DL.ZONES[this.zoneIndex(x, y)]; },
 
     waterVal(x, y) { return DL.fbm(x / 260, y / 260, 11); },
-    isWater(x, y) { return Math.hypot(x, y) > 260 && this.waterVal(x, y) < WATER; },
-    isShore(x, y) { const w = this.waterVal(x, y); return Math.hypot(x, y) > 260 && w >= WATER && w < SHORE; },
+    isWater(x, y) { return DL.Camp.sq(x, y) > 260 && this.waterVal(x, y) < WATER; },
+    isShore(x, y) { const w = this.waterVal(x, y); return DL.Camp.sq(x, y) > 260 && w >= WATER && w < SHORE; },
 
     chunk(cx, cy) {
       const key = cx + "," + cy;
@@ -42,7 +42,7 @@
       const n = Math.round(DL.ZONES[zi].density * D.density * (0.7 + DL.hash(cx, cy, 5) * 0.6));
       for (let i = 0; i < n; i++) {
         const x = (cx + DL.hash(cx, cy, i * 3 + 1)) * CH, y = (cy + DL.hash(cx, cy, i * 3 + 2)) * CH;
-        if (Math.hypot(x, y) < CAMP_CLEAR) continue;
+        if (DL.Camp.sq(x, y) < CAMP_CLEAR) continue;
         const ozi = Math.max(1, this.zoneIndex(x, y));
         let type = DL.weighted(DL.SPAWN_TABLE[ozi], DL.hash(cx, cy, i * 3 + 3));
         // "gap" is where driftwood used to lie: nothing spawns there, so the ground is clearer
@@ -201,7 +201,7 @@
       const m0 = DL.noise(x / 40, y / 40, 4);
       const earth = this.texel("campEarth", x, y, GROUND_K);
       const er = earth ? earth[0] : 40 + m0 * 14, eg = earth ? earth[1] : 35 + m0 * 11, eb = earth ? earth[2] : 27 + m0 * 8;
-      if (d < 235) {
+      if (DL.Camp.sq(x, y) < DL.WALL_R) {
         r = er; g = eg; b = eb;
         if (!earth && h > 0.985) { r += 18; g += 16; b += 12; }
         else if (!earth && h < 0.02) { r -= 8; g -= 8; b -= 6; }
