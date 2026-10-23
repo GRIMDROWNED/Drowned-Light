@@ -134,7 +134,7 @@ Reaching a milestone triggers a pillar of the kit's light.
 
 **Derek:** a stone golem familiar won in Derek's Hollow (below). One per knight. He can't be hurt and doesn't fight. He follows his knight, and every 9 seconds, when a Drowned comes within 300 px, he raises a stone wall 76 px long across its path, between it and his knight. Any Drowned within 230 px of a wall goes for the wall instead of the knight, walls are solid to the Drowned, and arrows and orbs stop on them. Each blow or shot is one hit, and two hits break a wall. A wall crumbles on its own after 20 seconds, and at most 2 stand for each Derek. He stands about 3/8 of the knight's height. Numbers are in `DL.GOLEM` (src/data.js).
 
-**Derek's Hollow:** a unique cave mouth in the Mire, 175 m north-east of camp (coded art for now). Its stones part only at night. Walk into the mouth and every knight in the game is pulled down into the Hollow, a round cave arena lit by bloomlight crystals, and Derek wakes beside each knight who doesn't have him yet. Seven waves pour out of the tunnels, each led by a kind of Drowned not met yet (Wretches, Mire Stalkers, Tide Archers, Revenants, Lantern Reavers, Hexbearers, Bone Bulwarks) with the earlier kinds mixed in. The world clock stops while you're below. A knight who falls there is only down: clearing a wave heals everyone by a quarter and raises the fallen at half health. Clear all seven and everyone who was there keeps their Derek (a friend's is remembered on their device and rejoins them in any co-op game). If every knight is down at once, the Hollow casts you out at the mouth with a third of your health and stays sealed until the next night. Numbers are in `DL.CAVE` (src/data.js).
+**Derek's Hollow:** a unique cave mouth in the Mire, 175 m north-east of camp. Its stones part only at night. Walk into the mouth and every knight in the game is pulled down into the Hollow, a round cave arena lit by bloomlight crystals, and Derek wakes beside each knight who doesn't have him yet. Seven waves pour out of the tunnels, each led by a kind of Drowned not met yet (Wretches, Mire Stalkers, Tide Archers, Revenants, Lantern Reavers, Hexbearers, Bone Bulwarks) with the earlier kinds mixed in. The world clock stops while you're below. A knight who falls there is only down: clearing a wave heals everyone by a quarter and raises the fallen at half health. Clear all seven and everyone who was there keeps their Derek (a friend's is remembered on their device and rejoins them in any co-op game). If every knight is down at once, the Hollow casts you out at the mouth with a third of your health and stays sealed until the next night. Numbers are in `DL.CAVE` (src/data.js).
 
 **Difficulties:**
 
@@ -176,7 +176,7 @@ No build step, no dependencies. These are plain scripts loaded in order:
 | `src/hounds.js` | the Bone Hound: its hunt and bite, bleeding, being knocked out, co-op ownership |
 | `src/den.js` | the Bone Wolf den: where it lies, the pack, hauling a carcass home to win a hound |
 | `src/golem.js` | Derek the stone golem familiar: following, raising stone walls the Drowned attack |
-| `src/cave.js` | Derek's Hollow: the cave mouth, the seven-wave cave trial that wins Derek, its co-op messages and coded art |
+| `src/cave.js` | Derek's Hollow: the cave mouth, the seven-wave cave trial that wins Derek, its co-op messages and art |
 | `src/render.js` | drawing, the darkness/light compositing, effects |
 | `src/ui.js` | HUD, camp menu, title, pause and death screens |
 | `src/main.js` | boot + main loop |

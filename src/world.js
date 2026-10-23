@@ -152,7 +152,7 @@
     tex: {},
     canvases: {},
     loadGround() {
-      for (const n of ["campEarth", "campFlags", "campPaving", "grass", "dirt", "shore", "shallow", "deep", "boardwalk"]) {
+      for (const n of ["campEarth", "campFlags", "campPaving", "grass", "dirt", "shore", "shallow", "deep", "boardwalk", "caveFloor"]) {
         const img = new Image();
         img.onload = () => {
           const c = document.createElement("canvas");

@@ -5,7 +5,7 @@
    Drowned, each wave bringing a kind they haven't faced yet. Clear all seven and every knight who was there
    keeps their Derek. If every knight falls, the Hollow throws them out and seals until the next night.
    The world clock stops while you're below. The host's device runs the trial and tells each guest where to
-   go; snapshots carry its state. The mouth and the cave are coded art for now. Numbers: DL.CAVE (src/data.js). */
+   go; snapshots carry its state. The mouth and the floor are drawn (coded fallbacks until they load). Numbers: DL.CAVE (src/data.js). */
 "use strict";
 (function (DL) {
   const { dist, rand, TAU } = DL;
@@ -15,7 +15,9 @@
   const everyone = (m, k) => { say(m, k); DL.Net.say(m, k); };
   const DOWN = 1e9; // a knight down in the Hollow stays down until their friends clear the wave (or all fall)
   const TUNNELS = [-Math.PI / 2, -0.35, Math.PI + 0.35, 0.9, Math.PI - 0.9]; // where the Drowned pour in
-  const MOUTH_R = 50; // the rock mound's solid radius
+  // The rock mound is solid (circles around the mouth, from its middle); the doorway between them stays open.
+  const MOUND = [[-62, -50, 40], [60, -50, 38], [0, -82, 40], [-72, -2, 22], [68, -2, 22]];
+  const DOOR = { x: 0, y: -14, r: 26 }; // standing here, in the doorway at the top of the steps, takes you in
   const Cave = (DL.Cave = {});
   G.cave = null;
 
@@ -37,6 +39,7 @@
     return mouth || (mouth = { x: Math.round(Math.cos(-0.8) * C.dist), y: Math.round(Math.sin(-0.8) * C.dist) });
   };
   const mound = () => { const m = Cave.mouth(); return { x: m.x, y: m.y - 40 }; };
+  const door = () => { const m = Cave.mouth(); return { x: m.x + DOOR.x, y: m.y + DOOR.y }; };
   // The cave itself lies far off the map; nothing of the wetland is generated there.
   Cave.inRegion = (x, y) => Math.abs(x - C.x) < 1500 && Math.abs(y - C.y) < 1500;
   Cave.inside = (x, y) => dist(x, y, C.x, C.y) < C.radius + 60;
@@ -51,10 +54,12 @@
       if (d > max) { ent.x = C.x + (dx / d) * max; ent.y = C.y + (dy / d) * max; }
       return;
     }
-    const q = mound();
-    if (Math.abs(ent.x - q.x) > 120 || Math.abs(ent.y - q.y) > 120) return;
-    const dx = ent.x - q.x, dy = ent.y - q.y, d = Math.hypot(dx, dy), min = MOUTH_R + r;
-    if (d < min && d > 0.01) { ent.x = q.x + (dx / d) * min; ent.y = q.y + (dy / d) * min; }
+    const m = Cave.mouth();
+    if (Math.abs(ent.x - m.x) > 140 || Math.abs(ent.y - m.y + 40) > 140) return;
+    for (const [ox, oy, R] of MOUND) {
+      const cx = m.x + ox, cy = m.y + oy, dx = ent.x - cx, dy = ent.y - cy, d = Math.hypot(dx, dy), min = R + r;
+      if (d < min && d > 0.01) { ent.x = cx + (dx / d) * min; ent.y = cy + (dy / d) * min; }
+    }
   };
 
   // Is Derek still to be won by this knight (0 = the host, else a friend's co-op number)?
@@ -75,10 +80,11 @@
     }
     if (G.isGuest()) return;
     if (G.cave) return trial(dt);
+    const dr = door();
     for (const k of [G.player, ...G.allies]) {
-      const d = dist(k.x, k.y, m.x, m.y);
+      const d = dist(k.x, k.y, dr.x, dr.y);
       k.caveHintT = Math.max(0, (k.caveHintT || 0) - dt);
-      if (k.down || k.downT > 0 || d > 34) continue;
+      if (k.down || k.downT > 0 || d > DOOR.r) continue;
       // standing in the mouth
       const id = k === G.player ? 0 : k.id, tell = (msg, kind) => {
         if (k.caveHintT > 0) return;
@@ -95,7 +101,7 @@
   function start() {
     if (G.state === "camp") DL.UI.closeCamp();
     const m = Cave.mouth();
-    G.cave = { wave: 0, phase: "intro", t: C.intro, queue: [], burstT: 0, ret: { x: m.x, y: m.y + 46 }, sendT: {} };
+    G.cave = { wave: 0, phase: "intro", t: C.intro, queue: [], burstT: 0, ret: { x: m.x, y: m.y + 40 }, sendT: {} };
     G.enemies = []; G.projectiles = []; G.telegraphs = []; G.hexPools = []; G.stoneWalls = []; G.walls = []; G.lightZones = [];
     G.selfEnemy = null;
     place(G.player, 0);
@@ -294,7 +300,7 @@
     if (G.night && !Cave.sealed() && Math.abs(k.x - m.x) < 900 && Math.abs(k.y - m.y) < 900) L.push({ x: m.x, y: m.y - 18, r: 70, s: 0.5, col: "80,230,240", a: 0.7 });
   };
 
-  /* ---------------- drawing (coded stand-ins until the drawn art arrives) ---------------- */
+  /* ---------------- drawing (the drawn mouth and floor, with coded fallbacks; the crystals and cave wall are coded) ---------------- */
   function sprite(c, name, x, y, flip) {
     const s = DL.Art.sprites[name];
     if (!s) return false;
@@ -311,9 +317,14 @@
   Cave.groundColor = function (x, y) {
     const d = dist(x, y, C.x, C.y), h = DL.hash(x >> 1, y >> 1, 5), n = DL.fbm(x / 70, y / 70, 31);
     if (d > C.radius + 40) { const v = 6 + n * 6; return [v, v + 1, v + 3]; }
-    let r = 46 + n * 30, g = 45 + n * 28, b = 50 + n * 28;
-    if (h > 0.97) { r += 14; g += 14; b += 14; } else if (h < 0.03) { r -= 8; g -= 8; b -= 6; }
-    if (DL.fbm(x / 30, y / 30, 33) > 0.66) { r -= 6; g += 6; b += 8; } // damp patches
+    let r, g, b;
+    const tx = DL.World.texel("caveFloor", x, y, 0.62); // the drawn stone floor, darkened like the wetland's ground
+    if (tx) [r, g, b] = tx;
+    else {
+      r = 46 + n * 30; g = 45 + n * 28; b = 50 + n * 28;
+      if (h > 0.97) { r += 14; g += 14; b += 14; } else if (h < 0.03) { r -= 8; g -= 8; b -= 6; }
+      if (DL.fbm(x / 30, y / 30, 33) > 0.66) { r -= 6; g += 6; b += 8; } // damp patches
+    }
     const k = Math.max(0, Math.min(1, (d - (C.radius - 60)) / 100)); // the floor darkens up to the cave wall
     return [r * (1 - 0.7 * k), g * (1 - 0.7 * k), b * (1 - 0.6 * k)];
   };
@@ -361,7 +372,15 @@
 
   // The mouth: a mossy rock mound with a dark arch in its face. By day (or sealed) stones block the arch;
   // on an open night its runes glow (drawn above the dark in Cave.drawGlow).
+  // The drawn mouth sits with its doorway on m.x (the art's is a little right of its middle) and its steps running down past m.y.
+  const ART_DX = -12, ART_DY = 30;
   function drawMouth(c, m, t) {
+    const open = G.night && !Cave.sealed();
+    if (DL.Art.sprites.caveOpen) {
+      blob(c, m.x, m.y + 22, 92, 16, "rgba(0,0,0,0.35)");
+      sprite(c, open ? "caveOpen" : "caveSealed", m.x + ART_DX, m.y + ART_DY);
+      return;
+    }
     const x = m.x, y = m.y;
     blob(c, x, y - 4, 92, 22, "rgba(0,0,0,0.4)");
     // the mound: overlapping rock humps, darker toward the ground
@@ -375,7 +394,7 @@
     c.strokeStyle = "#57534a";
     c.lineWidth = 5;
     c.beginPath(); c.moveTo(x - 26, y); c.lineTo(x - 26, y - 26); c.ellipse(x, y - 26, 26, 26, 0, Math.PI, 0); c.lineTo(x + 26, y); c.stroke();
-    if (!(G.night && !Cave.sealed())) {
+    if (!open) {
       // heaped stones close it
       for (const [dx, dy, r] of [[-12, -6, 11], [11, -7, 12], [0, -20, 11], [-9, -30, 8], [10, -31, 8], [0, -40, 7]]) {
         blob(c, x + dx, y + dy, r, r * 0.85, "#5a564d");
@@ -388,6 +407,21 @@
   Cave.drawGlow = function (c, t) {
     if (!G.night || Cave.sealed() || G.cave) return;
     const m = Cave.mouth(), a = 0.55 + 0.3 * Math.sin(t * 2.2);
+    if (DL.Art.sprites.caveOpen) {
+      // the drawn runes: a soft glow over each pillar's runes, the keystone's gem and the dark of the doorway
+      const glow = (x, y, rx, ry, k) => {
+        const g = c.createRadialGradient(x, y, 0, x, y, Math.max(rx, ry));
+        g.addColorStop(0, `rgba(90,235,245,${k * a})`); g.addColorStop(1, "rgba(90,235,245,0)");
+        c.save(); c.translate(x, y); c.scale(rx / Math.max(rx, ry), ry / Math.max(rx, ry)); c.translate(-x, -y);
+        c.fillStyle = g; c.fillRect(x - Math.max(rx, ry), y - Math.max(rx, ry), Math.max(rx, ry) * 2, Math.max(rx, ry) * 2);
+        c.restore();
+      };
+      glow(m.x - 39, m.y - 50, 9, 26, 0.5);
+      glow(m.x + 37, m.y - 50, 9, 26, 0.5);
+      glow(m.x - 1, m.y - 85, 12, 12, 0.8);
+      glow(m.x, m.y - 36, 22, 26, 0.3);
+      return;
+    }
     c.fillStyle = `rgba(90,235,245,${a})`;
     for (let i = 0; i < 7; i++) {
       const ang = Math.PI + (i / 6) * Math.PI, x = m.x + Math.cos(ang) * 33, y = m.y - 26 + Math.sin(ang) * 33;

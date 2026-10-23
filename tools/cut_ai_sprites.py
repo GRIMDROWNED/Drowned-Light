@@ -258,6 +258,8 @@ PROP_GRIDS = {
     # two boulders, bare then mossy, each whole -> cracked -> crumbling
     # the Bone Wolf den (src/den.js): guarded (eyes in the dark) while the pack lives, then cleared
     'den/den.png': (2, 1, ['denGuarded', 'denCleared']),
+    # the mouth of Derek's Hollow: sealed by a slab, then open with its runes lit
+    'cave/cave-entrance.png': (2, 1, ['caveSealed', 'caveOpen']),
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
@@ -271,6 +273,7 @@ PROP_WIDTH = {'flame1': 84, 'flame2': 104, 'forge4': 124, 'armory4': 120, 'workb
 PROP_HEIGHT['amethyst11'] = 50
 PROP_WIDTH['resWood'] = 22
 PROP_WIDTH['denGuarded'] = 220  # about four knights wide
+PROP_WIDTH['caveOpen'] = 176  # about four knights wide
 # Renders whose own colours come close to the magenta key (purple crystals): key them out with a tighter
 # tolerance than the default 120 and without the purple-fringe filter, so the art isn't eaten.
 PROP_TOL = {n: 60 for n in ['amethyst11', 'amethyst12', 'amethyst13', 'amethyst21', 'amethyst22', 'amethyst23', 'amethyst31', 'amethyst32', 'amethyst33']}
@@ -279,7 +282,7 @@ PROP_TOL['resPearl'] = 60
 # side): padded so the footing is centred, since sprites are drawn centred on their spot.
 PROP_FOOT_CENTRE = {'stake', 'gatePost', 'gatePost2', 'fire1', 'fire2', 'fire3', 'fire4', 'fire5', 'fire6'}
 # Variants drawn on one sheet at one scale: name -> the variant whose scale it shares.
-PROP_SAME = {'swampTree1': 'swampTree2', 'swampTree3': 'swampTree2', 'gardenBed1': 'gardenBed2', 'gardenBed3': 'gardenBed2', 'reeds1': 'reeds2', 'reeds3': 'reeds2', 'reeds4': 'reeds2', 'reeds5': 'reeds2', 'reeds6': 'reeds2',
+PROP_SAME = {'caveSealed': 'caveOpen', 'swampTree1': 'swampTree2', 'swampTree3': 'swampTree2', 'gardenBed1': 'gardenBed2', 'gardenBed3': 'gardenBed2', 'reeds1': 'reeds2', 'reeds3': 'reeds2', 'reeds4': 'reeds2', 'reeds5': 'reeds2', 'reeds6': 'reeds2',
             'boulder12': 'boulder11', 'boulder13': 'boulder11', 'boulder21': 'boulder11', 'boulder22': 'boulder11', 'boulder23': 'boulder11', 'boulder31': 'boulder11', 'boulder32': 'boulder11', 'boulder33': 'boulder11', 'boulder41': 'boulder11', 'boulder42': 'boulder11', 'boulder43': 'boulder11',
             'forge1': 'forge4', 'forge2': 'forge4', 'forge3': 'forge4',
             'armory1': 'armory4', 'armory2': 'armory4', 'armory3': 'armory4',
@@ -418,7 +421,8 @@ if not only or 'props' in only:
 # repeat: the last BLEND texels of each edge are cross-faded into the first ones, then cut off, so the right edge
 # runs on into the left and the bottom into the top. `World` in src/world.js samples them.
 GROUND = {'camp-earth': 'campEarth', 'camp-flagstones': 'campFlags', 'camp-paving': 'campPaving', 'grass': 'grass', 'dirt': 'dirt',
-          'shore': 'shore', 'shallow': 'shallow', 'deep': 'deep', 'boardwalk': 'boardwalk'}
+          'shore': 'shore', 'shallow': 'shallow', 'deep': 'deep', 'boardwalk': 'boardwalk',
+          '../cave/cave-floor': 'caveFloor'}  # the floor of Derek's Hollow
 GROUND_SIZE, GROUND_BLEND = 200, 8
 
 def seamless(a, k):
