@@ -256,6 +256,8 @@ PROP_GRIDS = {
     # the five supplies, as pickups ('res' + resource key)
     'world/supplies.png': (5, 1, ['resWood', 'resStone', 'resResin', 'resIron', 'resPearl']),
     # two boulders, bare then mossy, each whole -> cracked -> crumbling
+    # the Bone Wolf den (src/den.js): guarded (eyes in the dark) while the pack lives, then cleared
+    'den/den.png': (2, 1, ['denGuarded', 'denCleared']),
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
@@ -268,6 +270,7 @@ PROP_HEIGHT = {'refugeOff': 116, 'sentinelOff': 96, 'rootOff': 150, 'sproutOff':
 PROP_WIDTH = {'flame1': 84, 'flame2': 104, 'forge4': 124, 'armory4': 120, 'workbench4': 116, 'palisade': 56, 'tent': 100, 'brazier': 44, 'iron11': 62}
 PROP_HEIGHT['amethyst11'] = 50
 PROP_WIDTH['resWood'] = 22
+PROP_WIDTH['denGuarded'] = 220  # about four knights wide
 # Renders whose own colours come close to the magenta key (purple crystals): key them out with a tighter
 # tolerance than the default 120 and without the purple-fringe filter, so the art isn't eaten.
 PROP_TOL = {n: 60 for n in ['amethyst11', 'amethyst12', 'amethyst13', 'amethyst21', 'amethyst22', 'amethyst23', 'amethyst31', 'amethyst32', 'amethyst33']}
@@ -286,6 +289,7 @@ PROP_SAME = {'swampTree1': 'swampTree2', 'swampTree3': 'swampTree2', 'gardenBed1
             'burnt': 'torch', 'fire1': 'fire3', 'fire2': 'fire3', 'fire4': 'fire3', 'fire5': 'fire3', 'fire6': 'fire3',
             'iron12': 'iron11', 'iron13': 'iron11', 'iron21': 'iron11', 'iron22': 'iron11', 'iron23': 'iron11', 'iron31': 'iron11', 'iron32': 'iron11', 'iron33': 'iron11',
             'amethyst12': 'amethyst11', 'amethyst13': 'amethyst11', 'amethyst21': 'amethyst11', 'amethyst22': 'amethyst11', 'amethyst23': 'amethyst11', 'amethyst31': 'amethyst11', 'amethyst32': 'amethyst11', 'amethyst33': 'amethyst11',
+            'denCleared': 'denGuarded',
             'resStone': 'resWood', 'resResin': 'resWood', 'resIron': 'resWood', 'resPearl': 'resWood'}
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}

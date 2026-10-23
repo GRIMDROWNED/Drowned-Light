@@ -93,6 +93,8 @@
       case "pearl": return o.harvested ? null : amethystSprite(o);
       // six drawn reed clumps when their art is loaded, one picked per spot
       case "reeds": return Art.sprites.reeds1 ? "reeds" + (o.reed || (o.reed = 1 + Math.floor(DL.hash(o.x | 0, o.y | 0, 9) * 6))) : "reeds";
+      // the drawn den: eyes in its mouth while the pack lives, empty once it's broken; else the coded one
+      case "den": return Art.sprites.denGuarded ? (DL.Den.state().cleared ? "denCleared" : "denGuarded") : "boneDen";
       default: return o.def.sprite;
     }
   }
@@ -359,7 +361,7 @@
 
   /* ---------- scene pieces ---------- */
   function drawObject(c, G, o, name) {
-    const sh = o.type === "tree" ? 20 : o.type === "root" ? 40 : o.type === "den" ? 62 : (o.type === "stone" && name !== "rock") || (o.type === "iron" && name !== "ironpile") ? 18 : 12;
+    const sh = o.type === "tree" ? 20 : o.type === "root" ? 40 : o.type === "den" ? (name === "boneDen" ? 62 : 96) : (o.type === "stone" && name !== "rock") || (o.type === "iron" && name !== "ironpile") ? 18 : 12;
     shadow(c, o.x, o.y, sh, sh * 0.35, 0.3);
     let x = o.x;
     const hit = o.hitT > 0 ? o.hitT / 0.18 : 0;
