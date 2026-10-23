@@ -67,16 +67,49 @@
 
   /* ---------------- the hunt (host only) ---------------- */
   const valid = (e) => e && !e.removed && e.rise <= 0 && !e.dormant;
-  // Archers, Hexbearers and Mire Stalkers (the Drowned that strike and fall back) come first.
-  const priority = (e) => !!(e.def.ranged || e.def.caster || e.def.retreat);
+  // Who it hunts first: 0 = retreats (strikes and falls back, or has been backing away), 1 = shoots, 2 = the rest.
+  const tier = (e) => (e.def.retreat || e.backT > 0 ? 0 : e.def.ranged || e.def.caster ? 1 : 2);
   function pick(h, o) {
     let best = null, bs = 1e9;
     for (const e of G.enemies) {
-      if (!valid(e) || dist(o.x, o.y, e.x, e.y) > H.sight) continue;
-      const s = dist(h.x, h.y, e.x, e.y) - (priority(e) ? 220 : 0) - (e === h.tgt ? 30 : 0);
+      if (!valid(e)) continue;
+      const t = tier(e);
+      if (dist(o.x, o.y, e.x, e.y) > (t < 2 ? H.chase : H.sight)) continue;
+      // a better tier always wins; within a tier the nearest, keeping its current prey unless another is clearly closer
+      const s = t * 10000 + dist(h.x, h.y, e.x, e.y) - (e === h.tgt ? 40 : 0);
       if (s < bs) { bs = s; best = e; }
     }
     return best;
+  }
+
+  /* Through the palisade: pick the gate that makes the shortest way, line up with it on this side, then
+     run straight through along the gate's line until past the wall, so it never scrapes along the stakes.
+     Outside, it runs around the wall rather than into it. */
+  function gateWay(h, tx, ty) {
+    if (!DL.Camp.walled(G.save.up)) return null;
+    const R = DL.WALL_R, inside = Math.hypot(h.x, h.y) < R;
+    if (inside === Math.hypot(tx, ty) < R) {
+      if (inside) return null;
+      // both outside: if the straight line cuts through the camp, circle around the wall toward the target
+      const dx = tx - h.x, dy = ty - h.y, L = Math.hypot(dx, dy) || 1;
+      const u = Math.max(0, Math.min(1, -(h.x * dx + h.y * dy) / (L * L)));
+      if (Math.hypot(h.x + dx * u, h.y + dy * u) > R + 14) return null;
+      const a = Math.atan2(h.y, h.x), turn = DL.angleDiff(a, Math.atan2(ty, tx)) > 0 ? 0.45 : -0.45;
+      return { x: Math.cos(a + turn) * (R + 40), y: Math.sin(a + turn) * (R + 40) };
+    }
+    let g = null, best = 1e9;
+    for (const ga of DL.Camp.GATES) {
+      const gx = Math.cos(ga) * R, gy = Math.sin(ga) * R, d = Math.hypot(gx - h.x, gy - h.y) + Math.hypot(tx - gx, ty - gy);
+      if (d < best) { best = d; g = ga; }
+    }
+    const cx = Math.cos(g), cy = Math.sin(g), arc = Math.abs(DL.angleDiff(Math.atan2(h.y, h.x), g)) * R;
+    const r = arc > 8 ? (inside ? R - 34 : R + 34) : (inside ? R + 40 : R - 40);
+    // still on the far side of the camp from that gate (outside): go around first
+    if (!inside && arc > 8) {
+      const a = Math.atan2(h.y, h.x), da = DL.angleDiff(a, g);
+      if (Math.abs(da) > 0.5) return { x: Math.cos(a + Math.sign(da) * 0.45) * (R + 40), y: Math.sin(a + Math.sign(da) * 0.45) * (R + 40) };
+    }
+    return { x: cx * r, y: cy * r };
   }
 
   function bite(h, e, st) {
@@ -119,7 +152,8 @@
         h.bitten = true;
         if (e && valid(e) && dist(h.x, h.y, e.x, e.y) < H.range + e.def.radius + 12) bite(h, e, st);
       }
-      if (h.stT <= 0) { h.state = "back"; h.stT = BACK; }
+      // hop clear, unless its prey is running: then it keeps on its heels
+      if (h.stT <= 0) { h.state = e && valid(e) && tier(e) === 0 ? "move" : "back"; h.stT = BACK; }
     } else if (h.state === "back") {
       // hop clear after the bite, then go again
       h.stT -= dt;
@@ -148,7 +182,7 @@
     h.moving = spd > 0 && md > 0.5;
     if (h.moving) {
       const wet = DL.World.isWater(h.x, h.y) ? 0.85 : 1;
-      const wp = DL.Camp.route(h.x, h.y, h.x + mx, h.y + my, G.save.up);
+      const wp = h.state === "back" ? null : gateWay(h, h.x + mx, h.y + my);
       if (wp) { mx = wp.x - h.x; my = wp.y - h.y; }
       const m2 = Math.hypot(mx, my) || 1;
       h.x += (mx / m2) * spd * wet * dt;

@@ -880,6 +880,7 @@
         if (e.def.ranged && !goal) { if (d < e.def.keep - 30) want = -1; else if (d < e.def.range) want = 0; }
         else if (d < reach * 0.8) want = 0;
         if (e.retreatT > 0) { e.retreatT -= dt; want = -1; } // Mire Stalker falls back after a strike, then comes again
+        e.backT = want === -1 ? 1.5 : Math.max(0, (e.backT || 0) - dt); // backing away lately: the Bone Hound runs these down first
         const spd = e.speed * (humanLightAt(e.x, e.y) ? 0.72 : 1) * (e.slow > 0 ? 0.6 : 1) * (e.rallied > 0 ? 1.2 : 1);
         // Walls in the way: head for the nearest gate first.
         const wp = want === 1 ? DL.Camp.route(e.x, e.y, tx, ty, G.save.up) : null;
@@ -990,6 +991,7 @@
       W.collide(e, e.def.radius * 0.6);
       for (let i = 0; i < 10; i++) puff(e.x, e.y - rand(0, 40), "rgba(80,230,240,0.6)", 60, 0.6);
       e.blinkCd = 5;
+      e.backT = 1.5;
     }
     e.callT = (e.callT == null ? 8 : e.callT) - dt;
     if (e.callT <= 0 && dp < 500) {

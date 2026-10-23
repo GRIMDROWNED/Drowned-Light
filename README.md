@@ -130,7 +130,7 @@ Levels **5, 10, 15 and 20** are milestones. Each one unlocks a new mechanic for 
 
 Reaching a milestone triggers a pillar of the kit's light.
 
-**Bone Hound:** a summoned ally raised from the camp menu's Kit tab once the Central Flame is level 2 (16 stone, 12 iron, 8 bloom resin). One per knight, paid from the shared stash in co-op. It runs down the Drowned that strike and fall back first (Tide Archers, Hexbearers, Mire Stalkers), bites, hops clear and comes again. Each bite (6 damage) adds a stack of bleeding, 2.5 damage a second for 4 seconds that ignores armour, up to 3 stacks. It has 80 health, heals in firelight, and some Drowned turn on it. It stays until it falls, comes back with you when you rise or reload, and its health and bite grow 15% per Central Flame level after 2.
+**Bone Hound:** a summoned ally raised from the camp menu's Kit tab once the Central Flame is level 2 (16 stone, 12 iron, 8 bloom resin). One per knight, paid from the shared stash in co-op. It hunts in order: any Drowned that retreats (Mire Stalkers, anything backing away), then anything that shoots (Tide Archers, Hexbearers), then whatever is nearest. Retreating and shooting prey is chased up to 480 px from its knight, the rest within 320. It bites, hops clear and comes again, but stays on the heels of prey that runs. It goes through the palisade by the gates, lining up first and then running straight through. Each bite (6 damage) adds a stack of bleeding, 2.5 damage a second for 4 seconds that ignores armour, up to 3 stacks. It has 80 health, heals in firelight, and some Drowned turn on it. It stays until it falls, comes back with you when you rise or reload, and its health and bite grow 15% per Central Flame level after 2.
 
 **Difficulties:**
 
