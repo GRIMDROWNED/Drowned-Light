@@ -130,6 +130,9 @@
     const set = Object.assign(walking("abigail", [89, 125], [68, 121], [70, 117], 4), { path: "assets/sprites/abigail/", keys: { abigail: [0, false] } });
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
       Object.assign(set.views[dir], { attack: ["side/castUp", "side/throw", "side/throw"], bless: ["bless"], hurt: ["side/hurt"], death: ["side/fade"], idle: [p] });
+    // side on she drifts with only the two leaning frames (the upright ones made her bob up and down); she
+    // straightens up only when she stops
+    set.views.side.walk = [1, 1, 3, 3, 1, 1, 3, 3].map((i) => "side/walk" + i + "@-");
     return set;
   }
 
