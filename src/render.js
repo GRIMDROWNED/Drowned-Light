@@ -191,8 +191,6 @@
     }
     const den = DL.Den.state();
     for (const b of den.bodies) list.push({ y: b[1], f: () => drawCarcass(c, b) });
-    const me = G.isGuest() ? DL.Net.myId : 0;
-    for (const [id, k] of [[me, G.player], ...G.allies.map((a) => [a.id, a])]) if (k && den.carriers.includes(id)) list.push({ y: k.y + 1, f: () => drawHauled(c, k) });
     if (G.player && G.state !== "dead") list.push({ y: G.player.y, f: () => drawPlayer(c, G, t) });
     for (const a of G.allies) list.push({ y: a.y, f: () => drawAlly(c, a, t) });
     list.sort((a, b) => a.y - b.y);
@@ -820,13 +818,10 @@
     else if (h.hp < h.maxHp) bar(c, h.x, h.y - 70, 22, Math.max(0, h.hp) / h.maxHp, "#d9cdae");
   }
   const WOLF_TINT = 0.22, WOLF_CAST = "#4fb8bf";
-  // A Bone Wolf's carcass at the den, and one hauled on a knight's back.
+  // A Bone Wolf's carcass at the den (one being hauled shows under Carrying in the HUD, not on the knight).
   function drawCarcass(c, b) {
     shadow(c, b[0], b[1], 16, 4, 0.3);
     Art.drawUnit(c, "boneHound", "death", 2, b[2], b[0], b[1], 1, { flash: WOLF_TINT, flashColor: WOLF_CAST });
-  }
-  function drawHauled(c, k) {
-    Art.drawUnit(c, "boneHound", "death", 2, Math.cos(k.angle || 0) < 0 ? Math.PI : 0, k.x, k.y - 26, 0.6, { flash: WOLF_TINT, flashColor: WOLF_CAST });
   }
   // Derek: casting plays his attack (fists up, then slammed down), otherwise he plods or stands.
   function golemAnim(m, t) {

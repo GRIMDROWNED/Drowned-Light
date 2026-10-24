@@ -678,8 +678,9 @@
       set($("selfDist"), "text", `Drowned self ${Math.round(Math.hypot(ds.x - p.x, ds.y - p.y) / 10)}m`);
     }
 
-    const souls = DL.Abigail.won() ? 0 : DL.Abigail.held();
-    const carried = DL.RES_KEYS.filter((k) => p.carried[k] > 0).map((k) => chip(k, p.carried[k])).join("") + (souls ? `<span class="chip soul"><i></i>${souls} soul orb${souls > 1 ? "s" : ""}</span>` : "");
+    // soul orbs and a hauled Bone Wolf carcass go in the satchel line too
+    const souls = DL.Abigail.won() ? 0 : DL.Abigail.held(), carcass = DL.Den.carrying() ? `<span class="chip carcass"><i></i>Bone Wolf carcass</span>` : "";
+    const carried = DL.RES_KEYS.filter((k) => p.carried[k] > 0).map((k) => chip(k, p.carried[k])).join("") + (souls ? `<span class="chip soul"><i></i>${souls} soul orb${souls > 1 ? "s" : ""}</span>` : "") + carcass;
     set($("carried"), "html", carried ? `<span class="lbl">Carrying</span>${carried}` : "");
 
     // objective banner
