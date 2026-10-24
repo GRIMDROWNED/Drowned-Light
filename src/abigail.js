@@ -252,7 +252,7 @@
     const a = o.angle || 0;
     const fx = o.x - Math.cos(a) * 8 + Math.cos(a + Math.PI / 2) * 36, fy = o.y - Math.sin(a) * 6 + Math.sin(a + Math.PI / 2) * 24;
     const d = dist(w.x, w.y, fx, fy);
-    w.moving = d > 10;
+    w.moving = d > (w.moving ? 4 : 14); // a little slack, so she doesn't flicker between drifting and still
     if (!w.moving) return;
     const spd = d > 150 ? A.speed * 1.5 : Math.min(A.speed, d * 3);
     w.x += ((fx - w.x) / d) * spd * dt;
