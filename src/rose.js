@@ -115,6 +115,7 @@
       G.enemies.push(e);
       return;
     }
+    if (e.lashT > 0) e.lashT -= dt;
     if (nearest(e.x, e.y) > K.forget) {
       // everyone left: she goes back to her roses, whole again
       e.removed = true;
@@ -237,7 +238,8 @@
     }
     // the lash: a long thorn whip cracked across her front
     const def = e.def, R = def.range + 20;
-    G.effects.push({ type: "slash", x: e.x, y: e.y - 40, ang: e.aim, arc: def.arc, r: R, t: 0, max: 0.22, col: RED, w: 5 });
+    e.lashT = K.lashShow; // Robert's drawn whip trail plays over it (Rose.push)
+    if (!DL.Art.sprites.roseLash2) G.effects.push({ type: "slash", x: e.x, y: e.y - 40, ang: e.aim, arc: def.arc, r: R, t: 0, max: 0.22, col: RED, w: 5 });
     sfx("hit");
     for (const k of targets()) {
       const d = dist(e.x, e.y, k.x, k.y), a = Math.atan2(k.y - e.y, k.x - e.x);
@@ -292,16 +294,16 @@
   const r1 = (v) => Math.round(v * 10) / 10;
   Rose.snap = function () {
     const e = Rose.e && !Rose.e.removed ? Rose.e : null;
-    if (!vines.length && !(e && (e.spin || e.special))) return 0;
-    return [vines.map((v) => [r1(v.x), r1(v.y), r1(v.t), v.life, v.v]), e ? [e.id, e.spin ? 1 : 0, KINDS.indexOf(e.special)] : 0];
+    if (!vines.length && !(e && (e.spin || e.special || e.lashT > 0))) return 0;
+    return [vines.map((v) => [r1(v.x), r1(v.y), r1(v.t), v.life, v.v]), e ? [e.id, e.spin ? 1 : 0, KINDS.indexOf(e.special), Math.max(0, r1(e.lashT || 0))] : 0];
   };
   Rose.applySnap = function (s) {
-    for (const e of G.enemies) if (e.def.rose) { e.spin = null; e.special = null; }
+    for (const e of G.enemies) if (e.def.rose) { e.spin = null; e.special = null; e.lashT = 0; }
     if (!s) { vines = []; return; }
     const at = now();
     vines = s[0].map((q) => ({ x: q[0], y: q[1], t: q[2], life: q[3], v: q[4], at }));
     const e = s[1] && G.enemies.find((q) => q.id === s[1][0]);
-    if (e) { e.spin = s[1][1] ? { t: 1 } : null; e.special = KINDS[s[1][2]] || null; }
+    if (e) { e.spin = s[1][1] ? { t: 1 } : null; e.special = KINDS[s[1][2]] || null; e.lashT = s[1][3] || 0; }
   };
 
   /* ---------------- drawing ---------------- */
@@ -333,6 +335,7 @@
     if (s.x < view.left - 400 || s.x > view.right + 400 || s.y < view.top - 400 || s.y > view.bottom + 500) return;
     for (const b of Rose.bushes()) list.push({ y: b.y, f: () => drawBush(c, b, t) });
     if (!Rose.alive()) list.push({ y: s.y, f: () => drawSprite(c, "roseWither", s.x, s.y, 1) });
+    for (const e of G.enemies) if (e.def.rose && e.lashT > 0 && DL.Art.sprites.roseLash2) list.push({ y: e.y + 2, f: () => drawLash(c, e) });
     for (const v of vines) {
       const T = age(v);
       if (T > 0) list.push({ y: v.y, f: () => drawVine(c, v, T) });
@@ -350,6 +353,20 @@
     c.translate(b.x, b.y);
     c.rotate(Math.sin(t * 0.8 + b.ph) * 0.03);
     drawSprite(c, "roseBush" + b.v, 0, 0, 1);
+    c.restore();
+  }
+  // Her whip's trail (Robert's three frames: coiled, cracked out in a long arc, fading in petals), swung out from
+  // her arm along her aim; turned over rather than upside down when she lashes to the left.
+  function drawLash(c, e) {
+    const k = 1 - e.lashT / K.lashShow, f = k < 0.3 ? 1 : k < 0.7 ? 2 : 3;
+    const sp = DL.Art.sprites["roseLash" + f], w = sp.w * 2, h = sp.h * 2;
+    let a = e.aim || 0;
+    c.save();
+    c.translate(Math.round(e.x), Math.round(e.y - 110 * e.def.scale)); // from her shoulder
+    if (Math.cos(a) < 0) { c.scale(-1, 1); a = Math.PI - a; }
+    c.rotate(a);
+    c.globalAlpha *= f === 3 ? Math.min(1, e.lashT / (K.lashShow * 0.3)) : 1;
+    c.drawImage(sp.c, f === 3 ? 40 : 6, -Math.round(h / 2), w, h);
     c.restore();
   }
   function drawVine(c, v, T) {

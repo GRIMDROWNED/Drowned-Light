@@ -334,6 +334,8 @@ PROP_GRIDS = {
     'abigail/soul-orb.png': (3, 1, ['soulOrb', 'soulFly1', 'soulFly2']),
     # the Deadly Rose's briar (src/rose.js): thorns breaking the ground, shooting up, grown, swaying, withering
     'deadly-rose/briar.png': (5, 1, ['roseBriar1', 'roseBriar2', 'roseBriar3', 'roseBriar4', 'roseBriar5']),
+    # her whip lash's trail: coiled, cracked out in a long arc, fading in petals
+    'deadly-rose/lash.png': (3, 1, ['roseLash1', 'roseLash2', 'roseLash3']),
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
@@ -374,6 +376,8 @@ PROP_SAME = {'caveSealed': 'caveOpen', 'swampTree1': 'swampTree2', 'swampTree3':
 # the Deadly Rose's briar: grown, a bit taller than the knight; every frame at that one scale
 PROP_HEIGHT['roseBriar3'] = 96
 PROP_SAME.update({n: 'roseBriar3' for n in ['roseBriar1', 'roseBriar2', 'roseBriar4', 'roseBriar5']})
+PROP_WIDTH['roseLash2'] = 150  # the lash's reach
+PROP_SAME.update({'roseLash1': 'roseLash2', 'roseLash3': 'roseLash2'})
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
 PROP_OUT = 'props'

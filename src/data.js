@@ -319,6 +319,7 @@
      goes back to her roses, whole, once every knight is `forget` px away, and never strays more than `leash` px from
      them. She sleeps until a knight comes within her `wake` (DL.ENEMIES.rose).
        lash   her ordinary blow: a whip across `arc` (DL.ENEMIES.rose) out to her range + 20, hurling knights `lashKb` back.
+              Its drawn trail plays for `lashShow` s.
        waltz  first after `first` s, then every `every` s when her prey is within `r` + 30 px: a `windup` s warning ring,
               then she spins for `spin` s, edging toward them at `drift` of her speed, and cuts everyone within `r` px
               `hits` times for `dmg` of her damage, hurling them `kb` back.
@@ -329,7 +330,7 @@
      rings her too. Slain, she stays gone `respawnDays` days. */
   DL.ROSE = {
     dist: 4500, clear: 230, bushes: 11, petalR: 1700, hintR: 1500, foundR: 420, spawn: 1100, forget: 1700, leash: 460,
-    lashKb: 260, phase2: 0.5, fast: 1.2, rate: 1.35, respawnDays: 4, maxVines: 30,
+    lashKb: 260, lashShow: 0.4, phase2: 0.5, fast: 1.2, rate: 1.35, respawnDays: 4, maxVines: 30,
     waltz: { first: 5, every: 9, windup: 0.9, spin: 1.3, r: 170, drift: 0.6, hits: 3, dmg: 0.45, kb: 240 },
     briar: { first: 3, every: 11, windup: 0.6, delay: 0.5, reach: 480, n: 5, step: 58, r: 34, dmg: 0.7, life: 4, sting: 0.12 },
   };
