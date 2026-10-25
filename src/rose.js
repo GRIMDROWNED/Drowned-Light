@@ -326,7 +326,7 @@
       c.beginPath(); c.ellipse(v.x, v.y, K.briar.r * k, K.briar.r * 0.5 * k, 0, 0, TAU); c.fill();
     }
   };
-  // Into the y-sorted scene: the rose bushes, her vines, and the withered bloom while she's dead.
+  // Into the y-sorted scene: the rose bushes, her vines (Robert's drawn briar once loaded, src/sprites.js), and the withered bloom while she's dead.
   Rose.push = function (list, c, t, view) {
     if (G.cave) return;
     const s = Rose.lair();
@@ -355,6 +355,18 @@
   function drawVine(c, v, T) {
     const rise = Math.min(1, T / 0.2), fade = Math.min(1, (v.life - T) / 0.5);
     if (fade <= 0) return;
+    if (DL.Art.sprites.roseBriar3) {
+      // Robert's drawn briar: breaking the ground, shooting up, swaying while it stands, then withering
+      const left = v.life - T, f = T < 0.1 ? 1 : T < 0.22 ? 2 : left < 0.6 ? 5 : 3 + (Math.floor((T - 0.22) / 0.35) % 2);
+      const sp = DL.Art.sprites["roseBriar" + f], w = sp.w * 2, h = sp.h * 2;
+      c.save();
+      c.globalAlpha *= Math.min(1, left / 0.3);
+      c.translate(Math.round(v.x), Math.round(v.y) + 2);
+      if (v.v === 1) c.scale(-1, 1); // some grow mirrored, so a line of them isn't all alike
+      c.drawImage(sp.c, -Math.round(w / 2), -h, w, h);
+      c.restore();
+      return;
+    }
     c.save();
     c.globalAlpha *= fade;
     c.beginPath(); c.rect(v.x - 40, v.y - 120, 80, 122); c.clip();
