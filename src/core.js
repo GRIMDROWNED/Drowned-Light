@@ -232,6 +232,7 @@ window.DL = window.DL || {};
         case "deny": this.tone(140, 0.12, "square", 0.05); break;
         case "bite": this.noise(0.06, 0.14, 1800); this.tone(260, 0.06, "square", 0.04, -120); break;
         case "rise": this.noise(0.45, 0.14, 260); this.tone(85, 0.45, "sawtooth", 0.05, -30); break;
+        case "toll": [[98, 0.16], [233, 0.07], [311, 0.05], [466, 0.03]].forEach(([f, v]) => this.tone(f, 2.6, "triangle", v, -4)); this.noise(0.2, 0.08, 900); break;
         case "growl": this.tone(70, 0.6, "sawtooth", 0.07, 30); this.noise(0.5, 0.06, 300); break;
       }
     },

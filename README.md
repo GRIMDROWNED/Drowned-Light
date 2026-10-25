@@ -159,6 +159,7 @@ Every enemy telegraphs its attack with a cyan wind-up, so you can dash out of th
 - **Bone Bulwark**: armoured tank. Its shield blocks 70% of blows from the front, Drowned near it take 25% less damage, and it braces and charges down a straight lane.
 - **Marsh Hexbearer**: a caster that stays at range. It throws slow orbs that add corruption, pools corruption under you every third cast (standing in a pool wounds and corrupts you), teleports away when you get close, and calls up revenants.
 - **Drowned Sovereign** (boss): rallies nearby Drowned (faster, harder hits), summons revenants, and alternates spike eruptions with shockwave lanes. Below half health it bursts with corruption and grows faster.
+- **The Starved Bell** (roaming boss of the Abyss): a great rusted bell on four long legs of bone, its mouth a ring of teeth. There is one in a world; it creeps round the Abyss about 480 m out, buried in the mire, and only its crown shows. A bell tolls when you come near it. Walk within 150 px and it bursts up under you. Awake it claws, tolls every 8 s (a ring that wounds, adds 12% corruption and makes torches gutter), and every 7 s rears and lunges mouth first down a marked lane. A knight it catches is swallowed for 3 s, bitten and corrupted, unless friends, hounds or Derek cut them free by taking a tenth of its health. Dash through the lunge to dodge it. It never leaves the Abyss, sinks back (healed) when everyone is far away, and once slain stays gone for 3 days. Drops plenty of iron, amethyst and resin. Numbers: `DL.BELL` in `src/data.js`. Coded stand-in sprite for now.
 
 ## Code layout
 
@@ -173,7 +174,7 @@ No build step, no dependencies. These are plain scripts loaded in order:
 | `src/kits.js` | the five kits in play: attacks, dashes, abilities, passives, training and milestone effects |
 | `src/camp.js` | base camp layout per tier, palisade walls, gate pathing |
 | `src/art.js` | procedural pixel sprites for the world, camp and effects |
-| `src/units.js` | the knight, Drowned Knight, Bone Hound and Derek sprite sheets (all animations, corruption stages) |
+| `src/units.js` | the knight, Drowned Knight, Bone Hound, Derek and Starved Bell sprite sheets (all animations, corruption stages) |
 | `src/sprites.js` | loads hand-drawn PNG art over the coded sprites and sheets |
 | `src/world.js` | endless chunked wetland: ground texture, resources, blooms, collisions |
 | `src/game.js` | simulation: player, corruption, spawning, enemy AI, combat, camp economy, saving |
@@ -183,6 +184,7 @@ No build step, no dependencies. These are plain scripts loaded in order:
 | `src/cave.js` | Derek's Hollow: the cave mouth, the seven-wave cave trial that wins Derek, its co-op messages and art |
 | `src/kindle.js` | Kindle the walking lantern: lighting him with torches, following, refilling lantern oil, leading the way to unique places |
 | `src/abigail.js` | Abigail the soul wraith: soul orbs, the Abyss graves, her homing orbs that weaken the Drowned, her blessing |
+| `src/bell.js` | the Starved Bell, the roaming Abyss boss: roaming buried, the ambush, its toll and swallow |
 | `src/render.js` | drawing, the darkness/light compositing, effects |
 | `src/ui.js` | HUD, camp menu, title, pause and death screens |
 | `src/main.js` | boot + main loop |

@@ -40,6 +40,8 @@
     // Abigail, the soul wraith: soul orbs picked up (by index) and carried, laid to rest at the Abyss graves; 1 once she's yours
     souls: { found: false, taken: [], held: 0, given: 0 },
     abigail: 0,
+    // the Starved Bell that roams the Abyss: where on its ring it lies (radians), and the day it was slain (-1: alive)
+    bell: { a: null, dead: -1 },
     started: false,
     lastPlayed: 0,
   });
@@ -204,6 +206,7 @@
     DL.Cave.reset();
     DL.Kindle.reset();
     DL.Abigail.reset();
+    DL.Bell.reset();
     G.state = "play";
   };
 
@@ -262,6 +265,7 @@
     }
     updateSpawning(dt);
     DL.Den.update(dt);
+    DL.Bell.update(dt);
     DL.Cave.update(dt);
     updateEnemies(dt);
     DL.Hounds.update(dt);
@@ -310,6 +314,7 @@
   // A guest who falls isn't drowned: they rise again at the camp after a few seconds.
   function guestDown() {
     const p = G.player;
+    p.held = null;
     p.downT = 5;
     p.hp = 0;
     p.carried = emptyRes();
@@ -338,6 +343,7 @@
     say("Dawn breaks. The Drowned retreat from the sun.", "good");
     DL.Den.dawn();
     DL.Kindle.dawn();
+    DL.Bell.dawn();
     if (G.rootEvent) {
       const o = G.rootEvent.obj;
       if (!o.dead) {
@@ -428,6 +434,7 @@
     DL.Abigail.lights(L);
     for (const e of G.enemies) {
       if (e.type === "defiler") L.push({ x: e.x, y: e.y - 70, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
+      else if (e.def.bell && e.dormant) L.push({ x: e.x, y: e.y - 16, r: 70, s: 0.3, col: "70,230,240", a: 0.45 }); // a cold glimmer off the buried Starved Bell
       else if (e.def.boss) L.push({ x: e.x, y: e.y - 40, r: 60, s: 0.3, col: "70,230,240", a: 0.6 });
     }
     for (const pr of G.projectiles) L.push({ x: pr.x, y: pr.y, r: pr.kind === "orb" ? 44 : 26, s: 0.3, col: pr.col, a: 0.8 });
@@ -469,6 +476,18 @@
     p.flash = Math.max(0, p.flash - dt);
     p.hurtFlash = Math.max(0, p.hurtFlash - dt);
     p.animT += dt;
+    if (p.held) {
+      // swallowed by the Starved Bell: stuck in its mouth, the dark seeping in, until it lets go (src/bell.js)
+      p.held.t -= dt;
+      if (p.held.t > 0) {
+        p.x = p.held.x; p.y = p.held.y; p.kx = p.ky = 0;
+        p.moving = false; p.swing = null; p.dashT = 0;
+        p.corrupt = clamp(p.corrupt + 5 * dt, 0, 100);
+        DL.Input.clear();
+        return;
+      }
+      p.held = null;
+    }
     p.zi = W.zoneIndex(p.x, p.y);
     if (p.zi > G.save.deepest) {
       G.save.deepest = p.zi;
@@ -866,7 +885,7 @@
       const dp = dist(e.x, e.y, p.x, p.y);
       if (e.def.den && DL.Den.homing(e, p, dt)) continue; // a Bone Wolf whose prey ran too far goes home
       if (e.dormant) {
-        if (dp < (e.def.den ? DL.DEN.wake : 170) || e.hp < e.maxHp) { e.dormant = false; if (e.isSelf) say("Your drowned self rises to meet you.", "danger"); }
+        if (dp < (e.def.den ? DL.DEN.wake : e.def.wake || 170) || e.hp < e.maxHp) { e.dormant = false; if (e.isSelf) say("Your drowned self rises to meet you.", "danger"); }
         else continue;
       }
 
@@ -896,6 +915,8 @@
         e.stun -= dt; // staggered: no moving, no attacking
         e.state = "move";
         e.moving = false;
+      } else if (e.def.bell && DL.Bell.busy(e, dt, p, dp)) {
+        // the Starved Bell rearing to swallow, lunging, or eating
       } else if (e.state === "windup") {
         e.stT -= dt;
         if (e.stT <= 0) { strike(e); e.state = "recover"; e.stT = 0.35; e.cd = e.def.cd; }
@@ -1018,6 +1039,7 @@
       for (const a of G.enemies) if (a !== e && dist(e.x, e.y, a.x, a.y) < d.aura) a.rallied = 0.3;
     }
     if (d.caster) hexbearer(e, dt, p, dp);
+    if (d.bell) DL.Bell.behave(e, dt, p, dp);
   }
 
   function hexbearer(e, dt, p, dp) {
@@ -1219,6 +1241,7 @@
     if (e.removed || G.isGuest()) return;
     e.removed = true;
     if (e.def.den) { DL.Den.slain(e); return; } // a Bone Wolf leaves its carcass
+    if (e.def.bell) DL.Bell.slain(e);
     sfx("kill");
     G.effects.push({ type: "dissolve", e, t: 0, max: 0.6 });
     for (let i = 0; i < 16; i++) puff(e.x + rand(-10, 10), e.y - rand(0, 50) * e.def.scale, "rgba(60,220,230,0.7)", 50, 0.9, -40);
@@ -1366,7 +1389,11 @@
       t.t += dt;
       if (t.t >= t.delay && !t.done) {
         t.done = true;
-        if (dist(t.x, t.y, p.x, p.y) < t.r + 6) hurtPlayer(t.dmg, Math.atan2(p.y - t.y, p.x - t.x));
+        if (!t.dmg) continue; // only a warning (the lane the Starved Bell is about to lunge down)
+        if (dist(t.x, t.y, p.x, p.y) < t.r + 6) {
+          hurtPlayer(t.dmg, Math.atan2(p.y - t.y, p.x - t.x));
+          if (t.corrupt && G.state === "play") p.corrupt = clamp(p.corrupt + t.corrupt, 0, 100); // the Starved Bell's toll
+        }
         for (const a of G.allies) if (!a.down && dist(t.x, t.y, a.x, a.y) < t.r + 6) DL.Net.hurtAlly(a, t.dmg, Math.atan2(a.y - t.y, a.x - t.x));
         for (const h of G.hounds.slice()) if (dist(t.x, t.y, h.x, h.y) < t.r + 4) DL.Hounds.hurt(h, t.dmg, Math.atan2(h.y - t.y, h.x - t.x));
         for (let i = 0; i < 10; i++) spark(t.x + rand(-t.r, t.r) * 0.6, t.y + rand(-t.r, t.r) * 0.3, "90,235,245", 120);
@@ -1452,6 +1479,16 @@
   G.puff = puff;
   G.text = text;
   G.hurtPlayer = hurtPlayer;
+  // The Starved Bell holds this device's knight in its mouth for `dur` seconds, or (dur 0) spits them out along `ang`.
+  G.hold = function (x, y, dur, ang) {
+    const p = G.player;
+    if (dur > 0) { p.held = { x, y, t: dur }; return; }
+    if (!p.held) return;
+    p.held = null;
+    p.x += Math.cos(ang) * 40; p.y += Math.sin(ang) * 40;
+    p.kx += Math.cos(ang) * 420; p.ky += Math.sin(ang) * 420;
+    p.inv = Math.max(p.inv, 1);
+  };
   G.dropRes = dropRes;
   G.nightAmount = nightAmount;
 

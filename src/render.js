@@ -709,6 +709,7 @@
 
   function drawPlayer(c, G, t) {
     const p = G.player;
+    if (p.held) return; // inside the Starved Bell
     const key = G.save.kit + (G.state === "dying" ? 4 : p.stage);
     for (const tr of p.trail) Art.drawUnit(c, key, "dash", 0, tr.ang, tr.x, tr.y, 1, { alpha: tr.life * 1.4, flash: 0.5, flashColor: "#ffd59a" });
     shadow(c, p.x, p.y, 15, 5);
@@ -721,6 +722,7 @@
 
   // The co-op friend: their own kit and corruption, animated from what their device reports.
   function drawAlly(c, a, t) {
+    if (a.swallowed) return; // inside the Starved Bell
     const key = a.kit + (a.stage || 1);
     shadow(c, a.x, a.y, 15, 5);
     if (a.down) { Art.drawUnit(c, key, "death", 2, a.angle, a.x, a.y, 1, { alpha: 0.5 }); }
@@ -754,6 +756,7 @@
 
   function drawEnemy(c, e, t) {
     const d = e.def, s = d.scale;
+    if (d.bell && e.dormant) { drawBuriedBell(c, e, t); return; }
     if (e.rise > 0) {
       // clawing up out of the water
       const k = 1 - e.rise / 0.9;
@@ -789,7 +792,7 @@
     const flashColor = e.flash > 0 ? "#ffffff" : d.beast && e.state !== "windup" ? WOLF_CAST : "#7ff6ff";
     const [anim, fr, ang] = enemyAnim(e, t);
     Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y, s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1 });
-    if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.crawl ? 36 : d.beast ? 66 : 84) * s - 4, Math.round(26 * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
+    if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.barY || (d.crawl ? 36 : d.beast ? 66 : 84) * s) - 4, Math.round(26 * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
     if (e.burn > 0) Art.drawFire(c, e.x + Math.sin(t * 7) * 4, e.y - 10, 0.5, t);
     if (e.bleed > 0) {
       // Bone Hound bleed: drops running down to the ground
@@ -799,6 +802,23 @@
         c.fillRect(Math.round(e.x + ((i * 7 + e.id * 3) % 17) - 8), Math.round(e.y - (1 - k) * 34 * s), 2, 3);
       }
     }
+  }
+
+  // The Starved Bell lying in wait: only the crown of the bell shows above the mire, with ripples around it.
+  function drawBuriedBell(c, e, t) {
+    const s = e.def.scale, sink = 80 * s;
+    c.save();
+    c.beginPath(); c.rect(e.x - 120, e.y - 200, 240, 200); c.clip();
+    Art.drawUnit(c, "bell", "idle", 0, Math.PI / 2, e.x, e.y + sink, s, { flash: 0.15, flashColor: "#1d3a3c" });
+    c.restore();
+    c.strokeStyle = "rgba(90,200,210,0.35)";
+    c.lineWidth = 1.5;
+    for (let i = 0; i < 2; i++) {
+      const k = (t * 0.4 + i * 0.5) % 1, r = 30 + 40 * k;
+      c.globalAlpha = 1 - k;
+      c.beginPath(); c.ellipse(e.x, e.y - 4, r, r * 0.35, 0, 0, Math.PI * 2); c.stroke();
+    }
+    c.globalAlpha = 1;
   }
 
   // The Bone Hound: bites play its attack, a struck hound flinches, a knocked-out one collapses and lies there.
