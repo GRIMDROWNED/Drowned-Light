@@ -70,6 +70,9 @@
     }
     return bushes;
   };
+  // Asleep in her bud: alive, and nobody has woken her (she isn't in play, or lies dormant). Only with the drawn bud;
+  // without it she stands asleep as herself (src/render.js).
+  Rose.asleep = () => !!DL.Art.sprites.roseBud && Rose.alive() && !G.cave && !G.enemies.some((e) => e.def.rose && !e.dormant);
   Rose.clears = (x, y) => { const s = Rose.lair(); return Math.hypot(x - s.x, y - s.y) < K.clear; };
   Rose.where = function () { const s = Rose.lair(); return { dir: compass(s.x, s.y), m: Math.round(Math.hypot(s.x, s.y) / 10) }; };
   Rose.found = () => found || !!state().found;
@@ -95,7 +98,8 @@
     if (!found && d < K.foundR) {
       found = true;
       if (!G.isGuest() && !state().found) { state().found = true; G.persist(); }
-      if (Rose.alive()) say("A garden of blood-red roses, and among them a queen of thorns, head bowed. Step closer and she wakes.", "danger");
+      if (Rose.alive()) say(DL.Art.sprites.roseBud ? "A garden of blood-red roses round a great closed bud. Something sleeps inside it. Step closer and it wakes."
+        : "A garden of blood-red roses, and among them a queen of thorns, head bowed. Step closer and she wakes.", "danger");
     }
   };
 
@@ -159,7 +163,7 @@
       G.camera.shake = 8;
       sfx("growl");
       for (let i = 0; i < 26; i++) G.puff(e.x + rand(-60, 60), e.y - rand(0, 140), `rgba(${RED},0.6)`, 60, 1.2, 20);
-      const msg = NAME + " lifts her head. Her thorns uncoil.";
+      const msg = DL.Art.sprites.roseBud ? "The great bud tears open. " + NAME + " steps out, her thorns uncoiling." : NAME + " lifts her head. Her thorns uncoil.";
       say(msg, "danger");
       DL.Net.say(msg, "danger");
     }
@@ -335,6 +339,7 @@
     if (s.x < view.left - 400 || s.x > view.right + 400 || s.y < view.top - 400 || s.y > view.bottom + 500) return;
     for (const b of Rose.bushes()) list.push({ y: b.y, f: () => drawBush(c, b, t) });
     if (!Rose.alive()) list.push({ y: s.y, f: () => drawSprite(c, "roseWither", s.x, s.y, 1) });
+    else if (Rose.asleep()) list.push({ y: s.y, f: () => drawBud(c, s, t) });
     for (const e of G.enemies) if (e.def.rose && e.lashT > 0 && DL.Art.sprites.roseLash2) list.push({ y: e.y + 2, f: () => drawLash(c, e) });
     for (const e of G.enemies) if (e.def.rose && e.spin && DL.Art.sprites.roseWaltz1) list.push({ y: e.y + 3, f: () => drawWaltz(c, e, t) });
     for (const v of vines) {
@@ -343,9 +348,16 @@
     }
   };
   function drawSprite(c, key, x, y, sc) {
-    const sp = sprites[key] || (sprites[key] = BUILD[key]());
+    const sp = DL.Art.sprites[key] || sprites[key] || (sprites[key] = BUILD[key]()); // Robert's drawn piece if there is one
     const w = sp.w * 2 * sc, h = sp.h * 2 * sc;
     c.drawImage(sp.c, Math.round(x - w / 2), Math.round(y - h + 2), w, h);
+  }
+  // The giant bud she sleeps in (Robert's drawing), breathing slowly, with a glow seeping between its petals.
+  function drawBud(c, s, t) {
+    const sp = DL.Art.sprites.roseBud, w = sp.w * 2, h = sp.h * 2, k = 1 + Math.sin(t * 1.2) * 0.012;
+    c.fillStyle = "rgba(0,0,0,0.35)";
+    c.beginPath(); c.ellipse(s.x, s.y, w * 0.38, w * 0.1, 0, 0, TAU); c.fill();
+    c.drawImage(sp.c, Math.round(s.x - (w * k) / 2), Math.round(s.y - h * k + 4), Math.round(w * k), Math.round(h * k));
   }
   function drawBush(c, b, t) {
     c.fillStyle = "rgba(0,0,0,0.3)";

@@ -321,7 +321,7 @@
       c.moveTo(x0 + Math.cos(a + 2.4) * 6, y0 + Math.sin(a + 2.4) * 6); c.lineTo(x1, y1); c.lineTo(x0 + Math.cos(a - 2.4) * 6, y0 + Math.sin(a - 2.4) * 6);
       c.stroke();
     }
-    for (const e of G.enemies) if (e.rise <= 0) drawEyes(c, e, t);
+    for (const e of G.enemies) if (e.rise <= 0 && !(e.def.rose && e.dormant && Art.sprites.roseBud)) drawEyes(c, e, t);
     for (const h of G.hounds) drawHoundEyes(c, h, t);
     // once the pack is broken, the carcasses glow faintly so you can find one to carry home
     if (den.cleared && !DL.Hounds.mine()) for (const b of den.bodies) {
@@ -760,6 +760,7 @@
   function drawEnemy(c, e, t) {
     const d = e.def, s = d.scale;
     if (d.bell && e.dormant) { drawBuriedBell(c, e, t); return; }
+    if (d.rose && e.dormant && Art.sprites.roseBud) return; // the Deadly Rose asleep inside her bud (src/rose.js)
     if (e.rise > 0) {
       // clawing up out of the water
       const k = 1 - e.rise / 0.9;
