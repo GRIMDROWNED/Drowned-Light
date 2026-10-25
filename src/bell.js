@@ -116,7 +116,7 @@
   /* Its swallow: it rears (the lane it will lunge down shows on the ground), then lunges mouth first.
      Returns true while it's busy with that or with eating, so it neither walks nor claws. */
   Bell.busy = function (e, dt, p, dp) {
-    if (e.meal) { e.state = "recover"; e.stT = 0.1; e.moving = false; return true; }
+    if (e.meal) { e.state = "recover"; e.stT = 0.3; e.moving = false; return true; } // mouth clamped round its meal
     const g = e.gulp;
     if (g) {
       e.moving = false;

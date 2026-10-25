@@ -54,6 +54,8 @@ GRIDS = {
     'kindle/poses-b.png': (3, 2, POSES_B),
     'abigail/poses-a.png': (3, 2, POSES_A),
     'abigail/poses-b.png': (3, 2, POSES_B),
+    'starved-bell/poses-a.png': (3, 2, POSES_A),
+    'starved-bell/poses-b.png': (3, 2, POSES_B),
 }
 # Cells the AI drew at another scale than the rest of their sheet: cell -> factor to resize it by.
 CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
@@ -64,7 +66,8 @@ HOUND_H = 60
 DEREK_H = 60  # cut at 4 file px per art pixel (res: 4): drawn 30 px tall, about 3/8 of the knight
 DEREK_SIDE_H = 62
 ABIGAIL_H = 112  # cut at res 4: drawn 28 px tall, hem to hood, about two thirds of the knight
-KINDLE_H = 64  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
+KINDLE_H = 64
+BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
 SETS = {
     'lantern-knight': ('lantern-knight', 'knight-front.png', 80, 3, {
         'knight-front.png': 'front',
@@ -146,6 +149,7 @@ SETS = {
         'kindle/04_walk.png': 'side/walk1', 'kindle/05_walk.png': 'side/walk2', 'kindle/06_walk.png': 'side/walk3', 'kindle/07_walk.png': 'side/walk4',
         'kindle/08_attackA.png': 'broken', 'kindle/09_attackB.png': 'pour', 'kindle/10_attackC.png': 'side/point',
         'kindle/11_hurt.png': 'side/crouch', 'kindle/12_death.png': 'side/hop'}),
+    'starved-bell': ('starved-bell', 'starved-bell/01_front.png', BELL_H, 1, twelve('starved-bell', TWELVE_FILES)),
 }
 
 # Animation sheets: character -> [(sheet, columns, rows, height of the first frame's figure, output prefix[, row])].
@@ -238,6 +242,11 @@ SHEETS = {
         ('kindle/walk-side-4.png', 4, 1, KINDLE_H, 'side/walk'),
         ('kindle/walk-front-4.png', 4, 1, KINDLE_H, 'walkF'),
         ('kindle/walk-back-4.png', 4, 1, KINDLE_H, 'walkB'),
+    ],
+    'starved-bell': [
+        ('starved-bell/walk-side-4.png', 4, 1, BELL_H, 'side/walk'),
+        ('starved-bell/walk-front-4.png', 4, 1, BELL_H, 'walkF'),
+        ('starved-bell/walk-back-4.png', 4, 1, BELL_H, 'walkB'),
     ],
 }
 
