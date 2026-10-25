@@ -56,6 +56,9 @@ GRIDS = {
     'abigail/poses-b.png': (3, 2, POSES_B),
     'starved-bell/poses-a.png': (3, 2, POSES_A),
     'starved-bell/poses-b.png': (3, 2, POSES_B),
+    # the Colossus's sheets: three side crawl frames, then a front stomp (fists up, fists down) and its collapse
+    'colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '11_hurt']),
+    'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
 }
 # Cells the AI drew at another scale than the rest of their sheet: cell -> factor to resize it by.
 CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
@@ -72,6 +75,7 @@ DEREK_SIDE_H = 62
 ABIGAIL_H = 112  # cut at res 4: drawn 28 px tall, hem to hood, about two thirds of the knight
 KINDLE_H = 64
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
+COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
 SETS = {
     'lantern-knight': ('lantern-knight', 'knight-front.png', 80, 3, {
         'knight-front.png': 'front',
@@ -154,6 +158,10 @@ SETS = {
         'kindle/08_attackA.png': 'broken', 'kindle/09_attackB.png': 'pour', 'kindle/10_attackC.png': 'side/point',
         'kindle/11_hurt.png': 'side/crouch', 'kindle/12_death.png': 'side/hop'}),
     'starved-bell': ('starved-bell', 'starved-bell/01_front.png', BELL_H, 1, twelve('starved-bell', TWELVE_FILES)),
+    'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
+        'colossus/01_front.png': 'front', 'colossus/02_back.png': 'back', 'colossus/03_right.png': 'right',
+        'colossus/08_attackA.png': 'side/attackA', 'colossus/09_attackB.png': 'side/attackB', 'colossus/11_hurt.png': 'side/hurt',
+        'colossus/13_stompUp.png': 'stompUp', 'colossus/14_stompDown.png': 'stompDown', 'colossus/12_death.png': 'death'}),
 }
 
 # Animation sheets: character -> [(sheet, columns, rows, height of the first frame's figure, output prefix[, row])].
@@ -251,6 +259,12 @@ SHEETS = {
         ('starved-bell/walk-side-4.png', 4, 1, BELL_H, 'side/walk'),
         ('starved-bell/walk-front-4.png', 4, 1, BELL_H, 'walkF'),
         ('starved-bell/walk-back-4.png', 4, 1, BELL_H, 'walkB'),
+    ],
+    # its side crawl came as three cells of the second pose sheet
+    'colossus': [
+        ('colossus/walk-side-4.png', 3, 1, COLOSSUS_H - 20, 'side/walk'),
+        ('colossus/walk-front-4.png', 4, 1, COLOSSUS_H, 'walkF'),
+        ('colossus/walk-back-4.png', 4, 1, COLOSSUS_H, 'walkB'),
     ],
 }
 

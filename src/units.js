@@ -771,6 +771,7 @@
     sh.bell = Art.applyFrames("bell", bellSheet());
     sh.kindle = Art.applyFrames("kindle", kindleSheet());
     sh.abigail = Art.applyFrames("abigail", kindleSheet(["bless"])); // the same for Abigail (src/render.js)
+    sh.colossus = Art.applyFrames("colossus", DL.Colossus.sheet()); // the Drowned Colossus's coded stand-in (src/colossus.js)
     sh.champion = buildSheet({ pal: d({ cloth: "#c3cbc6", clothMd: "#8d9a99", blade: "#7fa6b0" }), weapon: "greatsword", offhand: "none", bulk: 1, crown: true, drips: 22, seed: 27 });
   };
 
