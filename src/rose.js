@@ -341,7 +341,11 @@
     if (!Rose.alive()) list.push({ y: s.y, f: () => drawSprite(c, "roseWither", s.x, s.y, 1) });
     else if (Rose.asleep()) list.push({ y: s.y, f: () => drawBud(c, s, t) });
     for (const e of G.enemies) if (e.def.rose && e.lashT > 0 && DL.Art.sprites.roseLash2) list.push({ y: e.y + 2, f: () => drawLash(c, e) });
-    for (const e of G.enemies) if (e.def.rose && e.spin && DL.Art.sprites.roseWaltz1) list.push({ y: e.y + 3, f: () => drawWaltz(c, e, t) });
+    for (const e of G.enemies) if (e.def.rose && e.spin && DL.Art.sprites.roseWaltz1) {
+      // its far half behind her and its near half in front, so she stands inside the whirl
+      list.push({ y: e.y - 3, f: () => drawWaltz(c, e, t, false) });
+      list.push({ y: e.y + 3, f: () => drawWaltz(c, e, t, true) });
+    }
     for (const v of vines) {
       const T = age(v);
       if (T > 0) list.push({ y: v.y, f: () => drawVine(c, v, T) });
@@ -384,10 +388,17 @@
     c.restore();
   }
   // Her waltz: Robert's ring of whirling thorn whips round her waist, a quarter turn a frame, as wide as the ring
-  // it cuts, flattened a little to lie in the 3/4 view.
-  function drawWaltz(c, e, t) {
+  // it cuts, flattened a little to lie in the 3/4 view. Drawn in two parts split just above her hem: the far (upper)
+  // part, or the near (lower) part.
+  function drawWaltz(c, e, t, near) {
     const sp = DL.Art.sprites["roseWaltz" + (1 + (Math.floor(t * 16) % 4))], w = sp.w * 2, h = sp.h * 2 * 0.8;
-    c.drawImage(sp.c, Math.round(e.x - w / 2), Math.round(e.y - 40 - h / 2), w, h);
+    const x = Math.round(e.x - w / 2), y = Math.round(e.y - 40 - h / 2), mid = Math.round(e.y - 6); // just above her hem, so the near half never cuts across her gown
+    c.save();
+    c.beginPath();
+    if (near) c.rect(x - 2, mid, w + 4, h); else c.rect(x - 2, y - 2, w + 4, mid - y + 2);
+    c.clip();
+    c.drawImage(sp.c, x, y, w, h);
+    c.restore();
   }
   function drawVine(c, v, T) {
     const rise = Math.min(1, T / 0.2), fade = Math.min(1, (v.life - T) / 0.5);
