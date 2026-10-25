@@ -46,7 +46,7 @@ const FILES = [
     "abigail/side/": ["castUp", "fade", "hurt", "throw", "walk1", "walk2", "walk3", "walk4"],
     "starved-bell/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "starved-bell/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
-    "deadly-rose/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkF1", "walkF2", "walkF3", "walkF4"],
+    "deadly-rose/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "deadly-rose/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "colossus/": ["back", "death", "front", "right", "stompDown", "stompUp", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "colossus/side/": ["attackA", "attackB", "hurt", "walk1", "walk2", "walk3"],

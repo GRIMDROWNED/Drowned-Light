@@ -264,10 +264,10 @@ SHEETS = {
         ('starved-bell/walk-front-4.png', 4, 1, BELL_H, 'walkF'),
         ('starved-bell/walk-back-4.png', 4, 1, BELL_H, 'walkB'),
     ],
-    # no back walk yet: she glides from behind on her back pose (src/sprites.js)
     'deadly-rose': [
         ('deadly-rose/walk-side-4.png', 4, 1, ROSE_H, 'side/walk'),
         ('deadly-rose/walk-front-4.png', 4, 1, ROSE_H, 'walkF'),
+        ('deadly-rose/walk-back-4.png', 4, 1, ROSE_H, 'walkB'),  # repacked from walk-back-4-raw.png, whose frames overran their quarters
     ],
     # its side crawl came as three cells of the second pose sheet
     'colossus': [
