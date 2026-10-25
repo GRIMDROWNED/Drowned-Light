@@ -12,7 +12,7 @@
             and stand a few seconds, stinging whoever walks into them.
    Below half her health her heart-rose opens: she moves and acts faster, and the briar rings her as well.
    Slain, she stays gone a few days. The host runs her; her vines and whirl ride the snapshots (src/net.js).
-   Numbers: DL.ENEMIES.rose and DL.ROSE (src/data.js). The coded stand-in sheet is at the bottom. */
+   Numbers: DL.ENEMIES.rose and DL.ROSE (src/data.js). The coded stand-in sheet is at the bottom (a fallback for her drawn frames, set up in src/sprites.js). */
 "use strict";
 (function (DL) {
   const { dist, rand, TAU } = DL;

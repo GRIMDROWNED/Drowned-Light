@@ -102,6 +102,7 @@
     kindle(),
     abigail(),
     bell(),
+    rose(),
     colossus(),
   ];
 
@@ -142,6 +143,18 @@
   // Its attack is rearing back, the lunge with its mouth gaping, and a raking claw.
   function bell() {
     return Object.assign(walking("bell", [202, 227], [148, 227], [113, 232], 4), { path: "assets/sprites/starved-bell/", keys: { bell: [0, false] } });
+  }
+
+  // The Deadly Rose, the Abyss garden boss: the 12 poses and a front walk, cut at res 4, 92 px tall (shown x0.8).
+  // Her feet are hidden under her gown, so she glides: side and front from the drawn frames, and from behind
+  // (no back walk drawn yet) on her back pose, rising and sinking a pixel. Her attack is the whip raised, the lash
+  // stretched out, and the follow-through; the poses are pinned at the middle of the gown's hem.
+  function rose() {
+    const set = Object.assign(walking("rose", [342, 407], [239, 430], [191, 370], 4), { path: "assets/sprites/deadly-rose/", keys: { rose: [0, false] } });
+    set.views.up.walk = ["back", "back", "back@bob", "back@bob", "back", "back", "back@bob", "back@bob"];
+    Object.assign(set.feet, { front: [194, 370], back: [191, 370], right: [189, 364], attackA: [200, 376], attackB: [175, 339], attackC: [198, 323],
+      "side/hurt": [178, 337], "side/death": [206, 169] });
+    return set;
   }
 
   // The Drowned Colossus, the last wave of Derek's Hollow, cut at res 4, 64 art px tall crouched. It crawls on three side
