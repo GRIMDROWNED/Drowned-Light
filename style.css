@@ -388,6 +388,7 @@ body.menu-open #toasts, body.menu-open #objective { visibility: hidden; }
 /* co-op: friend marker, host pause, join kit picker */
 .arrow.friend { color: #e7d9ff; text-shadow: 0 0 6px rgba(190, 160, 255, 0.8); }
 .arrow.soul { color: #9ff5dc; text-shadow: 0 0 6px rgba(90, 245, 205, 0.8); }
+.arrow.rose { color: #ff6b7d; text-shadow: 0 0 6px rgba(230, 40, 70, 0.8); }
 #hostPaused {
   position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
   background: rgba(4, 8, 10, 0.55); font: 700 clamp(22px, 5vw, 34px) var(--font-title); letter-spacing: 0.08em; color: #ffe6c2;

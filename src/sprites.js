@@ -102,6 +102,7 @@
     kindle(),
     abigail(),
     bell(),
+    rose(),
     colossus(),
   ];
 
@@ -144,6 +145,16 @@
     return Object.assign(walking("bell", [202, 227], [148, 227], [113, 232], 4), { path: "assets/sprites/starved-bell/", keys: { bell: [0, false] } });
   }
 
+  // The Deadly Rose, the Abyss garden boss: the 12 poses and walk sheets, cut at res 4, 92 px tall (shown x0.8).
+  // Her feet are hidden under her gown, so her walks are a glide, the gown and whip swaying. Her attack is the whip
+  // raised, the lash stretched out, and the follow-through; the poses are pinned at the middle of the gown's hem.
+  function rose() {
+    const set = Object.assign(walking("rose", [342, 407], [239, 430], [318, 375], 4), { path: "assets/sprites/deadly-rose/", keys: { rose: [0, false] } });
+    Object.assign(set.feet, { front: [194, 370], back: [191, 370], right: [189, 364], attackA: [200, 376], attackB: [175, 339], attackC: [198, 323],
+      "side/hurt": [178, 337], "side/death": [206, 169] });
+    return set;
+  }
+
   // The Drowned Colossus, the last wave of Derek's Hollow, cut at res 4, 64 art px tall crouched. It crawls on three side
   // frames; its blow rears a fist and slams it down (seen from the front: both fists up, then down), and it dies collapsing.
   function colossus() {
@@ -161,7 +172,7 @@
     "reeds1", "reeds2", "reeds3", "reeds4", "reeds5", "reeds6", "gardenBed1", "gardenBed2", "gardenBed3",
     "swampTree1", "swampTree2", "swampTree3",
     "boulder11", "boulder12", "boulder13", "boulder21", "boulder22", "boulder23", "boulder31", "boulder32", "boulder33", "boulder41", "boulder42", "boulder43",
-    "flame1", "flame2", "flame3", "forge1", "forge2", "forge3", "forge4", "armory1", "armory2", "armory3", "armory4", "workbench1", "workbench2", "workbench3", "workbench4", "tower1", "tower2", "tower3", "pylon1", "pylon2", "pylon3", "stake", "palisade", "palisade2", "gatePost", "gatePost2", "palisadeSide", "palisadeSide2", "cornerPost", "cornerPost2", "tent", "banner", "torch", "burnt", "brazier", "fire1", "fire2", "fire3", "fire4", "fire5", "fire6", "iron11", "iron12", "iron13", "iron21", "iron22", "iron23", "iron31", "iron32", "iron33", "amethyst11", "amethyst12", "amethyst13", "amethyst21", "amethyst22", "amethyst23", "amethyst31", "amethyst32", "amethyst33", "resWood", "resStone", "resResin", "resIron", "resPearl", "denGuarded", "denCleared", "caveSealed", "caveOpen", "headstone", "grave", "grave2", "pillar", "soulOrb", "soulFly1", "soulFly2"];
+    "flame1", "flame2", "flame3", "forge1", "forge2", "forge3", "forge4", "armory1", "armory2", "armory3", "armory4", "workbench1", "workbench2", "workbench3", "workbench4", "tower1", "tower2", "tower3", "pylon1", "pylon2", "pylon3", "stake", "palisade", "palisade2", "gatePost", "gatePost2", "palisadeSide", "palisadeSide2", "cornerPost", "cornerPost2", "tent", "banner", "torch", "burnt", "brazier", "fire1", "fire2", "fire3", "fire4", "fire5", "fire6", "iron11", "iron12", "iron13", "iron21", "iron22", "iron23", "iron31", "iron32", "iron33", "amethyst11", "amethyst12", "amethyst13", "amethyst21", "amethyst22", "amethyst23", "amethyst31", "amethyst32", "amethyst33", "resWood", "resStone", "resResin", "resIron", "resPearl", "denGuarded", "denCleared", "caveSealed", "caveOpen", "headstone", "grave", "grave2", "pillar", "soulOrb", "soulFly1", "soulFly2", "roseBriar1", "roseBriar2", "roseBriar3", "roseBriar4", "roseBriar5", "roseLash1", "roseLash2", "roseLash3", "roseWaltz1", "roseWaltz2", "roseWaltz3", "roseWaltz4", "roseBud", "roseWither", "roseBush0", "roseBush1", "roseBush2", "rosePetal1", "rosePetal2", "rosePetal3", "rosePetal4", "rosePetal5", "rosePetal6"];
   const PROPS = {
     path: "assets/sprites/",
     // cut at 2 file px per art pixel, like the units

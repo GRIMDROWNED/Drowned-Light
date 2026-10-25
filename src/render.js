@@ -132,14 +132,15 @@
     /* camp ground: paths, plaza, boardwalks */
     drawCampGround(c, G);
     DL.Cave.drawGround(c, view);
+    DL.Rose.drawGround(c, view);
 
     for (const d of G.decals) sprite(c, d.type, d.x, d.y, false, Math.min(1, d.t / 3));
 
     /* telegraphs on the ground */
     for (const tg of G.telegraphs) {
       const k = Math.min(1, tg.t / tg.delay);
-      c.fillStyle = `rgba(60,220,230,${0.12 + 0.25 * k})`;
-      c.strokeStyle = `rgba(120,245,255,${0.5 + 0.5 * k})`;
+      c.fillStyle = tg.rose ? `rgba(200,30,50,${0.12 + 0.25 * k})` : `rgba(60,220,230,${0.12 + 0.25 * k})`; // the Deadly Rose's are red
+      c.strokeStyle = tg.rose ? `rgba(255,110,120,${0.5 + 0.5 * k})` : `rgba(120,245,255,${0.5 + 0.5 * k})`;
       c.lineWidth = 2;
       c.beginPath(); c.ellipse(tg.x, tg.y, tg.r, tg.r * 0.55, 0, 0, Math.PI * 2); c.stroke();
       c.beginPath(); c.ellipse(tg.x, tg.y, tg.r * k, tg.r * 0.55 * k, 0, 0, Math.PI * 2); c.fill();
@@ -164,6 +165,7 @@
     });
     pushCamp(list, G, c, t);
     DL.Cave.push(list, c, t, view);
+    DL.Rose.push(list, c, t, view);
     for (const tr of G.torches) list.push({ y: tr.y, f: () => drawTorch(c, tr, t) });
     for (const w of G.walls || []) {
       const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1), n = Math.max(2, Math.round(len / 14)), f = Math.min(1, w.t / 1);
@@ -319,7 +321,7 @@
       c.moveTo(x0 + Math.cos(a + 2.4) * 6, y0 + Math.sin(a + 2.4) * 6); c.lineTo(x1, y1); c.lineTo(x0 + Math.cos(a - 2.4) * 6, y0 + Math.sin(a - 2.4) * 6);
       c.stroke();
     }
-    for (const e of G.enemies) if (e.rise <= 0) drawEyes(c, e, t);
+    for (const e of G.enemies) if (e.rise <= 0 && !(e.def.rose && e.dormant && Art.sprites.roseBud)) drawEyes(c, e, t);
     for (const h of G.hounds) drawHoundEyes(c, h, t);
     // once the pack is broken, the carcasses glow faintly so you can find one to carry home
     if (den.cleared && !DL.Hounds.mine()) for (const b of den.bodies) {
@@ -330,6 +332,7 @@
     }
     for (const m of G.golems) drawGolemHeart(c, m, t);
     DL.Cave.drawGlow(c, t);
+    DL.Rose.drawGlow(c, t, view);
     for (const k of G.kindles) drawKindleGlow(c, k, t);
     drawSoulGlow(c, G, view, t);
     if (kb && Math.sin(t * 1.3) > 0.6) { c.fillStyle = "rgba(255,110,50,0.35)"; c.fillRect(kb.x - 2, kb.y - 8, 4, 4); }
@@ -757,6 +760,7 @@
   function drawEnemy(c, e, t) {
     const d = e.def, s = d.scale;
     if (d.bell && e.dormant) { drawBuriedBell(c, e, t); return; }
+    if (d.rose && e.dormant && Art.sprites.roseBud) return; // the Deadly Rose asleep inside her bud (src/rose.js)
     if (e.rise > 0) {
       // clawing up out of the water
       const k = 1 - e.rise / 0.9;
@@ -790,7 +794,7 @@
     }
     // Bone Wolves wear the hound's bones with a drowned, cyan cast
     const flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : d.beast ? WOLF_TINT : 0;
-    const flashColor = e.flash > 0 ? "#ffffff" : d.beast && e.state !== "windup" ? WOLF_CAST : "#7ff6ff";
+    const flashColor = e.flash > 0 ? "#ffffff" : d.beast && e.state !== "windup" ? WOLF_CAST : d.rose ? "#ff7a8a" : "#7ff6ff";
     const [anim, fr, ang] = enemyAnim(e, t);
     Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y, s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1 });
     if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.barY || (d.crawl ? 36 : d.beast ? 66 : 84) * s) - 4, Math.round((d.barW || 26) * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
@@ -1031,10 +1035,10 @@
     const x = e.x + side * (e.def.eyeX || (e.def.crawl ? 17 : 7)) * s;
     const y = e.y - (e.def.eyeY || (e.def.crawl ? (dir === "side" ? 16 : 18) : 56)) * s;
     const pulse = 0.75 + 0.25 * Math.sin(t * 5 + e.x);
-    const r = (e.def.eyeR || 9) * s + 3;
+    const r = (e.def.eyeR || 9) * s + 3, col = e.def.eyeCol || "80,235,245";
     const g = c.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(80,235,245,${0.5 * pulse})`);
-    g.addColorStop(1, "rgba(80,235,245,0)");
+    g.addColorStop(0, `rgba(${col},${0.5 * pulse})`);
+    g.addColorStop(1, `rgba(${col},0)`);
     c.fillStyle = g;
     c.fillRect(x - r, y - r, r * 2, r * 2);
   }

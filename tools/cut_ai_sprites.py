@@ -56,6 +56,8 @@ GRIDS = {
     'abigail/poses-b.png': (3, 2, POSES_B),
     'starved-bell/poses-a.png': (3, 2, POSES_A),
     'starved-bell/poses-b.png': (3, 2, POSES_B),
+    'deadly-rose/poses-a.png': (3, 2, POSES_A),
+    'deadly-rose/poses-b.png': (3, 2, POSES_B),
     # the Colossus's sheets: three side crawl frames, then a front stomp (fists up, fists down) and its collapse
     'colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '11_hurt']),
     'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
@@ -75,6 +77,7 @@ DEREK_SIDE_H = 62
 ABIGAIL_H = 112  # cut at res 4: drawn 28 px tall, hem to hood, about two thirds of the knight
 KINDLE_H = 64
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
+ROSE_H = 368  # the Deadly Rose, cut at res 4: drawn 92 art px tall standing (x0.8 in game), about twice the knight
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
 SETS = {
     'lantern-knight': ('lantern-knight', 'knight-front.png', 80, 3, {
@@ -158,6 +161,7 @@ SETS = {
         'kindle/08_attackA.png': 'broken', 'kindle/09_attackB.png': 'pour', 'kindle/10_attackC.png': 'side/point',
         'kindle/11_hurt.png': 'side/crouch', 'kindle/12_death.png': 'side/hop'}),
     'starved-bell': ('starved-bell', 'starved-bell/01_front.png', BELL_H, 1, twelve('starved-bell', TWELVE_FILES)),
+    'deadly-rose': ('deadly-rose', 'deadly-rose/01_front.png', ROSE_H, 1, twelve('deadly-rose', TWELVE_FILES)),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
         'colossus/01_front.png': 'front', 'colossus/02_back.png': 'back', 'colossus/03_right.png': 'right',
         'colossus/08_attackA.png': 'side/attackA', 'colossus/09_attackB.png': 'side/attackB', 'colossus/11_hurt.png': 'side/hurt',
@@ -260,6 +264,11 @@ SHEETS = {
         ('starved-bell/walk-front-4.png', 4, 1, BELL_H, 'walkF'),
         ('starved-bell/walk-back-4.png', 4, 1, BELL_H, 'walkB'),
     ],
+    'deadly-rose': [
+        ('deadly-rose/walk-side-4.png', 4, 1, ROSE_H, 'side/walk'),
+        ('deadly-rose/walk-front-4.png', 4, 1, ROSE_H, 'walkF'),
+        ('deadly-rose/walk-back-4.png', 4, 1, ROSE_H, 'walkB'),  # repacked from walk-back-4-raw.png, whose frames overran their quarters
+    ],
     # its side crawl came as three cells of the second pose sheet
     'colossus': [
         ('colossus/walk-side-4.png', 3, 1, COLOSSUS_H - 20, 'side/walk'),
@@ -323,6 +332,18 @@ PROP_GRIDS = {
     'abigail/graves.png': (4, 1, ['headstone', 'grave', 'grave2', 'pillar']),
     # Abigail's soul orb: lying out in the world, then flying (two flickers)
     'abigail/soul-orb.png': (3, 1, ['soulOrb', 'soulFly1', 'soulFly2']),
+    # the Deadly Rose's briar (src/rose.js): thorns breaking the ground, shooting up, grown, swaying, withering
+    'deadly-rose/briar.png': (5, 1, ['roseBriar1', 'roseBriar2', 'roseBriar3', 'roseBriar4', 'roseBriar5']),
+    # her whip lash's trail: coiled, cracked out in a long arc, fading in petals
+    'deadly-rose/lash.png': (3, 1, ['roseLash1', 'roseLash2', 'roseLash3']),
+    # her waltz: a ring of whirling thorn whips, a quarter turn a frame (it loops)
+    'deadly-rose/waltz.png': (4, 1, ['roseWaltz1', 'roseWaltz2', 'roseWaltz3', 'roseWaltz4']),
+    # the giant bud she sleeps in, and the withered bloom she leaves when slain
+    'deadly-rose/heart.png': (2, 1, ['roseBud', 'roseWither']),
+    # the rose bushes ringing her garden: low and wide, tall, half dead (keeping the coded names)
+    'deadly-rose/bushes.png': (3, 1, ['roseBush0', 'roseBush1', 'roseBush2']),
+    # petals on the wind round her garden: six tumbling shapes, played in turn as a petal drifts
+    'deadly-rose/petals.png': (6, 1, ['rosePetal1', 'rosePetal2', 'rosePetal3', 'rosePetal4', 'rosePetal5', 'rosePetal6']),
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
@@ -360,6 +381,19 @@ PROP_SAME = {'caveSealed': 'caveOpen', 'swampTree1': 'swampTree2', 'swampTree3':
             'amethyst12': 'amethyst11', 'amethyst13': 'amethyst11', 'amethyst21': 'amethyst11', 'amethyst22': 'amethyst11', 'amethyst23': 'amethyst11', 'amethyst31': 'amethyst11', 'amethyst32': 'amethyst11', 'amethyst33': 'amethyst11',
             'denCleared': 'denGuarded',
             'resStone': 'resWood', 'resResin': 'resWood', 'resIron': 'resWood', 'resPearl': 'resWood'}
+# the Deadly Rose's briar: grown, a bit taller than the knight; every frame at that one scale
+PROP_HEIGHT['roseBriar3'] = 96
+PROP_SAME.update({n: 'roseBriar3' for n in ['roseBriar1', 'roseBriar2', 'roseBriar4', 'roseBriar5']})
+PROP_WIDTH['roseLash2'] = 150  # the lash's reach
+PROP_SAME.update({'roseLash1': 'roseLash2', 'roseLash3': 'roseLash2'})
+PROP_WIDTH['roseWaltz1'] = 340  # as wide as the ring she cuts (DL.ROSE.waltz.r 170)
+PROP_HEIGHT['roseBud'] = 128  # a bit taller than the knight
+PROP_SAME['roseWither'] = 'roseBud'
+PROP_HEIGHT['roseBush1'] = 84  # the tall one, about the knight's height
+PROP_SAME.update({'roseBush0': 'roseBush1', 'roseBush2': 'roseBush1'})
+PROP_WIDTH['rosePetal1'] = 16
+PROP_SAME.update({'rosePetal%d' % i: 'rosePetal1' for i in range(2, 7)})
+PROP_SAME.update({'roseWaltz2': 'roseWaltz1', 'roseWaltz3': 'roseWaltz1', 'roseWaltz4': 'roseWaltz1'})
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
 PROP_OUT = 'props'
