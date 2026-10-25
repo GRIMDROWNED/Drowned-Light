@@ -138,13 +138,9 @@
   }
 
   // The Starved Bell, the roaming Abyss boss: the 12 poses and walk sheets, cut at res 4, 56 px tall (shown x1.25).
-  // Its side walk skips the fourth frame and its rear-back pose waits on a redraw, so for now it steps
-  // 1-2-3-2 and rears from its standing side pose.
+  // Its attack is rearing back, the lunge with its mouth gaping, and a raking claw.
   function bell() {
-    const set = Object.assign(walking("bell", [144, 235], [148, 227], [113, 232], 4), { path: "assets/sprites/starved-bell/", keys: { bell: [0, false] } });
-    set.views.side.walk = [1, 1, 2, 2, 3, 3, 2, 2].map((i) => "side/walk" + i + "@-");
-    for (const dir in set.views) set.views[dir].attack = ["right", "attackB", "attackC"];
-    return set;
+    return Object.assign(walking("bell", [202, 227], [148, 227], [113, 232], 4), { path: "assets/sprites/starved-bell/", keys: { bell: [0, false] } });
   }
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.

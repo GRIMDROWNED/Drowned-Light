@@ -62,6 +62,10 @@ CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
               # the hound's attack row came out smaller than its standing row
               'bone-hound/08_attackA': 1.25, 'bone-hound/09_attackB': 1.25, 'bone-hound/10_attackC': 1.25}
 
+# Cells redrawn on their own after a sheet came back: cell -> (redrawn image, cell whose figure height it takes).
+# The redraw is shrunk to that height before it is cut, so it matches the rest of its sheet.
+CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-bell/08_attackA': ('bell-rear.png', '03_right')}
+
 HOUND_H = 60
 DEREK_H = 60  # cut at 4 file px per art pixel (res: 4): drawn 30 px tall, about 3/8 of the knight
 DEREK_SIDE_H = 62
@@ -356,6 +360,13 @@ for sheet, (cols, rows, names) in GRIDS.items():
         f = CELL_SCALE.get(os.path.dirname(sheet) + '/' + n)
         if f: cell = cell.resize((round(cell.width * f), round(cell.height * f)), Image.NEAREST)
         cell.save(os.path.join(os.path.dirname(p), n + '.png'))
+    for n in names:
+        redo = CELL_REDRAW.get(os.path.dirname(sheet) + '/' + n)
+        if not redo or not os.path.exists(os.path.join(os.path.dirname(p), redo[0])): continue
+        img = Image.open(os.path.join(os.path.dirname(p), redo[0])).convert('RGB')
+        like = cut_keyed(Image.open(os.path.join(os.path.dirname(p), redo[1] + '.png')), 1, fringe=1).height
+        f = like / cut_keyed(img, 1, fringe=1).height
+        img.resize((round(img.width * f), round(img.height * f)), Image.LANCZOS).save(os.path.join(os.path.dirname(p), n + '.png'))
     walks = sorted(n for n in names if 'walk' in n)
     if walks:
         cells = [Image.open(os.path.join(os.path.dirname(p), n + '.png')) for n in walks]
