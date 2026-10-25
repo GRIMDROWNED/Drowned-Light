@@ -6,8 +6,8 @@
      surge     it stomps out a ring of water that rolls across the cave (a pillar between you and it shelters you);
      collapse  it shakes its ruined back loose and stones rain down on and around every knight.
    The host runs it (Colossus.think from the enemy update, Colossus.strike when a blow lands); the pillars, rings and
-   falling stones ride the cave's snapshot to guests. Its coded stand-in sheet is built here; drawn frames from
-   assets/sprites/colossus/ replace it once they exist. Numbers: DL.ENEMIES.colossus and DL.COLOSSUS (src/data.js). */
+   falling stones ride the cave's snapshot to guests. It is drawn from Robert's art sheets (assets/sprites/colossus/,
+   set up in src/sprites.js); the coded stand-in sheet built here remains as a fallback. Numbers: DL.ENEMIES.colossus and DL.COLOSSUS (src/data.js). */
 "use strict";
 (function (DL) {
   const { dist, rand, TAU } = DL;
@@ -286,7 +286,7 @@
     c.restore();
   };
 
-  /* ---------------- the coded stand-in sheet (until drawn frames are cut in) ---------------- */
+  /* ---------------- the coded stand-in sheet (a fallback for the drawn frames) ---------------- */
   const PAL = {
     stone: "#4b4e47", stoneHi: "#6d7165", stoneLt: "#888c7e", stoneDk: "#2d302c", stoneDeep: "#1c1f1e",
     moss: "#566f2a", mossHi: "#86a63a", mossDk: "#33451c",

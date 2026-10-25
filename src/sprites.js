@@ -102,6 +102,7 @@
     kindle(),
     abigail(),
     bell(),
+    colossus(),
   ];
 
   // Derek the golem familiar, cut at res 4, 30 px tall (about 3/8 of the knight). His cast is drawn
@@ -141,6 +142,18 @@
   // Its attack is rearing back, the lunge with its mouth gaping, and a raking claw.
   function bell() {
     return Object.assign(walking("bell", [202, 227], [148, 227], [113, 232], 4), { path: "assets/sprites/starved-bell/", keys: { bell: [0, false] } });
+  }
+
+  // The Drowned Colossus, the last wave of Derek's Hollow, cut at res 4, 64 art px tall crouched. It crawls on three side
+  // frames; its blow rears a fist and slams it down (seen from the front: both fists up, then down), and it dies collapsing.
+  function colossus() {
+    const set = Object.assign(walking("colossus", [191, 246], [143, 258], [154, 273], 4), { path: "assets/sprites/colossus/", keys: { colossus: [0, false] } });
+    set.views.side.walk = [1, 1, 2, 2, 3, 3, 2, 2].map((i) => "side/walk" + i + "@-");
+    set.views.side.attack = ["side/attackA", "side/attackB", "side/attackB"];
+    set.views.down.attack = ["stompUp", "stompDown", "stompDown"];
+    set.views.up.attack = ["back", "back@bob", "back"];
+    for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]]) Object.assign(set.views[dir], { idle: [p], hurt: ["side/hurt"], death: ["side/hurt", "death", "death"] });
+    return set;
   }
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.

@@ -104,7 +104,7 @@
       radius: 26, mass: 10, armor: 0.15, boss: true, bell: true, wake: 150, barY: 150, drop: { iron: 3, pearl: 2, resin: 2 } },
     // The last foe of Derek's Hollow (src/colossus.js): a crawling stone guardian. Its four attacks are tuned in DL.COLOSSUS.
     colossus: { name: "Drowned Colossus", hp: 1100, speed: 34, dmg: 26, range: 92, windup: 0.95, cd: 2.4, scale: 1,
-      radius: 30, mass: 40, armor: 0.2, boss: true, colossus: true, arc: 2.6, shadow: 70, sink: 130, barY: 144, barW: 90, eyeX: 62, eyeY: 74, eyeR: 14,
+      radius: 30, mass: 40, armor: 0.2, boss: true, colossus: true, arc: 2.6, shadow: 70, sink: 130, barY: 144, barW: 90, eyeX: 60, eyeY: 72, eyeR: 14,
       drop: { iron: 1, pearl: 1 } },
     self: { name: "Your Drowned Self", hp: 200, speed: 70, dmg: 15, range: 44, windup: 0.5, cd: 1.3, scale: 1.05,
       radius: 14, mass: 2, boss: true, drop: {} },
