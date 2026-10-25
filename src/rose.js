@@ -361,7 +361,8 @@
   }
   function drawBush(c, b, t) {
     c.fillStyle = "rgba(0,0,0,0.3)";
-    c.beginPath(); c.ellipse(b.x, b.y, 22, 7, 0, 0, TAU); c.fill();
+    const sw = DL.Art.sprites["roseBush" + b.v] ? DL.Art.sprites["roseBush" + b.v].w * 0.75 : 22; // under Robert's drawn bushes, as wide as they are
+    c.beginPath(); c.ellipse(b.x, b.y, sw, sw * 0.3, 0, 0, TAU); c.fill();
     c.save();
     c.translate(b.x, b.y);
     c.rotate(Math.sin(t * 0.8 + b.ph) * 0.03);
