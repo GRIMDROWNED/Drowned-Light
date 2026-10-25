@@ -1040,6 +1040,7 @@
     }
     if (d.caster) hexbearer(e, dt, p, dp);
     if (d.bell) DL.Bell.behave(e, dt, p, dp);
+    if (d.colossus) DL.Colossus.think(e, dt, p, dp); // the Drowned Colossus picks its moves (src/colossus.js)
   }
 
   function hexbearer(e, dt, p, dp) {
@@ -1098,6 +1099,7 @@
   }
 
   function strike(e) {
+    if (e.def.colossus) return DL.Colossus.strike(e);
     const p = e.tgt || G.player;
     const dmg = e.dmg * (e.rallied > 0 ? 1.2 : 1);
     if (e.def.caster && !e.aimGoal) {

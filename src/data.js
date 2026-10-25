@@ -102,6 +102,10 @@
     // The Starved Bell: one roams the Abyss, buried in the mire, and bursts up under whoever comes near (src/bell.js).
     bell: { name: "The Starved Bell", hp: 760, speed: 62, dmg: 26, range: 70, windup: 0.7, cd: 1.9, scale: 1.25,
       radius: 26, mass: 10, armor: 0.15, boss: true, bell: true, wake: 150, barY: 150, drop: { iron: 3, pearl: 2, resin: 2 } },
+    // The last foe of Derek's Hollow (src/colossus.js): a crawling stone guardian. Its four attacks are tuned in DL.COLOSSUS.
+    colossus: { name: "Drowned Colossus", hp: 1100, speed: 34, dmg: 26, range: 92, windup: 0.95, cd: 2.4, scale: 1,
+      radius: 30, mass: 40, armor: 0.2, boss: true, colossus: true, arc: 2.6, shadow: 70, sink: 130, barY: 144, barW: 90, eyeX: 62, eyeY: 74, eyeR: 14,
+      drop: { iron: 1, pearl: 1 } },
     self: { name: "Your Drowned Self", hp: 200, speed: 70, dmg: 15, range: 44, windup: 0.5, cd: 1.3, scale: 1.05,
       radius: 14, mass: 2, boss: true, drop: {} },
   };
@@ -331,7 +335,26 @@
       { type: "defiler", n: 4, mix: 6, name: "Lantern Reavers" },
       { type: "hexbearer", n: 3, mix: 7, name: "Marsh Hexbearers" },
       { type: "blackguard", n: 3, mix: 9, name: "Bone Bulwarks" },
+      { type: "colossus", n: 1, mix: 4, name: "the Drowned Colossus", boss: true }, // with `mix` of the earlier kinds; it rises `rise` seconds in
     ],
+    rise: 2.6, bossY: -230, // the boss rises `rise` seconds into its wave, from the deep water `bossY` px north of the cave's heart
+  };
+  /* The Drowned Colossus (src/colossus.js; its body, blow and size are in DL.ENEMIES.colossus, where `shadow`, `sink`, `barY`,
+     `barW`, `eyeX`, `eyeY` and `eyeR` fit its shadow, rise, health bar and eye glow to its big sprite), wave 8 of Derek's Hollow. Between blows of its arm (a sweep `arc` radians wide, in
+     DL.ENEMIES, that hurls knights `slam.kb` px) it uses one of three slower moves, each on its own timer (`every` seconds, `first` for the first):
+     summon:   pounds the ground: `ruins` broken pillars burst up around it (each hits `dmg` × its blow where it lands) and stand
+               `life` seconds as cover; `adds` small Drowned Knights (`add`) climb out with them, never more than `maxAdds` alive.
+     surge:    stomps out a ring of water that rolls `reach` px at `speed` px/s and hits `dmg` × its blow (knocking back `kb`).
+               A knight with a ruin between them and the Colossus is sheltered from it.
+     collapse: brings its ruined back down: `n` (`n2` once wounded) falling stones, one on each knight and the rest near them,
+               landing after `delay` seconds for `dmg` × its blow; each leaves a ruin `leave` of the time.
+     Below `phase2` of its health it moves `fast` × quicker and its moves come round `rate` × as often. */
+  DL.COLOSSUS = {
+    slam: { kb: 300 },
+    summon: { every: 16, first: 6, windup: 1.1, ruins: 3, dmg: 0.6, life: 14, r: 22, adds: 3, add: "squire", maxAdds: 6 },
+    surge: { every: 12, first: 10, windup: 1.2, reach: 340, speed: 290, band: 24, dmg: 0.75, kb: 280 },
+    collapse: { every: 14, first: 14, windup: 0.9, n: 5, n2: 9, delay: 1.5, r: 38, dmg: 0.9, leave: 0.35 },
+    maxRuins: 9, phase2: 0.5, fast: 1.2, rate: 1.45,
   };
   DL.scaleCost = scaleCost;
 

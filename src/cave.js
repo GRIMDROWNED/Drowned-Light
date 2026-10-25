@@ -1,9 +1,9 @@
 /* Drowned Light — Derek's Hollow: the cave where Derek is won.
    Its mouth is a unique structure in the Mire. The stones across it part only at night; walk in and every
    knight in the game is pulled down into the Hollow, a round cave arena that lies far off the map. Derek
-   wakes there beside each knight who doesn't have him yet and fights with them through seven waves of the
-   Drowned, each wave bringing a kind they haven't faced yet. Clear all seven and every knight who was there
-   keeps their Derek. If every knight falls, the Hollow throws them out and seals until the next night.
+   wakes there beside each knight who doesn't have him yet and fights with them through eight waves: seven of the
+   Drowned, each bringing a kind they haven't faced yet, and last the Drowned Colossus (src/colossus.js), which rises
+   from the deep water at the north of the cave. Beat it and every knight who was there keeps their Derek. If every knight falls, the Hollow throws them out and seals until the next night.
    The world clock stops while you're below. The host's device runs the trial and tells each guest where to
    go; snapshots carry its state. The mouth and the floor are drawn (coded fallbacks until they load). Numbers: DL.CAVE (src/data.js). */
 "use strict";
@@ -52,6 +52,7 @@
     if (Cave.inRegion(ent.x, ent.y)) {
       const dx = ent.x - C.x, dy = ent.y - C.y, d = Math.hypot(dx, dy), max = C.radius - r;
       if (d > max) { ent.x = C.x + (dx / d) * max; ent.y = C.y + (dy / d) * max; }
+      DL.Colossus.collide(ent, r); // the pillars it raises
       return;
     }
     const m = Cave.mouth();
@@ -68,7 +69,7 @@
   Cave.sealed = () => G.save.caveFail === G.save.nights;
 
   /* ---------------- the trial (host) ---------------- */
-  Cave.reset = function () { G.cave = null; };
+  Cave.reset = function () { G.cave = null; DL.Colossus.reset(); };
 
   // Host, every frame: watch the mouth while above, run the waves while below.
   Cave.update = function (dt) {
@@ -104,6 +105,7 @@
     G.cave = { wave: 0, phase: "intro", t: C.intro, queue: [], burstT: 0, ret: { x: m.x, y: m.y + 40 }, sendT: {} };
     G.enemies = []; G.projectiles = []; G.telegraphs = []; G.hexPools = []; G.stoneWalls = []; G.walls = []; G.lightZones = [];
     G.selfEnemy = null;
+    DL.Colossus.reset();
     place(G.player, 0);
     G.camera.x = G.player.x; G.camera.y = G.player.y;
     for (const a of G.allies) pull(a);
@@ -111,7 +113,7 @@
     for (const o of [0, ...G.allies.map((a) => a.id)]) wake(o);
     sfx("rise");
     G.camera.shake = 8;
-    everyone("The ground gives way into the Hollow. Derek wakes from the stone beside you: hold out together through seven waves!", "warn");
+    everyone(`The ground gives way into the Hollow. Derek wakes from the stone beside you: hold out together through ${C.waves.length} waves!`, "warn");
   }
   // A spot by the heart of the cave for knight number `id`.
   function spot(id) { const a = Math.PI / 2 + id * 1.4; return { x: C.x + Math.cos(a) * 40, y: C.y + Math.sin(a) * 24 }; }
@@ -139,6 +141,19 @@
     }
     // everyone down: the trial is lost
     if (G.player.downT > 0 && G.allies.every((a) => a.down)) return end(false);
+    DL.Colossus.update(dt);
+    if (cv.riseT > 0) {
+      // the boss wave: the deep water at the north churns, then the Colossus climbs out
+      cv.riseT -= dt;
+      G.camera.shake = Math.max(G.camera.shake, 3);
+      if (Math.random() < 0.6) G.puff(C.x + rand(-60, 60), C.y + C.bossY + rand(-14, 14), "rgba(60,200,210,0.55)", 50, 0.8, -40);
+      if (cv.riseT <= 0) {
+        G.enemies.push(G.makeEnemy(C.waves[cv.wave - 1].type, C.x, C.y + C.bossY, C.zone, { rise: 0.9 }));
+        G.camera.shake = 16;
+        sfx("growl");
+        everyone("The Drowned Colossus heaves itself out of the deep water!", "danger");
+      }
+    }
     if (cv.phase === "intro" || cv.phase === "rest") {
       cv.t -= dt;
       if (cv.t <= 0) startWave(cv.wave + 1);
@@ -155,7 +170,7 @@
       }
       for (let i = 0; i < 8; i++) G.puff(C.x + Math.cos(a) * (C.radius - 30), C.y + Math.sin(a) * (C.radius - 30), "rgba(60,200,210,0.5)", 60, 0.8);
     }
-    if (!cv.queue.length && !G.enemies.length) {
+    if (!cv.queue.length && !G.enemies.length && !(cv.riseT > 0)) {
       if (cv.wave >= C.waves.length) return end(true);
       cv.phase = "rest";
       cv.t = C.rest;
@@ -170,7 +185,8 @@
     cv.wave = n; cv.phase = "fight"; cv.burstT = 0.5;
     // the new kind first, then the ones already met, shuffled
     const q = [], seen = C.waves.slice(0, n - 1).map((x) => x.type);
-    for (let i = 0; i < Math.max(1, Math.round(w.n * scale)); i++) q.push(w.type);
+    if (w.boss) cv.riseT = C.rise; // a boss comes alone, on its own (trial() raises it)
+    else for (let i = 0; i < Math.max(1, Math.round(w.n * scale)); i++) q.push(w.type);
     const mix = [];
     for (let i = 0; i < Math.round(w.mix * scale); i++) mix.push(DL.pick(seen));
     for (let i = mix.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [mix[i], mix[j]] = [mix[j], mix[i]]; }
@@ -193,11 +209,12 @@
     const cv = G.cave, p = G.player, max = G.stats().maxHp, ret = cv.ret;
     G.enemies = []; G.projectiles = []; G.telegraphs = []; G.hexPools = []; G.stoneWalls = [];
     G.cave = null;
+    DL.Colossus.reset();
     if (won) {
       for (const m of G.golems) if (m.trial) m.trial = false; // every Derek who fought here stays with his knight
       G.save.golem = 1;
       sfx("milestone");
-      everyone("The seventh wave breaks. Derek climbs out of the Hollow with you, and he's yours for good.", "good");
+      everyone("The Drowned Colossus crumbles into the dark water. Derek climbs out of the Hollow with you, and he's yours for good.", "good");
     } else {
       for (const m of G.golems) if (m.trial) { m.gone = true; for (let i = 0; i < 12; i++) G.puff(m.x + rand(-12, 12), m.y - rand(0, 20), "rgba(120,130,110,0.6)", 50, 0.9); }
       G.golems = G.golems.filter((m) => !m.gone);
@@ -233,10 +250,11 @@
 
   /* ---------------- co-op ---------------- */
   // Host: what guests need to know, in each snapshot.
-  Cave.snap = () => (G.cave ? [G.cave.wave, G.cave.phase === "fight" ? 1 : 0, Math.round(G.cave.t * 10) / 10, G.cave.queue.length] : 0);
+  Cave.snap = () => (G.cave ? [G.cave.wave, G.cave.phase === "fight" ? 1 : 0, Math.round(G.cave.t * 10) / 10, G.cave.queue.length, DL.Colossus.snap()] : 0);
   // Guest: the trial's state from a snapshot (the moves themselves come as messages).
   Cave.applySnap = function (s) {
     G.cave = s ? { wave: s[0], phase: s[1] ? "fight" : s[0] ? "rest" : "intro", t: s[2], queue: { length: s[3] } } : null;
+    DL.Colossus.applySnap(s && s[4]); // its pillars, rings of water and falling stones
   };
   Cave.guestMsg = function (m) {
     const p = G.player, max = G.stats().maxHp;
@@ -272,7 +290,9 @@
     if (G.player.downT > 0) return `You're down · you rise when wave ${cv.wave} is cleared`;
     if (cv.phase === "intro") return `Derek's Hollow · the Drowned stir in the tunnels`;
     if (cv.phase === "rest") return `Wave ${cv.wave} of ${n} cleared · wave ${cv.wave + 1} in ${Math.ceil(cv.t)}`;
-    const left = G.enemies.length + cv.queue.length;
+    const left = G.enemies.length + cv.queue.length, boss = DL.Colossus.alive();
+    if (boss) return `Derek's Hollow · wave ${cv.wave} of ${n} · the Drowned Colossus ${Math.max(1, Math.ceil((boss.hp / boss.maxHp) * 100))}%`;
+    if (C.waves[cv.wave - 1] && C.waves[cv.wave - 1].boss && cv.queue.length + G.enemies.length === 0) return `Derek's Hollow · wave ${cv.wave} of ${n} · the deep water stirs`;
     return `Derek's Hollow · wave ${cv.wave} of ${n} · ${left} Drowned left`;
   };
   // Which way the mouth lies from camp, in words, for the Kit tab.
@@ -337,6 +357,14 @@
       blob(c, x, y, 46, 28, "rgba(0,0,0,0.85)");
       blob(c, x, y, 30, 18, "#000");
     }
+    // the deep water the Colossus sleeps in, at the north of the cave
+    const by = C.y + C.bossY;
+    blob(c, C.x, by, 78, 30, "rgba(8,40,48,0.9)");
+    blob(c, C.x, by, 60, 22, "rgba(14,70,80,0.9)");
+    c.strokeStyle = `rgba(90,235,245,${G.cave && G.cave.riseT > 0 ? 0.6 : 0.2})`;
+    c.lineWidth = 2;
+    c.beginPath(); c.ellipse(C.x, by, 70, 26, 0, 0, TAU); c.stroke();
+    DL.Colossus.drawGround(c);
     c.strokeStyle = "rgba(90,235,245,0.22)";
     c.lineWidth = 3;
     c.beginPath(); c.ellipse(C.x, C.y - 30, 92, 50, 0, 0, TAU); c.stroke();
@@ -356,6 +384,7 @@
       list.push({ y, f: () => { if (!sprite(c, "boulder" + v + "1", x, y + 6, DL.hash(i, 1, 42) > 0.5)) { blob(c, x, y - 12, 22, 18, "#2a2b2e"); blob(c, x - 4, y - 18, 12, 9, "#3a3b3e"); } } });
     }
     for (const q of CRYSTALS) list.push({ y: C.y + q.y, f: () => drawCrystal(c, C.x + q.x, C.y + q.y, q.big ? 1.6 : 1, t) });
+    DL.Colossus.push(list, c);
   };
 
   function drawCrystal(c, x, y, s, t) {

@@ -761,15 +761,16 @@
       // clawing up out of the water
       const k = 1 - e.rise / 0.9;
       c.save();
-      c.beginPath(); c.rect(e.x - 60, e.y - 160, 120, 160); c.clip();
-      Art.drawUnit(c, unitKey(e), "walk", Math.floor(k * 8), e.angle, e.x, e.y + (1 - k) * 34 * s, s, { alpha: 0.4 + 0.6 * k });
+      c.beginPath(); c.rect(e.x - 60 * s - (d.shadow || 0), e.y - 160 * s, 120 * s + 2 * (d.shadow || 0), 160 * s); c.clip();
+      Art.drawUnit(c, unitKey(e), "walk", Math.floor(k * 8), e.angle, e.x, e.y + (1 - k) * (d.sink || 34) * s, s, { alpha: 0.4 + 0.6 * k });
       c.restore();
       c.fillStyle = "rgba(60,200,210,0.5)";
       c.beginPath(); c.ellipse(e.x, e.y, 14 * s + 4, 4, 0, 0, Math.PI * 2); c.fill();
       return;
     }
-    shadow(c, e.x, e.y, 14 * s, 5 * s);
-    if (e.state === "windup") {
+    shadow(c, e.x, e.y, (d.shadow || 14) * s, (d.shadow || 14) * 0.36 * s);
+    if (e.state === "windup" && d.colossus) DL.Colossus.drawWindup(c, e);
+    else if (e.state === "windup") {
       // telegraph the coming blow
       const k = 1 - e.stT / d.windup;
       c.save();
@@ -792,7 +793,7 @@
     const flashColor = e.flash > 0 ? "#ffffff" : d.beast && e.state !== "windup" ? WOLF_CAST : "#7ff6ff";
     const [anim, fr, ang] = enemyAnim(e, t);
     Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y, s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1 });
-    if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.barY || (d.crawl ? 36 : d.beast ? 66 : 84) * s) - 4, Math.round(26 * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
+    if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.barY || (d.crawl ? 36 : d.beast ? 66 : 84) * s) - 4, Math.round((d.barW || 26) * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
     if (e.burn > 0) Art.drawFire(c, e.x + Math.sin(t * 7) * 4, e.y - 10, 0.5, t);
     if (e.bleed > 0) {
       // Bone Hound bleed: drops running down to the ground
@@ -1027,10 +1028,10 @@
     const { dir, flip } = Art.unitDir(ang);
     if (dir === "up") return;
     const side = dir === "side" ? (flip ? -1 : 1) : 0;
-    const x = e.x + side * (e.def.crawl ? 17 : 7) * s;
-    const y = e.y - (e.def.crawl ? (dir === "side" ? 16 : 18) : 56) * s;
+    const x = e.x + side * (e.def.eyeX || (e.def.crawl ? 17 : 7)) * s;
+    const y = e.y - (e.def.eyeY || (e.def.crawl ? (dir === "side" ? 16 : 18) : 56)) * s;
     const pulse = 0.75 + 0.25 * Math.sin(t * 5 + e.x);
-    const r = 9 * s + 3;
+    const r = (e.def.eyeR || 9) * s + 3;
     const g = c.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, `rgba(80,235,245,${0.5 * pulse})`);
     g.addColorStop(1, "rgba(80,235,245,0)");
