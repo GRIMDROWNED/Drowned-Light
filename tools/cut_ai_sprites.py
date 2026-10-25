@@ -342,6 +342,8 @@ PROP_GRIDS = {
     'deadly-rose/heart.png': (2, 1, ['roseBud', 'roseWither']),
     # the rose bushes ringing her garden: low and wide, tall, half dead (keeping the coded names)
     'deadly-rose/bushes.png': (3, 1, ['roseBush0', 'roseBush1', 'roseBush2']),
+    # petals on the wind round her garden: six tumbling shapes, played in turn as a petal drifts
+    'deadly-rose/petals.png': (6, 1, ['rosePetal1', 'rosePetal2', 'rosePetal3', 'rosePetal4', 'rosePetal5', 'rosePetal6']),
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
@@ -389,6 +391,8 @@ PROP_HEIGHT['roseBud'] = 128  # a bit taller than the knight
 PROP_SAME['roseWither'] = 'roseBud'
 PROP_HEIGHT['roseBush1'] = 84  # the tall one, about the knight's height
 PROP_SAME.update({'roseBush0': 'roseBush1', 'roseBush2': 'roseBush1'})
+PROP_WIDTH['rosePetal1'] = 16
+PROP_SAME.update({'rosePetal%d' % i: 'rosePetal1' for i in range(2, 7)})
 PROP_SAME.update({'roseWaltz2': 'roseWaltz1', 'roseWaltz3': 'roseWaltz1', 'roseWaltz4': 'roseWaltz1'})
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}

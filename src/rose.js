@@ -452,6 +452,17 @@
       if (q.x < view.left) q.x += w; else if (q.x > view.right) q.x -= w;
       if (q.y < view.top) q.y += h; else if (q.y > view.bottom) q.y -= h;
       const f = Math.sin(t * 4 + q.ph);
+      const sp = DL.Art.sprites["rosePetal" + (1 + (Math.floor(t * (4 + q.s * 4) + q.ph * 3) % 6))];
+      if (sp) {
+        // Robert's petals, tumbling through their six shapes; drawn plainly, not as glow
+        const k = 0.7 + q.s * 0.5, pw = sp.w * 2 * k, ph = sp.h * 2 * k;
+        c.save();
+        c.globalCompositeOperation = "source-over";
+        c.globalAlpha = 0.85;
+        c.drawImage(sp.c, Math.round(q.x - pw / 2), Math.round(q.y - ph / 2), Math.round(pw), Math.round(ph));
+        c.restore();
+        continue;
+      }
       c.fillStyle = `rgba(${q.s > 0.5 ? "230,50,70" : "170,20,40"},${0.55 + 0.3 * f})`;
       c.fillRect(Math.round(q.x), Math.round(q.y), 2 + Math.round(Math.abs(f) * 1.5), 2);
     }
