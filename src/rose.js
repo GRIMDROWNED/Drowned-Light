@@ -336,6 +336,7 @@
     for (const b of Rose.bushes()) list.push({ y: b.y, f: () => drawBush(c, b, t) });
     if (!Rose.alive()) list.push({ y: s.y, f: () => drawSprite(c, "roseWither", s.x, s.y, 1) });
     for (const e of G.enemies) if (e.def.rose && e.lashT > 0 && DL.Art.sprites.roseLash2) list.push({ y: e.y + 2, f: () => drawLash(c, e) });
+    for (const e of G.enemies) if (e.def.rose && e.spin && DL.Art.sprites.roseWaltz1) list.push({ y: e.y + 3, f: () => drawWaltz(c, e, t) });
     for (const v of vines) {
       const T = age(v);
       if (T > 0) list.push({ y: v.y, f: () => drawVine(c, v, T) });
@@ -369,6 +370,12 @@
     c.drawImage(sp.c, f === 3 ? 40 : 6, -Math.round(h / 2), w, h);
     c.restore();
   }
+  // Her waltz: Robert's ring of whirling thorn whips round her waist, a quarter turn a frame, as wide as the ring
+  // it cuts, flattened a little to lie in the 3/4 view.
+  function drawWaltz(c, e, t) {
+    const sp = DL.Art.sprites["roseWaltz" + (1 + (Math.floor(t * 16) % 4))], w = sp.w * 2, h = sp.h * 2 * 0.8;
+    c.drawImage(sp.c, Math.round(e.x - w / 2), Math.round(e.y - 40 - h / 2), w, h);
+  }
   function drawVine(c, v, T) {
     const rise = Math.min(1, T / 0.2), fade = Math.min(1, (v.life - T) / 0.5);
     if (fade <= 0) return;
@@ -395,7 +402,7 @@
     if (G.cave) return;
     for (const e of G.enemies) {
       if (!e.def.rose || e.dormant) continue;
-      if (e.spin) {
+      if (e.spin && !DL.Art.sprites.roseWaltz1) {
         for (let i = 0; i < 2; i++) {
           const a = t * 13 + i * Math.PI, r = K.waltz.r * 0.92;
           c.strokeStyle = `rgba(${RED},0.75)`;
@@ -405,7 +412,7 @@
           c.lineWidth = 1;
           c.beginPath(); c.ellipse(e.x, e.y - 30, r - 4, (r - 4) * 0.5, 0, a + 0.3, a + 1.5); c.stroke();
         }
-      } else if (e.state === "windup" && e.special === "waltz") {
+      } else if (!e.spin && e.state === "windup" && e.special === "waltz") {
         const k = Math.max(0, 1 - e.stT / K.waltz.windup);
         c.strokeStyle = `rgba(${RED},${0.2 + 0.6 * k})`;
         c.lineWidth = 2;
