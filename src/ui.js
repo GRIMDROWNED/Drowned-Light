@@ -542,6 +542,7 @@
           <li>Bone Wolves den in the Mire, to the ${DL.Den.direction()}. Break the pack and carry a carcass home: it rises as your <b>Bone Hound</b>.</li>
           <li>${DL.Kindle.guideLine()}</li>
           <li>${DL.Abigail.guideLine()}</li>
+          <li>${DL.Rose.guideLine()}</li>
           <li>Fall, and your <b>drowned self</b> keeps your supplies. Slay it to get them back.</li>
         </ul></article>`;
     }
@@ -661,6 +662,14 @@
       const m = DL.Abigail.graveSpot();
       set($("graveArrow"), "transform", `rotate(${(Math.atan2(m.y - p.y, m.x - p.x) * 180) / Math.PI}deg)`);
       set($("graveDist"), "text", `Graves ${Math.round(Math.hypot(m.x - p.x, m.y - p.y) / 10)}m`);
+    }
+    // the way to the Deadly Rose's garden, once found, while she lives
+    const rn = DL.Rose.showNav();
+    set($("roseNav"), "hidden", !rn);
+    if (rn) {
+      const m = DL.Rose.lair();
+      set($("roseArrow"), "transform", `rotate(${(Math.atan2(m.y - p.y, m.x - p.x) * 180) / Math.PI}deg)`);
+      set($("roseDist"), "text", `Rose ${Math.round(Math.hypot(m.x - p.x, m.y - p.y) / 10)}m`);
     }
     const ds = G.save.drownedSelf;
     set($("selfNav"), "hidden", !ds);

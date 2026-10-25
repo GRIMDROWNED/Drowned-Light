@@ -47,6 +47,8 @@
       const kin = DL.Kindle.spot(), kinHere = Math.hypot(mx - kin.x, my - kin.y) < CH + 70;
       // and the Abyss graves a clearing for their stones (src/abigail.js)
       const gs = DL.Abigail.graveSpot(), gsR = DL.ABIGAIL.clear, gsHere = Math.hypot(mx - gs.x, my - gs.y) < CH + gsR;
+      // and the Deadly Rose's garden one for her roses (src/rose.js)
+      const rl = DL.Rose.lair(), rlHere = Math.hypot(mx - rl.x, my - rl.y) < CH + DL.ROSE.clear;
       const n = Math.round(DL.ZONES[zi].density * D.density * (0.7 + DL.hash(cx, cy, 5) * 0.6));
       for (let i = 0; i < n; i++) {
         const x = (cx + DL.hash(cx, cy, i * 3 + 1)) * CH, y = (cy + DL.hash(cx, cy, i * 3 + 2)) * CH;
@@ -64,6 +66,7 @@
         if (denHere && Math.hypot(x - den.x, y - den.y) < denR) continue;
         if (kinHere && Math.hypot(x - kin.x, y - kin.y) < 70) continue;
         if (gsHere && Math.hypot(x - gs.x, y - gs.y) < gsR) continue;
+        if (rlHere && DL.Rose.clears(x, y)) continue;
         objs.push(this.makeObj(type, x, y, `${cx},${cy},${i}`, ozi, DL.hash(cx, cy, i * 5 + 4)));
       }
       // The blooms of this chunk's grove that stand inside it.

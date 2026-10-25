@@ -42,6 +42,8 @@
     abigail: 0,
     // the Starved Bell that roams the Abyss: where on its ring it lies (radians), and the day it was slain (-1: alive)
     bell: { a: null, dead: -1 },
+    // the Deadly Rose in her Abyss garden: found yet, and the day she was slain (-1: alive)
+    rose: { found: false, dead: -1 },
     started: false,
     lastPlayed: 0,
   });
@@ -207,6 +209,7 @@
     DL.Kindle.reset();
     DL.Abigail.reset();
     DL.Bell.reset();
+    DL.Rose.reset();
     G.state = "play";
   };
 
@@ -266,6 +269,8 @@
     updateSpawning(dt);
     DL.Den.update(dt);
     DL.Bell.update(dt);
+    DL.Rose.update(dt);
+    DL.Rose.local();
     DL.Cave.update(dt);
     updateEnemies(dt);
     DL.Hounds.update(dt);
@@ -305,6 +310,7 @@
       updateCorruption(dt);
     }
     DL.Net.smooth(dt);
+    DL.Rose.local();
     DL.Kits.update(dt);
     updateProjectiles(dt);
     updateEffects(dt);
@@ -344,6 +350,7 @@
     DL.Den.dawn();
     DL.Kindle.dawn();
     DL.Bell.dawn();
+    DL.Rose.dawn();
     if (G.rootEvent) {
       const o = G.rootEvent.obj;
       if (!o.dead) {
@@ -432,9 +439,11 @@
     for (const m of G.golems) L.push({ x: m.x, y: m.y - 12, r: 32, s: 0.4, col: "80,230,240", a: 0.6 });
     DL.Kindle.lights(L);
     DL.Abigail.lights(L);
+    DL.Rose.lights(L);
     for (const e of G.enemies) {
       if (e.type === "defiler") L.push({ x: e.x, y: e.y - 70, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
       else if (e.def.bell && e.dormant) L.push({ x: e.x, y: e.y - 16, r: 70, s: 0.3, col: "70,230,240", a: 0.45 }); // a cold glimmer off the buried Starved Bell
+      else if (e.def.rose) L.push({ x: e.x, y: e.y - 100, r: 90, s: 0.3, col: "220,40,60", a: 0.6 }); // the Deadly Rose's heart
       else if (e.def.boss) L.push({ x: e.x, y: e.y - 40, r: 60, s: 0.3, col: "70,230,240", a: 0.6 });
     }
     for (const pr of G.projectiles) L.push({ x: pr.x, y: pr.y, r: pr.kind === "orb" ? 44 : 26, s: 0.3, col: pr.col, a: 0.8 });
@@ -917,6 +926,8 @@
         e.moving = false;
       } else if (e.def.bell && DL.Bell.busy(e, dt, p, dp)) {
         // the Starved Bell rearing to swallow, lunging, or eating
+      } else if (e.def.rose && DL.Rose.busy(e, dt, p)) {
+        // the Deadly Rose whirling her whips
       } else if (e.state === "windup") {
         e.stT -= dt;
         if (e.stT <= 0) { strike(e); e.state = "recover"; e.stT = 0.35; e.cd = e.def.cd; }
@@ -1040,7 +1051,8 @@
     }
     if (d.caster) hexbearer(e, dt, p, dp);
     if (d.bell) DL.Bell.behave(e, dt, p, dp);
-    if (d.colossus) DL.Colossus.think(e, dt, p, dp); // the Drowned Colossus picks its moves (src/colossus.js)
+    if (d.colossus) DL.Colossus.think(e, dt, p, dp);
+    if (d.rose) DL.Rose.think(e, dt, p, dp); // the Deadly Rose picks her moves (src/rose.js) // the Drowned Colossus picks its moves (src/colossus.js)
   }
 
   function hexbearer(e, dt, p, dp) {
@@ -1100,6 +1112,7 @@
 
   function strike(e) {
     if (e.def.colossus) return DL.Colossus.strike(e);
+    if (e.def.rose) return DL.Rose.strike(e);
     const p = e.tgt || G.player;
     const dmg = e.dmg * (e.rallied > 0 ? 1.2 : 1);
     if (e.def.caster && !e.aimGoal) {
@@ -1244,6 +1257,7 @@
     e.removed = true;
     if (e.def.den) { DL.Den.slain(e); return; } // a Bone Wolf leaves its carcass
     if (e.def.bell) DL.Bell.slain(e);
+    if (e.def.rose) DL.Rose.slain(e);
     sfx("kill");
     G.effects.push({ type: "dissolve", e, t: 0, max: 0.6 });
     for (let i = 0; i < 16; i++) puff(e.x + rand(-10, 10), e.y - rand(0, 50) * e.def.scale, "rgba(60,220,230,0.7)", 50, 0.9, -40);
@@ -1398,8 +1412,8 @@
         }
         for (const a of G.allies) if (!a.down && dist(t.x, t.y, a.x, a.y) < t.r + 6) DL.Net.hurtAlly(a, t.dmg, Math.atan2(a.y - t.y, a.x - t.x));
         for (const h of G.hounds.slice()) if (dist(t.x, t.y, h.x, h.y) < t.r + 4) DL.Hounds.hurt(h, t.dmg, Math.atan2(h.y - t.y, h.x - t.x));
-        for (let i = 0; i < 10; i++) spark(t.x + rand(-t.r, t.r) * 0.6, t.y + rand(-t.r, t.r) * 0.3, "90,235,245", 120);
-        G.effects.push({ type: "spikes", x: t.x, y: t.y, r: t.r, t: 0, max: 0.5 });
+        for (let i = 0; i < 10; i++) spark(t.x + rand(-t.r, t.r) * 0.6, t.y + rand(-t.r, t.r) * 0.3, t.rose ? "220,40,60" : "90,235,245", 120);
+        if (!t.rose) G.effects.push({ type: "spikes", x: t.x, y: t.y, r: t.r, t: 0, max: 0.5 }); // the Deadly Rose's thorns draw themselves
       }
     }
     G.telegraphs = G.telegraphs.filter((t) => t.t < t.delay + 0.05);

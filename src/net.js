@@ -293,7 +293,7 @@
       wa: G.walls.map((w) => [r1(w.x1), r1(w.y1), r1(w.x2), r1(w.y2), r1(w.t), w.max]),
       py: G.pylons.map((q) => [Math.round(q.hp), q.lit ? 1 : 0]),
       pk: G.pickups.filter((k) => near(k.x, k.y, 800)).map((k) => [k.id, r1(k.x), r1(k.y), k.res]),
-      tg: G.telegraphs.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.delay]),
+      tg: G.telegraphs.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.delay, q.rose ? 1 : 0]),
       hx: G.hexPools.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.life]),
       // Bone Hounds: [id, owner, x, y, angle, moving, hp, maxHp, biting, bite time left, hit flash, knocked out for]
       hd: G.hounds.filter((h) => near(h.x, h.y, 1100)).map((h) => [h.id, h.owner, r1(h.x), r1(h.y), r1(h.angle), h.moving ? 1 : 0, Math.round(h.hp), h.maxHp,
@@ -303,6 +303,7 @@
       // Derek: [id, owner, x, y, angle, moving, casting, cast time left]; his walls: [id, owner, x, y, angle, length, hits left, age]
       gm: G.golems.filter((m) => near(m.x, m.y, 1100)).map((m) => [m.id, m.owner, r1(m.x), r1(m.y), r1(m.angle), m.moving ? 1 : 0, m.state === "cast" ? 1 : 0, r1(m.stT)]),
       sw: G.stoneWalls.filter((w) => near(w.x, w.y, 1100)).map((w) => [w.id, w.owner, r1(w.x), r1(w.y), r1(w.ang), w.len, w.hits, r1(w.t)]),
+      rs: DL.Rose.snap(), // the Deadly Rose: [her thorn vines, [her id, whirling, the move she's winding up]]
       cv: DL.Cave.snap(), // Derek's Hollow: [wave, fighting, seconds to the next wave, Drowned still to come]
       // Kindles, one per knight who lit theirs: [id, owner, x, y, angle, moving, angle he leads toward or null]
       kd: DL.Kindle.rows(),
@@ -464,6 +465,7 @@
     G.hostState = m.state;
     G.flame.hp = m.flame[0]; G.flame.max = m.flame[1]; G.flame.lit = !!m.flame[2];
     DL.Cave.applySnap(m.cv);
+    DL.Rose.applySnap(m.rs);
 
     // the host's knight and the other friends': keep the same objects so they glide and animate
     const known = new Map(G.allies.map((a) => [a.id, a]));
@@ -502,7 +504,7 @@
     G.walls = m.wa.map((w) => ({ x1: w[0], y1: w[1], x2: w[2], y2: w[3], t: w[4], max: w[5], dps: 0, net: 1 }));
     m.py.forEach((q, i) => { if (G.pylons[i]) { G.pylons[i].hp = q[0]; G.pylons[i].lit = !!q[1]; } });
     G.pickups = m.pk.map((k) => ({ id: k[0], x: k[1], y: k[2], res: k[3], t: 1, vx: 0, vy: 0 }));
-    G.telegraphs = m.tg.map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], delay: q[4], done: true }));
+    G.telegraphs = m.tg.map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], delay: q[4], rose: !!q[5], done: true }));
     G.hexPools = (m.hx || []).map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], life: q[4] }));
     // Bone Hounds: puppets kept between snapshots so they glide and run
     const hounds = new Map(G.hounds.map((h) => [h.id, h]));

@@ -102,6 +102,10 @@
     // The Starved Bell: one roams the Abyss, buried in the mire, and bursts up under whoever comes near (src/bell.js).
     bell: { name: "The Starved Bell", hp: 760, speed: 62, dmg: 26, range: 70, windup: 0.7, cd: 1.9, scale: 1.25,
       radius: 26, mass: 10, armor: 0.15, boss: true, bell: true, wake: 150, barY: 150, drop: { iron: 3, pearl: 2, resin: 2 } },
+    // The Deadly Rose: a thorned queen who keeps a garden of roses at one spot in the Abyss (src/rose.js). Her moves: DL.ROSE.
+    rose: { name: "The Deadly Rose", hp: 900, speed: 46, dmg: 22, range: 105, windup: 0.7, cd: 1.9, scale: 0.8,
+      radius: 20, mass: 12, armor: 0.1, boss: true, rose: true, arc: 1.5, wake: 230, shadow: 30, barY: 160, barW: 60,
+      eyeX: 2, eyeY: 156, eyeR: 3, eyeCol: "255,60,80", drop: { iron: 3, pearl: 3, resin: 3 } },
     // The last foe of Derek's Hollow (src/colossus.js): a crawling stone guardian. Its four attacks are tuned in DL.COLOSSUS.
     colossus: { name: "Drowned Colossus", hp: 1100, speed: 34, dmg: 26, range: 92, windup: 0.95, cd: 2.4, scale: 1,
       radius: 30, mass: 40, armor: 0.2, boss: true, colossus: true, arc: 2.6, shadow: 70, sink: 130, barY: 144, barW: 90, eyeX: 60, eyeY: 72, eyeR: 14,
@@ -308,6 +312,26 @@
     r: 4800, roam: 0.0035, spawn: 1100, forget: 1700, erupt: 120, creep: 26,
     tollEvery: 8, tollR: 160, tollCorrupt: 12, gulpEvery: 7, gulpR: 170, gulpWindup: 0.9, lunge: 620,
     hold: 3, bite: 0.22, free: 0.1, respawnDays: 3,
+  };
+  /* The Deadly Rose (src/rose.js): her garden lies `dist` px out from camp in the Abyss (±150), a clearing of `clear` px
+     ringed by up to `bushes` rose bushes. Red petals blow off it out to `petalR` px; a knight within `hintR` px is told
+     which way they blow from, and within `foundR` px has found it. She comes into play when a knight is within `spawn` px,
+     goes back to her roses, whole, once every knight is `forget` px away, and never strays more than `leash` px from
+     them. She sleeps until a knight comes within her `wake` (DL.ENEMIES.rose).
+       lash   her ordinary blow: a whip across `arc` (DL.ENEMIES.rose) out to her range + 20, hurling knights `lashKb` back.
+       waltz  first after `first` s, then every `every` s when her prey is within `r` + 30 px: a `windup` s warning ring,
+              then she spins for `spin` s, edging toward them at `drift` of her speed, and cuts everyone within `r` px
+              `hits` times for `dmg` of her damage, hurling them `kb` back.
+       briar  every `every` s when her prey is within `reach` px: after `windup` + `delay` s, thorns burst up in a line
+              of `n` spots `step` px apart toward every knight and one under each (`r` px, `dmg` of her damage); they
+              stand `life` s and sting anyone in them for `sting` of her damage every half second. At most `maxVines`.
+     Below `phase2` of her health she moves `fast` times quicker, her moves come `rate` times as often, and the briar
+     rings her too. Slain, she stays gone `respawnDays` days. */
+  DL.ROSE = {
+    dist: 4500, clear: 230, bushes: 11, petalR: 1700, hintR: 1500, foundR: 420, spawn: 1100, forget: 1700, leash: 460,
+    lashKb: 260, phase2: 0.5, fast: 1.2, rate: 1.35, respawnDays: 4, maxVines: 30,
+    waltz: { first: 5, every: 9, windup: 0.9, spin: 1.3, r: 170, drift: 0.6, hits: 3, dmg: 0.45, kb: 240 },
+    briar: { first: 3, every: 11, windup: 0.6, delay: 0.5, reach: 480, n: 5, step: 58, r: 34, dmg: 0.7, life: 4, sting: 0.12 },
   };
   /* Derek, the stone golem familiar (src/golem.js): won in Derek's Hollow (DL.CAVE), one per knight.
      He can't be hurt. Every `buildCd` seconds, when a Drowned comes within `trigger` px of his knight,
