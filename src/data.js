@@ -99,6 +99,9 @@
     // The pack at the Bone Wolf den (src/den.js): wild Bone Hounds that never leave it, by day or night.
     bonewolf: { name: "Bone Wolf", hp: 30, speed: 140, dmg: 7, range: 26, windup: 0.3, cd: 1.1, scale: 1,
       radius: 10, mass: 0.8, lunge: 340, den: true, beast: true, drop: {} },
+    // The Starved Bell: one roams the Abyss, buried in the mire, and bursts up under whoever comes near (src/bell.js).
+    bell: { name: "The Starved Bell", hp: 760, speed: 62, dmg: 26, range: 70, windup: 0.7, cd: 1.9, scale: 1.25,
+      radius: 26, mass: 10, armor: 0.15, boss: true, bell: true, wake: 150, barY: 150, drop: { iron: 3, pearl: 2, resin: 2 } },
     self: { name: "Your Drowned Self", hp: 200, speed: 70, dmg: 15, range: 44, windup: 0.5, cd: 1.3, scale: 1.05,
       radius: 14, mass: 2, boss: true, drop: {} },
   };
@@ -287,6 +290,20 @@
     orbSpeed: 240, orbLife: 2.4, curse: 0.1, pulseEvery: 20, buffDur: 10, buff: 0.1,
     need: 10, orbs: [[3, 550, 1250], [4, 1400, 2550], [3, 2700, 3900], [2, 4150, 4700]], grab: 28,
     graveDist: 4400, clear: 190, giveR: 120,
+  };
+  /* The Starved Bell (src/bell.js): one roams the Abyss, `r` px out from the camp, creeping `roam` radians a second
+     round the ring while nobody is near. It rises from the deep (comes into play) when a knight is within `spawn` px
+     and sinks back, healed, once every knight is `forget` px away. It lies buried until a knight comes within its
+     `wake` (DL.ENEMIES.bell), then bursts up in a ring of `erupt` px. Awake it claws (its normal blow), tolls every
+     `tollEvery` seconds (a ring of `tollR` px that hurts and adds `tollCorrupt` corruption), and every `gulpEvery`
+     seconds, when a knight is within `gulpR` px, rears for `gulpWindup` seconds and lunges mouth first. A knight it
+     catches is swallowed for `hold` seconds, bitten for `bite` of its damage every half second; it spits them out early
+     once it has lost `free` of its health since (friends, hounds and Derek can cut you free), or when it dies. Slain, it
+     stays gone for `respawnDays` days. */
+  DL.BELL = {
+    r: 4800, roam: 0.0035, spawn: 1100, forget: 1700, erupt: 120, creep: 26,
+    tollEvery: 8, tollR: 160, tollCorrupt: 12, gulpEvery: 7, gulpR: 170, gulpWindup: 0.9, lunge: 620,
+    hold: 3, bite: 0.22, free: 0.1, respawnDays: 3,
   };
   /* Derek, the stone golem familiar (src/golem.js): won in Derek's Hollow (DL.CAVE), one per knight.
      He can't be hurt. Every `buildCd` seconds, when a Drowned comes within `trigger` px of his knight,

@@ -582,6 +582,128 @@
     return sheet;
   }
 
+  /* ---------- The Starved Bell: a great rusted bell on four long legs of bone, a ring of teeth for a mouth ----------
+     Its own frame size; side views face right. Coded until drawn sheets come in (src/sprites.js). */
+  const BW = 76, BH = 62, BX = 38, BG = 58;
+  const BELL = {
+    bronze: "#6e5236", bronzeHi: "#9c7a52", bronzeDk: "#43301f", verd: "#4f7a66", rune: "#c19a5c",
+    bone: "#8b7558", boneHi: "#b49c78", boneDk: "#57462f", cloth: "#c9b98f", clothDk: "#8f7f5c",
+    moss: "#56702c", mossHi: "#8aa63e", chain: "#5c4130", maw: "#1b0e0c", flesh: "#7d3b2f", tooth: "#d8c8a6",
+    drip: "#4ff0f0", outline: "#0b0907",
+  };
+  /* lift: foot lift per leg [near front, far front, near back, far back]; tilt: the bell rocks back (−) or
+     pitches mouth-forward (+); jaw: how wide the mouth gapes; clap: the clapper's swing; push: body shift forward */
+  const BELL_ANIMS = {
+    idle: [{ clap: 0 }, { bob: 1, clap: 1 }],
+    walk: [{ lift: [4, 0, 0, 4], bob: -1, clap: 2 }, { clap: 0 }, { lift: [0, 4, 4, 0], bob: -1, clap: -2 }, { clap: 0 }],
+    attack: [{ tilt: -0.35, jaw: 1, bob: -3, push: -3, clap: -2 }, { tilt: 0.45, jaw: 5, bob: 2, push: 4, clap: 3 }, { tilt: 0.2, jaw: 2, bob: 1, push: 2 }],
+    hurt: [{ tilt: -0.2, bob: 1, clap: -3 }],
+    death: [{ tilt: 0.3, bob: 4 }, { tilt: 0.6, bob: 8 }, { tilt: 0.9, bob: 12 }],
+  };
+  function bellLeg(P, p, pts, lift, col, dk) {
+    pts = pts.slice();
+    pts[pts.length - 1] -= lift;
+    P.line(pts, 3, col);
+    for (let i = 2; i < pts.length - 2; i += 2) P.rect(pts[i] - 1, pts[i + 1] - 1, 3, 3, dk); // knuckles
+    // claws splayed on the mud
+    const fx = pts[pts.length - 2], fy = pts[pts.length - 1];
+    for (const dx of [-3, 0, 3]) P.seg(fx, fy, fx + dx, fy + 2, col);
+  }
+  // The bell itself, crown at (0, 0), mouth down at y 24, in whatever transform the caller set.
+  function bellBody(P, p, back, jaw, mouth) {
+    P.poly([-6, 0, 6, 0, 8, 3, 11, 18, 14, 24, -14, 24, -11, 18, -8, 3], p.bronzeDk);
+    P.poly([-6, 1, 5, 1, 7, 4, 10, 18, 12, 22, -12, 22, -10, 18, -7, 4], p.bronze);
+    P.poly([-5, 2, -2, 2, -3, 20, -8, 20], p.bronzeHi);
+    P.rect(-13, 21, 27, 3, p.bronzeDk); // the lip
+    P.rect(-12, 21, 25, 1, p.bronzeHi);
+    P.rect(-3, -3, 6, 4, p.bronzeDk); // the crown loop
+    P.rect(-1, -4, 2, 2, p.bronze);
+    // verdigris and rust holes
+    P.rect(5, 8, 3, 4, p.verd); P.rect(-9, 14, 2, 3, p.verd); P.px(7, 16, p.maw); P.px(-6, 6, p.maw);
+    // the rune: a circle and cross
+    if (!back || back === "rune") {
+      const rx = back ? 0 : 3, ry = 11;
+      P.g.strokeStyle = p.rune; P.g.lineWidth = 1;
+      P.g.beginPath(); P.g.arc(rx, ry, 3.5, 0, Math.PI * 2); P.g.stroke();
+      P.rect(rx, ry - 5, 1, 10, p.rune); P.rect(rx - 5, ry, 10, 1, p.rune);
+    }
+    // moss hanging off the shoulders
+    P.poly([-8, 3, -3, 1, -4, 9, -6, 7, -7, 12], p.moss);
+    P.poly([3, 1, 8, 3, 9, 10, 7, 8, 6, 13, 5, 6], p.moss);
+    P.px(-5, 4, p.mossHi); P.px(6, 5, p.mossHi);
+    if (mouth) {
+      // the mouth: a gaping ring of teeth around a dark gullet
+      const ry = 5 + jaw;
+      P.ell(0, 24, 13, ry, p.flesh);
+      P.ell(0, 24, 9, ry - 2, p.maw);
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2, x = Math.cos(a) * 11, y = 24 + Math.sin(a) * (ry - 1);
+        P.poly([x - 1, y, x + 1, y, x * 0.7, 24 + (y - 24) * 0.55], p.tooth);
+      }
+    }
+    // cyan drool dripping off the lip
+    for (const x of [-10, -4, 5, 11]) P.rect(x, 24, 1, 2 + ((x + 20) % 3), p.drip);
+  }
+  function bellSprite(P, dir, pose) {
+    const p = BELL, G = BG, c = BX, side = dir === "side", back = dir === "up";
+    const b = pose.bob || 0, L = pose.lift || [0, 0, 0, 0], jaw = pose.jaw || 0, push = pose.push || 0;
+    const hy = G - 30 + b; // the hub, where the legs meet under the bell
+    if (side) {
+      const hx = c - 6 + push;
+      // far legs (in shadow), then the tattered cloth, then the near legs
+      bellLeg(P, p, [hx + 4, hy, hx + 22, hy - 14, hx + 30, G - 1], L[1], p.boneDk, p.maw);
+      bellLeg(P, p, [hx - 4, hy, hx - 20, hy - 12, hx - 26, G - 1], L[3], p.boneDk, p.maw);
+      P.poly([hx - 16, hy - 6, hx + 8, hy - 8, hx + 6, hy + 10, hx + 2, hy + 6, hx - 2, hy + 14, hx - 6, hy + 7, hx - 10, hy + 12, hx - 14, hy + 4], p.clothDk);
+      bellLeg(P, p, [hx + 6, hy + 2, hx + 26, hy - 10, hx + 34, G - 1], L[0], p.bone, p.boneDk);
+      bellLeg(P, p, [hx - 6, hy + 2, hx - 24, hy - 8, hx - 30, G - 1], L[2], p.bone, p.boneDk);
+      P.poly([hx - 12, hy - 4, hx + 4, hy - 6, hx + 2, hy + 8, hx - 2, hy + 4, hx - 6, hy + 10, hx - 10, hy + 2], p.cloth);
+      // the bell hangs off the hump, pitched so its mouth faces forward
+      const a = -(0.75 + (pose.tilt || 0)), bx = hx + 4, by = hy - 22;
+      P.g.save(); P.g.translate(bx, by); P.g.rotate(a);
+      bellBody(P, p, false, jaw, true);
+      P.g.restore();
+      // the clapper: a string of vertebrae hanging from the mouth, a pitted ball at the end
+      const mx = bx - Math.sin(a) * 24, my = by + Math.cos(a) * 24, cl = pose.clap || 0;
+      for (let i = 1; i <= 4; i++) P.rect(mx + cl * i * 0.4 - 1, my + i * 2, 3, 2, i % 2 ? p.boneHi : p.bone);
+      P.ell(mx + cl * 2, my + 11, 3, 3, p.bronze); P.px(mx + cl * 2 - 1, my + 10, p.maw); P.px(mx + cl * 2 + 1, my + 12, p.maw);
+      // a chain slung over its back
+      P.line([hx - 14, hy - 4, bx - 8, by - 2, bx + 2, by - 6], 1, p.chain);
+      return;
+    }
+    // facing you or away: the legs splay out to both sides like a spider's
+    for (const sx of [-1, 1]) {
+      bellLeg(P, p, [c + sx * 8, hy - 2, c + sx * 24, hy - 16, c + sx * 26, G - 5], L[sx < 0 ? 3 : 2], p.boneDk, p.maw);
+    }
+    P.poly([c - 18, hy - 10, c + 18, hy - 10, c + 16, hy + 8, c + 11, hy + 4, c + 7, hy + 12, c + 2, hy + 6, c - 3, hy + 13, c - 8, hy + 5, c - 12, hy + 11, c - 16, hy + 3], p.clothDk);
+    for (const sx of [-1, 1]) {
+      bellLeg(P, p, [c + sx * 12, hy + 2, c + sx * 30, hy - 10, c + sx * 34, G - 1], L[sx < 0 ? 0 : 1], p.bone, p.boneDk);
+    }
+    P.poly([c - 14, hy - 8, c - 2, hy - 8, c - 4, hy + 9, c - 8, hy + 4, c - 12, hy + 8], p.cloth);
+    P.poly([c + 4, hy - 8, c + 15, hy - 8, c + 13, hy + 6, c + 9, hy + 2, c + 6, hy + 9], p.cloth);
+    const tilt = pose.tilt || 0, by = hy - 26 + push * 0.5 + Math.max(0, tilt) * 6;
+    P.g.save(); P.g.translate(c, by);
+    if (!back && tilt > 0) P.g.scale(1, 1 - tilt * 0.25); // pitching toward you: foreshortened
+    bellBody(P, p, back ? "rune" : false, jaw, !back);
+    P.g.restore();
+    if (!back) {
+      const cl = pose.clap || 0, my = by + 24 - Math.max(0, tilt) * 6;
+      for (let i = 1; i <= 4; i++) P.rect(c + cl * i * 0.4 - 1, my + i * 2, 3, 2, i % 2 ? p.boneHi : p.bone);
+      P.ell(c + cl * 2, my + 11, 3, 3, p.bronze); P.px(c + cl * 2 - 1, my + 10, p.maw); P.px(c + cl * 2 + 1, my + 12, p.maw);
+    }
+    // chains draped over the crown
+    P.line([c - 14, hy - 6, c - 8, by + 2, c - 3, by - 2], 1, p.chain);
+    P.line([c + 14, hy - 6, c + 8, by + 4, c + 3, by - 2], 1, p.chain);
+  }
+  function bellSheet() {
+    const sheet = {};
+    for (const dir of ["down", "up", "side"]) {
+      sheet[dir] = {};
+      for (const anim in BELL_ANIMS) sheet[dir][anim] = BELL_ANIMS[anim].map((pose) =>
+        Object.assign(Art.mk(BW, BH, (P) => bellSprite(P, dir, pose), BELL.outline), { ax: BX, ay: BG }));
+    }
+    return sheet;
+  }
+
   // Kindle has no coded sheet (src/render.js draws his stand-in by hand): an empty one for the drawn frames to fill.
   function kindleSheet(extra = ["point"]) {
     const blank = Object.assign(Art.mk(1, 1, () => {}), { ax: 0, ay: 0, blank: true }), sheet = {};
@@ -646,6 +768,7 @@
     sh.hexbearer = buildSheet({ pal: d({ cloth: "#8d9896" }), weapon: "staff", offhand: "lantern", torn: true, drips: 14, seed: 28 });
     sh.boneHound = Art.applyFrames("boneHound", houndSheet());
     sh.derek = Art.applyFrames("derek", golemSheet());
+    sh.bell = Art.applyFrames("bell", bellSheet());
     sh.kindle = Art.applyFrames("kindle", kindleSheet());
     sh.abigail = Art.applyFrames("abigail", kindleSheet(["bless"])); // the same for Abigail (src/render.js)
     sh.champion = buildSheet({ pal: d({ cloth: "#c3cbc6", clothMd: "#8d9a99", blade: "#7fa6b0" }), weapon: "greatsword", offhand: "none", bulk: 1, crown: true, drips: 22, seed: 27 });

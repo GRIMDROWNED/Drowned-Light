@@ -101,6 +101,7 @@
     derek(),
     kindle(),
     abigail(),
+    bell(),
   ];
 
   // Derek the golem familiar, cut at res 4, 30 px tall (about 3/8 of the knight). His cast is drawn
@@ -134,6 +135,12 @@
     // straightens up only when she stops
     set.views.side.walk = [1, 1, 3, 3, 1, 1, 3, 3].map((i) => "side/walk" + i + "@-");
     return set;
+  }
+
+  // The Starved Bell, the roaming Abyss boss: the 12 poses and walk sheets, cut at res 4, 56 px tall (shown x1.25).
+  // Its attack is rearing back, the lunge with its mouth gaping, and a raking claw.
+  function bell() {
+    return Object.assign(walking("bell", [202, 227], [148, 227], [113, 232], 4), { path: "assets/sprites/starved-bell/", keys: { bell: [0, false] } });
   }
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
