@@ -238,6 +238,7 @@
       if (c.taken || eaten.has(c.id) || c.t < 0.6 || dist(p.x, p.y, c.x, c.y) > F.capR) continue;
       if (p.hp >= st.maxHp - 0.5 && !(c.clean && p.corrupt > 1)) continue; // leave it for someone who needs it
       c.taken = true;
+      squash(c);
       p.hp = Math.min(st.maxHp, p.hp + c.heal);
       if (c.clean) p.corrupt = Math.max(0, p.corrupt - c.clean);
       G.text(p.x, p.y - 70, `+${c.heal}`, "#9fe08a");
@@ -249,7 +250,10 @@
     for (const r of G.sporeRings) if (inRing(p, r)) p.hp = Math.min(st.maxHp, p.hp + F.ringHeal * dt);
   };
   // Host: a friend ate one.
-  Fred.capEaten = function (id) { G.glowcaps = G.glowcaps.filter((c) => c.id !== id); };
+  Fred.capEaten = function (id) { for (const c of G.glowcaps) if (c.id === id) squash(c); G.glowcaps = G.glowcaps.filter((c) => c.id !== id); };
+  // the squashed cap left behind for a moment (just for show, on each device)
+  let squashed = [];
+  const squash = (c) => squashed.push({ x: c.x, y: c.y, t: 0 });
 
   /* ---------------- his spores ---------------- */
   function spore(e) {
@@ -286,7 +290,7 @@
   // A new life (or a reload): your Fred is back at your side, and every friend's.
   Fred.reset = function () {
     const friends = G.freds.filter((m) => m.owner !== 0).map((m) => m.owner);
-    G.freds = []; G.glowcaps = []; G.sporeRings = [];
+    G.freds = []; G.glowcaps = []; G.sporeRings = []; squashed = [];
     trial = null;
     near = false;
     if (G.isGuest()) return;
@@ -434,6 +438,8 @@
     G.freds = G.freds.filter((m) => !m.gone);
     trialStep(dt);
     for (const c of G.glowcaps) c.t += dt;
+    for (const q of squashed) q.t += dt;
+    squashed = squashed.filter((q) => q.t < 4);
     G.glowcaps = G.glowcaps.filter((c) => c.t < c.life);
     for (const r of G.sporeRings) r.t += dt;
     G.sporeRings = G.sporeRings.filter((r) => r.t < r.life);
@@ -449,7 +455,7 @@
     const p = G.player;
     if (!p || G.cave) return;
     const s = Fred.ringSpot();
-    if (Math.abs(s.x - p.x) < 1200 && Math.abs(s.y - p.y) < 1200) L.push({ x: s.x, y: s.y - 10, r: trial ? 160 : Fred.sealed() ? 50 : 100, s: 0.35, col: AMBER, a: Fred.sealed() ? 0.2 : 0.5 });
+    if (Math.abs(s.x - p.x) < 1200 && Math.abs(s.y - p.y) < 1200) L.push({ x: s.x, y: s.y - 10, r: trial ? 160 : Fred.sealed() ? 50 : DL.Art.sprites.fairyRing && DL.Art.sprites.fairyRing.res ? 140 : 100, s: 0.35, col: AMBER, a: Fred.sealed() ? 0.2 : 0.5 });
   };
 
   /* ---------------- co-op ---------------- */
@@ -652,7 +658,15 @@
   }
   // A glowcap: a little cluster of pale caps glowing amber from underneath.
   function drawCap(c, cp, t) {
-    const grow = Math.min(1, (cp.t || 1) / 0.6);
+    const grow = Math.min(1, (cp.t || 1) / 0.6), art = DL.Art.sprites.glowcap2;
+    if (art && art.res) {
+      // Robert's drawing: a sprout for the first moment, then the grown cluster, fading as it withers
+      const name = grow < 1 ? "glowcap1" : "glowcap2", s = DL.Art.sprites[name], fade = cp.life ? Math.min(1, (cp.life - cp.t) / 2) : 1;
+      c.save(); c.globalAlpha = Math.max(0, fade);
+      c.drawImage(s.c, Math.round(cp.x - s.w), Math.round(cp.y - s.h * 2 + 2), s.w * 2, s.h * 2);
+      c.restore();
+      return;
+    }
     c.save(); c.translate(Math.round(cp.x), Math.round(cp.y)); c.scale(grow, grow);
     for (const [dx, h, r] of [[-4, 6, 3.4], [3, 8, 4], [0, 4, 2.8]]) {
       c.fillStyle = "#d8cfb4"; c.fillRect(dx - 0.8, -h, 1.6, h);
@@ -680,18 +694,35 @@
     const inView = (x, y, m = 120) => x > view.left - m && x < view.right + m && y > view.top - m && y < view.bottom + m * 1.6;
     for (const r of G.sporeRings) if (inView(r.x, r.y)) list.push({ y: r.y - 300, f: () => drawRing(c, r, t) });
     for (const cp of G.glowcaps) if (inView(cp.x, cp.y)) list.push({ y: cp.y, f: () => drawCap(c, cp, t) });
+    const flat = DL.Art.sprites.glowcap3;
+    if (flat && flat.res) for (const q of squashed) if (inView(q.x, q.y)) list.push({ y: q.y - 20, f: () => {
+      c.save(); c.globalAlpha = Math.min(1, (4 - q.t) / 1.5);
+      c.drawImage(flat.c, Math.round(q.x - flat.w), Math.round(q.y - flat.h * 2 + 2), flat.w * 2, flat.h * 2);
+      c.restore();
+    } });
     for (const m of G.freds) list.push({ y: m.y, f: () => drawFred(c, m, t) });
     if (G.cave) return;
     const s = Fred.ringSpot();
     if (!inView(s.x, s.y, 300)) return;
     const wilted = Fred.sealed();
-    for (const sh of Fred.shrooms()) list.push({ y: sh.y, f: () => drawShroom(c, sh, wilted, t) });
+    const art = DL.Art.sprites[wilted ? "fairyRingWilt" : "fairyRing"];
+    if (art && art.res) {
+      // Robert's drawing: the far half of the ring behind whoever stands in it, the near half in front
+      list.push({ y: s.y - 42, f: () => ringHalf(c, art, s, false) });
+      list.push({ y: s.y + RING_HOLE[1], f: () => ringHalf(c, art, s, true) });
+    } else for (const sh of Fred.shrooms()) list.push({ y: sh.y, f: () => drawShroom(c, sh, wilted, t) });
     if (trial) list.push({ y: s.y, f: () => {
       drawLittle(c, trial.x, trial.y, true, trial.flash > 0, t);
       bar(c, trial.x, trial.y - 50, 30, trial.hp / trial.max, "#ffb347");
     } });
     else if (!Fred.won() && !wilted) list.push({ y: s.y, f: () => drawLittle(c, s.x, s.y, false, false, t) });
   };
+  // The drawn ring is placed by the middle of its hole (in world px from its top left); its lanterns, for their glow.
+  const RING_HOLE = [124, 90], RING_LAMPS = [[19, 46], [218, 22], [143, 140], [165, 159]];
+  function ringHalf(c, art, s, near) {
+    const w = art.w * 2, h = art.h * 2, k = art.c.height / h, top = near ? RING_HOLE[1] : 0, hh = near ? h - RING_HOLE[1] : RING_HOLE[1];
+    c.drawImage(art.c, 0, top * k, art.c.width, hh * k, Math.round(s.x - RING_HOLE[0]), Math.round(s.y - RING_HOLE[1] + top), w, hh);
+  }
   // A fairy ring dripped on the ground: a faint ring of light dotted with tiny caps.
   function drawRing(c, r, t) {
     const a = Math.min(1, r.t / 0.6) * Math.min(1, (r.life - r.t) / 1.2);
@@ -744,6 +775,9 @@
     if (!G.cave) {
       const s = Fred.ringSpot();
       if (s.x > view.left - 200 && s.x < view.right + 200 && s.y > view.top - 200 && s.y < view.bottom + 200) {
+        const art = DL.Art.sprites.fairyRing;
+        if (art && art.res && !Fred.sealed())
+          for (const [lx, ly] of RING_LAMPS) glow(c, s.x - RING_HOLE[0] + lx, s.y - RING_HOLE[1] + ly, 16, AMBER, 0.5 + 0.1 * Math.sin(t * 5 + lx));
         if (trial) figureGlow(c, trial.x, trial.y, 0, "down", false, "idle", t, 3, AMBER);
         else if (!Fred.won() && !Fred.sealed()) {
           figureGlow(c, s.x, s.y, 0, "down", false, "sleep", t, 3, AMBER);

@@ -491,6 +491,10 @@ PROP_GRIDS = {
     'camp/workshop.png': (3, 1, ['workshop1', 'workshop2', 'workshop3']),
     'camp/shrine.png': (3, 1, ['shrine1', 'shrine2', 'shrine3']),
     'camp/toadstool.png': (3, 1, ['toadstool1', 'toadstool2', 'toadstool3']),
+    # Fred's fairy ring in the Reaches (src/fred.js), alive and wilted
+    'world/fairy-ring.png': (2, 1, ['fairyRing', 'fairyRingWilt']),
+    # Fred's glowcaps: sprouting, grown, squashed underfoot
+    'world/glowcap.png': (3, 1, ['glowcap1', 'glowcap2', 'glowcap3']),
     # the Abyss trophies (src/trophies.js): the Starved Bell's clapper hung in a tower, the Rose's heart at three levels
     'camp/bell-tower.png': (1, 1, ['bellTower']),
     'camp/rose-heart.png': (3, 1, ['roseHeart1', 'roseHeart2', 'roseHeart3']),
@@ -551,12 +555,12 @@ PROP_SAME.update({'rosePetal%d' % i: 'rosePetal1' for i in range(2, 7)})
 PROP_SAME.update({'roseWaltz2': 'roseWaltz1', 'roseWaltz3': 'roseWaltz1', 'roseWaltz4': 'roseWaltz1'})
 # the companion homes: each about as wide as the forge at its last level
 # (a little smaller than the forge, so the crowded first camp still has room for them)
-PROP_WIDTH.update({'kennel3': 92, 'workshop3': 108, 'shrine3': 104, 'toadstool3': 100})
+PROP_WIDTH.update({'kennel3': 92, 'workshop3': 108, 'shrine3': 104, 'toadstool3': 100, 'fairyRing': 240, 'glowcap2': 22})
 PROP_HEIGHT.update({'bellTower': 130, 'roseHeart3': 86})  # the tower well over the knight, the great bud about his height
 PROP_SAME.update({'roseHeart1': 'roseHeart3', 'roseHeart2': 'roseHeart3'})
 PROP_WIDTH.update({'outpost': 120, 'blackPearl11': 64, 'resBlack': 22})  # the outpost about two knights wide, a clam about a shield
 PROP_SAME.update({n: 'blackPearl11' for n in ['blackPearl11', 'blackPearl12', 'blackPearl13', 'blackPearl21', 'blackPearl22', 'blackPearl23', 'blackPearl31', 'blackPearl32', 'blackPearl33'] if n != 'blackPearl11'})
-PROP_SAME.update({'kennel1': 'kennel3', 'kennel2': 'kennel3', 'workshop1': 'workshop3', 'workshop2': 'workshop3', 'shrine1': 'shrine3', 'shrine2': 'shrine3', 'toadstool1': 'toadstool3', 'toadstool2': 'toadstool3'})
+PROP_SAME.update({'kennel1': 'kennel3', 'kennel2': 'kennel3', 'workshop1': 'workshop3', 'workshop2': 'workshop3', 'shrine1': 'shrine3', 'shrine2': 'shrine3', 'toadstool1': 'toadstool3', 'toadstool2': 'toadstool3', 'fairyRingWilt': 'fairyRing', 'glowcap1': 'glowcap2', 'glowcap3': 'glowcap2'})
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
 PROP_OUT = 'props'
