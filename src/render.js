@@ -169,6 +169,7 @@
     DL.Rose.push(list, c, t, view);
     DL.Trophies.push(list, c);
     DL.Outposts.push(list, c, t, view, sprite, Art.drawFire, bar);
+    DL.Fred.push(list, c, t, view);
     for (const tr of G.torches) list.push({ y: tr.y, f: () => drawTorch(c, tr, t) });
     for (const w of G.walls || []) {
       const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1), n = Math.max(2, Math.round(len / 14)), f = Math.min(1, w.t / 1);
@@ -365,6 +366,7 @@
     DL.Rose.drawGlow(c, t, view);
     for (const k of G.kindles) drawKindleGlow(c, k, t);
     drawSoulGlow(c, G, view, t);
+    DL.Fred.glow(c, t, view);
     if (kb && Math.sin(t * 1.3) > 0.6) { c.fillStyle = "rgba(255,110,50,0.35)"; c.fillRect(kb.x - 2, kb.y - 8, 4, 4); }
     drawMotes(c, G, view, t);
     c.globalCompositeOperation = "source-over";
@@ -584,7 +586,7 @@
     });
     if (L.garden) put(L.garden.y - 20, () => drawGarden(c, L.garden, u.garden, night, t));
     // the companions' homes (a picture per level) and the Abyss trophies
-    for (const k of ["kennel", "workshop", "shrine"]) if (L[k]) put(L[k].y, () => building(L[k], k + u[k]));
+    for (const k of ["kennel", "workshop", "shrine", "toadstool"]) if (L[k]) put(L[k].y, () => building(L[k], k + u[k]));
     if (L.bell) put(L.bell.y, () => building(L.bell, "bellTower"));
     if (L.roseheart) put(L.roseheart.y, () => drawRoseHeart(c, L.roseheart, u.roseheart, night, t));
     for (const tw of L.towers) put(tw.y, () => { const n = drawn ? "tower" + u.tower : "tower"; groundShadow(c, n, tw.x, tw.y + 4, false, 20, 6); sprite(c, n, tw.x, tw.y + 4); });
@@ -1333,6 +1335,7 @@
       soulOrb(c, b.x, b.y, 1, tt * 3 + b.x * 0.01);
       return;
     }
+    if (b.kind === "spore") return DL.Fred.drawGlob(c, b); // Fred's spore glob
     if (b.kind === "orb") {
       const g = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, 12);
       g.addColorStop(0, "rgba(255,255,240,1)"); g.addColorStop(0.35, `rgba(${b.col},0.9)`); g.addColorStop(1, `rgba(${b.col},0)`);

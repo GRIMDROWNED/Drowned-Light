@@ -304,6 +304,38 @@
     need: 10, orbs: [[3, 550, 1250], [4, 1400, 2550], [3, 2700, 3900], [2, 4150, 4700]], grab: 28,
     graveDist: 4400, clear: 190, giveR: 120,
   };
+  /* Fred, the mushroom familiar (src/fred.js). A tiny Fred sleeps in a fairy ring of toadstools in the Drowned
+     Reaches, `ringDist` px out (a clearing of `clear` px). Come within `wakeR` px of it at night with a torch in your
+     satchel and he wakes, and the Drowned hunt him until dawn: a wave (`waveR` px out) every `waveEvery` s, and he
+     sprouts a glowcap every `trialCapEvery` s for his defenders. He has `trialHp` health (more per friend). Alive at
+     dawn: every knight within `winR` px of the ring wins their own Fred. Killed: the ring wilts for `wilt` nights.
+     He follows his knight at `speed` and every `cd` s spits a spore glob (`dmg`, growing by `perFlame` per Central
+     Flame level past `reqFlame`) at a Drowned within `sight` px of his knight: `slow` less speed for `slowFor` s
+     (half as much on a boss). By night, and in the Abyss, he sprouts a glowcap every `capEvery` s (at most `capMax`
+     lying out, each lasting `capLife` s): step on it to heal `capHeal`. At levels 5, 10 and 15 you choose his road,
+     A (Mender) or B (Blight): `roads`. Bosses are never confused, turned or put to sleep. */
+  DL.FRED = {
+    name: "Fred", speed: 150, sight: 270, cd: 2.2, dmg: 4, perFlame: 0.15, reqFlame: 2, globSpeed: 230, globLife: 1.7,
+    slow: 0.25, slowFor: 3,
+    capEvery: 30, capHeal: 12, capLife: 45, capMax: 3, capR: 20,
+    bloomEvery: 20, bloomHeal: 20, bloomCleanse: 15,   // A at 5: Bloomcaps
+    cloudR: 55, confuse: 2,                            // B at 5: Befuddling Spores
+    ringEvery: 20, ringFor: 8, ringR: 90, ringHeal: 3, // A at 10: Fairy Ring
+    mindEvery: 14, mindFor: 4, mindR: 260,             // B at 10: Mindrot
+    rebloom: 0.4,                                      // A at 15: Second Bloom
+    stormEvery: 25, stormR: 200, sleep: 2.5,           // B at 15: Spore Storm
+    ringDist: 3150, clear: 170, wakeR: 70, trialHp: 260, waveEvery: 10, waveR: 480, trialCapEvery: 15, winR: 900, wilt: 3,
+    campCaps: [0, 0, 1, 3], // glowcaps the Toadstool Cottage sprouts in the camp each dawn, by its level
+    repick: { resin: 40, pearl: 10, black: 5 }, // choosing his roads again, at a level 3 cottage
+    roads: [
+      [{ name: "Bloomcaps", text: "Glowcaps every 20 s heal 20 and burn away corruption" },
+        { name: "Befuddling Spores", text: "Spore globs burst into a cloud: the Drowned in it forget you and wander off for 2 s" }],
+      [{ name: "Fairy Ring", text: "Standing still, he drips a ring every 20 s: for 8 s knights in it heal 3 a second and corruption stops" },
+        { name: "Mindrot", text: "Every 14 s a Drowned turns and fights the other Drowned for 4 s" }],
+      [{ name: "Second Bloom", text: "Once a night, when you fall, he stands you back up at 40% health" },
+        { name: "Spore Storm", text: "Every 25 s every Drowned near you falls asleep for 2.5 s (a blow wakes it)" }],
+    ],
+  };
   /* The Starved Bell (src/bell.js): one roams the Abyss, `r` px out from the camp, creeping `roam` radians a second
      round the ring while nobody is near. It rises from the deep (comes into play) when a knight is within `spawn` px
      and sinks back, healed, once every knight is `forget` px away. It lies buried until a knight comes within its
@@ -417,6 +449,9 @@
       powers: ["One small wall at a time", "Two walls, two hits each", "Crystal walls take three hits and cut whatever strikes them", "Three great walls, four hits each, that burst and stagger the Drowned when they fall"] },
     wraith: { home: "shrine", name: "Abigail", forms: ["Soul Wisp", "Abigail", "Mourning Abigail", "Abigail, Queen of Sorrows"],
       powers: ["Weak soul orbs, no blessing", "Blesses her knight", "Orbs leap to a second Drowned; curse 15%", "Wails every 22 s: every Drowned near is cursed and stunned; blessing 15%"] },
+    fred: { home: "toadstool", name: "Fred", forms: ["Fred the Sprout", "Fred", "Weeping Fred", "Fred the Rotwalker"],
+      powers: ["Spits slowing spores and grows healing glowcaps", "Choose his road: Bloomcaps or Befuddling Spores",
+        "Choose his road: Fairy Ring or Mindrot", "Choose his road: Second Bloom or Spore Storm"] },
   };
   // Price to train a companion from level L to L + 1.
   DL.summonCost = function (L) {
@@ -488,6 +523,10 @@
       effect: (l) => (l ? `Abigail training up to level ${5 * l}` : "Not built"),
       costs: [{ wood: 10, stone: 16, resin: 10 }, { stone: 26, resin: 18, pearl: 3 }, { stone: 36, resin: 26, pearl: 5, black: 2 }],
       reqFlame: (t) => [0, 2, 3, 5][t] },
+    { id: "toadstool", name: "Toadstool Cottage", max: 3, needs: "fred", info: "A mossy log, then a stump house, then a cottage under a giant spotted cap, where Fred rests and grows. Each level lets him train five more levels. From level 2 it sprouts glowcaps in the camp every dawn.",
+      effect: (l) => (l ? `Fred training up to level ${5 * l}${DL.FRED.campCaps[l] ? ` · ${DL.FRED.campCaps[l]} glowcap${DL.FRED.campCaps[l] > 1 ? "s" : ""} in the camp each dawn` : ""}${l >= 3 ? " · lets you choose Fred's roads again" : ""}` : "Not built"),
+      costs: [{ wood: 14, stone: 8, resin: 12 }, { wood: 22, resin: 20, pearl: 3 }, { wood: 30, resin: 30, pearl: 5, black: 2 }],
+      reqFlame: (t) => [0, 2, 3, 5][t] },
     /* Trophies of the Abyss bosses: `trophy` = the boss that must have been slain (save.trophies) before it can be built. */
     { id: "bell", name: "Starved Bell Tower", max: 1, trophy: "bell", info: "The Starved Bell's clapper, hung from a frame of black timber. It tolls before every wave that comes for the camp, and calls out where it's coming from.",
       effect: (l) => (l ? `Warns ${DL.SIEGE.warn} s before each wave · warned waves arrive dazed for ${DL.SIEGE.daze} s` : "Slay the Starved Bell in the Abyss for its clapper"),
@@ -505,6 +544,7 @@
 
   for (const u of DL.UPGRADES) u.costs = u.costs.map((c) => (c ? scaleCost(c) : c));
   DL.OUTPOST.cost = scaleCost(DL.OUTPOST.cost);
+  DL.FRED.repick = scaleCost(DL.FRED.repick);
 
   // Camp siege waves get nastier each night.
   DL.campPool = function (day) {

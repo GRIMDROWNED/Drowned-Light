@@ -179,6 +179,8 @@
       if (act === "up") G.buyUpgrade(arg);
       else if (act === "train") { const r = DL.Kits.train(); UI.justReached = r && r.milestone ? r.level : 0; }
       else if (act === "trainSummon") DL.Summons.train(arg);
+      else if (act === "fredPath") DL.Summons.choose(arg);
+      else if (act === "fredRepick") DL.Summons.repick();
       else if (act === "travel") { if (DL.Outposts.travel(arg)) { UI.closeCamp(); return; } }
       else if (act === "torch") G.craftTorch();
       else if (act === "rest") { G.restUntilDusk(); UI.closeCamp(); UI.toast("You rest by the fire until dusk.", "warn"); return; }
@@ -436,6 +438,11 @@
       DL.Render.drawWraith(g, { id: 1, x: 0, y: 0, angle: Math.PI / 2, state: "move" }, t);
       g.restore();
     }
+    for (const cv of document.querySelectorAll("canvas[data-fred]")) {
+      const g = cv.getContext("2d");
+      g.clearRect(0, 0, cv.width, cv.height);
+      DL.Fred.portrait(g, cv, t);
+    }
     for (const cv of document.querySelectorAll("canvas[data-golem]")) {
       const g = cv.getContext("2d");
       g.clearRect(0, 0, cv.width, cv.height);
@@ -545,6 +552,7 @@
       html += houndCard(G);
       html += golemCard(G);
       html += wraithCard(G);
+      html += fredCard(G);
       const d = G.diff();
       html += `<article class="card"><header><h3>${d.name}</h3><span class="tag">Difficulty</span></header>
         <p class="motto">${d.motto}</p><ul class="guide">${d.notes.map((n) => `<li>${n}</li>`).join("")}</ul></article>`;
@@ -572,6 +580,7 @@
           <li>Bone Wolves den in the Mire, to the ${DL.Den.direction()}. Break the pack and carry a carcass home: it rises as your <b>Bone Hound</b>.</li>
           <li>${DL.Kindle.guideLine()}</li>
           <li>${DL.Abigail.guideLine()}</li>
+          <li>${DL.Fred.guideLine()}</li>
           <li>${DL.Rose.guideLine()}</li>
           <li><b>Black Pearls</b> are found only in the Abyss: in clams half sunk in its mud, now and then on its Drowned, and on its great bosses. The last levels of the camp need them.</li>
           <li>${DL.Siege.line()} A Bell Tower, built from the Starved Bell's clapper, warns of every wave.</li>
@@ -671,6 +680,44 @@
       <p class="effect">Soul orb ${DL.Abigail.dmg()} damage every ${ws.cd.toFixed(1)} s · weakened Drowned: ${cpct}% less damage and speed, ${cpct}% more damage taken<br>${ws.bless ? `Blessing every ${A.pulseEvery} s for ${A.buffDur} s: ${pct}% more damage and speed, ${pct}% less damage taken` : "No blessing yet: she must grow out of a wisp first"}<br>Can't be hurt · stays with you for good · one per knight</p>
       ${how}
       ${summonTrain("wraith")}
+      <footer>${action}</footer></article>`;
+  }
+
+  // Fred: a mushroom familiar, one per knight, won by keeping him alive through a night at his fairy ring.
+  // His card also shows his roads: at levels 5, 10 and 15 the Mender's (A) or the Blight's (B).
+  function fredCard(G) {
+    const F = DL.FRED, Sm = DL.Summons, fs = Sm.fred(), mine = DL.Fred.mine(), w = DL.Fred.where(), tr = DL.Fred.trial();
+    UI.fredShown = !!mine;
+    let action;
+    if (mine) action = `<span class="maxed">At your side</span>`;
+    else if (tr) action = `<span class="req">Fred is awake in his ring: keep him alive until dawn</span>`;
+    else if (DL.Fred.sealed()) action = `<span class="req">His fairy ring has wilted · it grows back in a few nights</span>`;
+    else action = `<span class="req">His fairy ring lies in the Drowned Reaches${G.save.fredRing.found ? `, ${w.m} m ${w.dir} of camp` : ""}</span>`;
+    const how = DL.Fred.won() ? "" : `<p class="effect"><b>Win him at the fairy ring.</b> A ring of red toadstools grows out in the Drowned Reaches, and a tiny mushroom sleeps in it. Walk into the ring at night with a torch in your satchel and he wakes, and the Drowned come for him all night. He sprouts glowcaps for you while you fight. Keep him alive until dawn and he follows you home; if he dies, the ring wilts for ${F.wilt} nights. With friends, everyone by the ring at dawn gets their own Fred.</p>`;
+    // his roads
+    let roads = "";
+    if (Sm.anyHas("fred")) {
+      const L = Sm.level("fred"), path = Sm.fredPath();
+      roads = `<ol class="ms-list">${F.roads.map((pair, i) => {
+        const lv = DL.SUMMON.formAt[i + 1], got = path[i];
+        if (got) { const r = pair[got === "A" ? 0 : 1]; return `<li class="got"><span>Lv ${lv}</span><b>${r.name}</b> (${got === "A" ? "Mender" : "Blight"}). ${r.text}.</li>`; }
+        if (L < lv) return `<li><span>Lv ${lv}</span>Choose: <b>${pair[0].name}</b> (A, Mender) or <b>${pair[1].name}</b> (B, Blight).</li>`;
+        return `<li class="new"><span>Lv ${lv}</span>Choose his road:<br><b>A · ${pair[0].name}</b>: ${pair[0].text}.<br><b>B · ${pair[1].name}</b>: ${pair[1].text}.
+          <div class="road-pick"><button data-act="fredPath:${i}-A">A · ${pair[0].name}</button> <button data-act="fredPath:${i}-B">B · ${pair[1].name}</button></div></li>`;
+      }).join("")}</ol>`;
+      if (path.some((v) => v)) {
+        const lock = Sm.repickLock(), ok = !lock && G.canAfford(F.repick);
+        roads += `<footer class="train"><div class="cost">${costHtml(F.repick)}</div>${lock ? `<span class="req">${lock}</span>` : ""}<button data-act="fredRepick" ${ok ? "" : "disabled"}>Choose his roads again</button></footer>`;
+      }
+    }
+    return `<article class="card hound-card">
+      <header><canvas class="portrait" data-fred="1" width="66" height="52"></canvas>
+        <div><span class="tag">Familiar · Healer · Control</span><h3>${F.name}</h3><span class="motto">Small, frightened, and full of spores.</span></div></header>
+      <p>A little mushroom with lanterns hanging from his cap, who toddles after you everywhere. He spits spore globs that slow the Drowned (bosses only half as much), and by night, or in the Abyss, he sprouts glowcaps at his feet: step on one to heal.</p>
+      <p class="effect">Spore glob ${DL.Fred.dmg()} damage every ${fs.cd.toFixed(1)} s · ${Math.round(F.slow * 100)}% slower for ${F.slowFor} s<br>A glowcap every ${fs.capEvery} s: heals ${Math.round(fs.capHeal)}${fs.cleanse ? `, burns away ${fs.cleanse} corruption` : ""}<br>Can't be hurt · stays with you for good · one per knight · bosses are never befuddled, turned or put to sleep</p>
+      ${how}
+      ${summonTrain("fred")}
+      ${roads}
       <footer>${action}</footer></article>`;
   }
 
@@ -786,6 +833,6 @@
     set($("campBtn"), "hidden", !cl);
     if (cl && UI.campShown !== cl) { UI.campShown = cl; $("campBtn").innerHTML = `${cl} <kbd>C</kbd>`; }
     // the Bone Hound card follows the hound rising, going down or getting up while the menu is open
-    if (G.state === "camp" && UI.campTab === "kit" && (houndState(DL.Hounds.mine()) !== UI.houndShown || !!DL.Golems.mine() !== UI.golemShown || !!DL.Abigail.mine() !== UI.wraithShown)) UI.renderCamp();
+    if (G.state === "camp" && UI.campTab === "kit" && (houndState(DL.Hounds.mine()) !== UI.houndShown || !!DL.Golems.mine() !== UI.golemShown || !!DL.Abigail.mine() !== UI.wraithShown || !!DL.Fred.mine() !== UI.fredShown)) UI.renderCamp();
   };
 })(window.DL);

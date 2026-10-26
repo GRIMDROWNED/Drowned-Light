@@ -112,6 +112,11 @@
     // Derek the Bastion (his last form): a third bigger, a walking castle wall
     derek("derek_f3", "derek-f3", [49, 91], [45, 80], [43, 81]),
     kindle(),
+    // Fred the Sprout (Fred's first form, src/fred.js), cut at res 4: 20 px tall with his cap, half the knight
+    fred("fred_f0", "fred-f0", [42, 82], [43, 82], [41, 83]),
+    fred("fred_f1", "fred-f1", [54, 109], [48, 110], [48, 109]), // Fred (level 5), 27 px
+    fred("fred_f2", "fred-f2", [120, 167], [72, 167], [78, 170]), // Weeping Fred (level 10), 41 px
+    fred("fred_f3", "fred-f3", [160, 248], [107, 222], [110, 216]), // Fred the Rotwalker (level 15), 52 px
     abigail(),
     // Mourning Abigail (her third form): a tenth taller, in violet mourning rags
     abigail("abigail_f2", "abigail-f2", [98, 136], [78, 149], [83, 152]),
@@ -129,6 +134,15 @@
     set.views.side.attack = ["side/castUp", "side/castSlam", "side/castSlam"];
     set.views.up.attack = ["back", "back@bob", "back"];
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]]) Object.assign(set.views[dir], { hurt: [p], death: [p, p, p + "@fall"] });
+    return set;
+  }
+
+  // Fred the mushroom familiar: his attack takes a breath and spits, "heal" raises his arms facing you (a glowcap
+  // sprouting), and he wilts under his cap when he dies.
+  function fred(key, folder, side, front, back) {
+    const set = Object.assign(walking(key, side, front, back, 4), { path: "assets/sprites/" + folder + "/", keys: { [key]: [0, false] } });
+    for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
+      Object.assign(set.views[dir], { attack: ["attackA", "attackB", "attackB"], heal: ["heal"], hurt: ["side/hurt"], death: ["side/death"], idle: [p] });
     return set;
   }
 
@@ -189,7 +203,7 @@
     "swampTree1", "swampTree2", "swampTree3",
     "boulder11", "boulder12", "boulder13", "boulder21", "boulder22", "boulder23", "boulder31", "boulder32", "boulder33", "boulder41", "boulder42", "boulder43",
     "flame1", "flame2", "flame3", "forge1", "forge2", "forge3", "forge4", "armory1", "armory2", "armory3", "armory4", "workbench1", "workbench2", "workbench3", "workbench4", "tower1", "tower2", "tower3", "pylon1", "pylon2", "pylon3", "stake", "palisade", "palisade2", "gatePost", "gatePost2", "palisadeSide", "palisadeSide2", "cornerPost", "cornerPost2", "tent", "banner", "torch", "burnt", "brazier", "fire1", "fire2", "fire3", "fire4", "fire5", "fire6", "iron11", "iron12", "iron13", "iron21", "iron22", "iron23", "iron31", "iron32", "iron33", "amethyst11", "amethyst12", "amethyst13", "amethyst21", "amethyst22", "amethyst23", "amethyst31", "amethyst32", "amethyst33", "resWood", "resStone", "resResin", "resIron", "resPearl", "denGuarded", "denCleared", "caveSealed", "caveOpen", "headstone", "grave", "grave2", "pillar", "soulOrb", "soulFly1", "soulFly2", "roseBriar1", "roseBriar2", "roseBriar3", "roseBriar4", "roseBriar5", "roseLash1", "roseLash2", "roseLash3", "roseWaltz1", "roseWaltz2", "roseWaltz3", "roseWaltz4", "roseBud", "roseWither", "roseBush0", "roseBush1", "roseBush2", "rosePetal1", "rosePetal2", "rosePetal3", "rosePetal4", "rosePetal5", "rosePetal6",
-    "kennel1", "kennel2", "kennel3", "workshop1", "workshop2", "workshop3", "shrine1", "shrine2", "shrine3",
+    "kennel1", "kennel2", "kennel3", "workshop1", "workshop2", "workshop3", "shrine1", "shrine2", "shrine3", "toadstool1", "toadstool2", "toadstool3", "fairyRing", "fairyRingWilt", "glowcap1", "glowcap2", "glowcap3",
     "bellTower", "roseHeart1", "roseHeart2", "roseHeart3", "outpost",
     "blackPearl11", "blackPearl12", "blackPearl13", "blackPearl21", "blackPearl22", "blackPearl23", "blackPearl31", "blackPearl32", "blackPearl33", "resBlack"];
   const PROPS = {

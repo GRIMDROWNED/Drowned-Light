@@ -68,6 +68,7 @@
     L.kennel = up.kennel ? { x: -o, y: -Math.round(R * 0.5) } : null;
     L.workshop = up.workshop ? { x: o, y: -Math.round(R * 0.42) } : null;
     L.shrine = up.shrine ? { x: -Math.round(R * 0.52), y: Math.round(R * 0.43) } : null;
+    L.toadstool = up.toadstool ? { x: Math.round(R * 0.6), y: Math.round(R * 0.47) } : null;
     L.roseheart = up.roseheart ? { x: Math.round(R * 0.42), y: -(R - 58) } : null; // the bell's twin, across the north gate
     L.bell = up.bell ? { x: -Math.round(R * 0.42), y: -(R - 58) } : null;
     // watchtowers stand in the corners (the third level fills all four), pylons along the walls by the gates
@@ -83,7 +84,7 @@
     if (L.forge) L.solids.push({ x: L.forge.x, y: L.forge.y, r: 18 });
     if (L.armory) L.solids.push({ x: L.armory.x, y: L.armory.y, r: 12 });
     if (L.workbench) L.solids.push({ x: L.workbench.x, y: L.workbench.y, r: 13 });
-    for (const k of ["kennel", "workshop", "shrine", "roseheart", "bell"]) if (L[k]) L.solids.push({ x: L[k].x, y: L[k].y, r: k === "bell" ? 12 : 16 });
+    for (const k of ["kennel", "workshop", "shrine", "toadstool", "roseheart", "bell"]) if (L[k]) L.solids.push({ x: L[k].x, y: L[k].y, r: k === "bell" ? 12 : 16 });
     cacheKey = key;
     cache = L;
     return L;

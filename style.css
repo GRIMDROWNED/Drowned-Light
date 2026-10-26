@@ -311,6 +311,8 @@ body.touch .controls-hint .desk { display: none; }
 .ms-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; font-size: 13px; line-height: 1.45; color: #c3cbc8; }
 .ms-list li { display: grid; grid-template-columns: 48px 1fr; column-gap: 8px; }
 .ms-list li span { grid-row: span 2; font: 700 11px var(--font-ui); color: var(--muted); padding-top: 2px; font-variant-numeric: tabular-nums; }
+.road-pick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.road-pick button { flex: 1 1 120px; }
 .ms-list li b { color: var(--ink); }
 .ms-list li.got span, .ms-list li.got b { color: var(--warm); }
 .ms-list li.new { animation: msFlash 1.6s ease-out; border-radius: 6px; }

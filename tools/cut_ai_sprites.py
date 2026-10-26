@@ -66,6 +66,14 @@ GRIDS = {
     'abigail-f2/poses-b.png': (3, 2, POSES_B),
     'abigail-f3/poses-a.png': (3, 2, POSES_A),
     'abigail-f3/poses-b.png': (3, 2, POSES_B),
+    'fred-f0/poses-a.png': (3, 2, POSES_A),
+    'fred-f0/poses-b.png': (3, 2, POSES_B),
+    'fred-f1/poses-a.png': (3, 2, POSES_A),
+    'fred-f1/poses-b.png': (3, 2, POSES_B),
+    'fred-f2/poses-a.png': (3, 2, POSES_A),
+    'fred-f2/poses-b.png': (3, 2, POSES_B),
+    'fred-f3/poses-a.png': (3, 2, POSES_A),
+    'fred-f3/poses-b.png': (3, 2, POSES_B),
     'kindle/poses-a.png': (3, 2, POSES_A),
     'kindle/poses-b.png': (3, 2, POSES_B),
     'abigail/poses-a.png': (3, 2, POSES_A),
@@ -110,6 +118,10 @@ QUEEN_H = 140  # Abigail, Queen of Sorrows (her last form), res 4: a fifth talle
 MOURNING_H = 123  # Mourning Abigail (her third form), res 4: a tenth taller than Abigail
 ABIGAIL_H = 112  # cut at res 4: drawn 28 px tall, hem to hood, about two thirds of the knight
 KINDLE_H = 64
+FRED0_H = 80  # Fred the Sprout (Fred's first form, src/fred.js), res 4: 20 art px tall with his cap, half the knight
+FRED1_H = 107  # Fred (level 5), a third taller than the Sprout
+FRED2_H = 164  # Weeping Fred (level 10), about the knight's height
+FRED3_H = 210  # Fred the Rotwalker (level 15), a hulking stalker taller than the knight
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
 ROSE_H = 368  # the Deadly Rose, cut at res 4: drawn 92 art px tall standing (x0.8 in game), about twice the knight
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
@@ -222,6 +234,11 @@ SETS = {
         'kindle/04_walk.png': 'side/walk1', 'kindle/05_walk.png': 'side/walk2', 'kindle/06_walk.png': 'side/walk3', 'kindle/07_walk.png': 'side/walk4',
         'kindle/08_attackA.png': 'broken', 'kindle/09_attackB.png': 'pour', 'kindle/10_attackC.png': 'side/point',
         'kindle/11_hurt.png': 'side/crouch', 'kindle/12_death.png': 'side/hop'}),
+    # Fred: poses A put his breath (attackA), his spit (attackB) and his healing (arms up, facing you) where the attacks go
+    'fred-f0': ('fred-f0', 'fred-f0/01_front.png', FRED0_H, 1, dict(twelve('fred-f0', TWELVE_FILES), **{'fred-f0/10_attackC.png': 'heal'})),
+    'fred-f3': ('fred-f3', 'fred-f3/01_front.png', FRED3_H, 1, dict(twelve('fred-f3', TWELVE_FILES), **{'fred-f3/10_attackC.png': 'heal'})),
+    'fred-f2': ('fred-f2', 'fred-f2/01_front.png', FRED2_H, 1, dict(twelve('fred-f2', TWELVE_FILES), **{'fred-f2/10_attackC.png': 'heal'})),
+    'fred-f1': ('fred-f1', 'fred-f1/01_front.png', FRED1_H, 1, dict(twelve('fred-f1', TWELVE_FILES), **{'fred-f1/10_attackC.png': 'heal'})),
     'starved-bell': ('starved-bell', 'starved-bell/01_front.png', BELL_H, 1, twelve('starved-bell', TWELVE_FILES)),
     'deadly-rose': ('deadly-rose', 'deadly-rose/01_front.png', ROSE_H, 1, twelve('deadly-rose', TWELVE_FILES)),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
@@ -343,6 +360,26 @@ SHEETS = {
         ('derek-f3/walk-front.png', 4, 1, BASTION_H, 'walkF'),
         ('derek-f3/walk-back.png', 4, 1, BASTION_H, 'walkB'),
     ],
+    'fred-f0': [
+        ('fred-f0/walk-side-4.png', 4, 1, FRED0_H, 'side/walk'),
+        ('fred-f0/walk-front.png', 4, 1, FRED0_H, 'walkF'),
+        ('fred-f0/walk-back.png', 4, 1, FRED0_H, 'walkB'),
+    ],
+    'fred-f1': [
+        ('fred-f1/walk-side-4.png', 4, 1, FRED1_H, 'side/walk'),
+        ('fred-f1/walk-front.png', 4, 1, FRED1_H, 'walkF'),
+        ('fred-f1/walk-back.png', 4, 1, FRED1_H, 'walkB'),
+    ],
+    'fred-f2': [
+        ('fred-f2/walk-side-4.png', 4, 1, FRED2_H, 'side/walk'),
+        ('fred-f2/walk-front.png', 4, 1, FRED2_H, 'walkF'),
+        ('fred-f2/walk-back.png', 4, 1, FRED2_H, 'walkB'),
+    ],
+    'fred-f3': [
+        ('fred-f3/walk-side-4.png', 4, 1, FRED3_H, 'side/walk'),
+        ('fred-f3/walk-front.png', 4, 1, FRED3_H, 'walkF'),
+        ('fred-f3/walk-back.png', 4, 1, FRED3_H, 'walkB'),
+    ],
     'abigail': [
         ('abigail/walk-side-4.png', 4, 1, ABIGAIL_H, 'side/walk'),
         ('abigail/walk-front-4.png', 4, 1, ABIGAIL_H, 'walkF'),
@@ -453,6 +490,11 @@ PROP_GRIDS = {
     'camp/kennel.png': (3, 1, ['kennel1', 'kennel2', 'kennel3']),
     'camp/workshop.png': (3, 1, ['workshop1', 'workshop2', 'workshop3']),
     'camp/shrine.png': (3, 1, ['shrine1', 'shrine2', 'shrine3']),
+    'camp/toadstool.png': (3, 1, ['toadstool1', 'toadstool2', 'toadstool3']),
+    # Fred's fairy ring in the Reaches (src/fred.js), alive and wilted
+    'world/fairy-ring.png': (2, 1, ['fairyRing', 'fairyRingWilt']),
+    # Fred's glowcaps: sprouting, grown, squashed underfoot
+    'world/glowcap.png': (3, 1, ['glowcap1', 'glowcap2', 'glowcap3']),
     # the Abyss trophies (src/trophies.js): the Starved Bell's clapper hung in a tower, the Rose's heart at three levels
     'camp/bell-tower.png': (1, 1, ['bellTower']),
     'camp/rose-heart.png': (3, 1, ['roseHeart1', 'roseHeart2', 'roseHeart3']),
@@ -513,12 +555,12 @@ PROP_SAME.update({'rosePetal%d' % i: 'rosePetal1' for i in range(2, 7)})
 PROP_SAME.update({'roseWaltz2': 'roseWaltz1', 'roseWaltz3': 'roseWaltz1', 'roseWaltz4': 'roseWaltz1'})
 # the companion homes: each about as wide as the forge at its last level
 # (a little smaller than the forge, so the crowded first camp still has room for them)
-PROP_WIDTH.update({'kennel3': 92, 'workshop3': 108, 'shrine3': 104})
+PROP_WIDTH.update({'kennel3': 92, 'workshop3': 108, 'shrine3': 104, 'toadstool3': 100, 'fairyRing': 240, 'glowcap2': 22})
 PROP_HEIGHT.update({'bellTower': 130, 'roseHeart3': 86})  # the tower well over the knight, the great bud about his height
 PROP_SAME.update({'roseHeart1': 'roseHeart3', 'roseHeart2': 'roseHeart3'})
 PROP_WIDTH.update({'outpost': 120, 'blackPearl11': 64, 'resBlack': 22})  # the outpost about two knights wide, a clam about a shield
 PROP_SAME.update({n: 'blackPearl11' for n in ['blackPearl11', 'blackPearl12', 'blackPearl13', 'blackPearl21', 'blackPearl22', 'blackPearl23', 'blackPearl31', 'blackPearl32', 'blackPearl33'] if n != 'blackPearl11'})
-PROP_SAME.update({'kennel1': 'kennel3', 'kennel2': 'kennel3', 'workshop1': 'workshop3', 'workshop2': 'workshop3', 'shrine1': 'shrine3', 'shrine2': 'shrine3'})
+PROP_SAME.update({'kennel1': 'kennel3', 'kennel2': 'kennel3', 'workshop1': 'workshop3', 'workshop2': 'workshop3', 'shrine1': 'shrine3', 'shrine2': 'shrine3', 'toadstool1': 'toadstool3', 'toadstool2': 'toadstool3', 'fairyRingWilt': 'fairyRing', 'glowcap1': 'glowcap2', 'glowcap3': 'glowcap2'})
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
 PROP_OUT = 'props'

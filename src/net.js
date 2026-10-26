@@ -148,6 +148,7 @@
       G.allies = G.allies.filter((a) => a !== g.ally);
       DL.Kindle.leave(g.id);
       DL.Abigail.leave(g.id);
+      DL.Fred.leave(g.id);
       say(`The ${g.ally.label} left the game.`, "warn");
     }
   }
@@ -182,6 +183,7 @@
       if (m.golem) DL.Golems.give(g.id); // they won Derek in a Hollow before: he comes along
       if (m.kindle) DL.Kindle.join(g.id); // and one who lit their Kindle, theirs
       if (m.abigail) DL.Abigail.join(g.id); // and Abigail, for one who won her
+      if (m.fred) DL.Fred.join(g.id); // and Fred
       const harvested = [];
       for (const c of DL.World.chunks.values()) for (const o of c.objects) if (o.harvested || o.dead || (o.maxHp && o.hp < o.maxHp)) harvested.push(objRow(o));
       sendTo(g, { t: "welcome", v: VERSION, id: g.id, up: G.save.up, difficulty: G.save.difficulty, day: G.save.day, nights: G.save.nights, time: G.time, ob: harvested });
@@ -242,6 +244,16 @@
       // a friend laid their tenth soul orb to rest at the graves: their Abigail rises beside them
       DL.Abigail.join(g.id);
       if (g && g.ally) say(`${who} laid ten souls to rest. Abigail rises for them.`, "good");
+    } else if (ev.t === "fredWake") {
+      // a friend lit a torch at the fairy ring: little Fred wakes, and the night of defending him begins
+      DL.Fred.startHost();
+    } else if (ev.t === "fredCap") DL.Fred.capEaten(ev.id);
+    else if (ev.t === "fredPath") {
+      // Fred's roads belong to the world, like his level
+      if (DL.Summons.chooseHost(ev.arg)) say(`${who} chose a road for Fred.`, "good");
+      else sendTo(g, { t: "say", m: "Couldn't choose that road for Fred.", k: "warn" });
+    } else if (ev.t === "fredRepick") {
+      if (!DL.Summons.repickHost()) sendTo(g, { t: "say", m: "Couldn't reset Fred's roads — check the stash and the Toadstool Cottage.", k: "warn" });
     } else if (ev.t === "deposit") {
       const parts = [];
       for (const k of DL.RES_KEYS) if (ev.res[k] > 0) { G.save.stash[k] += ev.res[k]; parts.push(`${ev.res[k]} ${DL.RESOURCES[k].name}`); }
@@ -293,7 +305,9 @@
       // every other knight: the host (id 0) and the other friends, with their bolts
       kn: [[0, "Host", hostKnight(), []], ...G.allies.filter((o) => o !== a).map((o) => [o.id, o.label, allyKnight(o), o.proj || []])],
       en: G.enemies.filter((e) => near(e.x, e.y, 1100)).map((e) => [e.id, TYPES.indexOf(e.type), r1(e.x), r1(e.y), r1(e.angle), e.state === "windup" ? 1 : e.state === "recover" ? 2 : 0,
-        r1(e.stT), r1(e.aim || 0), Math.round(e.hp), Math.round(e.maxHp), r1(e.rise), e.moving ? 1 : 0, e.dormant ? 1 : 0, r1(e.burn || 0), r1(e.bleed || 0), e.cursed ? 1 : 0]),
+        r1(e.stT), r1(e.aim || 0), Math.round(e.hp), Math.round(e.maxHp), r1(e.rise), e.moving ? 1 : 0, e.dormant ? 1 : 0, r1(e.burn || 0), r1(e.bleed || 0), e.cursed ? 1 : 0,
+        // Fred's marks: 1 befuddled, 2 turned, 4 asleep, 8 spored
+        (e.conf > 0 ? 1 : 0) | (e.mind > 0 ? 2 : 0) | (e.sleep && e.stun > 0 ? 4 : 0) | (e.spore > 0 ? 8 : 0)]),
       pr: G.projectiles.filter((b) => near(b.x, b.y, 900)).map((b) => [r1(b.x), r1(b.y), Math.round(b.vx), Math.round(b.vy), b.kind, b.col, b.hostile ? 1 : 0]),
       to: G.torches.map((o) => [r1(o.x), r1(o.y), r1(o.t), o.max, Math.round(o.r), o.type, Math.round(o.hp)]),
       lz: G.lightZones.map((z) => [r1(z.x), r1(z.y), Math.round(z.r), r1(z.t), z.heal ? 1 : 0, z.fire ? 1 : 0]),
@@ -316,6 +330,8 @@
       kd: DL.Kindle.rows(),
       // Abigails, one per knight who won her: [id, owner, x, y, angle, moving, throw time left, blessing left]
       ab: DL.Abigail.rows(),
+      // Freds, their glowcaps and fairy rings, and the night at his ring (src/fred.js)
+      fd: DL.Fred.rows(),
       // companion levels, Abyss trophies, the Great Siege, outposts [grove x, grove y, x, y, lit, hp], the Rose Heart's briar
       sm: G.save.summons, tr: G.save.trophies, gs: DL.Siege.on ? 1 : 0,
       op: DL.Outposts.rows(), rh: DL.Trophies.rows(),
@@ -343,6 +359,8 @@
   Net.hasKindle = () => !!Net.profile().kindle || G.listSlots().some(({ save }) => save && save.kindle && save.kindle.lit);
   // And Abigail.
   Net.hasAbigail = () => !!Net.profile().abigail || G.listSlots().some(({ save }) => save && save.abigail);
+  // And Fred.
+  Net.hasFred = () => !!Net.profile().fred || G.listSlots().some(({ save }) => save && save.fred);
 
   Net.join = async function (code, kit) {
     Net.joinKit = DL.KITS[kit] ? kit : G.save.kit;
@@ -371,7 +389,7 @@
         if (c.peerConnection) c.peerConnection.addEventListener("signalingstatechange", () => { if (c.peerConnection.signalingState === "stable") reached = true; });
         c.on("open", () => {
           Net.connected = true;
-          Net.send({ t: "hello", v: VERSION, kit: Net.joinKit, level: Net.joinLevel(Net.joinKit), hound: Net.hasHound() ? 1 : 0, golem: Net.profile().golem ? 1 : 0, kindle: Net.hasKindle() ? 1 : 0, abigail: Net.hasAbigail() ? 1 : 0 });
+          Net.send({ t: "hello", v: VERSION, kit: Net.joinKit, level: Net.joinLevel(Net.joinKit), hound: Net.hasHound() ? 1 : 0, golem: Net.profile().golem ? 1 : 0, kindle: Net.hasKindle() ? 1 : 0, abigail: Net.hasAbigail() ? 1 : 0, fred: Net.hasFred() ? 1 : 0 });
         });
         c.on("data", (raw) => wireRecv(c, raw, (m) => {
           if (m && m.t === "full") { clearTimeout(timer); fail(`That room is full (${MAX_GUESTS + 1} players).`); return; }
@@ -460,6 +478,9 @@
       DL.Sound.play("growl");
       say("The carcass shudders, and the bones knit. A Bone Hound rises to hunt at your side.", "good");
       if (DL.UI.refreshCamp) DL.UI.refreshCamp();
+    } else if (m.t === "fredWon") {
+      DL.Fred.wonGuest();
+      if (DL.UI.refreshCamp) DL.UI.refreshCamp();
     } else if (m.t === "cave" || m.t === "caveMend") DL.Cave.guestMsg(m);
     else if (m.t === "snap") applySnap(m);
   }
@@ -505,7 +526,7 @@
       byId.delete(r[0]);
       e.tx = r[2]; e.ty = r[3]; e.angle = r[4];
       e.state = r[5] === 1 ? "windup" : r[5] === 2 ? "recover" : "move";
-      e.stT = r[6]; e.aim = r[7]; e.hp = r[8]; e.maxHp = r[9]; e.rise = r[10]; e.moving = !!r[11]; e.dormant = !!r[12]; e.burn = r[13]; e.bleed = r[14]; e.cursed = !!r[15];
+      e.stT = r[6]; e.aim = r[7]; e.hp = r[8]; e.maxHp = r[9]; e.rise = r[10]; e.moving = !!r[11]; e.dormant = !!r[12]; e.burn = r[13]; e.bleed = r[14]; e.cursed = !!r[15]; e.fx = r[16] || 0;
       next.push(e);
     }
     // a Bone Wolf leaves its carcass (sent with the den) instead of dissolving
@@ -533,6 +554,7 @@
     DL.Den.apply(m.dn);
     DL.Kindle.apply(m.kd);
     DL.Abigail.apply(m.ab);
+    DL.Fred.apply(m.fd);
     // Derek and his walls: a wall that appears rises with its dust, one that vanishes close by crumbles
     const golems = new Map(G.golems.map((o) => [o.id, o]));
     G.golems = (m.gm || []).map((r) => {
@@ -574,6 +596,7 @@
     for (const w of G.stoneWalls) { w.t += dt; w.hitT = Math.max(0, w.hitT - dt); }
     DL.Kindle.guest(dt, k);
     DL.Abigail.guest(dt, k);
+    DL.Fred.guest(dt, k);
   };
 
   // Lights, walls and torches the guest makes become the host's; the guest sees them come back in the next snapshot.
@@ -631,6 +654,7 @@
     G.netProjectiles = null;
     DL.Den.view = null;
     DL.Abigail.forget();
+    DL.Fred.forget();
     if (was === "guest") { G.save = G.load(); DL.World.chunks.clear(); }
     if (!quiet && was) say("Co-op session ended.");
   };
