@@ -109,6 +109,8 @@
     derek("derek_f0", "derek-f0", [22, 48], [27, 45], [28, 44]),
     // Crystal Derek (his third form): a seventh bigger, crystals grown out of him
     derek("derek_f2", "derek-f2", [43, 84], [42, 74], [39, 71]),
+    // Derek the Bastion (his last form): a third bigger, a walking castle wall
+    derek("derek_f3", "derek-f3", [49, 91], [45, 80], [43, 81]),
     kindle(),
     abigail(),
     bell(),

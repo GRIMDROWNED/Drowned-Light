@@ -60,6 +60,8 @@ GRIDS = {
     'derek-f0/poses-b.png': (3, 2, POSES_B),
     'derek-f2/poses-a.png': (3, 2, POSES_A),
     'derek-f2/poses-b.png': (3, 2, POSES_B),
+    'derek-f3/poses-a.png': (3, 2, POSES_A),
+    'derek-f3/poses-b.png': (3, 2, POSES_B),
     'kindle/poses-a.png': (3, 2, POSES_A),
     'kindle/poses-b.png': (3, 2, POSES_B),
     'abigail/poses-a.png': (3, 2, POSES_A),
@@ -97,6 +99,7 @@ WARG_H = 152  # the Grave Warg (last form), cut at res 4: drawn 38 px tall with 
 PUP_H = 88  # the Bone Pup (the hound's first form, src/summons.js), cut at res 4: drawn 22 px tall, about three quarters of the hound
 DEREK_H = 60  # cut at 4 file px per art pixel (res: 4): drawn 30 px tall, about 3/8 of the knight
 DEREK_SIDE_H = 62
+BASTION_H = 78  # Derek the Bastion (his last form), res 4: a third bigger than Derek
 CRYSTAL_H = 68  # Crystal Derek (his third form), res 4: a seventh bigger than Derek
 PEBBLE_H = 44  # Pebble Derek (his first form, src/summons.js), res 4: about three quarters of Derek
 ABIGAIL_H = 112  # cut at res 4: drawn 28 px tall, hem to hood, about two thirds of the knight
@@ -184,6 +187,11 @@ SETS = {
         'derek-f2/04_walk.png': 'side/walk1', 'derek-f2/05_walk.png': 'side/walk2', 'derek-f2/06_walk.png': 'side/walk3', 'derek-f2/07_walk.png': 'side/walk4',
         'derek-f2/08_attackA.png': 'attackA', 'derek-f2/09_attackB.png': 'attackB', 'derek-f2/10_attackC.png': 'attackC',
         'derek-f2/11_hurt.png': 'side/castUp', 'derek-f2/12_death.png': 'side/castSlam'}),
+    'derek-f3': ('derek-f3', 'derek-f3/01_front.png', BASTION_H, 1, {
+        'derek-f3/01_front.png': 'front', 'derek-f3/02_back.png': 'back', 'derek-f3/03_right.png': 'right',
+        'derek-f3/04_walk.png': 'side/walk1', 'derek-f3/05_walk.png': 'side/walk2', 'derek-f3/06_walk.png': 'side/walk3', 'derek-f3/07_walk.png': 'side/walk4',
+        'derek-f3/08_attackA.png': 'attackA', 'derek-f3/09_attackB.png': 'attackB', 'derek-f3/10_attackC.png': 'attackC',
+        'derek-f3/11_hurt.png': 'side/castUp', 'derek-f3/12_death.png': 'side/castSlam'}),
     # Kindle the walking lantern: his sheets put the broken lantern (lying on its side), a pour (refilling a
     # lantern) and a point (leading the way) where the 12-pose prompt has its attacks, and a crouch and a hop
     # where it has hurt and death.
@@ -313,6 +321,11 @@ SHEETS = {
         ('derek-f2/walk-side-4.png', 4, 1, 73, 'side/walk'),
         ('derek-f2/walk-front.png', 4, 1, CRYSTAL_H, 'walkF'),
         ('derek-f2/walk-back.png', 4, 1, CRYSTAL_H, 'walkB'),
+    ],
+    'derek-f3': [
+        ('derek-f3/walk-side-4.png', 4, 1, 83, 'side/walk'),
+        ('derek-f3/walk-front.png', 4, 1, BASTION_H, 'walkF'),
+        ('derek-f3/walk-back.png', 4, 1, BASTION_H, 'walkB'),
     ],
     'abigail': [
         ('abigail/walk-side-4.png', 4, 1, ABIGAIL_H, 'side/walk'),
