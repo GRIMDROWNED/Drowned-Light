@@ -102,6 +102,8 @@
     Object.assign(walking("boneHound_f0", [87, 88], [27, 88], [26, 87], 4), { path: "assets/sprites/bone-hound-f0/", keys: { boneHound_f0: [0, false] } }),
     // the Ember Hound (its third form), res 4: 34 px tall with its flames
     Object.assign(walking("boneHound_f2", [117, 132], [47, 138], [46, 138], 4), { path: "assets/sprites/bone-hound-f2/", keys: { boneHound_f2: [0, false] } }),
+    // the Grave Warg (its last form), res 4: 38 px tall with its horns and ghost-fire
+    Object.assign(walking("boneHound_f3", [123, 151], [63, 154], [55, 154], 4), { path: "assets/sprites/bone-hound-f3/", keys: { boneHound_f3: [0, false] } }),
     derek(),
     kindle(),
     abigail(),

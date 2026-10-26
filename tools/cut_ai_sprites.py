@@ -52,6 +52,8 @@ GRIDS = {
     'bone-hound-f0/poses-b.png': (3, 2, POSES_B),
     'bone-hound-f2/poses-a.png': (3, 2, POSES_A),
     'bone-hound-f2/poses-b.png': (3, 2, POSES_B),
+    'bone-hound-f3/poses-a.png': (3, 2, POSES_A),
+    'bone-hound-f3/poses-b.png': (3, 2, POSES_B),
     'derek/poses-a.png': (3, 2, POSES_A),
     'derek/poses-b.png': (3, 2, POSES_B),
     'kindle/poses-a.png': (3, 2, POSES_A),
@@ -70,16 +72,22 @@ GRIDS = {
 CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
               # the hound's attack row came out smaller than its standing row
               'bone-hound/08_attackA': 1.25, 'bone-hound/09_attackB': 1.25, 'bone-hound/10_attackC': 1.25}
-# the Ember Hound's attack row and its whole second sheet came out smaller than its standing row
+# the Ember Hound's and the Grave Warg's attack rows and whole second sheets came out smaller than their standing rows
 CELL_SCALE.update({'bone-hound-f2/' + n: 1.27 for n in POSES_A[3:]})
 CELL_SCALE.update({'bone-hound-f2/' + n: 1.17 for n in POSES_B})
+CELL_SCALE.update({'bone-hound-f3/' + n: 1.3 for n in POSES_A[3:]})
+CELL_SCALE.update({'bone-hound-f3/' + n: 1.18 for n in POSES_B})
 
 # Cells redrawn on their own after a sheet came back: cell -> (redrawn image, cell whose figure height it takes).
 # The redraw is shrunk to that height before it is cut, so it matches the rest of its sheet.
 CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-bell/08_attackA': ('bell-rear.png', '03_right')}
 
+# Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
+# tolerance and without the purple-fringe filter, so their glow isn't eaten.
+KEY_OPTS = {'bone-hound-f3': {'tol': 60, 'tint': False}}
 HOUND_H = 60
 EMBER_H = 136  # the Ember Hound (third form), cut at res 4: drawn 34 px tall with its flames, a little bigger than the hound
+WARG_H = 152  # the Grave Warg (last form), cut at res 4: drawn 38 px tall with its horns and mist, a quarter bigger than the hound
 PUP_H = 88  # the Bone Pup (the hound's first form, src/summons.js), cut at res 4: drawn 22 px tall, about three quarters of the hound
 DEREK_H = 60  # cut at 4 file px per art pixel (res: 4): drawn 30 px tall, about 3/8 of the knight
 DEREK_SIDE_H = 62
@@ -149,6 +157,7 @@ SETS = {
     # the Bone Hound summon: a dog, so shorter than a knight (its spines and raised tail make up the height)
     'bone-hound': ('bone-hound', 'bone-hound/01_front.png', HOUND_H, 1, twelve('bone-hound', TWELVE_FILES)),
     'bone-hound-f2': ('bone-hound-f2', 'bone-hound-f2/01_front.png', EMBER_H, 1, twelve('bone-hound-f2', TWELVE_FILES)),
+    'bone-hound-f3': ('bone-hound-f3', 'bone-hound-f3/01_front.png', WARG_H, 1, twelve('bone-hound-f3', TWELVE_FILES)),
     'bone-hound-f0': ('bone-hound-f0', 'bone-hound-f0/01_front.png', PUP_H, 1, twelve('bone-hound-f0', TWELVE_FILES)),
     # Derek the golem familiar: his sheets put a front-facing cast (fists up, slam, rise) where the 12-pose
     # prompt has its attacks, and a side cast where it has hurt and death. Floating rocks count in his height.
@@ -265,6 +274,11 @@ SHEETS = {
         ('bone-hound-f2/walk-side-4.png', 4, 1, 105, 'side/walk'),
         ('bone-hound-f2/walk-front.png', 4, 1, EMBER_H, 'walkF'),
         ('bone-hound-f2/walk-back.png', 4, 1, EMBER_H, 'walkB'),
+    ],
+    'bone-hound-f3': [
+        ('bone-hound-f3/walk-side-4.png', 4, 1, 124, 'side/walk'),
+        ('bone-hound-f3/walk-front.png', 4, 1, WARG_H, 'walkF'),
+        ('bone-hound-f3/walk-back.png', 4, 1, WARG_H, 'walkB'),
     ],
     'derek': [
         ('derek/walk-side-4.png', 4, 1, DEREK_SIDE_H, 'side/walk'),
@@ -426,7 +440,8 @@ only = sys.argv[2:]  # optional character names to cut
 for sheet, (cols, rows, names) in GRIDS.items():
     p = os.path.join(SRC, sheet)
     if not os.path.exists(p): continue
-    for n, cell in zip(names, split_grid(Image.open(p), cols, rows)):
+    ko = KEY_OPTS.get(os.path.dirname(sheet), {})
+    for n, cell in zip(names, split_grid(Image.open(p), cols, rows, tol=ko.get('tol', 120))):
         f = CELL_SCALE.get(os.path.dirname(sheet) + '/' + n)
         if f: cell = cell.resize((round(cell.width * f), round(cell.height * f)), Image.NEAREST)
         cell.save(os.path.join(os.path.dirname(p), n + '.png'))
@@ -447,16 +462,17 @@ for sheet, (cols, rows, names) in GRIDS.items():
         strip.save(os.path.join(os.path.dirname(p), 'walk-side-4.png'))
 for name, (folder, ref, target, fringe, files) in SETS.items():
     if only and name not in only: continue
-    k = target / (cut_keyed(Image.open(os.path.join(SRC, ref)), 1, fringe=fringe).height - 2)
+    ko = KEY_OPTS.get(name, {})
+    k = target / (cut_keyed(Image.open(os.path.join(SRC, ref)), 1, fringe=fringe, **ko).height - 2)
     done = []
     for src, out in files.items():
         p = os.path.join(SRC, src)
         if not os.path.exists(p): continue
         out, opt = out if isinstance(out, tuple) else (out, {})
         img, fr = Image.open(p), opt.get('fringe', fringe)
-        kk = opt['height'] / (cut_keyed(img, 1, fringe=fr).height - 2) if 'height' in opt else k
+        kk = opt['height'] / (cut_keyed(img, 1, fringe=fr, **ko).height - 2) if 'height' in opt else k
         rc = match_colors(Image.open(os.path.join(SRC, opt['match']))) if 'match' in opt else None
-        im = cut_keyed(img, kk, fringe=fr, colors=64 if rc else 32, recolor=rc)
+        im = cut_keyed(img, kk, fringe=fr, colors=64 if rc else 32, recolor=rc, **ko)
         dst = os.path.join(OUT, folder, out + '.png')
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         im.save(dst)
@@ -474,7 +490,7 @@ for name, sheets in SHEETS.items():
         if row:
             h = img.height // rows
             img, rows = img.crop((0, row[0] * h, img.width, (row[0] + 1) * h)), 1
-        frames, feet = cut_sheet(img, cols, rows, height)
+        frames, feet = cut_sheet(img, cols, rows, height, **KEY_OPTS.get(name, {}))
         if name in SHEET_MATCH:
             frames = recolor_frames(frames, match_colors(Image.open(os.path.join(SRC, SHEET_MATCH[name]))))
         order = FRAME_ORDER.get((name, prefix))
