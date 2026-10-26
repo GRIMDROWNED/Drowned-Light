@@ -114,6 +114,8 @@
     kindle(),
     // Fred the Sprout (Fred's first form, src/fred.js), cut at res 4: 20 px tall with his cap, half the knight
     fred("fred_f0", "fred-f0", [42, 82], [43, 82], [41, 83]),
+    fred("fred_f1", "fred-f1", [54, 109], [48, 110], [48, 109]), // Fred (level 5), 27 px
+    fred("fred_f2", "fred-f2", [120, 167], [72, 167], [78, 170]), // Weeping Fred (level 10), 41 px
     abigail(),
     // Mourning Abigail (her third form): a tenth taller, in violet mourning rags
     abigail("abigail_f2", "abigail-f2", [98, 136], [78, 149], [83, 152]),

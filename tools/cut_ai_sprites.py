@@ -68,6 +68,10 @@ GRIDS = {
     'abigail-f3/poses-b.png': (3, 2, POSES_B),
     'fred-f0/poses-a.png': (3, 2, POSES_A),
     'fred-f0/poses-b.png': (3, 2, POSES_B),
+    'fred-f1/poses-a.png': (3, 2, POSES_A),
+    'fred-f1/poses-b.png': (3, 2, POSES_B),
+    'fred-f2/poses-a.png': (3, 2, POSES_A),
+    'fred-f2/poses-b.png': (3, 2, POSES_B),
     'kindle/poses-a.png': (3, 2, POSES_A),
     'kindle/poses-b.png': (3, 2, POSES_B),
     'abigail/poses-a.png': (3, 2, POSES_A),
@@ -113,6 +117,8 @@ MOURNING_H = 123  # Mourning Abigail (her third form), res 4: a tenth taller tha
 ABIGAIL_H = 112  # cut at res 4: drawn 28 px tall, hem to hood, about two thirds of the knight
 KINDLE_H = 64
 FRED0_H = 80  # Fred the Sprout (Fred's first form, src/fred.js), res 4: 20 art px tall with his cap, half the knight
+FRED1_H = 107  # Fred (level 5), a third taller than the Sprout
+FRED2_H = 164  # Weeping Fred (level 10), about the knight's height
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
 ROSE_H = 368  # the Deadly Rose, cut at res 4: drawn 92 art px tall standing (x0.8 in game), about twice the knight
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
@@ -227,6 +233,8 @@ SETS = {
         'kindle/11_hurt.png': 'side/crouch', 'kindle/12_death.png': 'side/hop'}),
     # Fred: poses A put his breath (attackA), his spit (attackB) and his healing (arms up, facing you) where the attacks go
     'fred-f0': ('fred-f0', 'fred-f0/01_front.png', FRED0_H, 1, dict(twelve('fred-f0', TWELVE_FILES), **{'fred-f0/10_attackC.png': 'heal'})),
+    'fred-f2': ('fred-f2', 'fred-f2/01_front.png', FRED2_H, 1, dict(twelve('fred-f2', TWELVE_FILES), **{'fred-f2/10_attackC.png': 'heal'})),
+    'fred-f1': ('fred-f1', 'fred-f1/01_front.png', FRED1_H, 1, dict(twelve('fred-f1', TWELVE_FILES), **{'fred-f1/10_attackC.png': 'heal'})),
     'starved-bell': ('starved-bell', 'starved-bell/01_front.png', BELL_H, 1, twelve('starved-bell', TWELVE_FILES)),
     'deadly-rose': ('deadly-rose', 'deadly-rose/01_front.png', ROSE_H, 1, twelve('deadly-rose', TWELVE_FILES)),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
@@ -352,6 +360,16 @@ SHEETS = {
         ('fred-f0/walk-side-4.png', 4, 1, FRED0_H, 'side/walk'),
         ('fred-f0/walk-front.png', 4, 1, FRED0_H, 'walkF'),
         ('fred-f0/walk-back.png', 4, 1, FRED0_H, 'walkB'),
+    ],
+    'fred-f1': [
+        ('fred-f1/walk-side-4.png', 4, 1, FRED1_H, 'side/walk'),
+        ('fred-f1/walk-front.png', 4, 1, FRED1_H, 'walkF'),
+        ('fred-f1/walk-back.png', 4, 1, FRED1_H, 'walkB'),
+    ],
+    'fred-f2': [
+        ('fred-f2/walk-side-4.png', 4, 1, FRED2_H, 'side/walk'),
+        ('fred-f2/walk-front.png', 4, 1, FRED2_H, 'walkF'),
+        ('fred-f2/walk-back.png', 4, 1, FRED2_H, 'walkB'),
     ],
     'abigail': [
         ('abigail/walk-side-4.png', 4, 1, ABIGAIL_H, 'side/walk'),
