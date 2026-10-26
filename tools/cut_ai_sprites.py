@@ -436,6 +436,18 @@ PROP_GRIDS = {
     'deadly-rose/bushes.png': (3, 1, ['roseBush0', 'roseBush1', 'roseBush2']),
     # petals on the wind round her garden: six tumbling shapes, played in turn as a petal drifts
     'deadly-rose/petals.png': (6, 1, ['rosePetal1', 'rosePetal2', 'rosePetal3', 'rosePetal4', 'rosePetal5', 'rosePetal6']),
+    # the companion homes (src/summons.js), one picture per level
+    'camp/kennel.png': (3, 1, ['kennel1', 'kennel2', 'kennel3']),
+    'camp/workshop.png': (3, 1, ['workshop1', 'workshop2', 'workshop3']),
+    'camp/shrine.png': (3, 1, ['shrine1', 'shrine2', 'shrine3']),
+    # the Abyss trophies (src/trophies.js): the Starved Bell's clapper hung in a tower, the Rose's heart at three levels
+    'camp/bell-tower.png': (1, 1, ['bellTower']),
+    'camp/rose-heart.png': (3, 1, ['roseHeart1', 'roseHeart2', 'roseHeart3']),
+    # a forward outpost in a bloom grove (src/outposts.js), its fire basket unlit (the fire is drawn on top)
+    'camp/outpost.png': (1, 1, ['outpost']),
+    # three Black Pearl clams (the Abyss resource), each whole -> prised open -> broken, and its pickup
+    'world/black-pearl.png': (3, 3, ['blackPearl11', 'blackPearl12', 'blackPearl13', 'blackPearl21', 'blackPearl22', 'blackPearl23', 'blackPearl31', 'blackPearl32', 'blackPearl33']),
+    'world/res-black-pearl.png': (1, 1, ['resBlack']),
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
@@ -486,6 +498,14 @@ PROP_SAME.update({'roseBush0': 'roseBush1', 'roseBush2': 'roseBush1'})
 PROP_WIDTH['rosePetal1'] = 16
 PROP_SAME.update({'rosePetal%d' % i: 'rosePetal1' for i in range(2, 7)})
 PROP_SAME.update({'roseWaltz2': 'roseWaltz1', 'roseWaltz3': 'roseWaltz1', 'roseWaltz4': 'roseWaltz1'})
+# the companion homes: each about as wide as the forge at its last level
+# (a little smaller than the forge, so the crowded first camp still has room for them)
+PROP_WIDTH.update({'kennel3': 92, 'workshop3': 108, 'shrine3': 104})
+PROP_HEIGHT.update({'bellTower': 130, 'roseHeart3': 86})  # the tower well over the knight, the great bud about his height
+PROP_SAME.update({'roseHeart1': 'roseHeart3', 'roseHeart2': 'roseHeart3'})
+PROP_WIDTH.update({'outpost': 120, 'blackPearl11': 64, 'resBlack': 22})  # the outpost about two knights wide, a clam about a shield
+PROP_SAME.update({n: 'blackPearl11' for n in ['blackPearl11', 'blackPearl12', 'blackPearl13', 'blackPearl21', 'blackPearl22', 'blackPearl23', 'blackPearl31', 'blackPearl32', 'blackPearl33'] if n != 'blackPearl11'})
+PROP_SAME.update({'kennel1': 'kennel3', 'kennel2': 'kennel3', 'workshop1': 'workshop3', 'workshop2': 'workshop3', 'shrine1': 'shrine3', 'shrine2': 'shrine3'})
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
 PROP_OUT = 'props'

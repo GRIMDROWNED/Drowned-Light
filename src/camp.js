@@ -65,10 +65,10 @@
     L.garden = up.garden ? { x: 66, y: 140 } : null;
     // the companions' homes and the Abyss trophies take the outer ground, spreading out as the walls do
     const o = R - 82;
-    L.kennel = up.kennel ? { x: -o, y: -Math.round(R * 0.42) } : null;
+    L.kennel = up.kennel ? { x: -o, y: -Math.round(R * 0.5) } : null;
     L.workshop = up.workshop ? { x: o, y: -Math.round(R * 0.42) } : null;
     L.shrine = up.shrine ? { x: -Math.round(R * 0.52), y: Math.round(R * 0.43) } : null;
-    L.roseheart = up.roseheart ? { x: Math.round(R * 0.6), y: Math.round(R * 0.4) } : null;
+    L.roseheart = up.roseheart ? { x: Math.round(R * 0.42), y: -(R - 58) } : null; // the bell's twin, across the north gate
     L.bell = up.bell ? { x: -Math.round(R * 0.42), y: -(R - 58) } : null;
     // watchtowers stand in the corners (the third level fills all four), pylons along the walls by the gates
     const cn = R - 56;

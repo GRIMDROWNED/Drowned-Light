@@ -123,15 +123,15 @@
   Outposts.push = function (list, c, t, view, sprite, fire, bar) {
     for (const o of G.outposts) {
       if (o.x < view.left - 200 || o.x > view.right + 200 || o.y < view.top - 200 || o.y > view.bottom + 200) continue;
-      for (let i = 0; i < 10; i++) {
+      const big = DL.Art.sprites.outpost; // the drawn outpost brings its own stakes
+      if (!big) for (let i = 0; i < 10; i++) {
         const a = (i / 10) * Math.PI * 2 + 0.3, x = o.x + Math.cos(a) * 58, y = o.y + Math.sin(a) * 40;
         list.push({ y, f: () => sprite(c, "stake", x, y + 2, i % 2 === 0) });
       }
       list.push({ y: o.y, f: () => {
-        const big = DL.Art.sprites.outpost;
         if (big) sprite(c, "outpost", o.x, o.y + 4);
         else sprite(c, "brazier", o.x, o.y + 2);
-        const top = big ? o.y - 46 : o.y + 14 - DL.Art.sprites.brazier.h * 2;
+        const top = big ? o.y - 68 : o.y + 14 - DL.Art.sprites.brazier.h * 2;
         if (o.lit) fire(c, o.x, top, 1.5 + (o.hitT > 0 ? -0.3 : 0), t);
         if (o.lit && o.hp < o.max) bar(c, o.x, top - 50, 30, o.hp / o.max, "#ffb35a");
       } });
