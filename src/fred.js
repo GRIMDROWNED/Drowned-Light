@@ -626,10 +626,27 @@
     if (m.state === "heal") return "heal";
     return m.moving ? "walk" : "idle";
   }
+  // Robert's drawing of a form, once it's loaded (fred_f0 and so on, src/sprites.js), replaces the coded figure.
+  const drawnKey = (f) => { const k = "fred_f" + f, sh = DL.Art.sheets[k]; return sh && !sh.down.idle[0].blank && !sh.down.walk[0].blank ? k : null; };
+  Fred.drawn = drawnKey;
+  function drawnFrame(m, t) {
+    if (m.state === "cast") return ["attack", Math.max(0, Math.min(2, Math.floor((1 - m.stT / CAST) * 3))), m.angle];
+    if (m.state === "heal") return ["heal", 0, Math.PI / 2];
+    if (m.moving) return ["walk", Math.floor(m.animT * 14), m.angle];
+    return ["idle", 0, m.angle];
+  }
   function drawFred(c, m, t) {
-    const f = DL.Summons.form("fred"), { dir, flip } = unitDir(m.angle), anim = animOf(m, t);
+    const f = DL.Summons.form("fred"), { dir, flip } = unitDir(m.angle), anim = animOf(m, t), key = drawnKey(f);
     shadow(c, m.x, m.y, [7, 9, 13, 30][f], [2.5, 3, 4, 7][f]);
+    if (key) { const [a, fr, ang] = drawnFrame(m, t); return DL.Art.drawUnit(c, key, a, fr, ang, m.x, m.y, 1); }
     figure(c, m.x, m.y, { f, dir, flip, anim, ph: m.animT * 11, t, id: m.id });
+  }
+  // Little Fred in his ring: asleep (the drawn breath pose, eyes shut), or awake and fighting for his life.
+  function drawLittle(c, x, y, awake, flash, t) {
+    shadow(c, x, y, 7, 2.5);
+    const key = drawnKey(0);
+    if (key) return DL.Art.drawUnit(c, key, awake ? "idle" : "attack", 0, Math.PI / 2, x, y, 1, flash ? { flash: 0.6, flashColor: "#ff8a7a" } : {});
+    figure(c, x, y, { f: 0, dir: "down", flip: false, anim: awake ? (flash ? "cast" : "idle") : "sleep", ph: 0, t, id: 3 });
   }
   // A glowcap: a little cluster of pale caps glowing amber from underneath.
   function drawCap(c, cp, t) {
@@ -668,10 +685,10 @@
     const wilted = Fred.sealed();
     for (const sh of Fred.shrooms()) list.push({ y: sh.y, f: () => drawShroom(c, sh, wilted, t) });
     if (trial) list.push({ y: s.y, f: () => {
-      figure(c, trial.x, trial.y, { f: 0, dir: "down", flip: false, anim: trial.flash > 0 ? "cast" : "idle", ph: 0, t, id: 3 });
-      bar(c, trial.x, trial.y - 46, 30, trial.hp / trial.max, "#ffb347");
+      drawLittle(c, trial.x, trial.y, true, trial.flash > 0, t);
+      bar(c, trial.x, trial.y - 50, 30, trial.hp / trial.max, "#ffb347");
     } });
-    else if (!Fred.won() && !wilted) list.push({ y: s.y, f: () => figure(c, s.x, s.y, { f: 0, dir: "down", flip: false, anim: "sleep", ph: 0, t, id: 3 }) });
+    else if (!Fred.won() && !wilted) list.push({ y: s.y, f: () => drawLittle(c, s.x, s.y, false, false, t) });
   };
   // A fairy ring dripped on the ground: a faint ring of light dotted with tiny caps.
   function drawRing(c, r, t) {
@@ -694,6 +711,12 @@
   }
   function figureGlow(c, x, y, f, dir, flip, anim, t, id, col) {
     const P = glowPoints(x, y, f, dir, flip, anim, t, id), fl = 0.8 + 0.2 * Math.sin(t * 7 + id);
+    if (drawnKey(f)) {
+      // the drawn lanterns hang lower and wider, and the Sprout's eyes glow amber too
+      for (const [lx, ly] of P.lamps) glow(c, x + (lx - x) * 1.25, ly + 8, 10 + f * 2, col, 0.75 * fl);
+      if (f === 0 && dir !== "up" && anim !== "sleep") for (const ex of dir === "side" ? [(flip ? -1 : 1) * 6] : [-6, 6]) glow(c, x + ex, y - 24, 4, AMBER, 0.6);
+      return;
+    }
     for (const [lx, ly] of P.lamps) glow(c, lx, ly, 9 + f * 2, col, 0.8 * fl);
     for (const [ex, ey] of P.eyes) glow(c, ex, ey, 4 + f, col, 0.95);
     if (f === 3 && dir !== "up") glow(c, x + (dir === "side" ? (flip ? -3 : 3) : 0), y - 54, 12, col, 0.5 * fl); // the furnace in his maw
@@ -771,7 +794,9 @@
   Fred.portrait = function (g, cv, t) {
     const f = Fred.won() ? DL.Summons.form("fred") : 0, sc = [1.1, 0.9, 0.62, 0.46][f], x = cv.width / 2, y = cv.height - 3;
     g.save(); g.translate(x, y); g.scale(sc, sc);
-    figure(g, 0, 0, { f, dir: "down", flip: false, anim: Fred.won() ? "idle" : "sleep", ph: 0, t, id: 1 });
+    const key = drawnKey(f);
+    if (key) { g.imageSmoothingEnabled = false; DL.Art.drawUnit(g, key, Fred.won() ? "idle" : "attack", 0, Math.PI / 2, 0, 0, 1); }
+    else figure(g, 0, 0, { f, dir: "down", flip: false, anim: Fred.won() ? "idle" : "sleep", ph: 0, t, id: 1 });
     g.globalCompositeOperation = "lighter";
     figureGlow(g, 0, 0, f, "down", false, Fred.won() ? "idle" : "sleep", t, 1, Fred.col());
     g.restore();

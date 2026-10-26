@@ -112,6 +112,8 @@
     // Derek the Bastion (his last form): a third bigger, a walking castle wall
     derek("derek_f3", "derek-f3", [49, 91], [45, 80], [43, 81]),
     kindle(),
+    // Fred the Sprout (Fred's first form, src/fred.js), cut at res 4: 20 px tall with his cap, half the knight
+    fred("fred_f0", "fred-f0", [42, 82], [43, 82], [41, 83]),
     abigail(),
     // Mourning Abigail (her third form): a tenth taller, in violet mourning rags
     abigail("abigail_f2", "abigail-f2", [98, 136], [78, 149], [83, 152]),
@@ -129,6 +131,15 @@
     set.views.side.attack = ["side/castUp", "side/castSlam", "side/castSlam"];
     set.views.up.attack = ["back", "back@bob", "back"];
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]]) Object.assign(set.views[dir], { hurt: [p], death: [p, p, p + "@fall"] });
+    return set;
+  }
+
+  // Fred the mushroom familiar: his attack takes a breath and spits, "heal" raises his arms facing you (a glowcap
+  // sprouting), and he wilts under his cap when he dies.
+  function fred(key, folder, side, front, back) {
+    const set = Object.assign(walking(key, side, front, back, 4), { path: "assets/sprites/" + folder + "/", keys: { [key]: [0, false] } });
+    for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
+      Object.assign(set.views[dir], { attack: ["attackA", "attackB", "attackB"], heal: ["heal"], hurt: ["side/hurt"], death: ["side/death"], idle: [p] });
     return set;
   }
 
