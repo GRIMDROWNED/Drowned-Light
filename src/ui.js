@@ -435,7 +435,10 @@
       g.save();
       g.translate(cv.width / 2, cv.height - 2);
       g.scale(0.9, 0.9);
-      DL.Render.drawWraith(g, { id: 1, x: 0, y: 0, angle: Math.PI / 2, state: "move" }, t);
+      const lk = DL.Summons.look("wraith");
+      // the Soul Wisp is only glow (drawn over the dark in the world), so draw that here
+      if (lk.wisp && !lk.drawn) DL.Render.drawWisp(g, 0, -26, 1.6, Math.PI / 2, 1, t);
+      else DL.Render.drawWraith(g, { id: 1, x: 0, y: 0, angle: Math.PI / 2, state: "move" }, t);
       g.restore();
     }
     for (const cv of document.querySelectorAll("canvas[data-fred]")) {
