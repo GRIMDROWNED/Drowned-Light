@@ -48,6 +48,8 @@ GRIDS = {
     'flame-bastion/poses-b.png': (3, 2, POSES_B),
     'bone-hound/poses-a.png': (3, 2, POSES_A),
     'bone-hound/poses-b.png': (3, 2, POSES_B),
+    'bone-hound-f0/poses-a.png': (3, 2, POSES_A),
+    'bone-hound-f0/poses-b.png': (3, 2, POSES_B),
     'derek/poses-a.png': (3, 2, POSES_A),
     'derek/poses-b.png': (3, 2, POSES_B),
     'kindle/poses-a.png': (3, 2, POSES_A),
@@ -72,6 +74,7 @@ CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
 CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-bell/08_attackA': ('bell-rear.png', '03_right')}
 
 HOUND_H = 60
+PUP_H = 88  # the Bone Pup (the hound's first form, src/summons.js), cut at res 4: drawn 22 px tall, about three quarters of the hound
 DEREK_H = 60  # cut at 4 file px per art pixel (res: 4): drawn 30 px tall, about 3/8 of the knight
 DEREK_SIDE_H = 62
 ABIGAIL_H = 112  # cut at res 4: drawn 28 px tall, hem to hood, about two thirds of the knight
@@ -139,6 +142,7 @@ SETS = {
     'flame-bastion': ('flame-bastion', 'flame-bastion/01_front.png', 84, 1, twelve('flame-bastion', TWELVE_FILES)),
     # the Bone Hound summon: a dog, so shorter than a knight (its spines and raised tail make up the height)
     'bone-hound': ('bone-hound', 'bone-hound/01_front.png', HOUND_H, 1, twelve('bone-hound', TWELVE_FILES)),
+    'bone-hound-f0': ('bone-hound-f0', 'bone-hound-f0/01_front.png', PUP_H, 1, twelve('bone-hound-f0', TWELVE_FILES)),
     # Derek the golem familiar: his sheets put a front-facing cast (fists up, slam, rise) where the 12-pose
     # prompt has its attacks, and a side cast where it has hurt and death. Floating rocks count in his height.
     'derek': ('derek', 'derek/01_front.png', DEREK_H, 1, {
@@ -243,6 +247,12 @@ SHEETS = {
         ('bone-hound/walk-side-4.png', 4, 1, 40, 'side/walk'),
         ('bone-hound/walk-front-4.png', 4, 1, 62, 'walkF'),
         ('bone-hound/walk-back-4.png', 4, 1, 64, 'walkB'),
+    ],
+    # the pup's front and back walks came out drawn bigger than its poses, so they're sized by the skull's width
+    'bone-hound-f0': [
+        ('bone-hound-f0/walk-side-4.png', 4, 1, 64, 'side/walk'),
+        ('bone-hound-f0/walk-front.png', 4, 1, 86, 'walkF'),
+        ('bone-hound-f0/walk-back.png', 4, 1, 85, 'walkB'),
     ],
     'derek': [
         ('derek/walk-side-4.png', 4, 1, DEREK_SIDE_H, 'side/walk'),

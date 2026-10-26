@@ -98,6 +98,8 @@
     Object.assign(walking("flameBastion", [53, 86], [37, 86], [34, 86]), { path: "assets/sprites/flame-bastion/", keys: stages("flameBastion") }),
     // the Bone Hound summon: the same 12 poses and walk sheets, its side walk a four-legged gallop
     Object.assign(walking("boneHound", [55, 55], [27, 64], [26, 66]), { path: "assets/sprites/bone-hound/", keys: { boneHound: [0, false] } }),
+    // its first form, the Bone Pup (src/summons.js), cut at res 4: 22 px tall, about three quarters of the hound
+    Object.assign(walking("boneHound_f0", [87, 88], [27, 88], [26, 87], 4), { path: "assets/sprites/bone-hound-f0/", keys: { boneHound_f0: [0, false] } }),
     derek(),
     kindle(),
     abigail(),
