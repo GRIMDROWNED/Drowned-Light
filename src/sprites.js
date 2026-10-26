@@ -98,9 +98,25 @@
     Object.assign(walking("flameBastion", [53, 86], [37, 86], [34, 86]), { path: "assets/sprites/flame-bastion/", keys: stages("flameBastion") }),
     // the Bone Hound summon: the same 12 poses and walk sheets, its side walk a four-legged gallop
     Object.assign(walking("boneHound", [55, 55], [27, 64], [26, 66]), { path: "assets/sprites/bone-hound/", keys: { boneHound: [0, false] } }),
+    // its first form, the Bone Pup (src/summons.js), cut at res 4: 22 px tall, about three quarters of the hound
+    Object.assign(walking("boneHound_f0", [87, 88], [27, 88], [26, 87], 4), { path: "assets/sprites/bone-hound-f0/", keys: { boneHound_f0: [0, false] } }),
+    // the Ember Hound (its third form), res 4: 34 px tall with its flames
+    Object.assign(walking("boneHound_f2", [117, 132], [47, 138], [46, 138], 4), { path: "assets/sprites/bone-hound-f2/", keys: { boneHound_f2: [0, false] } }),
+    // the Grave Warg (its last form), res 4: 38 px tall with its horns and ghost-fire
+    Object.assign(walking("boneHound_f3", [123, 151], [63, 154], [55, 154], 4), { path: "assets/sprites/bone-hound-f3/", keys: { boneHound_f3: [0, false] } }),
     derek(),
+    // his first form, Pebble Derek (src/summons.js): about three quarters of his size
+    derek("derek_f0", "derek-f0", [22, 48], [27, 45], [28, 44]),
+    // Crystal Derek (his third form): a seventh bigger, crystals grown out of him
+    derek("derek_f2", "derek-f2", [43, 84], [42, 74], [39, 71]),
+    // Derek the Bastion (his last form): a third bigger, a walking castle wall
+    derek("derek_f3", "derek-f3", [49, 91], [45, 80], [43, 81]),
     kindle(),
     abigail(),
+    // Mourning Abigail (her third form): a tenth taller, in violet mourning rags
+    abigail("abigail_f2", "abigail-f2", [98, 136], [78, 149], [83, 152]),
+    // Abigail, Queen of Sorrows (her last form): a fifth taller, crowned in pale bone
+    abigail("abigail_f3", "abigail-f3", [106, 146], [110, 171], [112, 168]),
     bell(),
     rose(),
     colossus(),
@@ -108,8 +124,8 @@
 
   // Derek the golem familiar, cut at res 4, 30 px tall (about 3/8 of the knight). His cast is drawn
   // facing you (fists up, slam, rise) and from the side; from behind he just stamps. He is never hurt.
-  function derek() {
-    const set = Object.assign(walking("derek", [33, 67], [33, 62], [35, 66], 4), { path: "assets/sprites/derek/", keys: { derek: [0, false] } });
+  function derek(key = "derek", folder = "derek", side = [33, 67], front = [33, 62], back = [35, 66]) {
+    const set = Object.assign(walking(key, side, front, back, 4), { path: "assets/sprites/" + folder + "/", keys: { [key]: [0, false] } });
     set.views.side.attack = ["side/castUp", "side/castSlam", "side/castSlam"];
     set.views.up.attack = ["back", "back@bob", "back"];
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]]) Object.assign(set.views[dir], { hurt: [p], death: [p, p, p + "@fall"] });
@@ -129,8 +145,8 @@
   // Abigail the soul wraith, cut at res 4, 28 px tall from hem to hood. She floats (src/render.js lifts her off the
   // ground): her walk is a drift, "attack" raises an arm and throws, "bless" is her blessing (facing you, arms up),
   // and "death" fades her away.
-  function abigail() {
-    const set = Object.assign(walking("abigail", [89, 125], [68, 121], [70, 117], 4), { path: "assets/sprites/abigail/", keys: { abigail: [0, false] } });
+  function abigail(key = "abigail", folder = "abigail", side = [89, 125], front = [68, 121], back = [70, 117]) {
+    const set = Object.assign(walking(key, side, front, back, 4), { path: "assets/sprites/" + folder + "/", keys: { [key]: [0, false] } });
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
       Object.assign(set.views[dir], { attack: ["side/castUp", "side/throw", "side/throw"], bless: ["bless"], hurt: ["side/hurt"], death: ["side/fade"], idle: [p] });
     // side on she drifts with only the two leaning frames (the upright ones made her bob up and down); she
@@ -172,7 +188,10 @@
     "reeds1", "reeds2", "reeds3", "reeds4", "reeds5", "reeds6", "gardenBed1", "gardenBed2", "gardenBed3",
     "swampTree1", "swampTree2", "swampTree3",
     "boulder11", "boulder12", "boulder13", "boulder21", "boulder22", "boulder23", "boulder31", "boulder32", "boulder33", "boulder41", "boulder42", "boulder43",
-    "flame1", "flame2", "flame3", "forge1", "forge2", "forge3", "forge4", "armory1", "armory2", "armory3", "armory4", "workbench1", "workbench2", "workbench3", "workbench4", "tower1", "tower2", "tower3", "pylon1", "pylon2", "pylon3", "stake", "palisade", "palisade2", "gatePost", "gatePost2", "palisadeSide", "palisadeSide2", "cornerPost", "cornerPost2", "tent", "banner", "torch", "burnt", "brazier", "fire1", "fire2", "fire3", "fire4", "fire5", "fire6", "iron11", "iron12", "iron13", "iron21", "iron22", "iron23", "iron31", "iron32", "iron33", "amethyst11", "amethyst12", "amethyst13", "amethyst21", "amethyst22", "amethyst23", "amethyst31", "amethyst32", "amethyst33", "resWood", "resStone", "resResin", "resIron", "resPearl", "denGuarded", "denCleared", "caveSealed", "caveOpen", "headstone", "grave", "grave2", "pillar", "soulOrb", "soulFly1", "soulFly2", "roseBriar1", "roseBriar2", "roseBriar3", "roseBriar4", "roseBriar5", "roseLash1", "roseLash2", "roseLash3", "roseWaltz1", "roseWaltz2", "roseWaltz3", "roseWaltz4", "roseBud", "roseWither", "roseBush0", "roseBush1", "roseBush2", "rosePetal1", "rosePetal2", "rosePetal3", "rosePetal4", "rosePetal5", "rosePetal6"];
+    "flame1", "flame2", "flame3", "forge1", "forge2", "forge3", "forge4", "armory1", "armory2", "armory3", "armory4", "workbench1", "workbench2", "workbench3", "workbench4", "tower1", "tower2", "tower3", "pylon1", "pylon2", "pylon3", "stake", "palisade", "palisade2", "gatePost", "gatePost2", "palisadeSide", "palisadeSide2", "cornerPost", "cornerPost2", "tent", "banner", "torch", "burnt", "brazier", "fire1", "fire2", "fire3", "fire4", "fire5", "fire6", "iron11", "iron12", "iron13", "iron21", "iron22", "iron23", "iron31", "iron32", "iron33", "amethyst11", "amethyst12", "amethyst13", "amethyst21", "amethyst22", "amethyst23", "amethyst31", "amethyst32", "amethyst33", "resWood", "resStone", "resResin", "resIron", "resPearl", "denGuarded", "denCleared", "caveSealed", "caveOpen", "headstone", "grave", "grave2", "pillar", "soulOrb", "soulFly1", "soulFly2", "roseBriar1", "roseBriar2", "roseBriar3", "roseBriar4", "roseBriar5", "roseLash1", "roseLash2", "roseLash3", "roseWaltz1", "roseWaltz2", "roseWaltz3", "roseWaltz4", "roseBud", "roseWither", "roseBush0", "roseBush1", "roseBush2", "rosePetal1", "rosePetal2", "rosePetal3", "rosePetal4", "rosePetal5", "rosePetal6",
+    "kennel1", "kennel2", "kennel3", "workshop1", "workshop2", "workshop3", "shrine1", "shrine2", "shrine3",
+    "bellTower", "roseHeart1", "roseHeart2", "roseHeart3", "outpost",
+    "blackPearl11", "blackPearl12", "blackPearl13", "blackPearl21", "blackPearl22", "blackPearl23", "blackPearl31", "blackPearl32", "blackPearl33", "resBlack"];
   const PROPS = {
     path: "assets/sprites/",
     // cut at 2 file px per art pixel, like the units

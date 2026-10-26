@@ -64,12 +64,15 @@
   Golems.distTo = distTo;
   const standing = (w) => !w.dead && w.t > RISE * 0.5;
 
+  // His level (src/summons.js) sets how long, how strong and how many his walls are.
   function raise(m, x, y, ang) {
-    const w = { id: ++G.eid, stoneWall: true, owner: m.owner, x, y, ang, len: H.len, rad: THICK, hits: H.hits, t: 0, hitT: 0 };
+    const st = DL.Summons.golem(m.trial);
+    const w = { id: ++G.eid, stoneWall: true, owner: m.owner, x, y, ang, len: st.len, rad: THICK, hits: st.hits, life: st.life, t: 0, hitT: 0,
+      shards: st.shards, burst: st.burst };
     G.stoneWalls.push(w);
     // too many: his oldest one gives way
     const own = G.stoneWalls.filter((o) => o.owner === m.owner && !o.dead);
-    if (own.length > H.maxWalls) crumble(own[0], false);
+    if (own.length > st.maxWalls) crumble(own[0], false);
     Golems.raiseFx(w, m);
     // the Drowned nearby turn on it at once
     for (const e of G.enemies) if (!e.removed && distTo(w, e.x, e.y) < H.lure + 60) e.goal = w;
@@ -85,8 +88,10 @@
   };
 
   // A Drowned blow (or an arrow or orb) lands on a wall: each one is a single hit, however hard.
-  Golems.hitWall = function (w) {
+  // A crystal wall cuts whoever struck it (`by`, when it's a blow).
+  Golems.hitWall = function (w, by) {
     if (w.dead) return;
+    if (by && w.shards && !G.isGuest()) { G.hitEnemy(by, w.shards, Math.atan2(by.y - w.y, by.x - w.x), 40); for (let i = 0; i < 4; i++) G.spark(by.x, by.y - 16, "120,240,255", 70); }
     w.hits -= 1;
     w.hitT = 0.2;
     for (let i = 0; i < 5; i++) G.spark(w.x + rand(-w.len / 3, w.len / 3), w.y - rand(6, 22), "200,190,170", 70);
@@ -97,6 +102,11 @@
     w.dead = true;
     Golems.crumbleFx(w);
     if (broken) sfx("shatter");
+    // the Bastion's walls burst as they fall, staggering the Drowned round them
+    if (w.burst && !G.isGuest()) {
+      for (const e of G.enemies) if (!e.removed && !e.def.boss && distTo(w, e.x, e.y) < 70) e.stun = Math.max(e.stun || 0, 1.5);
+      G.effects.push({ type: "howl", x: w.x, y: w.y - 10, t: 0, max: 0.6, col: "255,215,120" });
+    }
   }
   Golems.crumbleFx = function (w) {
     const [x1, y1, x2, y2] = ends(w);
@@ -164,7 +174,7 @@
       const d = dist(o.x, o.y, e.x, e.y) || 1, ux = (e.x - o.x) / d, uy = (e.y - o.y) / d;
       const gap = Math.min(H.gap, d * 0.55);
       m.cast = { x: o.x + ux * gap, y: o.y + uy * gap, ang: Math.atan2(uy, ux) + Math.PI / 2, done: false };
-      m.state = "cast"; m.stT = CAST; m.cd = H.buildCd;
+      m.state = "cast"; m.stT = CAST; m.cd = DL.Summons.golem(m.trial).buildCd;
       m.angle = Math.atan2(m.cast.y - m.y, m.cast.x - m.x);
       m.moving = false;
       return;
@@ -191,7 +201,7 @@
     for (const w of G.stoneWalls) {
       w.t += dt;
       w.hitT = Math.max(0, w.hitT - dt);
-      if (!w.dead && w.t > H.life) crumble(w, false);
+      if (!w.dead && w.t > (w.life || H.life)) crumble(w, false);
     }
     G.stoneWalls = G.stoneWalls.filter((w) => !w.dead);
   };

@@ -223,6 +223,13 @@
       const ok = L < DL.KIT_MAX_LEVEL && Object.keys(req).every((k) => G.save.up[k] >= req[k]) && G.canAfford(cost);
       if (ok) { G.pay(cost); G.persist(); if (g && g.ally) g.ally.kitLevel = L + 1; say(`${who} trained their kit to level ${L + 1}.`, "good"); }
       sendTo(g, { t: "trained", ok, level: ok ? L + 1 : L });
+    } else if (ev.t === "trainSummon") {
+      // companion levels belong to the world: the friend's training raises every companion of that kind here
+      const ok = DL.SUMMON[ev.kind] && DL.Summons.trainHost(ev.kind);
+      if (ok) say(`${who} trained ${DL.SUMMON[ev.kind].name} to level ${DL.Summons.level(ev.kind)}.`, "good");
+      else sendTo(g, { t: "say", m: "Couldn't train that — check the stash and the companion's home.", k: "warn" });
+    } else if (ev.t === "outpost") {
+      if (!DL.Outposts.raiseHost(ev.gx, ev.gy, false)) sendTo(g, { t: "say", m: "Couldn't raise an outpost: " + (DL.Outposts.lock() || "this grove is taken") + ".", k: "warn" });
     } else if (ev.t === "craftTorch") {
       const ok = G.canAfford(DL.TORCH_COST);
       if (ok) { G.pay(DL.TORCH_COST); G.persist(); }
@@ -309,6 +316,9 @@
       kd: DL.Kindle.rows(),
       // Abigails, one per knight who won her: [id, owner, x, y, angle, moving, throw time left, blessing left]
       ab: DL.Abigail.rows(),
+      // companion levels, Abyss trophies, the Great Siege, outposts [grove x, grove y, x, y, lit, hp], the Rose Heart's briar
+      sm: G.save.summons, tr: G.save.trophies, gs: DL.Siege.on ? 1 : 0,
+      op: DL.Outposts.rows(), rh: DL.Trophies.rows(),
       ob: dirty,
     };
   }
@@ -466,6 +476,11 @@
     G.flame.hp = m.flame[0]; G.flame.max = m.flame[1]; G.flame.lit = !!m.flame[2];
     DL.Cave.applySnap(m.cv);
     DL.Rose.applySnap(m.rs);
+    if (m.sm) G.save.summons = m.sm;
+    if (m.tr) G.save.trophies = m.tr;
+    DL.Siege.on = !!m.gs;
+    DL.Outposts.apply(m.op);
+    DL.Trophies.apply(m.rh);
 
     // the host's knight and the other friends': keep the same objects so they glide and animate
     const known = new Map(G.allies.map((a) => [a.id, a]));

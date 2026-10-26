@@ -84,7 +84,7 @@ def key_mask(a, key=(255, 0, 255), tol=120, fringe=3, tint=True):
     return fg
 
 
-def cut_sheet(img, cols, rows, height, fringe=1, colors=32, outline=(10, 11, 12)):
+def cut_sheet(img, cols, rows, height, fringe=1, colors=32, outline=(10, 11, 12), tol=120, tint=True):
     """Cut an animation sheet (equal cells on a key colour) into frames that share one canvas.
     The AI rarely centres a figure in its cell, so each frame is lined up by its own upper body
     (horizontally) and its own lowest point (on the ground line) rather than by the cell. The first
@@ -93,7 +93,7 @@ def cut_sheet(img, cols, rows, height, fringe=1, colors=32, outline=(10, 11, 12)
     a = np.asarray(img.convert('RGB')).astype(int)
     cw, ch = a.shape[1] // cols, a.shape[0] // rows
     cells = [a[r * ch:(r + 1) * ch, c * cw:(c + 1) * cw] for r in range(rows) for c in range(cols)]
-    masks = [key_mask(c, fringe=fringe) for c in cells]
+    masks = [key_mask(c, tol=tol, fringe=fringe, tint=tint) for c in cells]
     boxes = []
     for m in masks:
         ys, xs = np.where(m)

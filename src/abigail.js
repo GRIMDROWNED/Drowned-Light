@@ -186,11 +186,11 @@
 
   /* ---------------- her blessing (on every device, for its own knight) ---------------- */
   Abigail.buffed = () => { const w = Abigail.mine(); return !!(w && w.buff > 0); };
-  Abigail.mult = () => (Abigail.buffed() ? 1 + A.buff : 1);
+  Abigail.mult = () => (Abigail.buffed() ? 1 + DL.Summons.wraith().buff : 1);
 
   /* ---------------- the wraiths themselves (host only) ---------------- */
-  // Her orb's sting grows with the Central Flame.
-  Abigail.dmg = () => Math.round(A.dmg * (1 + A.perFlame * Math.max(0, G.save.up.flame - A.reqFlame)) * 10) / 10;
+  // Her orb's sting grows with the Central Flame and her own level (src/summons.js).
+  Abigail.dmg = () => Math.round(A.dmg * (1 + A.perFlame * Math.max(0, G.save.up.flame - A.reqFlame)) * DL.Summons.wraith().dmgMult * 10) / 10;
   const valid = (e) => e && !e.removed && e.rise <= 0 && !e.dormant;
   function target(w, o) {
     let best = null, bd = 1e9;
@@ -205,15 +205,17 @@
   function throwOrb(w, e) {
     const x = w.x, y = w.y - 30, a = Math.atan2(e.y - 20 * e.def.scale - y, e.x - x);
     G.projectiles.push({ x, y, vx: Math.cos(a) * A.orbSpeed, vy: Math.sin(a) * A.orbSpeed, life: A.orbLife, dmg: Abigail.dmg(), hostile: false,
-      kind: "soul", col: SOUL, r: 9, homing: true, hit: new Set(), soul: true });
+      kind: "soul", col: SOUL, r: 9, homing: true, hit: new Set(), soul: true, pierce: DL.Summons.wraith().bounce }); // Mourning Abigail's leap on to a second
     sfx("whisper");
   }
   // A Drowned her orb hits is weakened for good, once: less damage and speed, and it takes more.
   Abigail.curse = function (e) {
     if (e.cursed || e.removed) return;
     e.cursed = true;
-    e.dmg *= 1 - A.curse;
-    e.speed *= 1 - A.curse;
+    const k = DL.Summons.wraith().curse;
+    e.dmg *= 1 - k;
+    e.speed *= 1 - k;
+    e.curseK = k;
     for (let i = 0; i < 8; i++) G.spark(e.x + rand(-8, 8), e.y - rand(10, 40) * e.def.scale, SOUL, 60);
     G.text(e.x, e.y - 50 * e.def.scale - 30, "Weakened", "#7ff5cf", 0.9);
   };
@@ -224,13 +226,26 @@
     w.animT += dt;
     w.cd -= dt;
     w.buff = Math.max(0, w.buff - dt);
-    // her blessing: a wave of soul-light washes over her knight
+    const lv = DL.Summons.wraith();
+    // the Queen of Sorrows' wail: every Drowned near her knight is cursed and stunned
+    if (lv.wail) {
+      w.wailT = (w.wailT == null ? 4 : w.wailT) - dt;
+      if (w.wailT <= 0 && G.enemies.some((e) => valid(e) && dist(o.x, o.y, e.x, e.y) < 200)) {
+        w.wailT = lv.wail;
+        G.effects.push({ type: "howl", x: w.x, y: w.y - 30, t: 0, max: 0.9, col: SOUL, r: 200 });
+        sfx("whisper");
+        for (const e of G.enemies) if (valid(e) && dist(o.x, o.y, e.x, e.y) < 200) { Abigail.curse(e); if (!e.def.boss) e.stun = Math.max(e.stun || 0, 1); }
+      }
+    }
+    // her blessing: a wave of soul-light washes over her knight (not yet while she's only a wisp)
     w.pulseT -= dt;
-    if (w.pulseT <= 0) {
+    if (w.pulseT <= 0 && !lv.bless) w.pulseT = 1;
+    else if (w.pulseT <= 0) {
       w.pulseT = A.pulseEvery;
       w.buff = A.buffDur;
+      const pct = Math.round(lv.buff * 100);
       G.effects.push({ type: "soulPulse", x1: w.x, y1: w.y - 30, x2: o.x, y2: o.y - 24, owner: w.owner, t: 0, max: 0.7 });
-      if (w.owner === 0) { sfx("chime"); if (!G.save.blessed) { G.save.blessed = 1; G.persist(); say(`Abigail's blessing: ${Math.round(A.buff * 100)}% more damage and speed, and ${Math.round(A.buff * 100)}% less harm, for ${A.buffDur} seconds.`, "good"); } }
+      if (w.owner === 0) { sfx("chime"); if (!G.save.blessed) { G.save.blessed = 1; G.persist(); say(`Abigail's blessing: ${pct}% more damage and speed, and ${pct}% less harm, for ${A.buffDur} seconds.`, "good"); } }
     }
     if (dist(w.x, w.y, o.x, o.y) > 700) {
       Object.assign(w, { x: o.x + 24, y: o.y - 6, state: "move" });
@@ -243,7 +258,7 @@
     } else if (w.cd <= 0 && !(o.downT > 0) && !o.down) {
       const e = target(w, o);
       if (e) {
-        Object.assign(w, { state: "cast", stT: CAST, cd: A.cd, tgt: e, thrown: false });
+        Object.assign(w, { state: "cast", stT: CAST, cd: lv.cd, tgt: e, thrown: false });
         w.angle = Math.atan2(e.y - w.y, e.x - w.x);
       }
     }

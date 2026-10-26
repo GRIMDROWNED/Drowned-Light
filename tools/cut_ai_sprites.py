@@ -48,8 +48,24 @@ GRIDS = {
     'flame-bastion/poses-b.png': (3, 2, POSES_B),
     'bone-hound/poses-a.png': (3, 2, POSES_A),
     'bone-hound/poses-b.png': (3, 2, POSES_B),
+    'bone-hound-f0/poses-a.png': (3, 2, POSES_A),
+    'bone-hound-f0/poses-b.png': (3, 2, POSES_B),
+    'bone-hound-f2/poses-a.png': (3, 2, POSES_A),
+    'bone-hound-f2/poses-b.png': (3, 2, POSES_B),
+    'bone-hound-f3/poses-a.png': (3, 2, POSES_A),
+    'bone-hound-f3/poses-b.png': (3, 2, POSES_B),
     'derek/poses-a.png': (3, 2, POSES_A),
     'derek/poses-b.png': (3, 2, POSES_B),
+    'derek-f0/poses-a.png': (3, 2, POSES_A),
+    'derek-f0/poses-b.png': (3, 2, POSES_B),
+    'derek-f2/poses-a.png': (3, 2, POSES_A),
+    'derek-f2/poses-b.png': (3, 2, POSES_B),
+    'derek-f3/poses-a.png': (3, 2, POSES_A),
+    'derek-f3/poses-b.png': (3, 2, POSES_B),
+    'abigail-f2/poses-a.png': (3, 2, POSES_A),
+    'abigail-f2/poses-b.png': (3, 2, POSES_B),
+    'abigail-f3/poses-a.png': (3, 2, POSES_A),
+    'abigail-f3/poses-b.png': (3, 2, POSES_B),
     'kindle/poses-a.png': (3, 2, POSES_A),
     'kindle/poses-b.png': (3, 2, POSES_B),
     'abigail/poses-a.png': (3, 2, POSES_A),
@@ -66,14 +82,32 @@ GRIDS = {
 CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
               # the hound's attack row came out smaller than its standing row
               'bone-hound/08_attackA': 1.25, 'bone-hound/09_attackB': 1.25, 'bone-hound/10_attackC': 1.25}
+# the Ember Hound's and the Grave Warg's attack rows and whole second sheets came out smaller than their standing rows
+CELL_SCALE.update({'bone-hound-f2/' + n: 1.27 for n in POSES_A[3:]})
+CELL_SCALE.update({'bone-hound-f2/' + n: 1.17 for n in POSES_B})
+CELL_SCALE.update({'bone-hound-f3/' + n: 1.3 for n in POSES_A[3:]})
+CELL_SCALE.update({'bone-hound-f3/' + n: 1.18 for n in POSES_B})
+# Pebble Derek's second sheet came out bigger than his first
+CELL_SCALE.update({'derek-f0/' + n: 0.88 for n in POSES_B})
 
 # Cells redrawn on their own after a sheet came back: cell -> (redrawn image, cell whose figure height it takes).
 # The redraw is shrunk to that height before it is cut, so it matches the rest of its sheet.
 CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-bell/08_attackA': ('bell-rear.png', '03_right')}
 
+# Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
+# tolerance and without the purple-fringe filter, so their glow isn't eaten.
+KEY_OPTS = {'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
 HOUND_H = 60
+EMBER_H = 136  # the Ember Hound (third form), cut at res 4: drawn 34 px tall with its flames, a little bigger than the hound
+WARG_H = 152  # the Grave Warg (last form), cut at res 4: drawn 38 px tall with its horns and mist, a quarter bigger than the hound
+PUP_H = 88  # the Bone Pup (the hound's first form, src/summons.js), cut at res 4: drawn 22 px tall, about three quarters of the hound
 DEREK_H = 60  # cut at 4 file px per art pixel (res: 4): drawn 30 px tall, about 3/8 of the knight
 DEREK_SIDE_H = 62
+BASTION_H = 78  # Derek the Bastion (his last form), res 4: a third bigger than Derek
+CRYSTAL_H = 68  # Crystal Derek (his third form), res 4: a seventh bigger than Derek
+PEBBLE_H = 44  # Pebble Derek (his first form, src/summons.js), res 4: about three quarters of Derek
+QUEEN_H = 140  # Abigail, Queen of Sorrows (her last form), res 4: a fifth taller than Abigail, crown and soul flames included
+MOURNING_H = 123  # Mourning Abigail (her third form), res 4: a tenth taller than Abigail
 ABIGAIL_H = 112  # cut at res 4: drawn 28 px tall, hem to hood, about two thirds of the knight
 KINDLE_H = 64
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
@@ -139,6 +173,9 @@ SETS = {
     'flame-bastion': ('flame-bastion', 'flame-bastion/01_front.png', 84, 1, twelve('flame-bastion', TWELVE_FILES)),
     # the Bone Hound summon: a dog, so shorter than a knight (its spines and raised tail make up the height)
     'bone-hound': ('bone-hound', 'bone-hound/01_front.png', HOUND_H, 1, twelve('bone-hound', TWELVE_FILES)),
+    'bone-hound-f2': ('bone-hound-f2', 'bone-hound-f2/01_front.png', EMBER_H, 1, twelve('bone-hound-f2', TWELVE_FILES)),
+    'bone-hound-f3': ('bone-hound-f3', 'bone-hound-f3/01_front.png', WARG_H, 1, twelve('bone-hound-f3', TWELVE_FILES)),
+    'bone-hound-f0': ('bone-hound-f0', 'bone-hound-f0/01_front.png', PUP_H, 1, twelve('bone-hound-f0', TWELVE_FILES)),
     # Derek the golem familiar: his sheets put a front-facing cast (fists up, slam, rise) where the 12-pose
     # prompt has its attacks, and a side cast where it has hurt and death. Floating rocks count in his height.
     'derek': ('derek', 'derek/01_front.png', DEREK_H, 1, {
@@ -146,6 +183,21 @@ SETS = {
         'derek/04_walk.png': 'side/walk1', 'derek/05_walk.png': 'side/walk2', 'derek/06_walk.png': 'side/walk3', 'derek/07_walk.png': 'side/walk4',
         'derek/08_attackA.png': 'attackA', 'derek/09_attackB.png': 'attackB', 'derek/10_attackC.png': 'attackC',
         'derek/11_hurt.png': 'side/castUp', 'derek/12_death.png': 'side/castSlam'}),
+    'derek-f0': ('derek-f0', 'derek-f0/01_front.png', PEBBLE_H, 1, {
+        'derek-f0/01_front.png': 'front', 'derek-f0/02_back.png': 'back', 'derek-f0/03_right.png': 'right',
+        'derek-f0/04_walk.png': 'side/walk1', 'derek-f0/05_walk.png': 'side/walk2', 'derek-f0/06_walk.png': 'side/walk3', 'derek-f0/07_walk.png': 'side/walk4',
+        'derek-f0/08_attackA.png': 'attackA', 'derek-f0/09_attackB.png': 'attackB', 'derek-f0/10_attackC.png': 'attackC',
+        'derek-f0/11_hurt.png': 'side/castUp', 'derek-f0/12_death.png': 'side/castSlam'}),
+    'derek-f2': ('derek-f2', 'derek-f2/01_front.png', CRYSTAL_H, 1, {
+        'derek-f2/01_front.png': 'front', 'derek-f2/02_back.png': 'back', 'derek-f2/03_right.png': 'right',
+        'derek-f2/04_walk.png': 'side/walk1', 'derek-f2/05_walk.png': 'side/walk2', 'derek-f2/06_walk.png': 'side/walk3', 'derek-f2/07_walk.png': 'side/walk4',
+        'derek-f2/08_attackA.png': 'attackA', 'derek-f2/09_attackB.png': 'attackB', 'derek-f2/10_attackC.png': 'attackC',
+        'derek-f2/11_hurt.png': 'side/castUp', 'derek-f2/12_death.png': 'side/castSlam'}),
+    'derek-f3': ('derek-f3', 'derek-f3/01_front.png', BASTION_H, 1, {
+        'derek-f3/01_front.png': 'front', 'derek-f3/02_back.png': 'back', 'derek-f3/03_right.png': 'right',
+        'derek-f3/04_walk.png': 'side/walk1', 'derek-f3/05_walk.png': 'side/walk2', 'derek-f3/06_walk.png': 'side/walk3', 'derek-f3/07_walk.png': 'side/walk4',
+        'derek-f3/08_attackA.png': 'attackA', 'derek-f3/09_attackB.png': 'attackB', 'derek-f3/10_attackC.png': 'attackC',
+        'derek-f3/11_hurt.png': 'side/castUp', 'derek-f3/12_death.png': 'side/castSlam'}),
     # Kindle the walking lantern: his sheets put the broken lantern (lying on its side), a pour (refilling a
     # lantern) and a point (leading the way) where the 12-pose prompt has its attacks, and a crouch and a hop
     # where it has hurt and death.
@@ -155,6 +207,16 @@ SETS = {
         'abigail/04_walk.png': 'side/walk1', 'abigail/05_walk.png': 'side/walk2', 'abigail/06_walk.png': 'side/walk3', 'abigail/07_walk.png': 'side/walk4',
         'abigail/08_attackA.png': 'side/castUp', 'abigail/09_attackB.png': 'side/throw', 'abigail/10_attackC.png': 'side/hurt',
         'abigail/11_hurt.png': 'bless', 'abigail/12_death.png': 'side/fade'}),
+    'abigail-f2': ('abigail-f2', 'abigail-f2/01_front.png', MOURNING_H, 1, {
+        'abigail-f2/01_front.png': 'front', 'abigail-f2/02_back.png': 'back', 'abigail-f2/03_right.png': 'right',
+        'abigail-f2/04_walk.png': 'side/walk1', 'abigail-f2/05_walk.png': 'side/walk2', 'abigail-f2/06_walk.png': 'side/walk3', 'abigail-f2/07_walk.png': 'side/walk4',
+        'abigail-f2/08_attackA.png': 'side/castUp', 'abigail-f2/09_attackB.png': 'side/throw', 'abigail-f2/10_attackC.png': 'side/hurt',
+        'abigail-f2/11_hurt.png': 'bless', 'abigail-f2/12_death.png': 'side/fade'}),
+    'abigail-f3': ('abigail-f3', 'abigail-f3/01_front.png', QUEEN_H, 1, {
+        'abigail-f3/01_front.png': 'front', 'abigail-f3/02_back.png': 'back', 'abigail-f3/03_right.png': 'right',
+        'abigail-f3/04_walk.png': 'side/walk1', 'abigail-f3/05_walk.png': 'side/walk2', 'abigail-f3/06_walk.png': 'side/walk3', 'abigail-f3/07_walk.png': 'side/walk4',
+        'abigail-f3/08_attackA.png': 'side/castUp', 'abigail-f3/09_attackB.png': 'side/throw', 'abigail-f3/10_attackC.png': 'side/hurt',
+        'abigail-f3/11_hurt.png': 'bless', 'abigail-f3/12_death.png': 'side/fade'}),
     'kindle': ('kindle', 'kindle/01_front.png', KINDLE_H, 1, {
         'kindle/01_front.png': 'front', 'kindle/02_back.png': 'back', 'kindle/03_right.png': 'right',
         'kindle/04_walk.png': 'side/walk1', 'kindle/05_walk.png': 'side/walk2', 'kindle/06_walk.png': 'side/walk3', 'kindle/07_walk.png': 'side/walk4',
@@ -244,15 +306,58 @@ SHEETS = {
         ('bone-hound/walk-front-4.png', 4, 1, 62, 'walkF'),
         ('bone-hound/walk-back-4.png', 4, 1, 64, 'walkB'),
     ],
+    # the pup's front and back walks came out drawn bigger than its poses, so they're sized by the skull's width
+    'bone-hound-f0': [
+        ('bone-hound-f0/walk-side-4.png', 4, 1, 64, 'side/walk'),
+        ('bone-hound-f0/walk-front.png', 4, 1, 86, 'walkF'),
+        ('bone-hound-f0/walk-back.png', 4, 1, 85, 'walkB'),
+    ],
+    'bone-hound-f2': [
+        ('bone-hound-f2/walk-side-4.png', 4, 1, 105, 'side/walk'),
+        ('bone-hound-f2/walk-front.png', 4, 1, EMBER_H, 'walkF'),
+        ('bone-hound-f2/walk-back.png', 4, 1, EMBER_H, 'walkB'),
+    ],
+    'bone-hound-f3': [
+        ('bone-hound-f3/walk-side-4.png', 4, 1, 124, 'side/walk'),
+        ('bone-hound-f3/walk-front.png', 4, 1, WARG_H, 'walkF'),
+        ('bone-hound-f3/walk-back.png', 4, 1, WARG_H, 'walkB'),
+    ],
     'derek': [
         ('derek/walk-side-4.png', 4, 1, DEREK_SIDE_H, 'side/walk'),
         ('derek/walk-front-4.png', 4, 1, DEREK_H, 'walkF'),
         ('derek/walk-back-4.png', 4, 1, DEREK_H, 'walkB'),
     ],
+    # his front and back walks were drawn at other scales than his poses: sized by the width of his body
+    'derek-f0': [
+        ('derek-f0/walk-side-4.png', 4, 1, 45, 'side/walk'),
+        ('derek-f0/walk-front.png', 4, 1, 43, 'walkF'),
+        ('derek-f0/walk-back.png', 4, 1, 42, 'walkB'),
+    ],
+    'derek-f2': [
+        ('derek-f2/walk-side-4.png', 4, 1, 73, 'side/walk'),
+        ('derek-f2/walk-front.png', 4, 1, CRYSTAL_H, 'walkF'),
+        ('derek-f2/walk-back.png', 4, 1, CRYSTAL_H, 'walkB'),
+    ],
+    'derek-f3': [
+        ('derek-f3/walk-side-4.png', 4, 1, 83, 'side/walk'),
+        ('derek-f3/walk-front.png', 4, 1, BASTION_H, 'walkF'),
+        ('derek-f3/walk-back.png', 4, 1, BASTION_H, 'walkB'),
+    ],
     'abigail': [
         ('abigail/walk-side-4.png', 4, 1, ABIGAIL_H, 'side/walk'),
         ('abigail/walk-front-4.png', 4, 1, ABIGAIL_H, 'walkF'),
         ('abigail/walk-back-4.png', 4, 1, ABIGAIL_H, 'walkB'),
+    ],
+    # her front and back drifts were drawn a little bigger and with longer hems: sized by the hood
+    'abigail-f2': [
+        ('abigail-f2/walk-side-4.png', 4, 1, 117, 'side/walk'),
+        ('abigail-f2/walk-front.png', 4, 1, 145, 'walkF'),
+        ('abigail-f2/walk-back.png', 4, 1, 145, 'walkB'),
+    ],
+    'abigail-f3': [
+        ('abigail-f3/walk-side-4.png', 4, 1, 128, 'side/walk'),
+        ('abigail-f3/walk-front.png', 4, 1, 162, 'walkF'),
+        ('abigail-f3/walk-back.png', 4, 1, 157, 'walkB'),
     ],
     'kindle': [
         ('kindle/walk-side-4.png', 4, 1, KINDLE_H, 'side/walk'),
@@ -344,6 +449,18 @@ PROP_GRIDS = {
     'deadly-rose/bushes.png': (3, 1, ['roseBush0', 'roseBush1', 'roseBush2']),
     # petals on the wind round her garden: six tumbling shapes, played in turn as a petal drifts
     'deadly-rose/petals.png': (6, 1, ['rosePetal1', 'rosePetal2', 'rosePetal3', 'rosePetal4', 'rosePetal5', 'rosePetal6']),
+    # the companion homes (src/summons.js), one picture per level
+    'camp/kennel.png': (3, 1, ['kennel1', 'kennel2', 'kennel3']),
+    'camp/workshop.png': (3, 1, ['workshop1', 'workshop2', 'workshop3']),
+    'camp/shrine.png': (3, 1, ['shrine1', 'shrine2', 'shrine3']),
+    # the Abyss trophies (src/trophies.js): the Starved Bell's clapper hung in a tower, the Rose's heart at three levels
+    'camp/bell-tower.png': (1, 1, ['bellTower']),
+    'camp/rose-heart.png': (3, 1, ['roseHeart1', 'roseHeart2', 'roseHeart3']),
+    # a forward outpost in a bloom grove (src/outposts.js), its fire basket unlit (the fire is drawn on top)
+    'camp/outpost.png': (1, 1, ['outpost']),
+    # three Black Pearl clams (the Abyss resource), each whole -> prised open -> broken, and its pickup
+    'world/black-pearl.png': (3, 3, ['blackPearl11', 'blackPearl12', 'blackPearl13', 'blackPearl21', 'blackPearl22', 'blackPearl23', 'blackPearl31', 'blackPearl32', 'blackPearl33']),
+    'world/res-black-pearl.png': (1, 1, ['resBlack']),
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
@@ -394,6 +511,14 @@ PROP_SAME.update({'roseBush0': 'roseBush1', 'roseBush2': 'roseBush1'})
 PROP_WIDTH['rosePetal1'] = 16
 PROP_SAME.update({'rosePetal%d' % i: 'rosePetal1' for i in range(2, 7)})
 PROP_SAME.update({'roseWaltz2': 'roseWaltz1', 'roseWaltz3': 'roseWaltz1', 'roseWaltz4': 'roseWaltz1'})
+# the companion homes: each about as wide as the forge at its last level
+# (a little smaller than the forge, so the crowded first camp still has room for them)
+PROP_WIDTH.update({'kennel3': 92, 'workshop3': 108, 'shrine3': 104})
+PROP_HEIGHT.update({'bellTower': 130, 'roseHeart3': 86})  # the tower well over the knight, the great bud about his height
+PROP_SAME.update({'roseHeart1': 'roseHeart3', 'roseHeart2': 'roseHeart3'})
+PROP_WIDTH.update({'outpost': 120, 'blackPearl11': 64, 'resBlack': 22})  # the outpost about two knights wide, a clam about a shield
+PROP_SAME.update({n: 'blackPearl11' for n in ['blackPearl11', 'blackPearl12', 'blackPearl13', 'blackPearl21', 'blackPearl22', 'blackPearl23', 'blackPearl31', 'blackPearl32', 'blackPearl33'] if n != 'blackPearl11'})
+PROP_SAME.update({'kennel1': 'kennel3', 'kennel2': 'kennel3', 'workshop1': 'workshop3', 'workshop2': 'workshop3', 'shrine1': 'shrine3', 'shrine2': 'shrine3'})
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
 PROP_OUT = 'props'
@@ -404,7 +529,8 @@ only = sys.argv[2:]  # optional character names to cut
 for sheet, (cols, rows, names) in GRIDS.items():
     p = os.path.join(SRC, sheet)
     if not os.path.exists(p): continue
-    for n, cell in zip(names, split_grid(Image.open(p), cols, rows)):
+    ko = KEY_OPTS.get(os.path.dirname(sheet), {})
+    for n, cell in zip(names, split_grid(Image.open(p), cols, rows, tol=ko.get('tol', 120))):
         f = CELL_SCALE.get(os.path.dirname(sheet) + '/' + n)
         if f: cell = cell.resize((round(cell.width * f), round(cell.height * f)), Image.NEAREST)
         cell.save(os.path.join(os.path.dirname(p), n + '.png'))
@@ -425,16 +551,17 @@ for sheet, (cols, rows, names) in GRIDS.items():
         strip.save(os.path.join(os.path.dirname(p), 'walk-side-4.png'))
 for name, (folder, ref, target, fringe, files) in SETS.items():
     if only and name not in only: continue
-    k = target / (cut_keyed(Image.open(os.path.join(SRC, ref)), 1, fringe=fringe).height - 2)
+    ko = KEY_OPTS.get(name, {})
+    k = target / (cut_keyed(Image.open(os.path.join(SRC, ref)), 1, fringe=fringe, **ko).height - 2)
     done = []
     for src, out in files.items():
         p = os.path.join(SRC, src)
         if not os.path.exists(p): continue
         out, opt = out if isinstance(out, tuple) else (out, {})
         img, fr = Image.open(p), opt.get('fringe', fringe)
-        kk = opt['height'] / (cut_keyed(img, 1, fringe=fr).height - 2) if 'height' in opt else k
+        kk = opt['height'] / (cut_keyed(img, 1, fringe=fr, **ko).height - 2) if 'height' in opt else k
         rc = match_colors(Image.open(os.path.join(SRC, opt['match']))) if 'match' in opt else None
-        im = cut_keyed(img, kk, fringe=fr, colors=64 if rc else 32, recolor=rc)
+        im = cut_keyed(img, kk, fringe=fr, colors=64 if rc else 32, recolor=rc, **ko)
         dst = os.path.join(OUT, folder, out + '.png')
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         im.save(dst)
@@ -452,7 +579,7 @@ for name, sheets in SHEETS.items():
         if row:
             h = img.height // rows
             img, rows = img.crop((0, row[0] * h, img.width, (row[0] + 1) * h)), 1
-        frames, feet = cut_sheet(img, cols, rows, height)
+        frames, feet = cut_sheet(img, cols, rows, height, **KEY_OPTS.get(name, {}))
         if name in SHEET_MATCH:
             frames = recolor_frames(frames, match_colors(Image.open(os.path.join(SRC, SHEET_MATCH[name]))))
         order = FRAME_ORDER.get((name, prefix))

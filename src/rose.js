@@ -286,7 +286,7 @@
     for (let i = 0; i < 40; i++) G.puff(e.x + rand(-50, 50), e.y - rand(0, 160), `rgba(${RED},0.7)`, 90, 1.6, 30);
     const msg = NAME + " withers, and her petals fall still.";
     say(msg, "good");
-    DL.Net.say(msg, "good");
+    DL.Net.say(msg, "good");    DL.Trophies.won("rose");
   };
   Rose.dawn = function () {
     const S = state();
@@ -400,6 +400,7 @@
     c.drawImage(sp.c, x, y, w, h);
     c.restore();
   }
+  Rose.drawVine = (c, v, T) => drawVine(c, v, T); // the Rose Heart in the camp binds the Drowned with the same briar (src/trophies.js)
   function drawVine(c, v, T) {
     const rise = Math.min(1, T / 0.2), fade = Math.min(1, (v.life - T) / 0.5);
     if (fade <= 0) return;

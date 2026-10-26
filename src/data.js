@@ -5,8 +5,9 @@
   DL.CYCLE = { day: 80, dusk: 10, night: 75, dawn: 8 };
   DL.CYCLE.total = DL.CYCLE.day + DL.CYCLE.dusk + DL.CYCLE.night + DL.CYCLE.dawn;
 
-  DL.CAMP_RADIUS = 205; // deposit + camp menu range
-  DL.WALL_R = 235;      // palisade ring
+  DL.CAMP_RADIUS = 205; // deposit + camp menu range (grows with the walls: DL.Camp.menuR)
+  DL.WALL_R = 235;      // palisade half-side; set from the Barricade level by DL.Camp.sync
+  DL.WALL_SIZES = [235, 235, 235, 235, 290, 345]; // palisade half-side at each Barricade level: levels 4 and 5 push it out
   DL.GARDEN_YIELD = [0, 4, 8, 14];
   DL.TIER_NAMES = ["", "A Place to Rest", "A Growing Bastion", "A Beacon in the Marsh"];
 
@@ -16,6 +17,7 @@
     resin: { name: "Bloom Resin", color: "#43e6ee" },
     iron: { name: "Iron Scrap", color: "#c06a44" },
     pearl: { name: "Amethyst", color: "#bfa8ff" },
+    black: { name: "Black Pearl", color: "#5d6b8c" }, // found only in the Abyss
   };
   DL.RES_KEYS = Object.keys(DL.RESOURCES);
 
@@ -39,7 +41,7 @@
     { tree: 4, gap: 11.6, stone: 2.5, sprout: 2, reeds: 4 },
     { tree: 3, gap: 11.1, stone: 2, iron: 2.5, sprout: 3, reeds: 3 },
     { tree: 2.5, gap: 11.1, stone: 1.5, iron: 4, pearl: 1.5, sprout: 3.5, reeds: 2 },
-    { tree: 2, gap: 11, stone: 1.5, iron: 5, pearl: 2, sprout: 4, reeds: 1 },
+    { tree: 2, gap: 11, stone: 1.5, iron: 5, pearl: 2, black: 0.7, sprout: 4, reeds: 1 },
   ];
 
   /* Bloom groves: the glowing plants grow in clumps, at most one per cell of the grove grid, with real
@@ -71,6 +73,8 @@
     sprout: { sprite: "sprout", res: "resin", base: 2, hits: 2, r: 10 },
     // Amethyst grows from the Drowned Reaches outward, beyond where iron begins.
     pearl: { sprite: "pearl", res: "pearl", base: 1, hits: 4, r: 10 },
+    // Black Pearl clams lie half sunk in the Abyss mud and nowhere else: one or two pearls each, and they're slow to pry open.
+    black: { sprite: "blackClam", res: "black", base: 0.45, hits: 6, r: 10 },
     refuge: { sprite: "refuge", bloom: true, light: 125, hp: 70, rad: 14, name: "Refuge Bloom" },
     sentinel: { sprite: "sentinel", bloom: true, light: 95, hp: 100, rad: 14, turret: true, name: "Sentinel Bloom" },
     // The Bone Wolf den: one in the world (src/den.js).
@@ -101,11 +105,11 @@
       radius: 10, mass: 0.8, lunge: 340, den: true, beast: true, drop: {} },
     // The Starved Bell: one roams the Abyss, buried in the mire, and bursts up under whoever comes near (src/bell.js).
     bell: { name: "The Starved Bell", hp: 760, speed: 62, dmg: 26, range: 70, windup: 0.7, cd: 1.9, scale: 1.25,
-      radius: 26, mass: 10, armor: 0.15, boss: true, bell: true, wake: 150, barY: 150, drop: { iron: 3, pearl: 2, resin: 2 } },
+      radius: 26, mass: 10, armor: 0.15, boss: true, bell: true, wake: 150, barY: 150, drop: { iron: 3, pearl: 2, resin: 2, black: 1.2 } },
     // The Deadly Rose: a thorned queen who keeps a garden of roses at one spot in the Abyss (src/rose.js). Her moves: DL.ROSE.
     rose: { name: "The Deadly Rose", hp: 900, speed: 46, dmg: 22, range: 105, windup: 0.7, cd: 1.9, scale: 0.8,
       radius: 20, mass: 12, armor: 0.1, boss: true, rose: true, arc: 1.5, wake: 230, shadow: 30, barY: 160, barW: 60,
-      eyeX: 2, eyeY: 156, eyeR: 3, eyeCol: "255,60,80", drop: { iron: 3, pearl: 3, resin: 3 } },
+      eyeX: 2, eyeY: 156, eyeR: 3, eyeCol: "255,60,80", drop: { iron: 3, pearl: 3, resin: 3, black: 1.5 } },
     // The last foe of Derek's Hollow (src/colossus.js): a crawling stone guardian. Its four attacks are tuned in DL.COLOSSUS.
     colossus: { name: "Drowned Colossus", hp: 1100, speed: 34, dmg: 26, range: 92, windup: 0.95, cd: 2.4, scale: 1,
       radius: 30, mass: 40, armor: 0.2, boss: true, colossus: true, arc: 2.6, shadow: 70, sink: 130, barY: 144, barW: 90, eyeX: 60, eyeY: 72, eyeR: 14,
@@ -233,6 +237,7 @@
     if (L < 8) c.stone = 3 + L;
     if (L < 4) c.wood = 4;
     if (L >= 9) c.pearl = Math.floor((L - 6) / 3);
+    if (L >= 19) c.black = 3; // the last level needs Black Pearls from the Abyss
     return scaleCost(c);
   };
   // Structures needed to train up to `target`.
@@ -381,6 +386,52 @@
     collapse: { every: 14, first: 14, windup: 0.9, n: 5, n2: 9, delay: 1.5, r: 38, dmg: 0.9, leave: 0.35 },
     maxRuins: 9, phase2: 0.5, fast: 1.2, rate: 1.45,
   };
+  /* The Great Siege (src/siege.js): every `every`th night the Drowned march on the camp wherever the knights are.
+     A wave comes every `waveEvery` s (the first `first` s after dusk) from `sides` directions, each `size` times a
+     normal camp wave, as strong as zone `zone(night)`. If the Central Flame goes out that night the camp has fallen.
+     `gameOver`: a fallen camp ends the game. Off while the game is in development (it only tells you); turn it on
+     near release. The Starved Bell Tower tolls `warn` s before every camp wave and leaves it dazed for `daze` s. */
+  DL.SIEGE = {
+    every: 10, waveEvery: 10, first: 4, sides: 2, size: 1.5, warn: 8, daze: 2,
+    zone: (night) => Math.min(4, 1 + Math.floor(night / 10)),
+    gameOver: false,
+  };
+  /* The Rose Heart (src/trophies.js): from dusk to dawn, every `every` s it binds the `n` Drowned nearest it within
+     `reach` px with briar: they can't move or strike for `hold` s (bosses for half as long) and take `sting` damage
+     every half second. Per level 1–3. */
+  DL.ROSE_HEART = {
+    levels: [
+      { every: 6, n: 1, reach: 190, hold: 2.5, sting: 3 },
+      { every: 5, n: 2, reach: 230, hold: 3, sting: 4 },
+      { every: 4, n: 3, reach: 270, hold: 3.5, sting: 6 },
+    ],
+  };
+  /* Companion levels (src/summons.js): each companion trains from level 0 to `max` at camp, its home (DL.UPGRADES
+     kennel, workshop, shrine) allowing five levels per home level. Levels 5, 10 and 15 change its form: a new look
+     and a new power. `forms` names each form; the per-level numbers are in Summons.stats. */
+  DL.SUMMON = {
+    max: 15, perHome: 5, formAt: [0, 5, 10, 15],
+    hound: { home: "kennel", name: "Bone Hound", forms: ["Bone Pup", "Bone Hound", "Ember Hound", "Grave Warg"],
+      powers: ["Small and quick to fall", "Leaps on fleeing prey", "Bites set the Drowned alight; bleed stacks 5 deep", "Howls every 16 s: Drowned near it freeze in terror; gets up twice as fast"] },
+    golem: { home: "workshop", name: "Derek", forms: ["Pebble Derek", "Derek", "Crystal Derek", "Derek the Bastion"],
+      powers: ["One small wall at a time", "Two walls, two hits each", "Crystal walls take three hits and cut whatever strikes them", "Three great walls, four hits each, that burst and stagger the Drowned when they fall"] },
+    wraith: { home: "shrine", name: "Abigail", forms: ["Soul Wisp", "Abigail", "Mourning Abigail", "Abigail, Queen of Sorrows"],
+      powers: ["Weak soul orbs, no blessing", "Blesses her knight", "Orbs leap to a second Drowned; curse 15%", "Wails every 22 s: every Drowned near is cursed and stunned; blessing 15%"] },
+  };
+  // Price to train a companion from level L to L + 1.
+  DL.summonCost = function (L) {
+    const c = { iron: Math.round(3 + 1.3 * L), resin: Math.round(2 + 0.7 * L) };
+    if (L < 6) c.stone = 4 + L;
+    if (L >= 6) c.pearl = Math.floor((L - 3) / 3);
+    if (L >= 14) c.black = 2;
+    return scaleCost(c);
+  };
+  /* Outposts (src/outposts.js): from Central Flame `reqFlame`, claim the heart of a bloom grove (stand within `claimR`
+     px of it) and raise an outpost: a brazier of firelight (`light` px) in a ring of stakes. You can store supplies
+     there, and with your Kindle lit, travel between the camp and every outpost. At most `max[flame level]`. Lantern
+     Reavers and the rest of the Drowned can snuff it (`hp`); it is lit again at dawn. You can't travel with a Drowned
+     within `safeR` px of you. */
+  DL.OUTPOST = { reqFlame: 3, max: [0, 0, 0, 1, 2, 3], cost: { wood: 24, stone: 16, iron: 8 }, claimR: 120, useR: 90, light: 150, hp: 160, safeR: 260 };
   DL.scaleCost = scaleCost;
 
   // Camp buildings. costs[level] = price to go from `level` to `level + 1`.
@@ -390,40 +441,70 @@
       info: "The heart of the camp. A bigger light and a sturdier flame. Levels 3 and 5 grow the camp into a Bastion, then a Beacon.",
       effect: (l) => `Light radius ${180 + 40 * l} · flame strength ${150 + 100 * l}`,
       costs: [null, { wood: 10, stone: 6 }, { wood: 22, stone: 16, resin: 5 }, { wood: 34, stone: 30, iron: 10, resin: 10 },
-        { wood: 48, stone: 42, iron: 22, pearl: 3 }],
+        { wood: 48, stone: 42, iron: 22, pearl: 3, black: 2 }],
       reqFlame: () => 0 },
     { id: "forge", name: "Forge", max: 4, info: "Hone your weapon.",
       effect: (l) => `Weapon damage +${20 * l}%`,
-      costs: [{ stone: 8, iron: 4 }, { stone: 16, iron: 10 }, { stone: 26, iron: 20, pearl: 2 }, { stone: 38, iron: 30, pearl: 5 }],
+      costs: [{ stone: 8, iron: 4 }, { stone: 16, iron: 10 }, { stone: 26, iron: 20, pearl: 2 }, { stone: 38, iron: 30, pearl: 5, black: 2 }],
       reqFlame: (t) => t },
     { id: "armory", name: "Armory", max: 4, info: "Reinforce your armour.",
       effect: (l) => `Max health ${100 + 25 * l}`,
-      costs: [{ wood: 10, iron: 4 }, { wood: 20, iron: 12 }, { wood: 30, iron: 22, resin: 8 }, { wood: 44, iron: 32, pearl: 4 }],
+      costs: [{ wood: 10, iron: 4 }, { wood: 20, iron: 12 }, { wood: 30, iron: 22, resin: 8 }, { wood: 44, iron: 32, pearl: 4, black: 2 }],
       reqFlame: (t) => t },
     { id: "workbench", name: "Workbench", max: 4, info: "Craft lanterns and tools. A longer-burning lantern halves corruption in the dark for longer.",
       effect: (l) => `Lantern oil ${60 + 25 * l} · torch satchel ${3 + l} · torches burn ${50 + 15 * l}s`,
-      costs: [{ resin: 6, stone: 6 }, { resin: 12, iron: 6 }, { resin: 20, iron: 12, pearl: 2 }, { resin: 30, iron: 20, pearl: 5 }],
+      costs: [{ resin: 6, stone: 6 }, { resin: 12, iron: 6 }, { resin: 20, iron: 12, pearl: 2 }, { resin: 30, iron: 20, pearl: 5, black: 2 }],
       reqFlame: (t) => t },
     { id: "garden", name: "Cultivation Plot", max: 3, info: "Grow bioluminescent flora inside the walls. Light from the living.",
       effect: (l) => (l ? `Harvest ${DL.GARDEN_YIELD[l]} Bloom Resin each dawn` : "Nothing planted"),
-      costs: [{ wood: 12, resin: 6 }, { wood: 20, stone: 10, resin: 12 }, { wood: 30, resin: 20, pearl: 2 }],
+      costs: [{ wood: 12, resin: 6 }, { wood: 20, stone: 10, resin: 12 }, { wood: 30, resin: 20, pearl: 2, black: 1 }],
       reqFlame: (t) => t + 1 },
     { id: "tower", name: "Watchtowers", max: 3, info: "Crossbow towers that spot and shoot the Drowned at night.",
       effect: (l) => (l ? `${[0, 1, 2, 4][l]} tower${l > 1 ? "s" : ""} · bolt damage ${10 + 6 * l}` : "No towers"),
-      costs: [{ wood: 24, stone: 14 }, { wood: 34, stone: 24, iron: 10 }, { wood: 48, iron: 24, pearl: 3 }],
+      costs: [{ wood: 24, stone: 14 }, { wood: 34, stone: 24, iron: 10 }, { wood: 48, iron: 24, pearl: 3, black: 2 }],
       reqFlame: (t) => t + 1 },
     { id: "pylon", name: "Lantern Pylons", max: 3, info: "Firelight on the perimeter. Guides the way and slows the encroaching Drowned — but Lantern Reavers hunt them.",
       effect: (l) => (l ? `${2 * l} pylons light the walls` : "No pylons"),
-      costs: [{ wood: 16, stone: 10, resin: 4 }, { wood: 24, iron: 10, resin: 8 }, { stone: 30, iron: 18, pearl: 2 }],
+      costs: [{ wood: 16, stone: 10, resin: 4 }, { wood: 24, iron: 10, resin: 8 }, { stone: 30, iron: 18, pearl: 2, black: 1 }],
       reqFlame: (t) => t + 1 },
-    { id: "stakes", name: "Barricade & Gate", max: 3, info: "Keep the darkness out. Walls force the Drowned through four gates, where stakes wound them.",
+    { id: "stakes", name: "Barricade & Gate", max: 5, info: "Keep the darkness out. Walls force the Drowned through four gates, where stakes wound them. Levels 4 and 5 push the walls out, making room inside.",
       effect: (l) => ["No defenses", "A ring of stakes · 15 damage to attackers", "Palisade with four gates · 25 damage at the gates",
-        "Reinforced palisade · 40 damage at the gates, attackers slowed"][l],
-      costs: [{ wood: 18 }, { wood: 36, iron: 8 }, { wood: 50, iron: 18, resin: 10 }],
-      reqFlame: (t) => [0, 1, 3, 5][t] },
+        "Reinforced palisade · 40 damage at the gates, attackers slowed", "Wider palisade · the camp grows · 50 damage at the gates",
+        "Great palisade · the camp grows again · 60 damage at the gates"][l],
+      costs: [{ wood: 18 }, { wood: 36, iron: 8 }, { wood: 50, iron: 18, resin: 10 }, { wood: 64, stone: 30, iron: 24 },
+        { wood: 76, stone: 44, iron: 30, black: 3 }],
+      reqFlame: (t) => [0, 1, 3, 5, 5, 5][t] },
+    /* Homes for your companions: each level of a home lets its companion train five more levels (DL.SUMMON).
+       `needs` = the companion someone in this world must have won before the home can be built. */
+    { id: "kennel", name: "Bone Kennel", max: 3, needs: "hound", info: "A den of bones and hides for your Bone Hound. Each level lets it train five more levels.",
+      effect: (l) => (l ? `Bone Hound training up to level ${5 * l}` : "Not built"),
+      costs: [{ wood: 20, stone: 14, iron: 6 }, { wood: 30, stone: 24, iron: 16, pearl: 2 }, { stone: 36, iron: 28, pearl: 4, black: 2 }],
+      reqFlame: (t) => [0, 2, 3, 5][t] },
+    { id: "workshop", name: "Derek's Workshop", max: 3, needs: "golem", info: "A mason's yard of cut stone and glowing moss where Derek rests and grows. Each level lets him train five more levels.",
+      effect: (l) => (l ? `Derek training up to level ${5 * l}` : "Not built"),
+      costs: [{ wood: 12, stone: 22, iron: 6 }, { wood: 18, stone: 34, iron: 16, pearl: 2 }, { stone: 48, iron: 26, pearl: 4, black: 2 }],
+      reqFlame: (t) => [0, 3, 4, 5][t] },
+    { id: "shrine", name: "Soul Shrine", max: 3, needs: "wraith", info: "Candles and old gravestones where Abigail's soul gathers strength. Each level lets her train five more levels.",
+      effect: (l) => (l ? `Abigail training up to level ${5 * l}` : "Not built"),
+      costs: [{ wood: 10, stone: 16, resin: 10 }, { stone: 26, resin: 18, pearl: 3 }, { stone: 36, resin: 26, pearl: 5, black: 2 }],
+      reqFlame: (t) => [0, 2, 3, 5][t] },
+    /* Trophies of the Abyss bosses: `trophy` = the boss that must have been slain (save.trophies) before it can be built. */
+    { id: "bell", name: "Starved Bell Tower", max: 1, trophy: "bell", info: "The Starved Bell's clapper, hung from a frame of black timber. It tolls before every wave that comes for the camp, and calls out where it's coming from.",
+      effect: (l) => (l ? `Warns ${DL.SIEGE.warn} s before each wave · warned waves arrive dazed for ${DL.SIEGE.daze} s` : "Slay the Starved Bell in the Abyss for its clapper"),
+      costs: [{ wood: 30, stone: 20, iron: 14 }],
+      reqFlame: () => 3 },
+    { id: "roseheart", name: "Rose Heart", max: 3, trophy: "rose", info: "The Deadly Rose's heart, planted inside the walls. It wakes at night and bursts thorned briar up under the Drowned, binding them where they stand.",
+      effect: (l) => {
+        if (!l) return "Slay the Deadly Rose in the Abyss for her heart";
+        const r = DL.ROSE_HEART.levels[l - 1];
+        return `Binds ${r.n} Drowned every ${r.every} s for ${r.hold} s · reach ${r.reach}`;
+      },
+      costs: [{ wood: 16, resin: 16, pearl: 2 }, { wood: 24, resin: 24, pearl: 4 }, { resin: 34, pearl: 6, black: 3 }],
+      reqFlame: (t) => [0, 3, 4, 5][t] },
   ];
 
   for (const u of DL.UPGRADES) u.costs = u.costs.map((c) => (c ? scaleCost(c) : c));
+  DL.OUTPOST.cost = scaleCost(DL.OUTPOST.cost);
 
   // Camp siege waves get nastier each night.
   DL.campPool = function (day) {

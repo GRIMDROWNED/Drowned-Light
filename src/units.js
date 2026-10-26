@@ -771,6 +771,9 @@
     sh.bell = Art.applyFrames("bell", bellSheet());
     sh.kindle = Art.applyFrames("kindle", kindleSheet());
     sh.abigail = Art.applyFrames("abigail", kindleSheet(["bless"])); // the same for Abigail (src/render.js)
+    // the companions' other forms (src/summons.js): blank until their drawn sheets are in
+    for (const k of ["boneHound_f0", "boneHound_f2", "boneHound_f3", "derek_f0", "derek_f2", "derek_f3"]) sh[k] = Art.applyFrames(k, kindleSheet());
+    for (const k of ["abigail_f2", "abigail_f3"]) sh[k] = Art.applyFrames(k, kindleSheet(["bless"]));
     sh.rose = Art.applyFrames("rose", DL.Rose.sheet()); // the Deadly Rose's coded stand-in (src/rose.js)
     sh.colossus = Art.applyFrames("colossus", DL.Colossus.sheet()); // the Drowned Colossus's coded stand-in (src/colossus.js)
     sh.champion = buildSheet({ pal: d({ cloth: "#c3cbc6", clothMd: "#8d9a99", blade: "#7fa6b0" }), weapon: "greatsword", offhand: "none", bulk: 1, crown: true, drips: 22, seed: 27 });
