@@ -50,6 +50,8 @@ GRIDS = {
     'bone-hound/poses-b.png': (3, 2, POSES_B),
     'bone-hound-f0/poses-a.png': (3, 2, POSES_A),
     'bone-hound-f0/poses-b.png': (3, 2, POSES_B),
+    'bone-hound-f2/poses-a.png': (3, 2, POSES_A),
+    'bone-hound-f2/poses-b.png': (3, 2, POSES_B),
     'derek/poses-a.png': (3, 2, POSES_A),
     'derek/poses-b.png': (3, 2, POSES_B),
     'kindle/poses-a.png': (3, 2, POSES_A),
@@ -68,12 +70,16 @@ GRIDS = {
 CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
               # the hound's attack row came out smaller than its standing row
               'bone-hound/08_attackA': 1.25, 'bone-hound/09_attackB': 1.25, 'bone-hound/10_attackC': 1.25}
+# the Ember Hound's attack row and its whole second sheet came out smaller than its standing row
+CELL_SCALE.update({'bone-hound-f2/' + n: 1.27 for n in POSES_A[3:]})
+CELL_SCALE.update({'bone-hound-f2/' + n: 1.17 for n in POSES_B})
 
 # Cells redrawn on their own after a sheet came back: cell -> (redrawn image, cell whose figure height it takes).
 # The redraw is shrunk to that height before it is cut, so it matches the rest of its sheet.
 CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-bell/08_attackA': ('bell-rear.png', '03_right')}
 
 HOUND_H = 60
+EMBER_H = 136  # the Ember Hound (third form), cut at res 4: drawn 34 px tall with its flames, a little bigger than the hound
 PUP_H = 88  # the Bone Pup (the hound's first form, src/summons.js), cut at res 4: drawn 22 px tall, about three quarters of the hound
 DEREK_H = 60  # cut at 4 file px per art pixel (res: 4): drawn 30 px tall, about 3/8 of the knight
 DEREK_SIDE_H = 62
@@ -142,6 +148,7 @@ SETS = {
     'flame-bastion': ('flame-bastion', 'flame-bastion/01_front.png', 84, 1, twelve('flame-bastion', TWELVE_FILES)),
     # the Bone Hound summon: a dog, so shorter than a knight (its spines and raised tail make up the height)
     'bone-hound': ('bone-hound', 'bone-hound/01_front.png', HOUND_H, 1, twelve('bone-hound', TWELVE_FILES)),
+    'bone-hound-f2': ('bone-hound-f2', 'bone-hound-f2/01_front.png', EMBER_H, 1, twelve('bone-hound-f2', TWELVE_FILES)),
     'bone-hound-f0': ('bone-hound-f0', 'bone-hound-f0/01_front.png', PUP_H, 1, twelve('bone-hound-f0', TWELVE_FILES)),
     # Derek the golem familiar: his sheets put a front-facing cast (fists up, slam, rise) where the 12-pose
     # prompt has its attacks, and a side cast where it has hurt and death. Floating rocks count in his height.
@@ -253,6 +260,11 @@ SHEETS = {
         ('bone-hound-f0/walk-side-4.png', 4, 1, 64, 'side/walk'),
         ('bone-hound-f0/walk-front.png', 4, 1, 86, 'walkF'),
         ('bone-hound-f0/walk-back.png', 4, 1, 85, 'walkB'),
+    ],
+    'bone-hound-f2': [
+        ('bone-hound-f2/walk-side-4.png', 4, 1, 105, 'side/walk'),
+        ('bone-hound-f2/walk-front.png', 4, 1, EMBER_H, 'walkF'),
+        ('bone-hound-f2/walk-back.png', 4, 1, EMBER_H, 'walkB'),
     ],
     'derek': [
         ('derek/walk-side-4.png', 4, 1, DEREK_SIDE_H, 'side/walk'),
