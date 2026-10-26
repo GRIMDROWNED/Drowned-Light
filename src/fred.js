@@ -742,22 +742,21 @@
     g.addColorStop(0, `rgba(255,240,200,${a})`); g.addColorStop(0.35, `rgba(${col},${a * 0.7})`); g.addColorStop(1, `rgba(${col},0)`);
     c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2);
   }
-  const DRAWN_GLOW = { 1: { lamp: [17, 13], eye: [3, 26] }, 2: { lamp: [20, 36], eye: [2, 54] }, 3: { lamp: [39, 42], eye: [4, 61] } };
+  // Where the lanterns and eyes are on Robert's drawings, in world px from his feet ([across, up]), facing you and
+  // facing right (mirrored when he faces left; from behind only the lanterns show). Measured off the cut sprites.
+  const DRAWN_GLOW = [
+    { front: { lamps: [[-12, 15], [11, 15]], eyes: [[-3.5, 22], [3.5, 22]] }, side: { lamps: [[-12, 12], [11, 19]], eyes: [[4.5, 21]] } },
+    { front: { lamps: [[-17, 15], [17, 15]], eyes: [[-4, 28], [4, 28]] }, side: { lamps: [[-16, 14], [16, 22]], eyes: [[8, 29]] } },
+    { front: { lamps: [[-20, 40], [17, 38]], eyes: [[-4, 60], [4, 60]] }, side: { lamps: [[-21, 35], [12, 40]], eyes: [[3, 58]] } },
+    { front: { lamps: [[-40, 47], [29, 47]], eyes: [[-3, 68], [3, 68]] }, side: { lamps: [[-33, 46], [37, 39]], eyes: [[22, 66]] } },
+  ];
   function figureGlow(c, x, y, f, dir, flip, anim, t, id, col) {
     const P = glowPoints(x, y, f, dir, flip, anim, t, id), fl = 0.8 + 0.2 * Math.sin(t * 7 + id);
     if (drawnKey(f)) {
-      if (f === 0) {
-        // the drawn lanterns hang lower and wider, and the Sprout's eyes glow amber too
-        for (const [lx, ly] of P.lamps) glow(c, x + (lx - x) * 1.25, ly + 8, 10, col, 0.75 * fl);
-        if (dir !== "up" && anim !== "sleep") for (const ex of dir === "side" ? [(flip ? -1 : 1) * 6] : [-6, 6]) glow(c, x + ex, y - 24, 4, AMBER, 0.6);
-        return;
-      }
-      // later forms: lanterns and eyes measured off Robert's sheets, as world px from his feet
-      const D = DRAWN_GLOW[f], s = dir === "side" ? (flip ? -1 : 1) : 0;
-      if (!D) return;
-      for (const k of [-1, 1]) glow(c, x + k * D.lamp[0] + s * 4, y - D.lamp[1], 10 + f * 2, col, 0.75 * fl);
-      if (dir !== "up") for (const ex of s ? [s * (D.eye[0] + 4)] : [-D.eye[0], D.eye[0]]) glow(c, x + ex, y - D.eye[1], 4 + f, AMBER, 0.7);
-      if (f === 3 && dir !== "up") glow(c, x + s * 10, y - D.eye[1] + 4, 14, col, 0.5 * fl); // the furnace in his maw
+      const D = DRAWN_GLOW[f][dir === "side" ? "side" : "front"], m = dir === "side" && flip ? -1 : 1;
+      for (const [dx, up] of D.lamps) glow(c, x + m * dx, y - up, 7 + f * 3, col, 0.75 * fl);
+      if (dir !== "up" && anim !== "sleep") for (const [dx, up] of D.eyes) glow(c, x + m * dx, y - up, 3 + f, AMBER, 0.65);
+      if (f === 3 && dir !== "up") { const [dx, up] = D.eyes[0]; glow(c, x + m * (dir === "side" ? dx : 0), y - up + 6, 14, col, 0.5 * fl); } // the furnace in his maw
       return;
     }
     for (const [lx, ly] of P.lamps) glow(c, lx, ly, 9 + f * 2, col, 0.8 * fl);
