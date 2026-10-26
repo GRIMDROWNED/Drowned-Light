@@ -62,6 +62,8 @@ GRIDS = {
     'derek-f2/poses-b.png': (3, 2, POSES_B),
     'derek-f3/poses-a.png': (3, 2, POSES_A),
     'derek-f3/poses-b.png': (3, 2, POSES_B),
+    'abigail-f2/poses-a.png': (3, 2, POSES_A),
+    'abigail-f2/poses-b.png': (3, 2, POSES_B),
     'kindle/poses-a.png': (3, 2, POSES_A),
     'kindle/poses-b.png': (3, 2, POSES_B),
     'abigail/poses-a.png': (3, 2, POSES_A),
@@ -92,7 +94,7 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
-KEY_OPTS = {'bone-hound-f3': {'tol': 60, 'tint': False}}
+KEY_OPTS = {'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}}
 HOUND_H = 60
 EMBER_H = 136  # the Ember Hound (third form), cut at res 4: drawn 34 px tall with its flames, a little bigger than the hound
 WARG_H = 152  # the Grave Warg (last form), cut at res 4: drawn 38 px tall with its horns and mist, a quarter bigger than the hound
@@ -102,6 +104,7 @@ DEREK_SIDE_H = 62
 BASTION_H = 78  # Derek the Bastion (his last form), res 4: a third bigger than Derek
 CRYSTAL_H = 68  # Crystal Derek (his third form), res 4: a seventh bigger than Derek
 PEBBLE_H = 44  # Pebble Derek (his first form, src/summons.js), res 4: about three quarters of Derek
+MOURNING_H = 123  # Mourning Abigail (her third form), res 4: a tenth taller than Abigail
 ABIGAIL_H = 112  # cut at res 4: drawn 28 px tall, hem to hood, about two thirds of the knight
 KINDLE_H = 64
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
@@ -201,6 +204,11 @@ SETS = {
         'abigail/04_walk.png': 'side/walk1', 'abigail/05_walk.png': 'side/walk2', 'abigail/06_walk.png': 'side/walk3', 'abigail/07_walk.png': 'side/walk4',
         'abigail/08_attackA.png': 'side/castUp', 'abigail/09_attackB.png': 'side/throw', 'abigail/10_attackC.png': 'side/hurt',
         'abigail/11_hurt.png': 'bless', 'abigail/12_death.png': 'side/fade'}),
+    'abigail-f2': ('abigail-f2', 'abigail-f2/01_front.png', MOURNING_H, 1, {
+        'abigail-f2/01_front.png': 'front', 'abigail-f2/02_back.png': 'back', 'abigail-f2/03_right.png': 'right',
+        'abigail-f2/04_walk.png': 'side/walk1', 'abigail-f2/05_walk.png': 'side/walk2', 'abigail-f2/06_walk.png': 'side/walk3', 'abigail-f2/07_walk.png': 'side/walk4',
+        'abigail-f2/08_attackA.png': 'side/castUp', 'abigail-f2/09_attackB.png': 'side/throw', 'abigail-f2/10_attackC.png': 'side/hurt',
+        'abigail-f2/11_hurt.png': 'bless', 'abigail-f2/12_death.png': 'side/fade'}),
     'kindle': ('kindle', 'kindle/01_front.png', KINDLE_H, 1, {
         'kindle/01_front.png': 'front', 'kindle/02_back.png': 'back', 'kindle/03_right.png': 'right',
         'kindle/04_walk.png': 'side/walk1', 'kindle/05_walk.png': 'side/walk2', 'kindle/06_walk.png': 'side/walk3', 'kindle/07_walk.png': 'side/walk4',
@@ -331,6 +339,12 @@ SHEETS = {
         ('abigail/walk-side-4.png', 4, 1, ABIGAIL_H, 'side/walk'),
         ('abigail/walk-front-4.png', 4, 1, ABIGAIL_H, 'walkF'),
         ('abigail/walk-back-4.png', 4, 1, ABIGAIL_H, 'walkB'),
+    ],
+    # her front and back drifts were drawn a little bigger and with longer hems: sized by the hood
+    'abigail-f2': [
+        ('abigail-f2/walk-side-4.png', 4, 1, 117, 'side/walk'),
+        ('abigail-f2/walk-front.png', 4, 1, 145, 'walkF'),
+        ('abigail-f2/walk-back.png', 4, 1, 145, 'walkB'),
     ],
     'kindle': [
         ('kindle/walk-side-4.png', 4, 1, KINDLE_H, 'side/walk'),

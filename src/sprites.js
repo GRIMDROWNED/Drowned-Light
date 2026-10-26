@@ -113,6 +113,8 @@
     derek("derek_f3", "derek-f3", [49, 91], [45, 80], [43, 81]),
     kindle(),
     abigail(),
+    // Mourning Abigail (her third form): a tenth taller, in violet mourning rags
+    abigail("abigail_f2", "abigail-f2", [98, 136], [78, 149], [83, 152]),
     bell(),
     rose(),
     colossus(),
@@ -141,8 +143,8 @@
   // Abigail the soul wraith, cut at res 4, 28 px tall from hem to hood. She floats (src/render.js lifts her off the
   // ground): her walk is a drift, "attack" raises an arm and throws, "bless" is her blessing (facing you, arms up),
   // and "death" fades her away.
-  function abigail() {
-    const set = Object.assign(walking("abigail", [89, 125], [68, 121], [70, 117], 4), { path: "assets/sprites/abigail/", keys: { abigail: [0, false] } });
+  function abigail(key = "abigail", folder = "abigail", side = [89, 125], front = [68, 121], back = [70, 117]) {
+    const set = Object.assign(walking(key, side, front, back, 4), { path: "assets/sprites/" + folder + "/", keys: { [key]: [0, false] } });
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
       Object.assign(set.views[dir], { attack: ["side/castUp", "side/throw", "side/throw"], bless: ["bless"], hurt: ["side/hurt"], death: ["side/fade"], idle: [p] });
     // side on she drifts with only the two leaning frames (the upright ones made her bob up and down); she
