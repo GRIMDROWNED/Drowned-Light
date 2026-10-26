@@ -12,10 +12,10 @@
   const Hounds = (DL.Hounds = {});
   G.hounds = [];
 
-  // Health and bite grow with the Central Flame.
+  // Health and bite grow with the Central Flame and the hound's own level (src/summons.js), which also gives its powers.
   Hounds.stats = function () {
-    const m = 1 + H.perFlame * Math.max(0, G.save.up.flame - H.reqFlame);
-    return { maxHp: Math.round(H.hp * m), dmg: Math.round(H.dmg * m * 10) / 10 };
+    const lv = DL.Summons.hound(), m = (1 + H.perFlame * Math.max(0, G.save.up.flame - H.reqFlame)) * lv.mult;
+    return Object.assign({}, lv, { maxHp: Math.round(H.hp * m), dmg: Math.round(H.dmg * m * 10) / 10 });
   };
   // Whose knight a hound follows: the host is 0, friends by their co-op number.
   const myId = () => (G.isGuest() ? DL.Net.myId : 0);
@@ -118,8 +118,10 @@
     for (let i = 0; i < 4; i++) G.spark(e.x, e.y - 20 * e.def.scale, "200,30,20", 70);
     sfx("bite");
     // the bleed: each bite adds a stack (up to bleedMax) and starts the clock again
-    e.bleedN = Math.min(H.bleedMax, (e.bleed > 0 ? e.bleedN || 0 : 0) + 1);
+    e.bleedN = Math.min(st.bleedMax, (e.bleed > 0 ? e.bleedN || 0 : 0) + 1);
     e.bleed = H.bleedDur;
+    // the Ember Hound's teeth set them alight
+    if (st.burn) { e.burn = Math.max(e.burn, 2); e.burnDps = Math.max(e.burnDps, st.burn); }
     G.hitEnemy(e, st.dmg, ang, 70);
   }
 
@@ -143,6 +145,11 @@
       if (h.owner === 0) { sfx("growl"); say("Your Bone Hound shakes itself back together.", "good"); }
     }
     h.cd -= dt; h.lungeCd -= dt; h.scanT -= dt;
+    // the Grave Warg's howl: the Drowned near it freeze in terror
+    if (st.howl) {
+      h.howlT = (h.howlT == null ? 3 : h.howlT) - dt;
+      if (h.howlT <= 0 && G.enemies.some((e) => valid(e) && dist(h.x, h.y, e.x, e.y) < 150)) { h.howlT = st.howl; howl(h); }
+    }
     // firelight knits its bones back together; out of a fight it mends slowly anywhere
     const heal = G.protectionAt(h.x, h.y) === "human" ? H.regen : h.tgt ? 0 : 1;
     h.hp = Math.min(h.maxHp, h.hp + heal * dt);
@@ -168,17 +175,17 @@
     } else if (h.state === "back") {
       // hop clear after the bite, then go again
       h.stT -= dt;
-      if (e) { mx = h.x - e.x; my = h.y - e.y; spd = H.speed * 0.8; }
+      if (e) { mx = h.x - e.x; my = h.y - e.y; spd = st.speed * 0.8; }
       if (h.stT <= 0) h.state = "move";
     } else if (e) {
       const d = dist(h.x, h.y, e.x, e.y), reach = H.range + e.def.radius;
       mx = e.x - h.x; my = e.y - h.y;
-      if (d > reach * 0.8) spd = H.speed;
+      if (d > reach * 0.8) spd = st.speed;
       if (d <= reach && h.cd <= 0) {
         h.state = "bite"; h.stT = BITE; h.bitten = false; h.cd = H.cd;
         h.angle = Math.atan2(my, mx);
         spd = 0;
-      } else if (d > reach + 30 && d < reach + 130 && h.lungeCd <= 0) {
+      } else if (st.lunge && d > reach + 30 && d < reach + 130 && h.lungeCd <= 0) {
         // a leap that runs down a fleeing archer
         h.kx += (mx / d) * H.lunge; h.ky += (my / d) * H.lunge;
         h.lungeCd = 2.5;
@@ -187,7 +194,7 @@
     } else {
       // heel: trot to a spot just behind its knight
       const fx = o.x - Math.cos(o.angle || 0) * 30, fy = o.y - Math.sin(o.angle || 0) * 20 + 6, d = dist(h.x, h.y, fx, fy);
-      if (d > 14) { mx = fx - h.x; my = fy - h.y; spd = d > 160 ? H.speed * 1.15 : Math.min(H.speed, d * 3); }
+      if (d > 14) { mx = fx - h.x; my = fy - h.y; spd = d > 160 ? st.speed * 1.15 : Math.min(st.speed, d * 3); }
     }
     const md = Math.hypot(mx, my);
     h.moving = spd > 0 && md > 0.5;
@@ -223,13 +230,20 @@
     if (h.hp <= 0) knockOut(h);
   };
 
-  // It doesn't die: it collapses and lies knocked out for H.downTime seconds.
+  // The Grave Warg's howl: every Drowned within 160 px freezes for a moment (bosses shrug it off).
+  function howl(h) {
+    G.effects.push({ type: "howl", x: h.x, y: h.y - 18, t: 0, max: 0.8 });
+    sfx("growl");
+    for (const e of G.enemies) if (valid(e) && !e.def.boss && dist(h.x, h.y, e.x, e.y) < 160) e.stun = Math.max(e.stun || 0, 1.4);
+  }
+
+  // It doesn't die: it collapses and lies knocked out for a while (H.downTime; the Grave Warg half that).
   function knockOut(h) {
     h.hp = 0;
-    h.down = H.downTime;
+    h.down = h.downMax = DL.Summons.hound().downTime;
     for (let i = 0; i < 12; i++) G.puff(h.x + rand(-10, 10), h.y - rand(0, 24), "rgba(200,190,160,0.6)", 50, 0.9, -20);
     sfx("shatter");
-    if (h.owner === 0) say(`Your Bone Hound is knocked out. It will get up in ${H.downTime} seconds.`, "warn");
+    if (h.owner === 0) say(`Your ${DL.Summons.formName("hound")} is knocked out. It will get up in ${Math.round(h.down)} seconds.`, "warn");
   }
 
   // The Drowned can go for a hound as well as a knight (it counts as a little farther away).

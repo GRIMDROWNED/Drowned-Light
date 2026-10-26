@@ -91,6 +91,7 @@
       case "sentinel": return o.dead ? "husk" : o.active ? "sentinelOn" : "sentinelOff";
       case "root": return o.dead ? "husk" : o.active ? "rootOn" : "rootOff";
       case "pearl": return o.harvested ? null : amethystSprite(o);
+      case "black": return o.harvested ? null : Art.sprites.blackPearl11 ? staged(o, "blackPearl", 3) : "blackClam";
       // six drawn reed clumps when their art is loaded, one picked per spot
       case "reeds": return Art.sprites.reeds1 ? "reeds" + (o.reed || (o.reed = 1 + Math.floor(DL.hash(o.x | 0, o.y | 0, 9) * 6))) : "reeds";
       // the drawn den: eyes in its mouth while the pack lives, empty once it's broken; else the coded one
@@ -166,6 +167,8 @@
     pushCamp(list, G, c, t);
     DL.Cave.push(list, c, t, view);
     DL.Rose.push(list, c, t, view);
+    DL.Trophies.push(list, c);
+    DL.Outposts.push(list, c, t, view, sprite, Art.drawFire, bar);
     for (const tr of G.torches) list.push({ y: tr.y, f: () => drawTorch(c, tr, t) });
     for (const w of G.walls || []) {
       const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1), n = Math.max(2, Math.round(len / 14)), f = Math.min(1, w.t / 1);
@@ -279,6 +282,32 @@
         c.fillRect(f.x - w / 2, f.y - h, w, h);
         c.fillStyle = `rgba(255,255,240,${0.6 * a})`;
         c.fillRect(f.x - w / 8, f.y - h * 0.9, w / 4, h * 0.9);
+      } else if (f.type === "howl") {
+        // the Grave Warg's howl, Abigail's wail, a Bastion wall bursting: a ring rolling out
+        const k = f.t / f.max, r = (f.r || 150) * Math.sqrt(k), col = f.col || "190,150,255";
+        c.strokeStyle = `rgba(${col},${0.8 * (1 - k)})`;
+        c.lineWidth = 5 * (1 - k) + 1;
+        c.beginPath(); c.ellipse(f.x, f.y, r, r * 0.6, 0, 0, Math.PI * 2); c.stroke();
+      } else if (f.type === "roseBind") {
+        // the Rose Heart lashing out: a red thread of briar from the heart to its prey
+        const k = f.t / f.max;
+        c.strokeStyle = `rgba(220,40,60,${0.85 * (1 - k)})`;
+        c.lineWidth = 3 * (1 - k) + 1;
+        c.beginPath(); c.moveTo(f.x1, f.y1); c.quadraticCurveTo((f.x1 + f.x2) / 2, Math.min(f.y1, f.y2) - 40, f.x2, f.y2); c.stroke();
+      } else if (f.type === "bellToll") {
+        // the Bell Tower tolling: rings from the bell, and a long arrow of sound toward where the wave will come from
+        const k = f.t / f.max, b = DL.Camp.layout(G.save.up).bell;
+        if (b) for (let i = 0; i < 3; i++) {
+          const q = (k * 1.5 - i * 0.2);
+          if (q <= 0 || q >= 1) continue;
+          c.strokeStyle = `rgba(255,200,120,${0.7 * (1 - q)})`;
+          c.lineWidth = 2;
+          c.beginPath(); c.ellipse(b.x, b.y - 40, 14 + 60 * q, (14 + 60 * q) * 0.6, 0, 0, Math.PI * 2); c.stroke();
+        }
+        const R0 = DL.WALL_R + 20, ux = Math.cos(f.a), uy = Math.sin(f.a);
+        c.strokeStyle = `rgba(255,120,80,${0.8 * (1 - k)})`;
+        c.lineWidth = 4;
+        c.beginPath(); c.moveTo(ux * R0, uy * R0); c.lineTo(ux * (R0 + 120), uy * (R0 + 120)); c.stroke();
       } else if (f.type === "spikes") {
         const k = f.t / f.max;
         c.fillStyle = `rgba(120,245,255,${1 - k})`;
@@ -331,6 +360,7 @@
       c.fillRect(b[0] - 30, b[1] - 40, 60, 60);
     }
     for (const m of G.golems) drawGolemHeart(c, m, t);
+    drawFormEmbers(c, G, t);
     DL.Cave.drawGlow(c, t);
     DL.Rose.drawGlow(c, t, view);
     for (const k of G.kindles) drawKindleGlow(c, k, t);
@@ -553,6 +583,10 @@
       sprite(c, "workbench", L.workbench.x, L.workbench.y + 4);
     });
     if (L.garden) put(L.garden.y - 20, () => drawGarden(c, L.garden, u.garden, night, t));
+    // the companions' homes (a picture per level) and the Abyss trophies
+    for (const k of ["kennel", "workshop", "shrine"]) if (L[k]) put(L[k].y, () => building(L[k], k + u[k]));
+    if (L.bell) put(L.bell.y, () => building(L.bell, "bellTower"));
+    if (L.roseheart) put(L.roseheart.y, () => drawRoseHeart(c, L.roseheart, u.roseheart, night, t));
     for (const tw of L.towers) put(tw.y, () => { const n = drawn ? "tower" + u.tower : "tower"; groundShadow(c, n, tw.x, tw.y + 4, false, 20, 6); sprite(c, n, tw.x, tw.y + 4); });
     const pyl = drawn ? "pylon" + u.pylon : "pylon", lamps = drawn ? PYLON_LAMPS[u.pylon] : [[-11, -77], [11, -77]];
     for (const q of G.pylons) put(q.y, () => {
@@ -623,6 +657,22 @@
       else { c.fillStyle = "#6a2a14"; c.fillRect(-4, fy - 4, 3, 2); c.fillRect(3, fy - 2, 2, 2); }
       if (f.lit && f.hp < f.max) bar(c, 0, fy - 50 - lvl * 4, 46, f.hp / f.max, "#ffb35a");
     });
+  }
+
+  /* The Rose Heart: Robert's drawing of each level once it's in (roseHeart1–3); till then the Deadly Rose's own bud,
+     smaller, in a ring of stones, swelling with each level and breathing slowly. */
+  function drawRoseHeart(c, h, lvl, night, t) {
+    const own = Art.sprites["roseHeart" + lvl];
+    if (own) return sprite(c, "roseHeart" + lvl, h.x, h.y + 4);
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2;
+      c.fillStyle = i % 2 ? "#32363a" : "#4c5052";
+      c.beginPath(); c.ellipse(h.x + Math.cos(a) * 26, h.y + 2 + Math.sin(a) * 9, 5, 3.5, 0, 0, Math.PI * 2); c.fill();
+    }
+    const bud = Art.sprites.roseBud;
+    if (!bud) { c.fillStyle = "#8a1424"; c.beginPath(); c.ellipse(h.x, h.y - 18, 12, 18, 0, 0, Math.PI * 2); c.fill(); return; }
+    const k = [0, 0.3, 0.37, 0.44][lvl] * (1 + Math.sin(t * (night > 0.3 ? 2.4 : 1.2)) * 0.015), w = bud.w * PS * k, hh = bud.h * PS * k;
+    c.drawImage(bud.c, Math.round(h.x - w / 2), Math.round(h.y + 4 - hh), Math.round(w), Math.round(hh));
   }
 
   // Where the fire sits in each drawn Central Flame (on its coals), and the lamp glass on each drawn pylon
@@ -828,19 +878,21 @@
 
   // The Bone Hound: bites play its attack, a struck hound flinches, a knocked-out one collapses and lies there.
   function houndAnim(h, t) {
-    if (h.down > 0) return ["death", Math.min(2, Math.floor((DL.HOUND.downTime - h.down) / 0.2))];
+    if (h.down > 0) return ["death", Math.min(2, Math.floor(((h.downMax || DL.HOUND.downTime) - h.down) / 0.2))];
     if (h.state === "bite") return ["attack", Math.min(2, Math.floor((1 - h.stT / 0.3) * 3))];
     if (h.hurtT > 0) return ["hurt", 0];
     if (h.moving) return ["walk", Math.floor(h.animT * walkRate("boneHound", 11))];
     return ["idle", Math.floor(t * 1.6 + h.id)];
   }
+  // Each of its four forms (src/summons.js) is drawn from its own sheet once that's in; till then its sprite is scaled and tinted.
   function drawHound(c, h, t) {
-    shadow(c, h.x, h.y, 18, 5);
+    const lk = DL.Summons.look("hound"), s = lk.scale;
+    shadow(c, h.x, h.y, 18 * s, 5 * s);
     const [anim, fr] = houndAnim(h, t);
-    Art.drawUnit(c, "boneHound", anim, fr, h.angle, h.x, h.y, 1, { flash: h.flash > 0 ? 0.8 : 0, flashColor: "#ffb0a0" });
+    Art.drawUnit(c, lk.key, anim, fr, h.angle, h.x, h.y, s, h.flash > 0 ? { flash: 0.8, flashColor: "#ffb0a0" } : lk);
     // knocked out: the bar fills as it pulls itself back together
-    if (h.down > 0) bar(c, h.x, h.y - 34, 22, 1 - h.down / DL.HOUND.downTime, "#8f846b");
-    else if (h.hp < h.maxHp) bar(c, h.x, h.y - 70, 22, Math.max(0, h.hp) / h.maxHp, "#d9cdae");
+    if (h.down > 0) bar(c, h.x, h.y - 34, 22, 1 - h.down / (h.downMax || DL.HOUND.downTime), "#8f846b");
+    else if (h.hp < h.maxHp) bar(c, h.x, h.y - 70 * s, 22, Math.max(0, h.hp) / h.maxHp, "#d9cdae");
   }
   const WOLF_TINT = 0.22, WOLF_CAST = "#4fb8bf";
   // A Bone Wolf's carcass at the den (one being hauled shows under Carrying in the HUD, not on the knight).
@@ -855,15 +907,31 @@
     return ["idle", Math.floor(t * 1.6 + m.id)];
   }
   function drawGolem(c, m, t) {
-    shadow(c, m.x, m.y, 12, 4);
+    const lk = DL.Summons.look("golem");
+    shadow(c, m.x, m.y, 12 * lk.scale, 4 * lk.scale);
     const [anim, fr] = golemAnim(m, t);
-    Art.drawUnit(c, "derek", anim, fr, m.angle, m.x, m.y, 1);
+    Art.drawUnit(c, lk.key, anim, fr, m.angle, m.x, m.y, lk.scale, lk);
+  }
+  // Companions in their higher forms (src/summons.js) shed motes of their colour: embers, crystal glints, soul-light.
+  function drawFormEmbers(c, G, t) {
+    for (const [kind, list, h] of [["hound", G.hounds, 30], ["golem", G.golems, 26], ["wraith", G.wraiths, 50]]) {
+      const col = DL.Summons.look(kind).ember;
+      if (!col) continue;
+      for (const m of list) {
+        if (m.down > 0) continue;
+        for (let i = 0; i < 4; i++) {
+          const u = (t * 0.8 + i / 4 + m.id * 0.13) % 1, x = m.x + Math.sin(i * 2.3 + t * 1.7 + m.id) * 12, y = m.y - 6 - u * h;
+          c.fillStyle = `rgba(${col},${0.8 * Math.sin(Math.PI * u)})`;
+          c.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
+        }
+      }
+    }
   }
   // His heart glows over the dark, brighter while he calls up a wall (hidden when he walks away from you).
   function drawGolemHeart(c, m, t) {
     const { dir, flip } = Art.unitDir(m.angle);
     if (dir === "up") return;
-    const x = m.x + (dir === "side" ? (flip ? -7 : 7) : 0), y = m.y - 12;
+    const sc = DL.Summons.look("golem").scale, x = m.x + (dir === "side" ? (flip ? -7 : 7) : 0) * sc, y = m.y - 12 * sc;
     const a = (m.state === "cast" ? 0.9 : 0.45) + 0.1 * Math.sin(t * 3 + m.id), r = m.state === "cast" ? 13 : 7;
     const g = c.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, `rgba(150,250,255,${a})`); g.addColorStop(1, "rgba(90,235,245,0)");
@@ -993,11 +1061,12 @@
   // Embers in its eye sockets, so it reads in the dark. They follow the head through every frame.
   function drawHoundEyes(c, h, t) {
     if (h.down > 0) return;
-    const [anim, fr] = houndAnim(h, t);
-    beastEyes(c, h.x, h.y, h.angle, anim, fr, h.id, "255,80,40", t);
+    const [anim, fr] = houndAnim(h, t), lk = DL.Summons.look("hound");
+    if (lk.drawn) return; // a form's own drawing brings its own eyes
+    beastEyes(c, h.x, h.y, h.angle, anim, fr, h.id, lk.scale > 1.2 ? "170,120,255" : "255,80,40", t, lk.scale);
   }
   // The same for any unit drawn from the hound's sheet (the Bone Wolves at the den burn cyan, like the Drowned).
-  function beastEyes(c, hx, hy, ang, anim, fr, id, rgb, t) {
+  function beastEyes(c, hx, hy, ang, anim, fr, id, rgb, t, sc = 1) {
     const { dir, flip } = Art.unitDir(ang);
     if (dir === "up") return;
     const frames = Art.sheet("boneHound")[dir][anim], i = ((fr % frames.length) + frames.length) % frames.length, f = frames[i];
@@ -1015,7 +1084,7 @@
     }
     const r = front ? 6 : 8, pulse = 0.75 + 0.25 * Math.sin(t * 6 + id);
     for (const [ex, ey] of eyes) {
-      const x = hx + ex, y = hy + ey;
+      const x = hx + ex * sc, y = hy + ey * sc;
       const g = c.createRadialGradient(x, y, 0, x, y, r);
       g.addColorStop(0, `rgba(${rgb},${0.6 * pulse})`);
       g.addColorStop(1, `rgba(${rgb},0)`);
@@ -1087,10 +1156,12 @@
     return ["idle", 0, w.angle];
   }
   function drawWraith(c, w, t) {
-    if (wraithDrawn()) {
-      shadow(c, w.x, w.y, 10, 3, 0.22);
+    const lk = DL.Summons.look("wraith");
+    if (lk.wisp && !lk.drawn) return; // the Soul Wisp is all glow, drawn above the dark (drawWispGlow)
+    if (wraithDrawn() || lk.drawn) {
+      shadow(c, w.x, w.y, 10 * lk.scale, 3, 0.22);
       const [anim, fr, ang] = wraithAnim(w, t);
-      return Art.drawUnit(c, "abigail", anim, fr, ang, w.x, w.y - 10 + Math.sin(t * 2.2 + w.id) * 3, 1);
+      return Art.drawUnit(c, lk.key, anim, fr, ang, w.x, w.y - 10 + Math.sin(t * 2.2 + w.id) * 3, lk.scale, lk);
     }
     const P = wraithPose(w, t), sway = Math.sin(t * 3 + w.id) * 3, side = P.dir === "side", back = P.dir === "up";
     shadow(c, w.x, w.y, 10, 3, 0.22);
@@ -1134,6 +1205,7 @@
   // Her eyes, as world points (none from behind).
   function wraithEyes(w, t) {
     const P = wraithPose(w, t);
+    if (DL.Summons.look("wraith").wisp) return [];
     if (P.dir === "up" || wraithDrawn()) return []; // the drawn eyes glow on their own
     if (P.dir === "side") return [[P.x + (P.flip ? -4.5 : 4.5), P.y - 37]];
     return [[P.x - 2.2, P.y - 37], [P.x + 2.2, P.y - 37]];
@@ -1175,7 +1247,16 @@
         c.fillStyle = g; c.fillRect(x - 5, y - 5, 10, 10);
       }
       const P = wraithPose(w, t);
-      for (let i = 0; i < 2; i++) {
+      if (DL.Summons.look("wraith").wisp) {
+        // the Soul Wisp: a lone soul with pale eyes, trailing wisps, bigger while it throws
+        const y = P.y - 22, k = w.state === "cast" ? 1.5 : 1.25;
+        for (let i = 1; i <= 4; i++) {
+          const u = (t * 1.1 + i / 4) % 1;
+          c.fillStyle = `rgba(${SOUL},${0.45 * Math.sin(Math.PI * u)})`;
+          c.beginPath(); c.arc(P.x + Math.sin(t * 3 + i * 2) * 5 - Math.cos(w.angle) * u * 14, y + 4 + u * 10, 2.6 - u * 1.5, 0, Math.PI * 2); c.fill();
+        }
+        soulOrb(c, P.x, y, k, t * 3 + w.id);
+      } else for (let i = 0; i < 2; i++) {
         const a = t * 1.6 + i * Math.PI + w.id;
         soulOrb(c, P.x + Math.cos(a) * 17, P.y - 26 + Math.sin(a) * 7, 0.45, t * 3 + i);
       }

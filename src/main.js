@@ -11,7 +11,7 @@
     }
     if (Input.take("camp")) {
       if (G.state === "play") {
-        if (G.inCamp) UI.openCamp(); else UI.toast("Return to camp to build and upgrade.");
+        UI.campAction();
       } else if (G.state === "camp") UI.closeCamp();
     }
     if (G.state !== "play") Input.clear();

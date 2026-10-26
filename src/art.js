@@ -420,6 +420,56 @@
       P.line([5, 19, 8, 11], 2, C.iron); P.line([15, 19, 12, 11], 2, C.iron); P.line([10, 19, 10, 11], 2, C.iron);
       P.poly([2, 6, 18, 6, 15, 12, 5, 12], "#3e4246"); P.rect(2, 6, 16, 1, "#70767c"); P.rect(4, 4, 12, 2, "#2a1d14");
     });
+
+    /* ---- coded stand-ins for the companions' homes, the Abyss trophies and the Black Pearl clam,
+       until Robert's drawings of them are in (src/sprites.js) ---- */
+    const bone = "#d9cdae", boneDk = "#9c917a", hide = "#6b4a34", hideDk = "#4a3222";
+    // Bone Kennel, levels 1–3: a lean-to of hides on bone ribs, then a bone-fenced den, then a great skull over the door.
+    const kennel = (lv) => mk(46, 38, (P) => {
+      P.ell(23, 34, 21, 4, "#2a2018");
+      P.poly([6, 34, 23, 8, 40, 34], hide); P.poly([23, 8, 40, 34, 30, 34], hideDk);
+      for (let x = 9; x <= 37; x += 7) P.curve(x, 34, 23, 6 + Math.abs(x - 23) * 0.4, 23, 9, 2, bone);
+      P.poly([18, 34, 23, 22, 28, 34], "#120c08");
+      if (lv >= 2) for (let x = 1; x < 46; x += 5) { if (x > 14 && x < 32) continue; P.rect(x, 26, 2, 10, bone); P.px(x, 25, boneDk); }
+      if (lv >= 3) { P.ell(23, 12, 6, 5, bone); P.rect(20, 11, 2, 2, "#120c08"); P.rect(25, 11, 2, 2, "#120c08"); P.rect(21, 15, 5, 2, boneDk); P.px(21, 12, "#ff5a28"); P.px(26, 12, "#ff5a28"); }
+    });
+    S.kennel1 = kennel(1); S.kennel2 = kennel(2); S.kennel3 = kennel(3);
+    // Derek's Workshop, levels 1–3: a mason's block and chisel, then a mossy stone arch, then cyan crystals in it.
+    const workshop = (lv) => mk(46, 40, (P) => {
+      P.ell(23, 36, 21, 4, "#2a2018");
+      if (lv >= 2) { P.rect(5, 10, 7, 26, C.stone); P.rect(34, 10, 7, 26, C.stone); P.poly([5, 12, 23, 2, 41, 12, 34, 14, 23, 8, 12, 14], C.stoneHi); P.rect(5, 18, 3, 3, C.moss); P.rect(37, 24, 3, 4, C.moss); }
+      P.rect(14, 24, 18, 12, C.stoneDk); P.rect(14, 24, 18, 2, C.stoneHi); P.rect(16, 28, 4, 2, C.stone);
+      P.line([30, 22, 37, 15], 2, C.iron); P.rect(36, 13, 3, 3, C.ironHi);
+      P.rect(16, 18, 7, 6, C.stone); P.rect(16, 18, 7, 1, C.stoneLt);
+      if (lv >= 3) { P.poly([8, 10, 10, 2, 12, 10], C.glow); P.poly([35, 9, 37, 1, 39, 9], C.glow); P.poly([21, 6, 23, 0, 25, 6], C.glowCore); P.px(10, 6, C.glowCore); }
+    });
+    S.workshop1 = workshop(1); S.workshop2 = workshop(2); S.workshop3 = workshop(3);
+    // Soul Shrine, levels 1–3: a small altar stone with candles, then old headstones round it, then a teal soul flame on it.
+    const shrine = (lv) => mk(44, 40, (P) => {
+      P.ell(22, 36, 20, 4, "#2a2018");
+      if (lv >= 2) { P.poly([3, 34, 3, 18, 6, 15, 9, 18, 9, 34], C.stone); P.poly([35, 34, 35, 18, 38, 15, 41, 18, 41, 34], C.stone); P.rect(5, 22, 2, 6, C.stoneDk); P.rect(37, 22, 2, 6, C.stoneDk); }
+      P.rect(13, 24, 18, 12, C.stoneDk); P.rect(12, 22, 20, 3, C.stone); P.rect(12, 22, 20, 1, C.stoneHi);
+      for (const x of [14, 19, 25, 29]) { P.rect(x, 17, 2, 5, "#e8dcc0"); P.px(x, 15, "#ffcf7a"); P.px(x, 16, "#ffcf7a"); }
+      P.rect(16, 28, 12, 1, "#5af5cd");
+      if (lv >= 3) { P.ell(22, 12, 4, 6, "#2aa58c"); P.ell(22, 13, 2.5, 4, "#5af5cd"); P.rect(21, 12, 2, 3, "#e9fff8"); }
+    });
+    S.shrine1 = shrine(1); S.shrine2 = shrine(2); S.shrine3 = shrine(3);
+    // The Starved Bell Tower: a frame of black timber with the Bell's clapper of vertebrae hung in it.
+    S.bellTower = mk(36, 66, (P) => {
+      P.ell(18, 63, 16, 3, "#2a2018");
+      P.line([5, 64, 9, 6], 3, "#2a2018"); P.line([31, 64, 27, 6], 3, "#2a2018");
+      P.line([7, 40, 29, 52], 2, "#3a2c20"); P.line([29, 40, 7, 52], 2, "#3a2c20");
+      P.rect(3, 4, 30, 4, "#3a2c20"); P.rect(3, 4, 30, 1, "#5a4430");
+      P.poly([10, 30, 12, 14, 18, 10, 24, 14, 26, 30], "#6a3c26"); P.rect(10, 28, 16, 3, "#4a281a"); P.rect(13, 14, 2, 14, "#8a5034");
+      for (let y = 9; y < 40; y += 4) { P.rect(17, y, 3, 3, bone); P.px(18, y + 3, boneDk); }
+    });
+    // A Black Pearl clam half sunk in the Abyss mud, its shell gaping on a dark pearl with a cold sheen.
+    S.blackClam = mk(22, 16, (P) => {
+      P.ell(11, 13, 10, 3, "#1a1612");
+      P.poly([1, 12, 4, 5, 11, 3, 18, 5, 21, 12], "#3a3a44"); P.poly([3, 12, 11, 9, 19, 12], "#26262e");
+      P.poly([2, 9, 6, 1, 11, 0, 16, 1, 20, 9, 11, 6], "#4c4c5a"); P.line([5, 5, 11, 2, 17, 5], 1, "#6a6a7c");
+      P.ell(11, 9, 3, 2.5, "#151824"); P.px(10, 8, "#8fa0c8"); P.px(11, 8, "#c8d4f0");
+    });
   }
 
   // Animated pixel fire, base at (x, y). size ~ 1 for a torch, 2–3 for the camp flame.

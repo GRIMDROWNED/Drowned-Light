@@ -205,6 +205,7 @@
     const msg = NAME + " cracks and falls silent.";
     say(msg, "good");
     DL.Net.say(msg, "good");
+    DL.Trophies.won("bell");
   };
   Bell.dawn = function () {
     const s = state();

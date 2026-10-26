@@ -10,7 +10,7 @@
   const CURRENT_SLOT = "drowned-light-slot";
   const say = (m, k) => DL.UI && DL.UI.toast(m, k);
   const sfx = (n) => DL.Sound.play(n);
-  const emptyRes = () => ({ wood: 0, stone: 0, resin: 0, iron: 0, pearl: 0 });
+  const emptyRes = () => ({ wood: 0, stone: 0, resin: 0, iron: 0, pearl: 0, black: 0 });
 
   const G = (DL.Game = { state: "title", t: 0, time: 0, nightAmt: 0, night: false, allies: [], eid: 0, pid: 0, dirty: new Set() });
   // Co-op: the guest's device plays inside the host's world and never saves it.
@@ -21,7 +21,7 @@
   G.defaultSave = () => ({
     v: 1, day: 1, nights: 0, deepest: 0, muted: false,
     stash: emptyRes(),
-    up: { flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0 },
+    up: { flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, bell: 0, roseheart: 0 },
     kit: "lanternBlade",
     kitLevel: 1,
     difficulty: "dark",
@@ -44,6 +44,12 @@
     bell: { a: null, dead: -1 },
     // the Deadly Rose in her Abyss garden: found yet, and the day she was slain (-1: alive)
     rose: { found: false, dead: -1 },
+    // companion levels (src/summons.js), trained at their homes in the camp; the same for every knight's companion in this world
+    summons: { hound: 0, golem: 0, wraith: 0 },
+    // Abyss bosses slain at least once: their trophies can be built in the camp
+    trophies: { bell: 0, rose: 0 },
+    // outposts raised in bloom groves (src/outposts.js): [grove cell x, grove cell y, x, y]
+    outposts: [],
     started: false,
     lastPlayed: 0,
   });
@@ -68,6 +74,10 @@
       delete s.kits;
     }
     if (!DL.KITS[s.kit]) s.kit = "lanternBlade";
+    // Companions won before they had levels keep the form they had (level 5)
+    if (!s.summons) s.summons = { hound: s.hound ? 5 : 0, golem: s.golem ? 5 : 0, wraith: s.abigail ? 5 : 0 };
+    // Abyss bosses slain before trophies existed still count
+    if (!s.trophies) s.trophies = { bell: s.bell && s.bell.dead >= 0 ? 1 : 0, rose: s.rose && s.rose.dead >= 0 ? 1 : 0 };
     return merge(G.defaultSave(), s);
   }
   G.slot = 1;
@@ -199,6 +209,9 @@
     G.resetPylons();
     G.siegeT = 5; G.spawnT = 3; G.rootEvent = null; G.selfEnemy = null; G.champSpawned = false;
     G.dying = 0;
+    DL.Siege.reset();
+    DL.Outposts.reset();
+    DL.Trophies.reset();
     G.camera = { x: 0, y: 70, shake: 0 };
     G.nightAmt = 0; G.night = false;
     W.resetDay();
@@ -215,6 +228,7 @@
 
   // Pylon state (lit, health) for the current layout.
   G.resetPylons = function () {
+    DL.Camp.sync(G.save.up);
     G.pylons = DL.Camp.layout(G.save.up).pylons.map((q) => ({ kind: "pylon", x: q.x, y: q.y, rad: 8, hp: 80, max: 80, lit: true, hitT: 0 }));
   };
 
@@ -267,6 +281,7 @@
       if (G.state === "dying") return;
     }
     updateSpawning(dt);
+    DL.Siege.update(dt);
     DL.Den.update(dt);
     DL.Bell.update(dt);
     DL.Rose.update(dt);
@@ -278,6 +293,8 @@
     DL.Kindle.update(dt);
     DL.Abigail.update(dt);
     updateDefenses(dt);
+    DL.Trophies.update(dt);
+    DL.Outposts.update(dt);
     DL.Kits.update(dt);
     updateProjectiles(dt);
     updateTelegraphs(dt);
@@ -340,6 +357,7 @@
     say("Night falls. Stay in the light — or the darkness will take you.", "warn");
     G.champSpawned = false;
     G.siegeT = 4;
+    DL.Siege.nightfall();
     if (G.save.nights === 0) setTimeout(() => say("Cyan Refuge Blooms halt corruption. Firelight reverses it."), 3500);
   }
 
@@ -351,6 +369,8 @@
     DL.Kindle.dawn();
     DL.Bell.dawn();
     DL.Rose.dawn();
+    DL.Siege.dawn();
+    DL.Outposts.dawn();
     if (G.rootEvent) {
       const o = G.rootEvent.obj;
       if (!o.dead) {
@@ -378,6 +398,7 @@
     W.resetDay();
     G.persist();
     say(`Day ${G.save.day}. The wetland stirs — supplies have regrown.`);
+    DL.Siege.morning();
   }
 
   /* ---------------- light ---------------- */
@@ -439,6 +460,8 @@
     for (const m of G.golems) L.push({ x: m.x, y: m.y - 12, r: 32, s: 0.4, col: "80,230,240", a: 0.6 });
     DL.Kindle.lights(L);
     DL.Abigail.lights(L);
+    DL.Outposts.lights(L);
+    DL.Trophies.lights(L);
     DL.Rose.lights(L);
     for (const e of G.enemies) {
       if (e.type === "defiler") L.push({ x: e.x, y: e.y - 70, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
@@ -556,13 +579,14 @@
     // Deposit carried supplies at camp.
     const inCamp = DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS;
     G.inCamp = inCamp;
-    if (inCamp && DL.RES_KEYS.some((k) => p.carried[k] > 0)) {
+    G.atOutpost = inCamp ? null : DL.Outposts.at(p.x, p.y); // an outpost: store supplies, travel (src/outposts.js)
+    if ((inCamp || G.atOutpost) && DL.RES_KEYS.some((k) => p.carried[k] > 0)) {
       const parts = [];
       if (G.isGuest()) DL.Net.event({ t: "deposit", res: { ...p.carried } });
       for (const k of DL.RES_KEYS) if (p.carried[k]) { parts.push(`${p.carried[k]} ${DL.RESOURCES[k].name}`); if (!G.isGuest()) G.save.stash[k] += p.carried[k]; p.carried[k] = 0; }
       G.persist();
       sfx("pickup");
-      say((G.isGuest() ? "Stored at your friend's camp: " : "Stored at camp: ") + parts.join(", "), "good");
+      say((G.isGuest() ? "Stored at your friend's camp: " : inCamp ? "Stored at camp: " : "Sent home from the outpost: ") + parts.join(", "), "good");
     }
 
     // Your drowned self waits where you fell.
@@ -751,11 +775,13 @@
 
     // Siege: the Drowned come for the Central Flame.
     if (G.night && dCamp < G.siegeRadius()) {
+      if (DL.Siege.on) return; // the Great Siege brings its own waves (src/siege.js)
       G.siegeT -= dt;
+      const wa = DL.Siege.campTick(G.siegeT); // the Bell Tower tolls before it comes
       if (G.siegeT <= 0) {
         G.siegeT = 11;
         const n = Math.round((3 + Math.floor(G.save.day * 1.3)) * G.diff().spawn * G.partyScale());
-        spawnWave(0, 0, DL.campPool(G.save.day), n, G.flame, 540, 1);
+        DL.Siege.campSpawned(spawnWave(0, 0, DL.campPool(G.save.day), n, G.flame, DL.WALL_R + 305, 1, wa));
         if (G.save.day >= SOVEREIGN_SIEGE_DAY && !G.champSpawned && G.phase() === "night") {
           G.champSpawned = true;
           const a = rand(0, TAU);
@@ -806,15 +832,20 @@
     }
   }
 
-  function spawnWave(cx, cy, pool, n, goal, R, zi) {
-    const base = rand(0, TAU);
+  // A wave of n Drowned R px out from (cx, cy), from angle `base` (random if not given), coming for `goal`. Returns them.
+  function spawnWave(cx, cy, pool, n, goal, R, zi, base) {
+    if (base == null) base = rand(0, TAU);
+    const out = [];
     for (let i = 0; i < n; i++) {
       const a = base + rand(-0.9, 0.9), r = R + rand(0, 80);
       const type = pickType(pool);
       const e = makeEnemy(type, cx + Math.cos(a) * r, cy + Math.sin(a) * r, zi, { goal });
       G.enemies.push(e);
+      out.push(e);
     }
+    return out;
   }
+  G.spawnWave = spawnWave;
 
   function makeEnemy(type, x, y, zi, extra) {
     const def = DL.ENEMIES[type], Z = DL.ZONES[Math.max(1, zi)], day = G.save.day;
@@ -833,7 +864,7 @@
   /* ---------------- enemies ---------------- */
   function goalValid(g) {
     if (!g) return false;
-    if (g.kind === "flame" || g.kind === "pylon") return g.lit;
+    if (g.kind === "flame" || g.kind === "pylon" || g.kind === "outpost") return g.lit;
     if (g.type === "torch" || g.type === "brazier") return G.torches.includes(g);
     return !g.dead && g.active !== false;
   }
@@ -842,6 +873,7 @@
     const consider = (o) => { const d = dist(x, y, o.x, o.y); if (d < bd) { bd = d; best = o; } };
     if (G.flame.lit) consider(G.flame);
     for (const q of G.pylons) if (q.lit) consider(q);
+    for (const q of G.outposts) if (q.lit) consider(q);
     for (const t of G.torches) consider(t);
     for (const o of G.blooms) if (o.def.bloom && o.active) consider(o);
     return best;
@@ -995,7 +1027,7 @@
         const dc = DL.Camp.sq(e.x, e.y);
         if (dc < DL.WALL_R + 4) {
           e.slow = Math.max(e.slow, lv >= 3 ? 0.4 : 0.2);
-          if (!e.staked && dc > DL.WALL_R - 40) { e.staked = true; hitEnemy(e, [0, 15, 25, 40][lv], Math.atan2(e.y, e.x), 160); if (e.hp <= 0) continue; }
+          if (!e.staked && dc > DL.WALL_R - 40) { e.staked = true; hitEnemy(e, [0, 15, 25, 40, 50, 60][lv], Math.atan2(e.y, e.x), 160); if (e.hp <= 0) continue; }
         }
       }
     }
@@ -1138,7 +1170,7 @@
     G.effects.push({ type: "slash", x: e.x, y: e.y - 18, ang: e.aim, arc: 1.9, r: e.def.range + 8, t: 0, max: 0.18, col: "90,230,240", w: 4 + e.def.scale * 3 });
     const g = e.aimGoal;
     if (g && g.stoneWall) {
-      if (!g.dead && DL.Golems.distTo(g, e.x, e.y) < e.def.range + g.rad + 14) DL.Golems.hitWall(g);
+      if (!g.dead && DL.Golems.distTo(g, e.x, e.y) < e.def.range + g.rad + 14) DL.Golems.hitWall(g, e);
       return;
     }
     if (g && goalValid(g)) {
@@ -1162,11 +1194,12 @@
       o.hitT = 0.2;
       if (o.hp <= 0 && o.lit) {
         o.lit = false; o.hp = 0;
-        say("The Central Flame has gone out! Hold on until dawn.", "danger");
+        if (!DL.Siege.flameOut()) say("The Central Flame has gone out! Hold on until dawn.", "danger");
         for (let i = 0; i < 30; i++) puff(0, -10, "rgba(40,40,40,0.7)", 80, 1.2);
       }
       return;
     }
+    if (o.kind === "outpost") return DL.Outposts.hurt(o, amt);
     if (o.kind === "pylon") {
       o.hp -= amt;
       o.hitT = 0.2;
@@ -1202,7 +1235,7 @@
     const p = G.player;
     if (p.inv > 0 || p.dashT > 0 || p.downT > 0 || G.state !== "play") return;
     dmg *= DL.Kits.damageTaken(p);
-    if (DL.Abigail.buffed()) dmg *= 1 - DL.ABIGAIL.buff; // Abigail's blessing
+    if (DL.Abigail.buffed()) dmg *= 1 - DL.Summons.wraith().buff; // Abigail's blessing
     p.hp -= dmg;
     p.inv = 0.5;
     p.hurtFlash = 0.3;
@@ -1223,7 +1256,7 @@
       DL.Net.event({ t: "hit", id: e.id, dmg: d, ang, kb, burn: burn || 0 });
       e.flash = 0.12;
       sfx("hit");
-      text(e.x + rand(-8, 8), e.y - 40 * e.def.scale - 20, Math.round(d * (1 - (e.def.armor || 0)) * (e.cursed ? 1 + DL.ABIGAIL.curse : 1)) + (crit ? "!" : ""), crit ? "#ffe08a" : "#f3e6cf", crit ? 1.3 : 1);
+      text(e.x + rand(-8, 8), e.y - 40 * e.def.scale - 20, Math.round(d * (1 - (e.def.armor || 0)) * (e.cursed ? 1 + (e.curseK || DL.ABIGAIL.curse) : 1)) + (crit ? "!" : ""), crit ? "#ffe08a" : "#f3e6cf", crit ? 1.3 : 1);
       for (let i = 0; i < 4; i++) puff(e.x, e.y - 24 * e.def.scale, "rgba(70,210,220,0.7)", 90, 0.35);
       return;
     }
@@ -1234,7 +1267,7 @@
       for (let i = 0; i < 4; i++) spark(e.x + Math.cos(e.angle) * 14, e.y - 24, "200,230,235", 90);
     } else if (!e.def.shield && G.enemies.some((b) => b.def.guard && !b.removed && dist(b.x, b.y, e.x, e.y) < b.def.guard)) d *= 0.75; // guarded by a Bulwark
     d *= 1 - (e.def.armor || 0);
-    if (e.cursed) d *= 1 + DL.ABIGAIL.curse; // weakened by one of Abigail's orbs
+    if (e.cursed) d *= 1 + (e.curseK || DL.ABIGAIL.curse); // weakened by one of Abigail's orbs
     e.hp -= d;
     e.flash = 0.12;
     if (e.dormant) e.dormant = false;
@@ -1277,6 +1310,8 @@
       const n = Math.floor(raw * G.diff().yield + Math.random());
       if (n > 0) dropRes(e.x, e.y, k, n);
     }
+    // the Drowned of the Abyss now and then carry a Black Pearl
+    if (!e.def.boss && DL.ZONES[e.zi] && DL.ZONES[e.zi].abyss && Math.random() < 0.04) dropRes(e.x, e.y, "black", 1);
     if (e.def.boss) say(`${e.def.name} falls!`, "good");
   }
 
@@ -1561,6 +1596,8 @@
 
   // Why the next level of a building can't be built yet (null when it can, cost aside).
   G.upgradeLock = function (u, lvl) {
+    if (u.trophy && !G.save.trophies[u.trophy]) return u.trophy === "bell" ? "Slay the Starved Bell first" : "Slay the Deadly Rose first";
+    if (u.needs && !DL.Summons.anyHas(u.needs)) return `Win ${DL.SUMMON[u.needs].name} first`;
     const needFlame = u.reqFlame(lvl + 1);
     if (G.save.up.flame < needFlame) return `Needs Central Flame ${needFlame}`;
     if (u.id === "flame") {
@@ -1582,7 +1619,8 @@
     if (id === "flame") { G.flame.max = st.flameHp; G.flame.hp = st.flameHp; G.flame.lit = true; }
     if (id === "armory") G.player.hp += 25;
     if (id === "workbench") G.player.oil = st.maxOil;
-    if (id === "pylon") G.resetPylons();
+    if (id === "pylon" || id === "stakes") G.resetPylons();
+    if (id === "stakes" && lvl + 1 >= 4) setTimeout(() => say("The walls go up farther out. Your camp grows.", "good"), 300);
     if (id === "flame" && DL.Camp.tier(G.save.up) !== DL.Camp.tier({ ...G.save.up, flame: lvl })) {
       setTimeout(() => say(`Your camp grows: ${DL.TIER_NAMES[DL.Camp.tier(G.save.up)]}.`, "good"), 300);
     }
@@ -1604,6 +1642,9 @@
     sfx("torch");
     return true;
   };
+
+  // Your camp's flame drowned on a siege night with DL.SIEGE.gameOver on: for now, the knight falls with it.
+  G.campFallen = () => die("camp");
 
   G.restUntilDusk = function () {
     if (G.phase() !== "day") return;

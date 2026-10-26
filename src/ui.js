@@ -75,7 +75,7 @@
       UI.updateCombatLabel();
     });
     $("btnPause").addEventListener("click", () => UI.pause());
-    $("campBtn").addEventListener("click", () => UI.openCamp());
+    $("campBtn").addEventListener("click", () => UI.campAction());
 
     $("btnBegin").addEventListener("click", () => {
       if (!G.save.started) { UI.openSetup(); return; }
@@ -178,6 +178,8 @@
       const [act, arg] = b.dataset.act.split(":");
       if (act === "up") G.buyUpgrade(arg);
       else if (act === "train") { const r = DL.Kits.train(); UI.justReached = r && r.milestone ? r.level : 0; }
+      else if (act === "trainSummon") DL.Summons.train(arg);
+      else if (act === "travel") { if (DL.Outposts.travel(arg)) { UI.closeCamp(); return; } }
       else if (act === "torch") G.craftTorch();
       else if (act === "rest") { G.restUntilDusk(); UI.closeCamp(); UI.toast("You rest by the fire until dusk.", "warn"); return; }
       UI.renderCamp();
@@ -305,9 +307,10 @@
 
   UI.showDeath = function (info) {
     UI.showHud(false);
-    $("deathTitle").textContent = info.cause === "corruption" ? "You have drowned" : "Your light is spent";
+    $("deathTitle").textContent = info.cause === "corruption" ? "You have drowned" : info.cause === "camp" ? "Your camp has fallen" : "Your light is spent";
     $("deathCause").textContent = info.cause === "corruption"
       ? "The darkness filled your armour, and you became one of the Drowned."
+      : info.cause === "camp" ? "The Drowned put out the Central Flame, and the dark poured in."
       : "You fell to the Drowned, and the deep claimed what was left.";
     const lost = DL.RES_KEYS.filter((k) => info.lost[k] > 0).map((k) => chip(k, info.lost[k])).join("");
     $("deathLost").innerHTML = info.any
@@ -442,10 +445,29 @@
   };
 
   /* ---------------- camp menu ---------------- */
+  // The camp button (and the C key): enter the camp, open an outpost's paths, or raise an outpost in this grove.
+  UI.campLabel = function () {
+    const G = DL.Game;
+    if (G.inCamp) return "Enter camp";
+    if (G.atOutpost) return "Outpost";
+    if (G.save.up.flame >= DL.OUTPOST.reqFlame && G.player && DL.Outposts.claimable(G.player.x, G.player.y)) return "Raise outpost";
+    return null;
+  };
+  UI.campAction = function () {
+    const G = DL.Game, l = UI.campLabel();
+    if (G.state !== "play") return;
+    if (l === "Raise outpost") DL.Outposts.raise();
+    else if (l) UI.openCamp();
+    else UI.toast("Return to camp to build and upgrade.");
+  };
   UI.openCamp = function () {
     const G = DL.Game;
-    if (G.state !== "play" || !G.inCamp) return;
+    if (G.state !== "play" || !(G.inCamp || G.atOutpost)) return;
     G.state = "camp";
+    // at an outpost there is only the way home and on to the other outposts
+    UI.atOutpost = !G.inCamp;
+    if (UI.atOutpost) UI.campTab = "travel";
+    else if (UI.campTab === "travel" && !G.outposts.length) UI.campTab = "build";
     UI.renderCamp();
     $("screenCamp").classList.remove("hidden");
   };
@@ -453,15 +475,21 @@
     const G = DL.Game;
     $("screenCamp").classList.add("hidden");
     if (G.state === "camp") G.state = "play";
+    if (UI.atOutpost) { UI.atOutpost = false; UI.campTab = "build"; }
     DL.Input.clear();
   };
 
   UI.renderCamp = function () {
     const G = DL.Game, s = G.save;
-    for (const t of document.querySelectorAll("#campTabs button")) t.classList.toggle("on", t.dataset.tab === UI.campTab);
+    for (const t of document.querySelectorAll("#campTabs button")) {
+      t.classList.toggle("on", t.dataset.tab === UI.campTab);
+      t.classList.toggle("hidden", UI.atOutpost ? t.dataset.tab !== "travel" : t.dataset.tab === "travel" && !G.outposts.length);
+    }
     $("campStash").innerHTML = DL.RES_KEYS.map((k) => `<span class="stash-item">${chip(k, s.stash[k])}<small>${DL.RESOURCES[k].name}</small></span>`).join("");
     const tier = DL.Camp.tier(s.up);
-    $("campDay").textContent = (G.isGuest() ? "Your friend's camp · shared stash · " : "") + `Tier ${"I".repeat(tier)} · ${DL.TIER_NAMES[tier]} · Day ${s.day} · ${G.phase() === "day" ? "Daylight" : G.phase() === "night" ? "Night" : G.phase() === "dusk" ? "Dusk" : "Dawn"}`;
+    const siegeIn = DL.Siege.nightsLeft();
+    $("campDay").textContent = (UI.atOutpost ? "Outpost · " : G.isGuest() ? "Your friend's camp · shared stash · " : "") + `Tier ${"I".repeat(tier)} · ${DL.TIER_NAMES[tier]} · Day ${s.day} · ${G.phase() === "day" ? "Daylight" : G.phase() === "night" ? "Night" : G.phase() === "dusk" ? "Dusk" : "Dawn"}` +
+      ` · ${DL.Siege.on ? "GREAT SIEGE" : siegeIn === 0 ? "Great Siege tonight" : `Great Siege in ${siegeIn} night${siegeIn > 1 ? "s" : ""}`}`;
     let html = "";
     if (UI.campTab === "build") {
       for (const u of DL.UPGRADES) {
@@ -483,6 +511,8 @@
           <p class="effect">Now: ${u.effect(lvl)}${max ? "" : `<br>Next: ${u.effect(lvl + 1)}`}</p>
           <footer>${action}</footer></article>`;
       }
+    } else if (UI.campTab === "travel") {
+      html += travelCards(G);
     } else if (UI.campTab === "kit") {
       const k = G.kit(), L = s.kitLevel, info = DL.Kits.trainInfo(), K = DL.Kits;
       const pos = (lvl) => ((lvl - 1) / (DL.KIT_MAX_LEVEL - 1)) * 100;
@@ -543,12 +573,47 @@
           <li>${DL.Kindle.guideLine()}</li>
           <li>${DL.Abigail.guideLine()}</li>
           <li>${DL.Rose.guideLine()}</li>
+          <li><b>Black Pearls</b> are found only in the Abyss: in clams half sunk in its mud, now and then on its Drowned, and on its great bosses. The last levels of the camp need them.</li>
+          <li>${DL.Siege.line()} A Bell Tower, built from the Starved Bell's clapper, warns of every wave.</li>
+          <li>From Central Flame ${DL.OUTPOST.reqFlame}, stand at the heart of a bloom grove to raise an <b>outpost</b>. Supplies brought there go home, and with your Kindle lit you can travel between outposts and the camp.</li>
           <li>Fall, and your <b>drowned self</b> keeps your supplies. Slay it to get them back.</li>
         </ul></article>`;
     }
     $("campBody").innerHTML = html;
     UI.drawPortraits(0);
   };
+
+  /* A companion's level (src/summons.js): its form, a track to 15 with the forms marked, what the next form
+     brings, and the training button. Shown on its card once anyone in this world has won it. */
+  function summonTrain(kind) {
+    const S = DL.SUMMON, K = S[kind], Sm = DL.Summons;
+    if (!Sm.anyHas(kind)) return "";
+    const L = Sm.level(kind), f = Sm.form(kind), info = Sm.trainInfo(kind);
+    const pos = (lv) => (lv / S.max) * 100;
+    const track = `<div class="lvl-track" aria-label="Level ${L} of ${S.max}"><i style="width:${pos(L)}%"></i>${S.formAt.slice(1).map((m) => `<b class="${L >= m ? "on" : ""}" style="left:${pos(m)}%">${m}</b>`).join("")}</div>`;
+    const next = f < 3 ? `<br>Level ${S.formAt[f + 1]}: <b>${K.forms[f + 1]}</b>. ${K.powers[f + 1]}.` : "";
+    let action;
+    if (info.max) action = `<span class="maxed">Fully grown</span>`;
+    else action = `<div class="cost">${costHtml(info.cost)}</div>` + (info.lock ? `<span class="req">${info.lock}</span>` : "") +
+      `<button data-act="trainSummon:${kind}" ${info.ok ? "" : "disabled"}>Train to level ${L + 1}</button>`;
+    return `<p class="effect"><b>${K.forms[f]}</b> · level ${L} of ${S.max} · ${K.powers[f]}.${next}</p>${track}<footer class="train">${action}</footer>`;
+  }
+
+  // At an outpost or in the camp: Kindle's paths to everywhere else.
+  function travelCards(G) {
+    const lock = DL.Outposts.travelLock(), dests = DL.Outposts.dests();
+    let html = `<article class="card"><header><h3>Kindle's paths</h3><span class="tag">${G.outposts.length} / ${DL.Outposts.max()} outposts</span></header>
+      <p>Your Kindle knows the old paths between the camp and your outposts. Supplies you bring to an outpost go home to the camp's stash.</p>
+      ${lock ? `<p class="effect"><span class="req">${lock}</span></p>` : ""}</article>`;
+    for (const d of dests) {
+      const ok = !lock && d.lit;
+      html += `<article class="card"><header><h3>${d.name}</h3><span class="tag">${d.id === "camp" ? "Home" : `${d.m} m ${d.dir} of camp`}</span></header>
+        <p class="effect">${d.far} m from here${d.lit ? "" : " · its fire is out until dawn"}</p>
+        <footer><button data-act="travel:${d.id}" ${ok ? "" : "disabled"}>Travel</button></footer></article>`;
+    }
+    if (!dests.length) html += `<article class="card"><p>No outposts yet. From Central Flame ${DL.OUTPOST.reqFlame}, stand at the heart of a bloom grove and raise one.</p></article>`;
+    return html;
+  }
 
   // The Bone Hound: won at the Bone Wolf den (src/den.js), one per knight. This card says where the den is and how it's going.
   const houndState = (h) => (h ? (h.down > 0 ? "down" : "up") : DL.Den.carrying() ? "carry" : "none");
@@ -566,13 +631,14 @@
         <div><span class="tag">Ally · Melee</span><h3>${H.name}</h3><span class="motto">It hunts what runs.</span></div></header>
       <p>Five Bone Wolves sleep at their den out in the Mire, by day and by night. Kill all five, then carry one of their carcasses back into the camp and it rises as your own hound. In co-op every knight carries their own.</p>
       <p>It hunts any Drowned that retreats first (Mire Stalkers, anything backing away), then anything that shoots (Tide Archers, Hexbearers), then whatever is nearest. Every bite makes them bleed.</p>
-      <p class="effect">Health ${st.maxHp} · bite ${st.dmg} · bleed ${H.bleedDps}/s, stacking ${H.bleedMax}× · heals in firelight<br>Never dies: beaten down, it gets up again after ${H.downTime} s · one per knight · grows with the Central Flame</p>
+      <p class="effect">Health ${st.maxHp} · bite ${st.dmg} · bleed ${H.bleedDps}/s, stacking ${st.bleedMax}× · heals in firelight<br>Never dies: beaten down, it gets up again after ${st.downTime} s · one per knight · grows with the Central Flame and its training</p>
+      ${summonTrain("hound")}
       <footer>${action}</footer></article>`;
   }
 
   // Derek: a stone golem familiar, one per knight, who walls the Drowned off. He's won in Derek's Hollow.
   function golemCard(G) {
-    const H = DL.GOLEM, mine = DL.Golems.mine(), w = DL.Cave.where(), n = DL.CAVE.waves.length;
+    const H = DL.GOLEM, gs = DL.Summons.golem(), mine = DL.Golems.mine(), w = DL.Cave.where(), n = DL.CAVE.waves.length;
     UI.golemShown = !!mine;
     let action;
     if (G.cave) action = `<span class="req">Fighting beside you in the Hollow</span>`;
@@ -583,14 +649,15 @@
       <header><canvas class="portrait" data-golem="1" width="66" height="52"></canvas>
         <div><span class="tag">Familiar · Defender</span><h3>${H.name}</h3><span class="motto">Stone between you and the dark.</span></div></header>
       <p>A mossy stone golem with a glowing heart who follows you everywhere. When the Drowned close in, he raises a stone wall across their path. Any Drowned near a wall stops chasing you to smash it, and arrows and orbs break on it too.</p>
-      <p class="effect">A wall every ${H.buildCd} s · ${H.hits} hits to break · lasts ${H.life} s · up to ${H.maxWalls} at once<br>Can't be hurt · stays with you for good · one per knight</p>
+      <p class="effect">A wall every ${gs.buildCd.toFixed(1)} s · ${gs.hits} hit${gs.hits > 1 ? "s" : ""} to break · lasts ${gs.life} s · up to ${gs.maxWalls} at once<br>Can't be hurt · stays with you for good · one per knight</p>
       ${how}
+      ${summonTrain("golem")}
       <footer>${action}</footer></article>`;
   }
 
   // Abigail: a soul wraith familiar, one per knight, won by laying soul orbs to rest at the Abyss graves.
   function wraithCard(G) {
-    const A = DL.ABIGAIL, mine = DL.Abigail.mine(), pr = DL.Abigail.progress(), w = DL.Abigail.where(), pct = Math.round(A.buff * 100);
+    const A = DL.ABIGAIL, ws = DL.Summons.wraith(), mine = DL.Abigail.mine(), pr = DL.Abigail.progress(), w = DL.Abigail.where(), pct = Math.round(ws.buff * 100), cpct = Math.round(ws.curse * 100);
     UI.wraithShown = !!mine;
     let action;
     if (mine) action = `<span class="maxed">At your side${mine.buff > 0 ? " · blessing you now" : ""}</span>`;
@@ -601,8 +668,9 @@
       <header><canvas class="portrait" data-wraith="1" width="66" height="52"></canvas>
         <div><span class="tag">Familiar · Ranged · Curse</span><h3>${A.name}</h3><span class="motto">She remembers every soul the dark took.</span></div></header>
       <p>A hooded soul wraith who drifts at your shoulder. She sends homing soul orbs at the Drowned, and any Drowned an orb touches is weakened for good. Every ${A.pulseEvery} seconds she blesses you.</p>
-      <p class="effect">Soul orb ${DL.Abigail.dmg()} damage every ${A.cd} s · weakened Drowned: ${pct}% less damage and speed, ${pct}% more damage taken<br>Blessing every ${A.pulseEvery} s for ${A.buffDur} s: ${pct}% more damage and speed, ${pct}% less damage taken<br>Can't be hurt · stays with you for good · one per knight</p>
+      <p class="effect">Soul orb ${DL.Abigail.dmg()} damage every ${ws.cd.toFixed(1)} s · weakened Drowned: ${cpct}% less damage and speed, ${cpct}% more damage taken<br>${ws.bless ? `Blessing every ${A.pulseEvery} s for ${A.buffDur} s: ${pct}% more damage and speed, ${pct}% less damage taken` : "No blessing yet: she must grow out of a wisp first"}<br>Can't be hurt · stays with you for good · one per knight</p>
       ${how}
+      ${summonTrain("wraith")}
       <footer>${action}</footer></article>`;
   }
 
@@ -714,7 +782,9 @@
     set($("btnAttack"), "hidden", !manual);
     set($("btnMine"), "class", "act small mine" + (manual ? "" : " hidden") + (G.mineTarget ? " ready" : ""));
     document.body.classList.toggle("manual", manual);
-    set($("campBtn"), "hidden", !G.inCamp);
+    const cl = UI.campLabel();
+    set($("campBtn"), "hidden", !cl);
+    if (cl && UI.campShown !== cl) { UI.campShown = cl; $("campBtn").innerHTML = `${cl} <kbd>C</kbd>`; }
     // the Bone Hound card follows the hound rising, going down or getting up while the menu is open
     if (G.state === "camp" && UI.campTab === "kit" && (houndState(DL.Hounds.mine()) !== UI.houndShown || !!DL.Golems.mine() !== UI.golemShown || !!DL.Abigail.mine() !== UI.wraithShown)) UI.renderCamp();
   };

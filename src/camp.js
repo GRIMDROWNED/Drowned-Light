@@ -3,10 +3,20 @@
 "use strict";
 (function (DL) {
   const PI = Math.PI;
-  const R = DL.WALL_R;
+  let R = DL.WALL_R; // the palisade's half-side: Barricade levels 4 and 5 push it out (Camp.sync)
   const GATES = [-PI / 2, 0, PI / 2, PI]; // north, east, south, west
   const GATE_HALF = 24;                    // half the gate opening, in world px
   const Camp = (DL.Camp = { GATES, GATE_HALF });
+
+  // Size the camp for the Barricade level: the walls, the ground inside them, and the deposit range follow.
+  Camp.sync = function (up) {
+    const r = DL.WALL_SIZES[up.stakes] || DL.WALL_SIZES[0];
+    if (r === R) return;
+    R = DL.WALL_R = r;
+    DL.CAMP_RADIUS = R - 30;
+    buildWalls();
+    if (DL.World) DL.World.ground.clear(); // the camp earth reaches out to the new walls
+  };
 
   // The camp is a square of half-side R: its "distance" from the centre is the larger of |x| and |y|.
   Camp.sq = (x, y) => Math.max(Math.abs(x), Math.abs(y));
@@ -38,6 +48,7 @@
 
   let cacheKey = "", cache = null;
   Camp.layout = function (up) {
+    Camp.sync(up);
     const key = JSON.stringify(up);
     if (key === cacheKey) return cache;
     const tier = Camp.tier(up);
@@ -52,6 +63,13 @@
     L.armory = up.armory ? { x: 136, y: 16 } : null;
     L.workbench = up.workbench ? { x: -50, y: 150 } : null;
     L.garden = up.garden ? { x: 66, y: 140 } : null;
+    // the companions' homes and the Abyss trophies take the outer ground, spreading out as the walls do
+    const o = R - 82;
+    L.kennel = up.kennel ? { x: -o, y: -Math.round(R * 0.42) } : null;
+    L.workshop = up.workshop ? { x: o, y: -Math.round(R * 0.42) } : null;
+    L.shrine = up.shrine ? { x: -Math.round(R * 0.52), y: Math.round(R * 0.43) } : null;
+    L.roseheart = up.roseheart ? { x: Math.round(R * 0.6), y: Math.round(R * 0.4) } : null;
+    L.bell = up.bell ? { x: -Math.round(R * 0.42), y: -(R - 58) } : null;
     // watchtowers stand in the corners (the third level fills all four), pylons along the walls by the gates
     const cn = R - 56;
     L.towers = [[-1, -1], [1, -1], [-1, 1], [1, 1]].slice(0, Camp.towerCount(up.tower)).map(([sx, sy]) => ({ x: sx * cn, y: sy * cn }));
@@ -65,6 +83,7 @@
     if (L.forge) L.solids.push({ x: L.forge.x, y: L.forge.y, r: 18 });
     if (L.armory) L.solids.push({ x: L.armory.x, y: L.armory.y, r: 12 });
     if (L.workbench) L.solids.push({ x: L.workbench.x, y: L.workbench.y, r: 13 });
+    for (const k of ["kennel", "workshop", "shrine", "roseheart", "bell"]) if (L[k]) L.solids.push({ x: L[k].x, y: L[k].y, r: k === "bell" ? 12 : 16 });
     cacheKey = key;
     cache = L;
     return L;
@@ -80,11 +99,16 @@
   // wall, from the corners to the gate's edge; a body is pushed off the nearest point of each it touches, so
   // it slides round a corner instead of catching on it.
   const WALLS = [];
-  for (const g of GATES) for (const sgn of [-1, 1]) {
-    WALLS.push([Camp.gatePoint(g, sgn * (GATE_HALF + 7), 0), Camp.gatePoint(g, sgn * R, 0), Math.round(Math.cos(g)), Math.round(Math.sin(g))]);
+  function buildWalls() {
+    WALLS.length = 0;
+    for (const g of GATES) for (const sgn of [-1, 1]) {
+      WALLS.push([Camp.gatePoint(g, sgn * (GATE_HALF + 7), 0), Camp.gatePoint(g, sgn * R, 0), Math.round(Math.cos(g)), Math.round(Math.sin(g))]);
+    }
   }
+  buildWalls();
   Camp.collideWall = function (ent, r, up) {
     if (!Camp.walled(up)) return;
+    Camp.sync(up);
     const thick = 7 + r;
     for (const [a, b, nx, ny] of WALLS) {
       const ex = b.x - a.x, ey = b.y - a.y, k = Math.max(0, Math.min(1, ((ent.x - a.x) * ex + (ent.y - a.y) * ey) / (ex * ex + ey * ey)));
@@ -102,6 +126,7 @@
      line up with the nearest gate first, then walk straight through along its line. */
   Camp.route = function (x, y, tx, ty, up) {
     if (!Camp.walled(up)) return null;
+    Camp.sync(up);
     const inside = Camp.inside(x, y), tInside = Camp.inside(tx, ty);
     if (inside === tInside) return null;
     const g = Camp.nearestGate(x, y);
