@@ -397,7 +397,9 @@
     // he toddles along at his knight's other side from Derek and Abigail, a little ahead, where you can see him
     if (m.state === "cast") return;
     const a = o.angle || 0;
-    const fx = o.x - Math.cos(a + Math.PI / 2) * 34 + Math.cos(a) * 10, fy = o.y - Math.sin(a + Math.PI / 2) * 22 + Math.sin(a) * 8 + 8;
+    // the bigger forms keep further out so they don't hide their knight
+    const sp = [34, 38, 46, 64][DL.Summons.form("fred")];
+    const fx = o.x - Math.cos(a + Math.PI / 2) * sp + Math.cos(a) * 10, fy = o.y - Math.sin(a + Math.PI / 2) * sp * 0.65 + Math.sin(a) * 8 + 8;
     const d = dist(m.x, m.y, fx, fy);
     m.moving = d > (m.moving ? 4 : 14);
     if (!m.moving) return;
@@ -709,7 +711,7 @@
     g.addColorStop(0, `rgba(255,240,200,${a})`); g.addColorStop(0.35, `rgba(${col},${a * 0.7})`); g.addColorStop(1, `rgba(${col},0)`);
     c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2);
   }
-  const DRAWN_GLOW = { 1: { lamp: [17, 13], eye: [3, 26] }, 2: { lamp: [20, 36], eye: [2, 54] } };
+  const DRAWN_GLOW = { 1: { lamp: [17, 13], eye: [3, 26] }, 2: { lamp: [20, 36], eye: [2, 54] }, 3: { lamp: [39, 42], eye: [4, 61] } };
   function figureGlow(c, x, y, f, dir, flip, anim, t, id, col) {
     const P = glowPoints(x, y, f, dir, flip, anim, t, id), fl = 0.8 + 0.2 * Math.sin(t * 7 + id);
     if (drawnKey(f)) {
@@ -724,6 +726,7 @@
       if (!D) return;
       for (const k of [-1, 1]) glow(c, x + k * D.lamp[0] + s * 4, y - D.lamp[1], 10 + f * 2, col, 0.75 * fl);
       if (dir !== "up") for (const ex of s ? [s * (D.eye[0] + 4)] : [-D.eye[0], D.eye[0]]) glow(c, x + ex, y - D.eye[1], 4 + f, AMBER, 0.7);
+      if (f === 3 && dir !== "up") glow(c, x + s * 10, y - D.eye[1] + 4, 14, col, 0.5 * fl); // the furnace in his maw
       return;
     }
     for (const [lx, ly] of P.lamps) glow(c, lx, ly, 9 + f * 2, col, 0.8 * fl);
