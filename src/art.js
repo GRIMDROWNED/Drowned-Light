@@ -454,6 +454,38 @@
       if (lv >= 3) { P.ell(22, 12, 4, 6, "#2aa58c"); P.ell(22, 13, 2.5, 4, "#5af5cd"); P.rect(21, 12, 2, 3, "#e9fff8"); }
     });
     S.shrine1 = shrine(1); S.shrine2 = shrine(2); S.shrine3 = shrine(3);
+    // Toadstool Cottage, levels 1–3: a mossy log sprouting red caps, then a stump house, then a cottage under a giant cap.
+    const capRed = "#a8322a", capDk = "#6e1c18", spot = "#e8d2a8", gill = "#d9c49a", bark = "#5a3e28", barkHi = "#7a5a3c", brass = "#b8862e";
+    const toad = (P, x, y, r) => { P.rect(x - 1, y - r, 2, r, "#e6d8b8"); P.ell(x, y - r, r, r * 0.6, capRed); P.rect(x - r, y - r, r * 2, 1, gill); P.px(x - 1, y - r - 2, spot); };
+    const lamp = (P, x, y) => { P.line([x, y - 3, x, y], 1, brass); P.rect(x - 1, y, 3, 3, brass); P.px(x, y + 1, "#3a2a14"); };
+    const toadstool = (lv) => mk(46, 42, (P) => {
+      P.ell(23, 38, 21, 4, "#2a2018");
+      if (lv === 1) {
+        P.rect(6, 28, 32, 8, bark); P.rect(6, 28, 32, 2, barkHi); P.ell(38, 32, 4, 4.5, barkHi); P.ell(38, 32, 2, 2.5, bark);
+        P.rect(10, 27, 8, 2, C.moss); P.rect(26, 27, 6, 2, C.moss);
+        toad(P, 14, 27, 4); toad(P, 20, 27, 5); toad(P, 30, 27, 3);
+        P.line([4, 37, 4, 18, 8, 16], 1, bark); lamp(P, 8, 19);
+      } else if (lv === 2) {
+        P.rect(12, 14, 22, 23, bark); P.rect(12, 14, 3, 23, barkHi); P.ell(23, 14, 11, 4, barkHi); P.ell(23, 14, 8, 2.5, "#9a7a54");
+        P.ell(23, 30, 4, 4, "#2a1a10"); P.rect(19, 30, 8, 7, "#2a1a10"); P.px(25, 32, brass);
+        P.rect(28, 20, 3, 3, "#ffcf7a");
+        P.ell(12, 22, 4, 2, gill); P.ell(34, 26, 4, 2, gill); P.ell(12, 28, 3, 1.5, gill);
+        toad(P, 8, 37, 3); toad(P, 37, 37, 4); toad(P, 41, 37, 2);
+        lamp(P, 13, 16); lamp(P, 33, 16);
+      } else {
+        P.rect(12, 22, 22, 15, "#cdb08a"); P.rect(12, 22, 3, 15, "#e0c8a0");
+        P.ell(23, 31, 4, 4, "#2a1a10"); P.rect(19, 31, 8, 6, "#2a1a10"); P.rect(19, 30, 8, 3, "#7a2420");
+        P.rect(28, 25, 3, 3, "#ffcf7a");
+        const dome = []; for (let i = 0; i <= 12; i++) { const a = (i / 12) * Math.PI; dome.push(23 - 22 * Math.cos(a), 17 - 13 * Math.sin(a)); }
+        P.poly(dome, capRed); P.ell(23, 17, 22, 3, gill);
+        P.rect(14, 5, 6, 2, capDk);
+        for (const [sx, sy, r] of [[10, 10, 2.5], [23, 7, 3], [34, 11, 2.5], [17, 12, 1.5], [29, 6, 1.5]]) P.ell(sx, sy, r, r * 0.8, spot);
+        for (const x of [5, 12, 19, 27, 34, 41]) P.rect(x, 18, 1, 2 + (x % 3), "#e6dcc0");
+        lamp(P, 4, 20); lamp(P, 16, 21); lamp(P, 30, 21); lamp(P, 42, 20);
+        toad(P, 7, 38, 3); toad(P, 39, 38, 3); toad(P, 34, 39, 2);
+      }
+    });
+    S.toadstool1 = toadstool(1); S.toadstool2 = toadstool(2); S.toadstool3 = toadstool(3);
     // The Starved Bell Tower: a frame of black timber with the Bell's clapper of vertebrae hung in it.
     S.bellTower = mk(36, 66, (P) => {
       P.ell(18, 63, 16, 3, "#2a2018");

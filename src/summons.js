@@ -10,7 +10,7 @@
   const say = (m, k) => DL.UI && DL.UI.toast(m, k);
   const sfx = (n) => DL.Sound.play(n);
   const Summons = (DL.Summons = {});
-  Summons.KINDS = ["hound", "golem", "wraith"];
+  Summons.KINDS = ["hound", "golem", "wraith", "fred"];
 
   Summons.level = (kind) => Math.max(0, Math.min(S.max, (G.save.summons && G.save.summons[kind]) || 0));
   Summons.form = (kind) => { const L = Summons.level(kind); return L >= 15 ? 3 : L >= 10 ? 2 : L >= 5 ? 1 : 0; };
@@ -19,6 +19,7 @@
   Summons.anyHas = function (kind) {
     if (kind === "hound") return !!G.save.hound || G.hounds.length > 0;
     if (kind === "golem") return !!G.save.golem || G.golems.some((m) => !m.trial);
+    if (kind === "fred") return !!G.save.fred || G.freds.length > 0;
     return !!G.save.abigail || G.wraiths.length > 0;
   };
   // The highest level its home allows.
@@ -66,6 +67,60 @@
     };
   };
 
+  /* Fred: his glob from 70% to 160% and quicker, his glowcaps a little stronger with each level; the rest comes
+     from the roads chosen at levels 5, 10 and 15 (DL.FRED.roads): A, the Mender, or B, the Blight. */
+  Summons.fredPath = () => (G.save.summons && G.save.summons.fredPath) || [null, null, null];
+  Summons.fred = function () {
+    const L = Summons.level("fred"), F = DL.FRED, p = Summons.fredPath(), bloom = p[0] === "A";
+    return {
+      mult: 0.7 + 0.06 * L,
+      cd: Math.max(1.4, F.cd - 0.04 * L),
+      capEvery: bloom ? F.bloomEvery : F.capEvery,
+      capHeal: (bloom ? F.bloomHeal : F.capHeal) * (1 + 0.03 * L),
+      cleanse: bloom ? F.bloomCleanse : 0,
+      cloud: p[0] === "B",
+      ring: p[1] === "A",
+      mind: p[1] === "B",
+      rebloom: p[2] === "A",
+      storm: p[2] === "B",
+    };
+  };
+  // Choosing a road ("0-A": level 5, the Mender's): once he has reached that level, and it isn't chosen yet.
+  Summons.choose = function (arg) {
+    if (G.isGuest()) { DL.Net.event({ t: "fredPath", arg }); return true; }
+    return Summons.chooseHost(arg);
+  };
+  Summons.chooseHost = function (arg) {
+    const [i, v] = String(arg).split("-"), n = +i, p = Summons.fredPath();
+    if (!(n >= 0 && n < 3) || (v !== "A" && v !== "B") || p[n] || Summons.level("fred") < S.formAt[n + 1]) { sfx("deny"); return false; }
+    p[n] = v;
+    G.save.summons.fredPath = p;
+    G.persist();
+    sfx("milestone");
+    say(`Fred takes the road of the ${v === "A" ? "Mender" : "Blight"}: ${DL.FRED.roads[n][v === "A" ? 0 : 1].name}.`, "good");
+    Summons.changed("fred");
+    return true;
+  };
+  // Choosing again, at a level 3 Toadstool Cottage: every road is forgotten, to be chosen anew.
+  Summons.repickLock = function () {
+    if ((G.save.up.toadstool || 0) < 3) return "Needs Toadstool Cottage 3";
+    if (!Summons.fredPath().some((v) => v)) return "No road chosen yet";
+    return null;
+  };
+  Summons.repick = function () {
+    if (G.isGuest()) { DL.Net.event({ t: "fredRepick" }); return true; }
+    return Summons.repickHost();
+  };
+  Summons.repickHost = function () {
+    if (Summons.repickLock() || !G.canAfford(DL.FRED.repick)) { sfx("deny"); return false; }
+    G.pay(DL.FRED.repick);
+    G.save.summons.fredPath = [null, null, null];
+    G.persist();
+    sfx("build");
+    say("Fred forgets his roads. Choose them again.", "good");
+    return true;
+  };
+
   /* ---------------- how each form looks ---------------- */
   // Until each form's drawing is in: the usual sprite scaled, tinted and glowing. `key` is the sheet to draw.
   const LOOKS = {
@@ -87,6 +142,8 @@
       { scale: 1.1, flash: 0.2, flashColor: "#8a5cff", ember: "170,130,255" },   // Mourning Abigail
       { scale: 1.22, flash: 0.18, flashColor: "#e6f7ff", ember: "210,250,255" }, // Queen of Sorrows
     ],
+    // Fred is drawn in code for now (src/fred.js); only the burst of light at a new form uses this
+    fred: [{ ember: "255,180,80" }, { ember: "255,180,80" }, { ember: "255,180,80" }, { ember: "255,180,80" }],
   };
   const BASE = { hound: "boneHound", golem: "derek", wraith: "abigail" };
   Summons.look = function (kind) {
@@ -105,6 +162,7 @@
     const cost = DL.summonCost(L), home = DL.UPGRADES.find((u) => u.id === S[kind].home);
     let lock = null;
     if (!Summons.anyHas(kind)) lock = `Win ${S[kind].name} first`;
+    else if (kind === "fred" && S.formAt.slice(1).some((m, i) => L >= m && !Summons.fredPath()[i])) lock = "Choose Fred's road first";
     else if (L + 1 > cap) lock = `Needs ${home.name} ${Math.ceil((L + 1) / S.perHome)}`;
     return { L, cost, lock, ok: !lock && G.canAfford(cost) };
   };
@@ -129,7 +187,7 @@
   };
   // A new form: a burst of light round every companion of that kind.
   Summons.changed = function (kind) {
-    const list = kind === "hound" ? G.hounds : kind === "golem" ? G.golems : G.wraiths;
+    const list = kind === "hound" ? G.hounds : kind === "golem" ? G.golems : kind === "fred" ? G.freds : G.wraiths;
     const col = (LOOKS[kind][Summons.form(kind)].ember) || "255,230,170";
     for (const m of list) for (let i = 0; i < 18; i++) G.spark(m.x, m.y - 20, col, 110);
   };

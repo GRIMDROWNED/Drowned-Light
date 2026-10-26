@@ -21,7 +21,7 @@
   G.defaultSave = () => ({
     v: 1, day: 1, nights: 0, deepest: 0, muted: false,
     stash: emptyRes(),
-    up: { flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, bell: 0, roseheart: 0 },
+    up: { flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, bell: 0, roseheart: 0 },
     kit: "lanternBlade",
     kitLevel: 1,
     difficulty: "dark",
@@ -40,12 +40,16 @@
     // Abigail, the soul wraith: soul orbs picked up (by index) and carried, laid to rest at the Abyss graves; 1 once she's yours
     souls: { found: false, taken: [], held: 0, given: 0 },
     abigail: 0,
+    // Fred, the mushroom familiar: 1 once he's yours; his fairy ring in the Reaches: found yet, and the night it wilted (-1: never)
+    fred: 0,
+    fredRing: { found: false, fail: -1 },
     // the Starved Bell that roams the Abyss: where on its ring it lies (radians), and the day it was slain (-1: alive)
     bell: { a: null, dead: -1 },
     // the Deadly Rose in her Abyss garden: found yet, and the day she was slain (-1: alive)
     rose: { found: false, dead: -1 },
     // companion levels (src/summons.js), trained at their homes in the camp; the same for every knight's companion in this world
-    summons: { hound: 0, golem: 0, wraith: 0 },
+    // (Fred's roads: the A or B chosen at levels 5, 10 and 15, null until chosen)
+    summons: { hound: 0, golem: 0, wraith: 0, fred: 0, fredPath: [null, null, null] },
     // Abyss bosses slain at least once: their trophies can be built in the camp
     trophies: { bell: 0, rose: 0 },
     // outposts raised in bloom groves (src/outposts.js): [grove cell x, grove cell y, x, y]
@@ -221,6 +225,7 @@
     DL.Cave.reset();
     DL.Kindle.reset();
     DL.Abigail.reset();
+    DL.Fred.reset();
     DL.Bell.reset();
     DL.Rose.reset();
     G.state = "play";
@@ -292,6 +297,7 @@
     DL.Golems.update(dt);
     DL.Kindle.update(dt);
     DL.Abigail.update(dt);
+    DL.Fred.update(dt);
     updateDefenses(dt);
     DL.Trophies.update(dt);
     DL.Outposts.update(dt);
@@ -371,6 +377,7 @@
     DL.Rose.dawn();
     DL.Siege.dawn();
     DL.Outposts.dawn();
+    DL.Fred.dawn();
     if (G.rootEvent) {
       const o = G.rootEvent.obj;
       if (!o.dead) {
@@ -460,6 +467,7 @@
     for (const m of G.golems) L.push({ x: m.x, y: m.y - 12, r: 32, s: 0.4, col: "80,230,240", a: 0.6 });
     DL.Kindle.lights(L);
     DL.Abigail.lights(L);
+    DL.Fred.lights(L);
     DL.Outposts.lights(L);
     DL.Trophies.lights(L);
     DL.Rose.lights(L);
@@ -812,6 +820,7 @@
       }
       if (dist(p.x, p.y, ev.obj.x, ev.obj.y) < 650) return; // the knight at the root gets waves, not roamers
     }
+    if (DL.Fred.busy(p)) return; // and the knights defending Fred's fairy ring get its waves (src/fred.js)
 
     G.spawnT -= dt;
     if (G.spawnT > 0) return;
@@ -882,13 +891,18 @@
   // Each Drowned hunts whichever knight is nearest (host or a co-op friend), or a Bone Hound close by.
   G.knights = () => [...(G.player.downT > 0 ? [] : [G.player]), ...G.allies.filter((a) => !a.down)];
   function targetFor(e) {
+    // turned by Fred's Mindrot: it fights the other Drowned (src/fred.js)
+    if (e.mind > 0) { const v = DL.Fred.prey(e); if (v) return v; }
     // a knight down in the Hollow is left alone
     let best = G.player, bd = G.player.downT > 0 ? 1e9 : dist(e.x, e.y, G.player.x, G.player.y);
     for (const a of G.allies) if (!a.down) { const d = dist(e.x, e.y, a.x, a.y); if (d < bd) { bd = d; best = a; } }
-    return DL.Hounds.nearest(e.x, e.y, bd) || best;
+    // little Fred in his fairy ring comes first, and a turned Drowned close by is fought back
+    return DL.Fred.decoy(e, DL.Hounds.nearest(e.x, e.y, bd) || best);
   }
   function hurtKnight(k, dmg, ang) {
-    if (k.hound) DL.Hounds.hurt(k, dmg, ang);
+    if (k.def) hitEnemy(k, dmg, ang, 80, 0, true); // one Drowned striking another (Fred's Mindrot)
+    else if (k.fredTrial) DL.Fred.hurtTrial(dmg);
+    else if (k.hound) DL.Hounds.hurt(k, dmg, ang);
     else if (k !== G.player) DL.Net.hurtAlly(k, dmg, ang);
     else hurtPlayer(dmg, ang);
   }
@@ -933,6 +947,7 @@
       // Choose what to chase.
       let goal = null;
       DL.Golems.lure(e);
+      if (e.mind > 0) e.goal = null; // turned: no more going for the light
       if (e.goal && e.goal.stoneWall && goalValid(e.goal)) {
         goal = e.goal; // one of Derek's walls: nothing else matters until it's down
       } else if (e.def.targetsLight) {
@@ -950,12 +965,24 @@
 
       e.cd -= dt;
       e.slow = Math.max(0, e.slow - dt);
+      if (e.spore > 0) e.spore -= dt; // Fred's spores
+      if (e.mind > 0) e.mind -= dt;
       e.rallied = Math.max(0, (e.rallied || 0) - dt);
       behave(e, dt, p, dp);
       if (e.stun > 0) {
         e.stun -= dt; // staggered: no moving, no attacking
         e.state = "move";
         e.moving = false;
+        if (e.stun <= 0) e.sleep = false;
+      } else if (e.conf > 0) {
+        // befuddled by Fred's spores: it forgets you and stumbles about
+        e.conf -= dt;
+        e.state = "move";
+        e.wanderA = (e.wanderA == null ? rand(0, TAU) : e.wanderA) + rand(-3, 3) * dt;
+        e.x += Math.cos(e.wanderA) * e.speed * 0.45 * dt;
+        e.y += Math.sin(e.wanderA) * e.speed * 0.45 * dt;
+        e.angle = e.wanderA;
+        e.moving = true;
       } else if (e.def.bell && DL.Bell.busy(e, dt, p, dp)) {
         // the Starved Bell rearing to swallow, lunging, or eating
       } else if (e.def.rose && DL.Rose.busy(e, dt, p)) {
@@ -982,7 +1009,7 @@
         else if (d < reach * 0.8) want = 0;
         if (e.retreatT > 0) { e.retreatT -= dt; want = -1; } // Mire Stalker falls back after a strike, then comes again
         e.backT = want === -1 ? 1.5 : Math.max(0, (e.backT || 0) - dt); // backing away lately: the Bone Hound runs these down first
-        const spd = e.speed * (humanLightAt(e.x, e.y) ? 0.72 : 1) * (e.slow > 0 ? 0.6 : 1) * (e.rallied > 0 ? 1.2 : 1);
+        const spd = e.speed * (humanLightAt(e.x, e.y) ? 0.72 : 1) * (e.slow > 0 ? 0.6 : 1) * (e.spore > 0 ? e.sporeK : 1) * (e.rallied > 0 ? 1.2 : 1);
         // Walls in the way: head for the nearest gate first.
         const wp = want === 1 ? DL.Camp.route(e.x, e.y, tx, ty, G.save.up) : null;
         let mx = wp ? wp.x - e.x : dx, my = wp ? wp.y - e.y : dy;
@@ -1147,6 +1174,12 @@
     if (e.def.rose) return DL.Rose.strike(e);
     const p = e.tgt || G.player;
     const dmg = e.dmg * (e.rallied > 0 ? 1.2 : 1);
+    if (p.def) {
+      // a Drowned turned by Fred's Mindrot, or one fighting it back: blow for blow, whatever it usually does
+      G.effects.push({ type: "slash", x: e.x, y: e.y - 18, ang: e.aim, arc: 1.9, r: e.def.range + 8, t: 0, max: 0.18, col: "150,220,90", w: 4 + e.def.scale * 3 });
+      if (!p.removed && dist(e.x, e.y, p.x, p.y) < e.def.range + p.def.radius + 16) hitEnemy(p, dmg, e.aim, 80, 0, true);
+      return;
+    }
     if (e.def.caster && !e.aimGoal) {
       // Marsh Hexbearer: every third cast pools corruption under the knight, otherwise a slow orb
       if ((e.casts = (e.casts || 0) + 1) % 3 === 0) G.hexPools.push({ x: p.x, y: p.y, r: 46, t: 0, life: 6 });
@@ -1244,7 +1277,7 @@
     G.camera.shake = 7;
     sfx("hurt");
     text(p.x, p.y - 70, "-" + Math.round(dmg), "#ff6a6a");
-    if (p.hp <= 0) die("wounds");
+    if (p.hp <= 0 && !DL.Fred.rebloom(p)) die("wounds"); // Fred's Second Bloom stands you back up once a night
   }
 
   function hitEnemy(e, dmg, ang, kb, burn, remote) {
@@ -1271,6 +1304,7 @@
     e.hp -= d;
     e.flash = 0.12;
     if (e.dormant) e.dormant = false;
+    if (e.sleep) { e.sleep = false; e.stun = 0; } // a blow wakes a Drowned Fred's spores put to sleep
     const m = e.def.mass;
     e.kx += (Math.cos(ang) * kb) / m;
     e.ky += (Math.sin(ang) * kb) / m;
@@ -1403,12 +1437,14 @@
           const h = a ? null : G.hounds.find((k) => !(k.down > 0) && dist(b.x, b.y, k.x, k.y - 14) < 13);
           if (a) { DL.Net.hurtAlly(a, b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
           else if (h) { DL.Hounds.hurt(h, b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
+          else if (DL.Fred.shot(b)) b.life = 0; // little Fred in his fairy ring
         }
       } else {
         for (const e of G.enemies) {
           if (e.rise > 0 || e.removed || (b.hit && b.hit.has(e))) continue;
           if (dist(b.x, b.y, e.x, e.y - 20 * e.def.scale) < e.def.radius + (b.r || 8)) {
             if (b.soul) DL.Abigail.curse(e); // first, so this orb already bites harder
+            if (b.spore) DL.Fred.sporeHit(e, b);
             hitEnemy(e, b.dmg * DL.Kits.farShotMult(b), Math.atan2(b.vy, b.vx), b.soul ? 20 : 60);
             if (b.flare) flare(b.x, b.y, b.dmg);
             if (b.hit) b.hit.add(e);
