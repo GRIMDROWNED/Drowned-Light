@@ -56,6 +56,8 @@ GRIDS = {
     'bone-hound-f3/poses-b.png': (3, 2, POSES_B),
     'derek/poses-a.png': (3, 2, POSES_A),
     'derek/poses-b.png': (3, 2, POSES_B),
+    'derek-f0/poses-a.png': (3, 2, POSES_A),
+    'derek-f0/poses-b.png': (3, 2, POSES_B),
     'kindle/poses-a.png': (3, 2, POSES_A),
     'kindle/poses-b.png': (3, 2, POSES_B),
     'abigail/poses-a.png': (3, 2, POSES_A),
@@ -77,6 +79,8 @@ CELL_SCALE.update({'bone-hound-f2/' + n: 1.27 for n in POSES_A[3:]})
 CELL_SCALE.update({'bone-hound-f2/' + n: 1.17 for n in POSES_B})
 CELL_SCALE.update({'bone-hound-f3/' + n: 1.3 for n in POSES_A[3:]})
 CELL_SCALE.update({'bone-hound-f3/' + n: 1.18 for n in POSES_B})
+# Pebble Derek's second sheet came out bigger than his first
+CELL_SCALE.update({'derek-f0/' + n: 0.88 for n in POSES_B})
 
 # Cells redrawn on their own after a sheet came back: cell -> (redrawn image, cell whose figure height it takes).
 # The redraw is shrunk to that height before it is cut, so it matches the rest of its sheet.
@@ -91,6 +95,7 @@ WARG_H = 152  # the Grave Warg (last form), cut at res 4: drawn 38 px tall with 
 PUP_H = 88  # the Bone Pup (the hound's first form, src/summons.js), cut at res 4: drawn 22 px tall, about three quarters of the hound
 DEREK_H = 60  # cut at 4 file px per art pixel (res: 4): drawn 30 px tall, about 3/8 of the knight
 DEREK_SIDE_H = 62
+PEBBLE_H = 44  # Pebble Derek (his first form, src/summons.js), res 4: about three quarters of Derek
 ABIGAIL_H = 112  # cut at res 4: drawn 28 px tall, hem to hood, about two thirds of the knight
 KINDLE_H = 64
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
@@ -166,6 +171,11 @@ SETS = {
         'derek/04_walk.png': 'side/walk1', 'derek/05_walk.png': 'side/walk2', 'derek/06_walk.png': 'side/walk3', 'derek/07_walk.png': 'side/walk4',
         'derek/08_attackA.png': 'attackA', 'derek/09_attackB.png': 'attackB', 'derek/10_attackC.png': 'attackC',
         'derek/11_hurt.png': 'side/castUp', 'derek/12_death.png': 'side/castSlam'}),
+    'derek-f0': ('derek-f0', 'derek-f0/01_front.png', PEBBLE_H, 1, {
+        'derek-f0/01_front.png': 'front', 'derek-f0/02_back.png': 'back', 'derek-f0/03_right.png': 'right',
+        'derek-f0/04_walk.png': 'side/walk1', 'derek-f0/05_walk.png': 'side/walk2', 'derek-f0/06_walk.png': 'side/walk3', 'derek-f0/07_walk.png': 'side/walk4',
+        'derek-f0/08_attackA.png': 'attackA', 'derek-f0/09_attackB.png': 'attackB', 'derek-f0/10_attackC.png': 'attackC',
+        'derek-f0/11_hurt.png': 'side/castUp', 'derek-f0/12_death.png': 'side/castSlam'}),
     # Kindle the walking lantern: his sheets put the broken lantern (lying on its side), a pour (refilling a
     # lantern) and a point (leading the way) where the 12-pose prompt has its attacks, and a crouch and a hop
     # where it has hurt and death.
@@ -284,6 +294,12 @@ SHEETS = {
         ('derek/walk-side-4.png', 4, 1, DEREK_SIDE_H, 'side/walk'),
         ('derek/walk-front-4.png', 4, 1, DEREK_H, 'walkF'),
         ('derek/walk-back-4.png', 4, 1, DEREK_H, 'walkB'),
+    ],
+    # his front and back walks were drawn at other scales than his poses: sized by the width of his body
+    'derek-f0': [
+        ('derek-f0/walk-side-4.png', 4, 1, 45, 'side/walk'),
+        ('derek-f0/walk-front.png', 4, 1, 43, 'walkF'),
+        ('derek-f0/walk-back.png', 4, 1, 42, 'walkB'),
     ],
     'abigail': [
         ('abigail/walk-side-4.png', 4, 1, ABIGAIL_H, 'side/walk'),

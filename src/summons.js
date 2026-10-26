@@ -93,7 +93,8 @@
     const f = Summons.form(kind), key = BASE[kind] + "_f" + f;
     // Robert's drawing of this form, once it's in, replaces the stand-in (drawn at its own size, no tint)
     const sh = DL.Art.sheets[key];
-    if (sh && !sh.down.idle[0].blank && !sh.down.walk[0].blank) return { key, scale: 1, drawn: true, ember: LOOKS[kind][f].ember };
+    // `size`: how big the form stands next to the usual sprite, for things placed on it (Derek's heart glow)
+    if (sh && !sh.down.idle[0].blank && !sh.down.walk[0].blank) return { key, scale: 1, size: LOOKS[kind][f].scale, drawn: true, ember: LOOKS[kind][f].ember };
     return Object.assign({ key: BASE[kind] }, LOOKS[kind][f]);
   };
 

@@ -105,6 +105,8 @@
     // the Grave Warg (its last form), res 4: 38 px tall with its horns and ghost-fire
     Object.assign(walking("boneHound_f3", [123, 151], [63, 154], [55, 154], 4), { path: "assets/sprites/bone-hound-f3/", keys: { boneHound_f3: [0, false] } }),
     derek(),
+    // his first form, Pebble Derek (src/summons.js): about three quarters of his size
+    derek("derek_f0", "derek-f0", [22, 48], [27, 45], [28, 44]),
     kindle(),
     abigail(),
     bell(),
@@ -114,8 +116,8 @@
 
   // Derek the golem familiar, cut at res 4, 30 px tall (about 3/8 of the knight). His cast is drawn
   // facing you (fists up, slam, rise) and from the side; from behind he just stamps. He is never hurt.
-  function derek() {
-    const set = Object.assign(walking("derek", [33, 67], [33, 62], [35, 66], 4), { path: "assets/sprites/derek/", keys: { derek: [0, false] } });
+  function derek(key = "derek", folder = "derek", side = [33, 67], front = [33, 62], back = [35, 66]) {
+    const set = Object.assign(walking(key, side, front, back, 4), { path: "assets/sprites/" + folder + "/", keys: { [key]: [0, false] } });
     set.views.side.attack = ["side/castUp", "side/castSlam", "side/castSlam"];
     set.views.up.attack = ["back", "back@bob", "back"];
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]]) Object.assign(set.views[dir], { hurt: [p], death: [p, p, p + "@fall"] });
