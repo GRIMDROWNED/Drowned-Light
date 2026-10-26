@@ -115,6 +115,8 @@
     abigail(),
     // Mourning Abigail (her third form): a tenth taller, in violet mourning rags
     abigail("abigail_f2", "abigail-f2", [98, 136], [78, 149], [83, 152]),
+    // Abigail, Queen of Sorrows (her last form): a fifth taller, crowned in pale bone
+    abigail("abigail_f3", "abigail-f3", [106, 146], [110, 171], [112, 168]),
     bell(),
     rose(),
     colossus(),
