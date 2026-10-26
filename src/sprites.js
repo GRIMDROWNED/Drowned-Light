@@ -107,6 +107,8 @@
     derek(),
     // his first form, Pebble Derek (src/summons.js): about three quarters of his size
     derek("derek_f0", "derek-f0", [22, 48], [27, 45], [28, 44]),
+    // Crystal Derek (his third form): a seventh bigger, crystals grown out of him
+    derek("derek_f2", "derek-f2", [43, 84], [42, 74], [39, 71]),
     kindle(),
     abigail(),
     bell(),
