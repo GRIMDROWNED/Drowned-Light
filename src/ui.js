@@ -414,6 +414,11 @@
   };
 
   // Kit portraits: the chosen kit walks; the others stand.
+  // A locked familiar's portrait: the drawing filled in as a dark shape.
+  function silhouette(cv) {
+    const g = cv.getContext("2d");
+    g.save(); g.globalCompositeOperation = "source-atop"; g.fillStyle = "#03070a"; g.fillRect(0, 0, cv.width, cv.height); g.restore();
+  }
   UI.drawPortraits = function (t) {
     for (const cv of document.querySelectorAll("canvas[data-kit]")) {
       const g = cv.getContext("2d"), id = cv.dataset.kit, on = UI.setup.kit === id || cv.dataset.still;
@@ -452,6 +457,7 @@
       g.imageSmoothingEnabled = false;
       DL.Art.drawUnit(g, "derek", "idle", Math.floor(t * 1.6), Math.PI / 2, cv.width / 2, cv.height - 4, 1.5); // he's small: drawn big here
     }
+    for (const cv of document.querySelectorAll("canvas[data-locked]")) silhouette(cv);
   };
 
   /* ---------------- camp menu ---------------- */
@@ -502,8 +508,10 @@
       ` · ${DL.Siege.on ? "GREAT SIEGE" : siegeIn === 0 ? "Great Siege tonight" : `Great Siege in ${siegeIn} night${siegeIn > 1 ? "s" : ""}`}`;
     let html = "";
     if (UI.campTab === "build") {
+      let hidden = 0;
       for (const u of DL.UPGRADES) {
         const lvl = s.up[u.id], max = lvl >= u.max;
+        if (!lvl && secret(u)) { hidden++; continue; } // won from a boss or a familiar: kept a surprise until then
         const pips = Array.from({ length: u.max }, (_, i) => `<i class="${i < lvl ? "on" : ""}"></i>`).join("");
         let action = "";
         if (max) action = `<span class="maxed">Complete</span>`;
@@ -521,6 +529,8 @@
           <p class="effect">Now: ${u.effect(lvl)}${max ? "" : `<br>Next: ${u.effect(lvl + 1)}`}</p>
           <footer>${action}</footer></article>`;
       }
+      if (hidden) html += `<article class="card locked-card"><header><h3>???</h3><span class="tag">Undiscovered</span></header>
+        <p>Not everything here can be built with wood and stone. ${hidden} more ${hidden > 1 ? "are" : "is"} won out in the dark, from what hunts there and from what waits to be found.</p></article>`;
     } else if (UI.campTab === "travel") {
       html += travelCards(G);
     } else if (UI.campTab === "kit") {
@@ -580,20 +590,42 @@
           <li>Your <b>lantern oil</b> halves corruption in the dark until it runs dry.</li>
           <li><b>Amethyst</b> deposits glow purple in the Drowned Reaches and the Abyss, farther out than iron. They stay day and night and regrow at dawn.</li>
           <li>Defend a <b>Mother Root</b> until dawn for a rich reward.</li>
-          <li>Bone Wolves den in the Mire, to the ${DL.Den.direction()}. Break the pack and carry a carcass home: it rises as your <b>Bone Hound</b>.</li>
+          <li>${owns("hound") ? `Your <b>Bone Hound</b> rose from the pack that denned in the Mire, to the ${DL.Den.direction()}.` : `Bone Wolves den in the Mire, to the ${DL.Den.direction()}. Break the pack and carry a carcass home, and see what rises.`}</li>
           <li>${DL.Kindle.guideLine()}</li>
           <li>${DL.Abigail.guideLine()}</li>
           <li>${DL.Fred.guideLine()}</li>
           <li>${DL.Rose.guideLine()}</li>
           <li><b>Black Pearls</b> are found only in the Abyss: in clams half sunk in its mud, now and then on its Drowned, and on its great bosses. The last levels of the camp need them.</li>
-          <li>${DL.Siege.line()} A Bell Tower, built from the Starved Bell's clapper, warns of every wave.</li>
-          <li>From Central Flame ${DL.OUTPOST.reqFlame}, stand at the heart of a bloom grove to raise an <b>outpost</b>. Supplies brought there go home, and with your Kindle lit you can travel between outposts and the camp.</li>
+          <li>${DL.Siege.line()}${s.trophies.bell ? " Your Bell Tower, hung with the Starved Bell's clapper, warns of every wave." : ""}</li>
+          <li>From Central Flame ${DL.OUTPOST.reqFlame}, stand at the heart of a bloom grove to raise an <b>outpost</b>. Supplies brought there go home${DL.Kindle.lit() ? ", and with your Kindle lit you can travel between outposts and the camp" : ". Something lost in the Mire still remembers the old paths between them"}.</li>
           <li>Fall, and your <b>drowned self</b> keeps your supplies. Slay it to get them back.</li>
         </ul></article>`;
     }
     $("campBody").innerHTML = html;
     UI.drawPortraits(0);
   };
+
+  // Whether this knight has won a familiar (each knight wins their own; a guest's come from their profile).
+  function owns(kind) {
+    const G = DL.Game;
+    if (kind === "hound") return G.isGuest() ? DL.Net.hasHound() : !!G.save.hound;
+    if (kind === "golem") return G.isGuest() ? !!DL.Net.profile().golem : !!G.save.golem;
+    if (kind === "wraith") return DL.Abigail.won();
+    if (kind === "fred") return DL.Fred.won();
+    return true;
+  }
+  UI.owns = owns;
+  // A building won from a boss (a trophy) or for a familiar (its home), not yet earned in this world.
+  const secret = (u) => (u.trophy && !DL.Game.save.trophies[u.trophy]) || (u.needs && !DL.Summons.anyHas(u.needs));
+  /* A familiar not yet won: who it is stays a secret. Its portrait is a dark shape, and the card only says
+     where to look and how the hunt is going (`action`). */
+  function lockedCard(data, hint, action) {
+    return `<article class="card hound-card locked-card">
+      <header><canvas class="portrait" ${data} data-locked="1" width="66" height="52"></canvas>
+        <div><span class="tag">Familiar · Undiscovered</span><h3>???</h3><span class="motto">Something out there could be yours.</span></div></header>
+      <p>${hint}</p>
+      <footer>${action}</footer></article>`;
+  }
 
   /* A companion's level (src/summons.js): its form, a track to 15 with the forms marked, what the next form
      brings, and the training button. Shown on its card once anyone in this world has won it. */
@@ -614,8 +646,9 @@
   // At an outpost or in the camp: Kindle's paths to everywhere else.
   function travelCards(G) {
     const lock = DL.Outposts.travelLock(), dests = DL.Outposts.dests();
-    let html = `<article class="card"><header><h3>Kindle's paths</h3><span class="tag">${G.outposts.length} / ${DL.Outposts.max()} outposts</span></header>
-      <p>Your Kindle knows the old paths between the camp and your outposts. Supplies you bring to an outpost go home to the camp's stash.</p>
+    const kin = DL.Kindle.lit();
+    let html = `<article class="card"><header><h3>${kin ? "Kindle's paths" : "The old paths"}</h3><span class="tag">${G.outposts.length} / ${DL.Outposts.max()} outposts</span></header>
+      <p>${kin ? "Your Kindle knows the old paths between the camp and your outposts." : "Old paths run between the camp and your outposts, if you had a guide."} Supplies you bring to an outpost go home to the camp's stash.</p>
       ${lock ? `<p class="effect"><span class="req">${lock}</span></p>` : ""}</article>`;
     for (const d of dests) {
       const ok = !lock && d.lit;
@@ -638,6 +671,7 @@
     else if (DL.Den.carrying()) action = `<span class="req">You carry a carcass: bring it into the camp</span>`;
     else if (den.cleared && den.bodies.length) action = `<span class="req">The pack is broken: ${den.bodies.length} carcass${den.bodies.length > 1 ? "es lie" : " lies"} at the den, to the ${DL.Den.direction()}</span>`;
     else action = `<span class="req">Hunt the pack: the den lies in the Mire, to the ${DL.Den.direction()} of the camp</span>`;
+    if (!owns("hound")) return lockedCard(`data-hound="1"`, "Five things sleep at a den of bones out in the Mire, by day and by night. Break the pack, then carry what's left of one back into the camp. In co-op every knight carries their own.", action);
     return `<article class="card hound-card">
       <header><canvas class="portrait" data-hound="1" width="66" height="52"></canvas>
         <div><span class="tag">Ally · Melee</span><h3>${H.name}</h3><span class="motto">It hunts what runs.</span></div></header>
@@ -657,6 +691,7 @@
     else if (mine && !mine.trial) action = `<span class="maxed">At your side</span>`;
     else action = `<span class="req">${DL.Cave.sealed() ? "The Hollow is sealed until tomorrow night" : `The Hollow lies ${w.m} m ${w.dir} of camp · its stones part at night`}</span>`;
     const how = mine && !mine.trial ? "" : `<p class="effect"><b>Win him in Derek's Hollow.</b> A cave mouth in the Mire, ${w.m} m ${w.dir} of camp. Walk in at night and Derek wakes beside you: hold out together through ${n} waves of the Drowned, each bringing a kind you haven't faced yet. Clear them all and he's yours for good. Fall, and the Hollow seals until the next night. With friends, everyone is pulled in, and everyone gets their own Derek.</p>`;
+    if (!owns("golem")) return lockedCard(`data-golem="1"`, `A cave mouth in the Mire, ${w.m} m ${w.dir} of camp, whose stones part only at night. Something sleeps in there. Hold out through ${n} waves of the Drowned beside it and it's yours. Fall, and the cave seals until the next night.`, action);
     return `<article class="card hound-card">
       <header><canvas class="portrait" data-golem="1" width="66" height="52"></canvas>
         <div><span class="tag">Familiar · Defender</span><h3>${H.name}</h3><span class="motto">Stone between you and the dark.</span></div></header>
@@ -676,6 +711,7 @@
     else if (pr.held + pr.given >= A.need) action = `<span class="req">You carry enough souls: take them to the graves${pr.found ? `, ${w.m} m ${w.dir}` : " in the Abyss"}</span>`;
     else action = `<span class="req">Soul orbs ${pr.given} laid to rest · ${pr.held} carried · ${A.need} needed</span>`;
     const how = mine ? "" : `<p class="effect"><b>Win her at the graves.</b> Soul orbs glow pale teal all over the land, from the Shallows to the Abyss. Walk over one to take it, and carry them to the old graves deep in the Abyss${pr.found ? `, ${w.m} m ${w.dir} of camp` : ""}. Lay ${A.need} to rest at the tall headstone and Abigail rises. Orbs you carry aren't lost when you fall. With friends, everyone gathers their own.</p>`;
+    if (!owns("wraith")) return lockedCard(`data-wraith="1"`, `Soul orbs glow pale teal all over the land, from the Shallows to the Abyss. Walk over one to take it, and carry them to the old graves deep in the Abyss${pr.found ? `, ${w.m} m ${w.dir} of camp` : ""}. Lay ${A.need} to rest at the tall headstone and see who rises. Orbs you carry aren't lost when you fall.`, action);
     return `<article class="card hound-card">
       <header><canvas class="portrait" data-wraith="1" width="66" height="52"></canvas>
         <div><span class="tag">Familiar · Ranged · Curse</span><h3>${A.name}</h3><span class="motto">She remembers every soul the dark took.</span></div></header>
@@ -693,9 +729,9 @@
     UI.fredShown = !!mine;
     let action;
     if (mine) action = `<span class="maxed">At your side</span>`;
-    else if (tr) action = `<span class="req">Fred is awake in his ring: keep him alive until dawn</span>`;
-    else if (DL.Fred.sealed()) action = `<span class="req">His fairy ring has wilted · it grows back in a few nights</span>`;
-    else action = `<span class="req">His fairy ring lies in the Drowned Reaches${G.save.fredRing.found ? `, ${w.m} m ${w.dir} of camp` : ""}</span>`;
+    else if (tr) action = `<span class="req">The little mushroom is awake in the ring: keep him alive until dawn</span>`;
+    else if (DL.Fred.sealed()) action = `<span class="req">The fairy ring has wilted · it grows back in a few nights</span>`;
+    else action = `<span class="req">A fairy ring lies in the Drowned Reaches${G.save.fredRing.found ? `, ${w.m} m ${w.dir} of camp` : ""}</span>`;
     const how = DL.Fred.won() ? "" : `<p class="effect"><b>Win him at the fairy ring.</b> A ring of red toadstools grows out in the Drowned Reaches, and a tiny mushroom sleeps in it. Walk into the ring at night with a torch in your satchel and he wakes, and the Drowned come for him all night. He sprouts glowcaps for you while you fight. Keep him alive until dawn and he follows you home; if he dies, the ring wilts for ${F.wilt} nights. With friends, everyone by the ring at dawn gets their own Fred.</p>`;
     // his roads
     let roads = "";
@@ -713,6 +749,7 @@
         roads += `<footer class="train"><div class="cost">${costHtml(F.repick)}</div>${lock ? `<span class="req">${lock}</span>` : ""}<button data-act="fredRepick" ${ok ? "" : "disabled"}>Choose his roads again</button></footer>`;
       }
     }
+    if (!owns("fred")) return lockedCard(`data-fred="1"`, `A ring of red toadstools grows out in the Drowned Reaches, and something small sleeps in it. Walk into the ring at night with a torch in your satchel and it wakes, and the Drowned come for it all night. Keep it alive until dawn; if it dies, the ring wilts for ${F.wilt} nights.`, action);
     return `<article class="card hound-card">
       <header><canvas class="portrait" data-fred="1" width="66" height="52"></canvas>
         <div><span class="tag">Familiar · Healer · Control</span><h3>${F.name}</h3><span class="motto">Small, frightened, and full of spores.</span></div></header>

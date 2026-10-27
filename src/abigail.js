@@ -299,7 +299,7 @@
   Abigail.guideLine = function () {
     if (Abigail.won()) return `<b>Abigail</b> drifts at your side, weakening the Drowned with her soul orbs and blessing you every ${A.pulseEvery} s.`;
     const M = mine(), w = Abigail.where();
-    return `Soul orbs glow pale teal across the land. Lay ${A.need} to rest at the old graves in the Abyss, ${M.found ? `${w.m} m ${w.dir} of camp` : "far out"}, and <b>Abigail</b> rises (${M.given} laid, ${M.held} carried).`;
+    return `Soul orbs glow pale teal across the land. Lay ${A.need} to rest at the old graves in the Abyss, ${M.found ? `${w.m} m ${w.dir} of camp` : "far out"}, and see who rises (${M.given} laid, ${M.held} carried).`;
   };
   // The compass to the graves: once found, while you carry orbs.
   Abigail.showNav = () => !G.cave && !Abigail.won() && !!mine().found && mine().held > 0;

@@ -122,7 +122,7 @@
     s.bodies.push([Math.round(e.x), Math.round(e.y), Math.round(e.angle * 10) / 10]);
     if (s.bodies.length >= D.pack && !s.cleared) {
       s.cleared = true;
-      const msg = "The pack is broken. Carry a carcass back into the camp and it will rise as your Bone Hound.";
+      const msg = "The pack is broken. Carry a carcass back into the camp, and see what rises.";
       say(msg, "good");
       DL.Net.say(msg, "good");
     }

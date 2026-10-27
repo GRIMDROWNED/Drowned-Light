@@ -81,7 +81,7 @@
     if (trial || Fred.sealed()) return;
     const s = Fred.ringSpot(), max = Math.round(F.trialHp * (1 + 0.5 * G.allies.length));
     trial = { id: ++G.eid, fredTrial: true, x: s.x, y: s.y, hp: max, max, rad: 10, waveT: 2, capT: 5, flash: 0 };
-    const m = "The torchlight wakes a tiny mushroom in the ring, and the Drowned come for him. Keep Fred alive until dawn!";
+    const m = "The torchlight wakes a tiny mushroom in the ring, and the Drowned come for him. Keep him alive until dawn!";
     say(m, "warn"); DL.Net.say(m, "warn");
     sfx("night");
     for (let i = 0; i < 16; i++) G.spark(s.x, s.y - 16, AMBER, 90);
@@ -99,7 +99,7 @@
     G.save.fredRing.fail = G.save.nights;
     G.persist();
     for (let i = 0; i < 24; i++) G.puff(s.x + rand(-20, 20), s.y - rand(0, 30), "rgba(120,110,90,0.7)", 50, 1.2, -20);
-    const m = `Fred's lanterns gutter out, and the fairy ring wilts. It will grow again in ${F.wilt} nights.`;
+    const m = `The little mushroom's lanterns gutter out, and the fairy ring wilts. It will grow again in ${F.wilt} nights.`;
     say(m, "danger"); DL.Net.say(m, "danger");
     sfx("death");
   };
@@ -153,7 +153,7 @@
     near = true;
     if (Fred.won() || trial) return;
     if (Fred.sealed()) { say("The fairy ring has wilted. It will grow back in a few nights.", "warn"); return; }
-    if (!G.night) { say("Fred sleeps soundly. Come back at night with a torch to wake him.", "warn"); return; }
+    if (!G.night) { say("The little mushroom sleeps soundly. Come back at night with a torch to wake him.", "warn"); return; }
     if (G.save.torches <= 0) { say("You need a torch in your satchel to wake him. Craft one at camp.", "warn"); return; }
     G.save.torches -= 1;
     sfx("torch");
@@ -189,7 +189,7 @@
       if (!G.save.fred) {
         G.save.fred = 1;
         spawn(0, s.x, s.y);
-        say("Dawn. Fred blinks at the sun, alive, and toddles after you. He's yours.", "good");
+        say("Dawn. The little mushroom blinks at the sun, alive, and squeaks his name: Fred. He toddles after you. He's yours.", "good");
       }
     }
     for (const a of G.allies) {
@@ -197,7 +197,7 @@
       any = true;
       if (!G.freds.some((m) => m.owner === a.id)) { spawn(a.id, s.x, s.y); DL.Net.sendTo(a.id, { t: "fredWon" }); }
     }
-    if (!any) say("Fred lived through the night, but nobody was by his ring at dawn. He curls up and sleeps again.", "warn");
+    if (!any) say("The little mushroom lived through the night, but nobody was by his ring at dawn. He curls up and sleeps again.", "warn");
     sfx("milestone");
     G.persist();
   }
@@ -217,7 +217,7 @@
     pr.fred = 1;
     DL.Net.saveProfile(pr);
     sfx("milestone");
-    say("Dawn. Fred blinks at the sun, alive, and toddles after you. He's yours.", "good");
+    say("Dawn. The little mushroom blinks at the sun, alive, and squeaks his name: Fred. He toddles after you. He's yours.", "good");
   };
 
   /* ---------------- glowcaps and fairy rings ---------------- */
@@ -497,7 +497,7 @@
   Fred.guideLine = function () {
     if (Fred.won()) return `<b>Fred</b> toddles at your heels, slowing the Drowned with spores and growing glowcaps that heal.`;
     const w = Fred.where(), found = G.isGuest() ? guestFound : G.save.fredRing.found;
-    return `A ring of red toadstools grows in the Drowned Reaches${found ? `, ${w.m} m ${w.dir} of camp` : ""}. Wake the little mushroom in it with a torch at night and keep him alive until dawn: <b>Fred</b> follows you home.`;
+    return `A ring of red toadstools grows in the Drowned Reaches${found ? `, ${w.m} m ${w.dir} of camp` : ""}. Something small sleeps in it. Wake it with a torch at night and keep it alive until dawn.`;
   };
 
   /* ---------------- drawing (a coded stand-in until Robert's drawings are in) ---------------- */
