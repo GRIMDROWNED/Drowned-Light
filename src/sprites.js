@@ -119,6 +119,7 @@
     fred("fred_f3", "fred-f3", [160, 248], [107, 222], [110, 216]), // Fred the Rotwalker (level 15), 52 px
     // David the Hatchling (the wyvern's first form, src/wyvern.js), res 4: 24 px from wing tip to tail
     wyvern("wyvern_f0", "wyvern-f0", [90, 117], [70, 116], [70, 122]),
+    wyvern("wyvern_f1", "wyvern-f1", [125, 160], [98, 173], [90, 189]), // David (level 5), 37 px
     abigail(),
     // Mourning Abigail (her third form): a tenth taller, in violet mourning rags
     abigail("abigail_f2", "abigail-f2", [98, 136], [78, 149], [83, 152]),

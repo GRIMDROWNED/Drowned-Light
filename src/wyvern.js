@@ -643,12 +643,12 @@
   Wyv.drawn = drawnKey;
   // The drawings hang from the tail tip, which reaches lower than the coded figure's talons.
   const DRAWN_LIFT = 0.7;
-  // Where his mouth is on the Hatchling's drawing, from his tail tip (in screen px at res 4), for the glow of his spit.
-  // The drawings have their own red eyes, so they get no eye glow.
-  const DRAWN_HEAD = { down: [0, -36], up: [0, -40], side: [20, -40] };
+  // Where his mouth is on the Hatchling's drawing, from his tail tip (in screen px at res 4), for the glow of his spit;
+  // the later forms' drawings are scaled from it by DRAWN_K. The drawings have their own red eyes, so they get no eye glow.
+  const DRAWN_HEAD = { down: [0, -36], up: [0, -40], side: [20, -40] }, DRAWN_K = [1, 1.6, 2, 2.3];
   function drawnHead(m, o) {
-    const [dx, dy] = DRAWN_HEAD[o.dir];
-    return [m.x + dx * (o.flip ? -1 : 1), m.y - o.alt * DRAWN_LIFT + dy];
+    const [dx, dy] = DRAWN_HEAD[o.dir], k = DRAWN_K[form()];
+    return [m.x + dx * k * (o.flip ? -1 : 1), m.y - o.alt * DRAWN_LIFT + dy * k];
   }
   function drawDavid(c, m, t) {
     const o = davidOpts(m, t), key = drawnKey(form());
@@ -816,7 +816,7 @@
   Wyv.portrait = function (g, cv, t) {
     const f = Wyv.won() ? form() : 0, k = [1.2, 1.05, 0.9, 0.8][f], key = drawnKey(f);
     if (key) {
-      g.save(); g.translate(cv.width / 2, cv.height - 2); g.scale(0.82, 0.82); g.imageSmoothingEnabled = false;
+      const ps = [0.82, 0.56, 0.46, 0.4][f]; g.save(); g.translate(cv.width / 2, cv.height - 2); g.scale(ps, ps); g.imageSmoothingEnabled = false;
       DL.Art.drawUnit(g, key, "idle", 0, 0, 0, 0, 1);
       return g.restore();
     }
