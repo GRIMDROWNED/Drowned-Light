@@ -79,6 +79,8 @@ GRIDS = {
     'wyvern-f0/poses-b.png': (3, 2, POSES_B),
     'wyvern-f1/poses-a.png': (3, 2, POSES_A),
     'wyvern-f1/poses-b.png': (3, 2, POSES_B),
+    'wyvern-f2/poses-a.png': (3, 2, POSES_A),
+    'wyvern-f2/poses-b.png': (3, 2, POSES_B),
     'kindle/poses-a.png': (3, 2, POSES_A),
     'kindle/poses-b.png': (3, 2, POSES_B),
     'abigail/poses-a.png': (3, 2, POSES_A),
@@ -105,7 +107,10 @@ CELL_SCALE.update({'derek-f0/' + n: 0.88 for n in POSES_B})
 
 # Cells redrawn on their own after a sheet came back: cell -> (redrawn image, cell whose figure height it takes).
 # The redraw is shrunk to that height before it is cut, so it matches the rest of its sheet.
-CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-bell/08_attackA': ('bell-rear.png', '03_right')}
+CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-bell/08_attackA': ('bell-rear.png', '03_right'),
+               # David's second form: his side view and shriek came back with tangled wings
+               'wyvern-f1/03_right': ('redraw-right.png', '03_right'), 'wyvern-f1/10_attackC': ('redraw-shriek.png', '10_attackC'),
+               'wyvern-f2/10_attackC': ('redraw-shriek.png', '10_attackC')}
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
@@ -129,6 +134,7 @@ FRED2_H = 164  # Weeping Fred (level 10), about the knight's height
 FRED3_H = 210  # Fred the Rotwalker (level 15), a hulking stalker taller than the knight
 WYV0_H = 96  # David the Hatchling (src/wyvern.js), res 4: 24 art px from wing tip to tail, wings as wide as the knight is tall
 WYV1_H = 150  # David (his second form), res 4: 37 art px from wing tip to tail, wings about 1.2 times the Hatchling's
+WYV2_H = 190  # Great David (his third form), res 4: 47 art px from wing tip to tail
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
 ROSE_H = 368  # the Deadly Rose, cut at res 4: drawn 92 art px tall standing (x0.8 in game), about twice the knight
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
@@ -249,6 +255,7 @@ SETS = {
     # David: poses A put his breath (rear back), his spit and his shriek where the attacks go
     'wyvern-f0': ('wyvern-f0', 'wyvern-f0/01_front.png', WYV0_H, 1, twelve('wyvern-f0', TWELVE_FILES)),
     'wyvern-f1': ('wyvern-f1', 'wyvern-f1/01_front.png', WYV1_H, 1, twelve('wyvern-f1', TWELVE_FILES)),
+    'wyvern-f2': ('wyvern-f2', 'wyvern-f2/01_front.png', WYV2_H, 1, twelve('wyvern-f2', TWELVE_FILES)),
     'starved-bell': ('starved-bell', 'starved-bell/01_front.png', BELL_H, 1, twelve('starved-bell', TWELVE_FILES)),
     'deadly-rose': ('deadly-rose', 'deadly-rose/01_front.png', ROSE_H, 1, twelve('deadly-rose', TWELVE_FILES)),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
