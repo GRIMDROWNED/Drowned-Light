@@ -65,26 +65,25 @@ window.DL = window.DL || {};
     padAttack: false,
     padMine: false,
 
-    // Manual attack: J / K, the left mouse button, or the on-screen Attack button (held to keep striking).
-    // Manual mining has its own control: G, the right mouse button, or the on-screen Mine button.
+    // Manual attack: its bound keys (J / K), the left mouse button, or the on-screen Attack button (held to keep striking).
+    // Manual mining has its own control: its bound key (G), the right mouse button, or the on-screen Mine button.
     mouse: { x: 0, y: 0, down: false, mine: false, seen: 0 },
     attackBtn: false,
     attackAim: null, // angle set by dragging on the Attack button (an aiming stick); null = not aiming
     mineBtn: false,
-    attacking() { return this.keys.has("j") || this.keys.has("k") || this.mouse.down || this.attackBtn || this.padAttack; },
-    mining() { return this.keys.has("g") || this.mouse.mine || this.mineBtn || this.padMine; },
+    attacking() { return DL.Binds.held("attack", this.keys) || this.mouse.down || this.attackBtn || this.padAttack; },
+    mining() { return DL.Binds.held("mine", this.keys) || this.mouse.mine || this.mineBtn || this.padMine; },
 
     init() {
-      const keymap = {
-        " ": "dash", shift: "dash", q: "ability", e: "ability",
-        f: "torch", t: "torch", c: "camp", escape: "pause", p: "pause",
-      };
+      // Esc always pauses; everything else comes from the player's bindings (src/binds.js).
+      const PRESS = ["dash", "ability", "torch", "camp", "pause"];
       addEventListener("keydown", (e) => {
         const k = e.key.toLowerCase();
         if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(k)) e.preventDefault();
         if (e.repeat) return;
         this.keys.add(k);
-        if (keymap[k]) this.actions.add(keymap[k]);
+        const a = k === "escape" ? "pause" : DL.Binds.keyAction(k);
+        if (PRESS.includes(a)) this.actions.add(a);
       });
       addEventListener("keyup", (e) => this.keys.delete(e.key.toLowerCase()));
       addEventListener("blur", () => { this.keys.clear(); this.mouse.down = this.mouse.mine = false; this.attackBtn = this.mineBtn = false; this.attackAim = null; });
@@ -159,11 +158,11 @@ window.DL = window.DL || {};
 
     axis() {
       let x = this.joy.x + this.pad.x, y = this.joy.y + this.pad.y;
-      const k = this.keys;
-      if (k.has("d") || k.has("arrowright")) x += 1;
-      if (k.has("a") || k.has("arrowleft")) x -= 1;
-      if (k.has("s") || k.has("arrowdown")) y += 1;
-      if (k.has("w") || k.has("arrowup")) y -= 1;
+      const k = this.keys, B = DL.Binds;
+      if (B.held("right", k) || k.has("arrowright")) x += 1;
+      if (B.held("left", k) || k.has("arrowleft")) x -= 1;
+      if (B.held("down", k) || k.has("arrowdown")) y += 1;
+      if (B.held("up", k) || k.has("arrowup")) y -= 1;
       const m = Math.hypot(x, y);
       if (m > 1) { x /= m; y /= m; }
       return { x, y, m: Math.min(1, m) };

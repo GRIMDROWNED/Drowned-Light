@@ -13,6 +13,8 @@ A top-down dark-fantasy survival game for the browser and phones. You are a lant
 
 ### Controls
 
+Default bindings:
+
 | | Desktop | Xbox controller | Phone |
 |---|---|---|---|
 | Move | WASD / arrows | left stick / D-pad | Drag anywhere on the left half |
@@ -26,7 +28,7 @@ A top-down dark-fantasy survival game for the browser and phones. You are a lant
 | Pause | Esc / P | **Menu** / **View** | ❚❚ |
 | View | title or pause screen → **View: Auto / Portrait / Landscape** | same | same |
 
-**Controller on menus** (`src/pad.js`): D-pad or left stick moves the highlight, **A** presses, **B** goes back or closes, **LB / RB** switch camp tabs, the right stick scrolls. A disconnected controller pauses the game. Title or pause screen → **Controls** shows the full list in game. Typing a co-op room code still needs a keyboard (or the on-screen one).
+**Controller on menus** (`src/pad.js`): D-pad or left stick moves the highlight, **A** presses, **B** goes back or closes, **LB / RB** switch camp tabs, the right stick scrolls. A disconnected controller pauses the game. Title or pause screen → **Controls** shows the full list in game, and lets players **rebind** every action for keyboard and controller (click or press A on a binding, then press the new key or button; **Reset to defaults** undoes it). Bindings are saved on the device (`src/binds.js`, localStorage key `drowned-light-binds`). Esc, the arrow keys, the mouse, and the pad's menu buttons (D-pad, A, B) stay fixed so a bad binding can't lock anyone out; taking a key another action uses swaps the two. Typing a co-op room code still needs a keyboard (or the on-screen one).
 
 ## The core loop
 

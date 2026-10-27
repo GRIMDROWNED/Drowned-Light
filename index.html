@@ -16,11 +16,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=0.15.102">
+<link rel="stylesheet" href="style.css?v=0.15.103">
 <script>try { if (sessionStorage.getItem("dl-splash")) document.documentElement.classList.add("no-splash"); } catch (e) {}</script>
 </head>
 <body>
-<div id="splash" role="img" aria-label="Drowned Games"><img src="assets/drowned-games.jpg?v=0.15.102" alt="Drowned Games"></div>
+<div id="splash" role="img" aria-label="Drowned Games"><img src="assets/drowned-games.jpg?v=0.15.103" alt="Drowned Games"></div>
 <div id="stage">
 <canvas id="game" aria-label="Drowned Light game view"></canvas>
 <div id="touchzone" class="hidden"></div>
@@ -85,8 +85,8 @@
       <div><b>By night</b> stay in the light. Darkness corrupts you; at full corruption you become a Drowned Knight.</div>
       <div><b>At camp</b> deposit supplies, build defenses, train your kit, and defend the Central Flame through the night.</div>
     </div>
-    <p class="controls-hint"><span class="desk">Move <kbd>WASD</kbd> · Attack (manual) <kbd>J</kbd> or click · Mine (manual) <kbd>G</kbd> or right-click · Dash <kbd>Space</kbd> · Ability <kbd>E</kbd> · Torch <kbd>F</kbd> · Camp <kbd>C</kbd> · Pause <kbd>Esc</kbd></span><span class="mob">Drag on the left side to move. Attacks are automatic.</span><span class="padline">Controller: move <kbd>Left stick</kbd> · Dash <kbd>A</kbd> · Ability <kbd>B</kbd> · Attack <kbd>RT</kbd> · Torch <kbd>LB</kbd> · Camp <kbd>Y</kbd> · Pause <kbd>Menu</kbd></span></p>
-    <p class="version">Version 0.15.102</p>
+    <p class="controls-hint"><span id="hintDesk" class="desk"></span><span class="mob">Drag on the left side to move. Attacks are automatic.</span><span id="hintPad" class="padline"></span></p>
+    <p class="version">Version 0.15.103</p>
   </div>
 </section>
 
@@ -192,20 +192,16 @@
 <section id="screenControls" class="screen hidden">
   <div class="title-card controls">
     <h2>Controls</h2>
-    <p class="muted">An Xbox controller (or any pad your browser reads as one) works everywhere: in play, on every menu and at camp.</p>
+    <p class="muted">Click (or press <kbd>A</kbd> on) a binding, then press the key or controller button you want for it. Bindings are saved on this device.</p>
     <table class="controls-table">
-      <thead><tr><th></th><th>Keyboard &amp; mouse</th><th>Controller</th></tr></thead>
+      <thead><tr><th></th><th>Keyboard</th><th>Controller</th></tr></thead>
+      <tbody id="bindRows"></tbody>
       <tbody>
-        <tr><th>Move</th><td><kbd>WASD</kbd> / arrows</td><td><kbd>Left stick</kbd> / <kbd>D-pad</kbd></td></tr>
-        <tr><th>Dash</th><td><kbd>Space</kbd> / <kbd>Shift</kbd></td><td><kbd>A</kbd></td></tr>
-        <tr><th>Kit ability</th><td><kbd>E</kbd> / <kbd>Q</kbd></td><td><kbd>B</kbd> / <kbd>RB</kbd></td></tr>
-        <tr><th>Place torch</th><td><kbd>F</kbd> / <kbd>T</kbd></td><td><kbd>LB</kbd></td></tr>
-        <tr><th>Camp menu</th><td><kbd>C</kbd></td><td><kbd>Y</kbd></td></tr>
-        <tr><th>Pause</th><td><kbd>Esc</kbd> / <kbd>P</kbd></td><td><kbd>Menu</kbd> / <kbd>View</kbd></td></tr>
-        <tr class="sub"><th colspan="3">Manual attack mode</th></tr>
-        <tr><th>Attack</th><td>hold <kbd>J</kbd> or left click</td><td>hold <kbd>RT</kbd> or <kbd>X</kbd></td></tr>
-        <tr><th>Aim</th><td>mouse</td><td><kbd>Right stick</kbd> (else the way you face)</td></tr>
-        <tr><th>Mine</th><td>hold <kbd>G</kbd> or right click</td><td>hold <kbd>LT</kbd></td></tr>
+        <tr class="sub"><th colspan="3">Always</th></tr>
+        <tr><th>Move</th><td>arrow keys</td><td><kbd>Left stick</kbd> / <kbd>D-pad</kbd></td></tr>
+        <tr><th>Pause</th><td><kbd>Esc</kbd></td><td></td></tr>
+        <tr><th>Attack / mine (manual)</th><td>left / right click</td><td></td></tr>
+        <tr><th>Aim (manual)</th><td>mouse</td><td><kbd>Right stick</kbd> (else the way you face)</td></tr>
         <tr class="sub"><th colspan="3">Menus</th></tr>
         <tr><th>Move between buttons</th><td>mouse</td><td><kbd>D-pad</kbd> / <kbd>Left stick</kbd></td></tr>
         <tr><th>Press</th><td>click</td><td><kbd>A</kbd></td></tr>
@@ -215,39 +211,41 @@
       </tbody>
     </table>
     <p class="muted fine">Typing a co-op room code still needs a keyboard (or the on-screen one).</p>
+    <div class="menu"><button id="btnBindsReset">Reset to defaults</button></div>
     <div class="menu"><button id="btnControlsBack" class="primary">Back</button></div>
   </div>
 </section>
 </div>
 
-<script src="src/core.js?v=0.15.102"></script>
-<script src="src/view.js?v=0.15.102"></script>
-<script src="src/data.js?v=0.15.102"></script>
-<script src="src/camp.js?v=0.15.102"></script>
-<script src="src/art.js?v=0.15.102"></script>
-<script src="src/units.js?v=0.15.102"></script>
-<script src="src/sprites.js?v=0.15.102"></script>
-<script src="src/world.js?v=0.15.102"></script>
-<script src="src/game.js?v=0.15.102"></script>
-<script src="src/hounds.js?v=0.15.102"></script>
-<script src="src/den.js?v=0.15.102"></script>
-<script src="src/golem.js?v=0.15.102"></script>
-<script src="src/cave.js?v=0.15.102"></script>
-<script src="src/colossus.js?v=0.15.102"></script>
-<script src="src/kindle.js?v=0.15.102"></script>
-<script src="src/abigail.js?v=0.15.102"></script>
-<script src="src/fred.js?v=0.15.102"></script>
-<script src="src/bell.js?v=0.15.102"></script>
-<script src="src/rose.js?v=0.15.102"></script>
-<script src="src/summons.js?v=0.15.102"></script>
-<script src="src/siege.js?v=0.15.102"></script>
-<script src="src/trophies.js?v=0.15.102"></script>
-<script src="src/outposts.js?v=0.15.102"></script>
-<script src="src/kits.js?v=0.15.102"></script>
-<script src="src/net.js?v=0.15.102"></script>
-<script src="src/render.js?v=0.15.102"></script>
-<script src="src/ui.js?v=0.15.102"></script>
-<script src="src/pad.js?v=0.15.102"></script>
-<script src="src/main.js?v=0.15.102"></script>
+<script src="src/core.js?v=0.15.103"></script>
+<script src="src/binds.js?v=0.15.103"></script>
+<script src="src/view.js?v=0.15.103"></script>
+<script src="src/data.js?v=0.15.103"></script>
+<script src="src/camp.js?v=0.15.103"></script>
+<script src="src/art.js?v=0.15.103"></script>
+<script src="src/units.js?v=0.15.103"></script>
+<script src="src/sprites.js?v=0.15.103"></script>
+<script src="src/world.js?v=0.15.103"></script>
+<script src="src/game.js?v=0.15.103"></script>
+<script src="src/hounds.js?v=0.15.103"></script>
+<script src="src/den.js?v=0.15.103"></script>
+<script src="src/golem.js?v=0.15.103"></script>
+<script src="src/cave.js?v=0.15.103"></script>
+<script src="src/colossus.js?v=0.15.103"></script>
+<script src="src/kindle.js?v=0.15.103"></script>
+<script src="src/abigail.js?v=0.15.103"></script>
+<script src="src/fred.js?v=0.15.103"></script>
+<script src="src/bell.js?v=0.15.103"></script>
+<script src="src/rose.js?v=0.15.103"></script>
+<script src="src/summons.js?v=0.15.103"></script>
+<script src="src/siege.js?v=0.15.103"></script>
+<script src="src/trophies.js?v=0.15.103"></script>
+<script src="src/outposts.js?v=0.15.103"></script>
+<script src="src/kits.js?v=0.15.103"></script>
+<script src="src/net.js?v=0.15.103"></script>
+<script src="src/render.js?v=0.15.103"></script>
+<script src="src/ui.js?v=0.15.103"></script>
+<script src="src/pad.js?v=0.15.103"></script>
+<script src="src/main.js?v=0.15.103"></script>
 </body>
 </html>
