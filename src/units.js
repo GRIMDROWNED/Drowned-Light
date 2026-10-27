@@ -775,6 +775,7 @@
     for (const k of ["boneHound_f0", "boneHound_f2", "boneHound_f3", "derek_f0", "derek_f2", "derek_f3"]) sh[k] = Art.applyFrames(k, kindleSheet());
     for (const k of ["abigail_f2", "abigail_f3"]) sh[k] = Art.applyFrames(k, kindleSheet(["bless"]));
     for (const k of ["fred_f0", "fred_f1", "fred_f2", "fred_f3"]) sh[k] = Art.applyFrames(k, kindleSheet(["heal"])); // Fred: coded in src/fred.js until drawn
+    for (const k of ["wyvern_f0", "wyvern_f1", "wyvern_f2", "wyvern_f3"]) sh[k] = Art.applyFrames(k, kindleSheet(["roar"])); // Gerald: coded in src/wyvern.js until drawn
     sh.rose = Art.applyFrames("rose", DL.Rose.sheet()); // the Deadly Rose's coded stand-in (src/rose.js)
     sh.colossus = Art.applyFrames("colossus", DL.Colossus.sheet()); // the Drowned Colossus's coded stand-in (src/colossus.js)
     sh.champion = buildSheet({ pal: d({ cloth: "#c3cbc6", clothMd: "#8d9a99", blade: "#7fa6b0" }), weapon: "greatsword", offhand: "none", bulk: 1, crown: true, drips: 22, seed: 27 });

@@ -117,6 +117,8 @@
     fred("fred_f1", "fred-f1", [54, 109], [48, 110], [48, 109]), // Fred (level 5), 27 px
     fred("fred_f2", "fred-f2", [120, 167], [72, 167], [78, 170]), // Weeping Fred (level 10), 41 px
     fred("fred_f3", "fred-f3", [160, 248], [107, 222], [110, 216]), // Fred the Rotwalker (level 15), 52 px
+    // Gerald the Hatchling (the wyvern's first form, src/wyvern.js), res 4: 24 px from wing tip to tail
+    wyvern("wyvern_f0", "wyvern-f0", [90, 117], [70, 116], [70, 122]),
     abigail(),
     // Mourning Abigail (her third form): a tenth taller, in violet mourning rags
     abigail("abigail_f2", "abigail-f2", [98, 136], [78, 149], [83, 152]),
@@ -143,6 +145,15 @@
     const set = Object.assign(walking(key, side, front, back, 4), { path: "assets/sprites/" + folder + "/", keys: { [key]: [0, false] } });
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
       Object.assign(set.views[dir], { attack: ["attackA", "attackB", "attackB"], heal: ["heal"], hurt: ["side/hurt"], death: ["side/death"], idle: [p] });
+    return set;
+  }
+
+  // Gerald the wyvern familiar: he always flies, so his walk is a flap (poses B's four wing beats side on, the fly
+  // sheets toward and away from you). His attack rears back and spits a bolt, and "roar" is his shriek.
+  function wyvern(key, folder, side, front, back) {
+    const set = Object.assign(walking(key, side, front, back, 4), { path: "assets/sprites/" + folder + "/", keys: { [key]: [0, false] } });
+    for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
+      Object.assign(set.views[dir], { attack: ["attackA", "attackB", "attackB"], roar: ["attackC"], hurt: ["side/hurt"], death: ["side/death"], idle: [p] });
     return set;
   }
 

@@ -398,13 +398,14 @@
         m.angle = Math.atan2(e.y - m.y, e.x - m.x);
       }
     }
-    // he flies at his knight's shoulder, a little behind, over walls and water alike
-    // the bigger forms keep further out so they don't hide their knight
-    const a = o.angle || 0, sp = [30, 40, 54, 66][f];
-    const fx = o.x - Math.cos(a) * sp * 0.35 + Math.cos(a + Math.PI / 2) * sp, fy = o.y - Math.sin(a) * sp * 0.3 + Math.sin(a + Math.PI / 2) * sp * 0.5 - 6;
+    // he flies at his knight's shoulder, a little behind, over walls and water alike: beside him when the knight
+    // faces up or down, behind and a little up the screen when he faces sideways, so the knight is drawn over him.
+    // The bigger forms keep further out so they don't hide their knight.
+    const a = o.angle || 0, sp = [44, 52, 62, 72][f], sv = Math.abs(Math.sin(a)), ch = Math.abs(Math.cos(a));
+    const fx = o.x + Math.cos(a + Math.PI / 2) * sp * sv - Math.cos(a) * sp * ch, fy = o.y + Math.sin(a + Math.PI / 2) * sp * 0.5 * sv - Math.sin(a) * sp * 0.3 - 6 - 8 * ch;
     const d = dist(m.x, m.y, fx, fy);
     m.moving = d > (m.moving ? 4 : 12);
-    if (!m.moving) return;
+    if (!m.moving) { if (m.state !== "cast") m.angle = a; return; } // hovering, he looks where his knight looks
     const spd = d > 160 ? W.speed * 1.5 : Math.min(W.speed, d * 3.5);
     m.x += ((fx - m.x) / d) * spd * dt;
     m.y += ((fy - m.y) / d) * spd * dt;
@@ -637,10 +638,24 @@
     const f = form(), { dir, flip } = DL.Art.unitDir(m.angle);
     return { k: KSIZE[f], dir, flip, alt: ALT[f] + Math.sin(m.animT * 2.2) * 3, ph: m.animT * 9, anim: m.state === "cast" ? "cast" : "fly", drip: f === 3, t, id: m.id % 7 };
   }
+  // Robert's drawing of a form, once it's loaded (wyvern_f0 and so on, src/sprites.js), replaces the coded figure.
+  const drawnKey = (f) => { const k = "wyvern_f" + f, sh = DL.Art.sheets[k]; return sh && !sh.down.idle[0].blank && !sh.down.walk[0].blank ? k : null; };
+  Wyv.drawn = drawnKey;
+  // The drawings hang from the tail tip, which reaches lower than the coded figure's talons.
+  const DRAWN_LIFT = 0.7;
+  // Where his mouth is on the Hatchling's drawing, from his tail tip (in screen px at res 4), for the glow of his spit.
+  // The drawings have their own red eyes, so they get no eye glow.
+  const DRAWN_HEAD = { down: [0, -36], up: [0, -40], side: [20, -40] };
+  function drawnHead(m, o) {
+    const [dx, dy] = DRAWN_HEAD[o.dir];
+    return [m.x + dx * (o.flip ? -1 : 1), m.y - o.alt * DRAWN_LIFT + dy];
+  }
   function drawGerald(c, m, t) {
-    const o = geraldOpts(m, t);
+    const o = geraldOpts(m, t), key = drawnKey(form());
     shadow(c, m.x, m.y, 10 * o.k, 3.5 * o.k, 0.22);
-    figure(c, m.x, m.y, o);
+    if (!key) return figure(c, m.x, m.y, o);
+    const cast = m.state === "cast";
+    DL.Art.drawUnit(c, key, cast ? "attack" : "walk", cast ? Math.min(2, Math.floor((1 - m.stT / CAST) * 3)) : Math.floor(m.animT * 10), m.angle, m.x, m.y - o.alt * DRAWN_LIFT, 1);
   }
   // The mother: the mature form, twice as big again, landing and rearing and diving.
   const MOM_K = 2.3;
@@ -733,9 +748,10 @@
   Wyv.glow = function (c, t, view) {
     const col = Wyv.col();
     for (const m of G.wyverns) {
-      const o = geraldOpts(m, t);
-      for (const [x, y] of eyes(m.x, m.y, o)) glow(c, x, y, 5 + o.k * 3, BLOOD, 0.8);
-      if (m.state === "cast") { const [x, y] = eyes(m.x, m.y, o)[0] || [m.x, m.y - o.alt - 30]; glow(c, x, y + 4, 14, col, 0.5); }
+      const o = geraldOpts(m, t), drawn = drawnKey(form());
+      const pts = drawn ? [] : eyes(m.x, m.y, o);
+      for (const [x, y] of pts) glow(c, x, y, 5 + o.k * 3, BLOOD, 0.8);
+      if (m.state === "cast") { const [x, y] = drawn ? drawnHead(m, o) : pts[0] || [m.x, m.y - o.alt - 30]; glow(c, x, y + 4, 14, col, 0.5); }
     }
     for (const e of G.enemies) {
       if (!e.def.wyvern) continue;
@@ -798,7 +814,12 @@
   };
   // The Kit tab's portrait: his current form, perched (the hatchling, as a dark shape, before he's won).
   Wyv.portrait = function (g, cv, t) {
-    const f = Wyv.won() ? form() : 0, k = [1.2, 1.05, 0.9, 0.8][f];
+    const f = Wyv.won() ? form() : 0, k = [1.2, 1.05, 0.9, 0.8][f], key = drawnKey(f);
+    if (key) {
+      g.save(); g.translate(cv.width / 2, cv.height - 2); g.scale(0.82, 0.82); g.imageSmoothingEnabled = false;
+      DL.Art.drawUnit(g, key, "idle", 0, 0, 0, 0, 1);
+      return g.restore();
+    }
     const o = { k, dir: "side", flip: false, alt: 0, ph: t * 6, anim: "idle", drip: f === 3, t, id: 1 };
     g.save(); g.translate(cv.width / 2 + 8, cv.height - 3);
     figure(g, 0, 0, o);

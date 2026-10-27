@@ -74,6 +74,9 @@ GRIDS = {
     'fred-f2/poses-b.png': (3, 2, POSES_B),
     'fred-f3/poses-a.png': (3, 2, POSES_A),
     'fred-f3/poses-b.png': (3, 2, POSES_B),
+    # Gerald the wyvern (src/wyvern.js): poses B's four flap cells stand in for the side walk
+    'wyvern-f0/poses-a.png': (3, 2, POSES_A),
+    'wyvern-f0/poses-b.png': (3, 2, POSES_B),
     'kindle/poses-a.png': (3, 2, POSES_A),
     'kindle/poses-b.png': (3, 2, POSES_B),
     'abigail/poses-a.png': (3, 2, POSES_A),
@@ -122,6 +125,7 @@ FRED0_H = 80  # Fred the Sprout (Fred's first form, src/fred.js), res 4: 20 art 
 FRED1_H = 107  # Fred (level 5), a third taller than the Sprout
 FRED2_H = 164  # Weeping Fred (level 10), about the knight's height
 FRED3_H = 210  # Fred the Rotwalker (level 15), a hulking stalker taller than the knight
+WYV0_H = 96  # Gerald the Hatchling (src/wyvern.js), res 4: 24 art px from wing tip to tail, wings as wide as the knight is tall
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
 ROSE_H = 368  # the Deadly Rose, cut at res 4: drawn 92 art px tall standing (x0.8 in game), about twice the knight
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
@@ -239,6 +243,8 @@ SETS = {
     'fred-f3': ('fred-f3', 'fred-f3/01_front.png', FRED3_H, 1, dict(twelve('fred-f3', TWELVE_FILES), **{'fred-f3/10_attackC.png': 'heal'})),
     'fred-f2': ('fred-f2', 'fred-f2/01_front.png', FRED2_H, 1, dict(twelve('fred-f2', TWELVE_FILES), **{'fred-f2/10_attackC.png': 'heal'})),
     'fred-f1': ('fred-f1', 'fred-f1/01_front.png', FRED1_H, 1, dict(twelve('fred-f1', TWELVE_FILES), **{'fred-f1/10_attackC.png': 'heal'})),
+    # Gerald: poses A put his breath (rear back), his spit and his shriek where the attacks go
+    'wyvern-f0': ('wyvern-f0', 'wyvern-f0/01_front.png', WYV0_H, 1, twelve('wyvern-f0', TWELVE_FILES)),
     'starved-bell': ('starved-bell', 'starved-bell/01_front.png', BELL_H, 1, twelve('starved-bell', TWELVE_FILES)),
     'deadly-rose': ('deadly-rose', 'deadly-rose/01_front.png', ROSE_H, 1, twelve('deadly-rose', TWELVE_FILES)),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
@@ -364,6 +370,12 @@ SHEETS = {
         ('fred-f0/walk-side-4.png', 4, 1, FRED0_H, 'side/walk'),
         ('fred-f0/walk-front.png', 4, 1, FRED0_H, 'walkF'),
         ('fred-f0/walk-back.png', 4, 1, FRED0_H, 'walkB'),
+    ],
+    # his flap cycles toward and away from you; the first frame has the wings raised, so it stands taller
+    'wyvern-f0': [
+        ('wyvern-f0/walk-side-4.png', 4, 1, 115, 'side/walk'),
+        ('wyvern-f0/fly-front.png', 4, 1, 114, 'walkF'),
+        ('wyvern-f0/fly-back.png', 4, 1, 120, 'walkB'),
     ],
     'fred-f1': [
         ('fred-f1/walk-side-4.png', 4, 1, FRED1_H, 'side/walk'),
