@@ -120,6 +120,7 @@
     // David the Hatchling (the wyvern's first form, src/wyvern.js), res 4: 24 px from wing tip to tail
     wyvern("wyvern_f0", "wyvern-f0", [90, 117], [70, 116], [70, 122]),
     wyvern("wyvern_f1", "wyvern-f1", [125, 160], [98, 173], [90, 189]), // David (level 5), 37 px
+    wyvern("wyvern_f2", "wyvern-f2", [144, 210], [112, 267], [104, 261]), // Great David (level 10), 47 px
     abigail(),
     // Mourning Abigail (her third form): a tenth taller, in violet mourning rags
     abigail("abigail_f2", "abigail-f2", [98, 136], [78, 149], [83, 152]),

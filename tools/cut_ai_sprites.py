@@ -393,6 +393,12 @@ SHEETS = {
         ('wyvern-f1/fly-front.png', 4, 1, 171, 'walkF'),
         ('wyvern-f1/fly-back.png', 4, 1, 187, 'walkB'),
     ],
+    # Great David's wings are raised far higher in the first fly frames, so they stand much taller than his poses
+    'wyvern-f2': [
+        ('wyvern-f2/walk-side-4.png', 4, 1, 208, 'side/walk'),
+        ('wyvern-f2/fly-front.png', 4, 1, 265, 'walkF'),
+        ('wyvern-f2/fly-back.png', 4, 1, 259, 'walkB'),
+    ],
     'fred-f1': [
         ('fred-f1/walk-side-4.png', 4, 1, FRED1_H, 'side/walk'),
         ('fred-f1/walk-front.png', 4, 1, FRED1_H, 'walkF'),
