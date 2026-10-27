@@ -789,6 +789,7 @@
     ashenArbalist: { weapon: "crossbow", offhand: "lantern" },
     relicBearer: { weapon: "staff", offhand: "none" },
     flameBastion: { weapon: "sword", offhand: "bastion", bulk: 1 },
+    chainReaper: { weapon: "shortsword", offhand: "lantern" }, // stand-in until the drawn sickle and chain load
   };
   Art.specs = {};
   Art.sheet = function (key) {

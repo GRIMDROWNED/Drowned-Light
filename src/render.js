@@ -157,6 +157,8 @@
       c.beginPath(); c.ellipse(q.x, q.y, q.r * pulse, q.r * 0.55 * pulse, 0, 0, Math.PI * 2); c.fill(); c.stroke();
     }
 
+    drawReaperGround(c, G, t); // the Chain Reaper's Violet Snare and Violet Gyre rings
+
     /* y-sorted scene */
     const list = [];
     const m = 120;
@@ -201,6 +203,11 @@
     for (const b of den.bodies) list.push({ y: b[1], f: () => drawCarcass(c, b) });
     if (G.player && G.state !== "dead") list.push({ y: G.player.y, f: () => drawPlayer(c, G, t) });
     for (const a of G.allies) list.push({ y: a.y, f: () => drawAlly(c, a, t) });
+    // the Chain Reaper's sickle flying out on its chain, and the coil round a snared Drowned's ankles
+    const pl = G.player;
+    if (pl && pl.swing && pl.swing.kind === "chain") list.push({ y: pl.y + 1, f: () => drawThrow(c, pl.x, pl.y, pl.swing, t) });
+    for (const a of G.allies) if (a.swing && a.swing.kind === "chain" && !a.down) list.push({ y: a.y + 1, f: () => drawThrow(c, a.x, a.y, a.swing, t) });
+    if (Art.sprites.reaperSnared) for (const e of G.enemies) if (e.snareT > 0 && !e.removed) list.push({ y: e.y + 1, f: () => sprite(c, "reaperSnared", e.x, e.y + 5, false, Math.min(1, e.snareT * 3)) });
     list.sort((a, b) => a.y - b.y);
     for (const it of list) it.f();
 
@@ -754,13 +761,16 @@
   // Walk frames per second: `rate` is for a 4-frame walk, and longer walks play faster so a stride takes as long.
   const walkRate = (key, rate) => (rate * Art.animLength(key, "walk")) / 4;
 
+  // A kit with its own casting pose (the Chain Reaper whirling his chain) shows it for its ability; the rest swing.
+  const castAnim = (key) => (Art.sheet(key).down.cast ? "cast" : "attack");
+
   // Which animation the player shows this frame: [anim, frame, facing angle].
   function playerAnim(G, p, t) {
     if (G.state === "dying") return ["death", Math.min(2, Math.floor(G.dying / 0.45)), p.angle];
     if (p.dashT > 0) return ["dash", 0, p.angle];
     if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
     if (p.swing) return ["attack", Math.min(2, Math.floor((p.swing.t / p.swing.dur) * 3)), p.swing.ang];
-    if (p.cast) return ["attack", Math.min(2, Math.floor((p.cast.t / p.cast.dur) * 3)), p.cast.ang];
+    if (p.cast) return [castAnim(G.save.kit + p.stage), Math.min(2, Math.floor((p.cast.t / p.cast.dur) * 3)), p.cast.ang];
     if (p.moving) return ["walk", Math.floor(p.animT * walkRate(G.save.kit + p.stage, 6)), p.angle];
     return ["idle", Math.floor(t * 1.6), p.angle];
   }
@@ -788,7 +798,7 @@
       let anim = "idle", fr = Math.floor(t * 1.6), ang = a.angle;
       if (a.dashT > 0) anim = "dash";
       else if (a.swing) { anim = "attack"; fr = Math.min(2, Math.floor((a.swing.t / a.swing.dur) * 3)); ang = a.swing.ang; }
-      else if (a.cast) { anim = "attack"; fr = Math.min(2, Math.floor(a.cast * 3)); }
+      else if (a.cast) { anim = castAnim(key); fr = Math.min(2, Math.floor(a.cast * 3)); }
       else if (a.moving) { anim = "walk"; fr = Math.floor(a.animT * walkRate(key, 6)); }
       Art.drawUnit(c, key, anim, fr, ang, a.x, a.y, 1);
     }
@@ -810,6 +820,59 @@
     if (e.state === "recover") return ["attack", e.stT > 0.2 ? 1 : 2, e.aim];
     if (e.moving) return ["walk", Math.floor(e.animT * walkRate(unitKey(e), e.def.crawl ? 8 : 5.5)), e.angle];
     return ["idle", Math.floor(t * 1.6 + e.animT), e.angle];
+  }
+
+  /* The Chain Reaper's Sickle Throw: the sickle spins out along each line to the throw's reach and back (out at
+     half time), its chain run out from the hand behind it. Drawn in code if the drawn pieces haven't loaded. */
+  function drawThrow(c, x, y, s, t) {
+    const ch = Art.sprites.reaperChain, sk = Art.sprites["reaperSickle" + (1 + (Math.floor(t * 24) % 4))];
+    const k = Math.min(1, s.t / s.dur), len = s.range * Math.sin(k * Math.PI);
+    for (const a of s.angs || [s.ang]) {
+      const hx = x + Math.cos(a) * 12, hy = y - 30 + Math.sin(a) * 6;
+      c.save();
+      c.translate(Math.round(hx), Math.round(hy));
+      c.rotate(a);
+      if (ch) {
+        const tw = ch.w * PS, th = ch.h * PS;
+        for (let d = 0; d < len; d += tw) {
+          const seg = Math.min(tw, len - d);
+          c.drawImage(ch.c, 0, 0, (seg / tw) * ch.c.width, ch.c.height, d, -th / 2, seg, th);
+        }
+      } else {
+        c.strokeStyle = "#5c5468"; c.lineWidth = 2;
+        c.beginPath(); c.moveTo(0, 0); c.lineTo(len, 0); c.stroke();
+      }
+      c.translate(len, 0);
+      c.rotate(t * 22);
+      if (sk) c.drawImage(sk.c, (-sk.w * PS) / 2, (-sk.h * PS) / 2, sk.w * PS, sk.h * PS);
+      else {
+        c.strokeStyle = `rgb(${s.col})`; c.lineWidth = 3;
+        c.beginPath(); c.arc(0, 0, 9, 0.4, Math.PI * 1.6); c.stroke();
+      }
+      c.restore();
+    }
+  }
+
+  // Violet Snare's ring of whirled chain, flung out from the knight, and the Violet Gyre rings it leaves at level 20.
+  function drawReaperGround(c, G, t) {
+    const ring = Art.sprites.reaperSnare;
+    const draw = (x, y, r, a, wob) => {
+      if (ring) {
+        const w = r * 2 * (1 + wob), h = r * 0.9 * (1 + wob);
+        c.save(); c.globalAlpha = a;
+        c.drawImage(ring.c, Math.round(x - w / 2), Math.round(y - h / 2), w, h);
+        c.restore();
+      } else {
+        c.strokeStyle = `rgba(176,120,255,${a})`; c.lineWidth = 4;
+        c.beginPath(); c.ellipse(x, y, r, r * 0.45, 0, 0, Math.PI * 2); c.stroke();
+      }
+    };
+    for (const f of G.effects) {
+      if (f.type !== "snare") continue;
+      const k = f.t / f.max;
+      draw(f.x, f.y, f.r * (0.35 + 0.65 * Math.sqrt(k)), 1 - k * k, 0);
+    }
+    for (const g of DL.Kits.gyres()) draw(g.x, g.y, g.r * 0.85, Math.min(1, g.t / 0.6) * 0.85, 0.04 * Math.sin(t * 9));
   }
 
   function drawEnemy(c, e, t) {
