@@ -642,20 +642,21 @@
   const drawnKey = (f) => { const k = "wyvern_f" + f, sh = DL.Art.sheets[k]; return sh && !sh.down.idle[0].blank && !sh.down.walk[0].blank ? k : null; };
   Wyv.drawn = drawnKey;
   // The drawings hang from the tail tip, which reaches lower than the coded figure's talons.
-  const DRAWN_LIFT = 0.7;
+  // The bigger forms are drawn tall already, so they are lifted less to stay close to their knight.
+  const DRAWN_LIFT = [0.7, 0.5, 0.3, 0.2];
   // Where his mouth is on the Hatchling's drawing, from his tail tip (in screen px at res 4), for the glow of his spit;
   // the later forms' drawings are scaled from it by DRAWN_K. The drawings have their own red eyes, so they get no eye glow.
   const DRAWN_HEAD = { down: [0, -36], up: [0, -40], side: [20, -40] }, DRAWN_K = [1, 1.6, 2, 2.3];
   function drawnHead(m, o) {
     const [dx, dy] = DRAWN_HEAD[o.dir], k = DRAWN_K[form()];
-    return [m.x + dx * k * (o.flip ? -1 : 1), m.y - o.alt * DRAWN_LIFT + dy * k];
+    return [m.x + dx * k * (o.flip ? -1 : 1), m.y - o.alt * DRAWN_LIFT[form()] + dy * k];
   }
   function drawDavid(c, m, t) {
     const o = davidOpts(m, t), key = drawnKey(form());
     shadow(c, m.x, m.y, 10 * o.k, 3.5 * o.k, 0.22);
     if (!key) return figure(c, m.x, m.y, o);
     const cast = m.state === "cast";
-    DL.Art.drawUnit(c, key, cast ? "attack" : "walk", cast ? Math.min(2, Math.floor((1 - m.stT / CAST) * 3)) : Math.floor(m.animT * 10), m.angle, m.x, m.y - o.alt * DRAWN_LIFT, 1);
+    DL.Art.drawUnit(c, key, cast ? "attack" : "walk", cast ? Math.min(2, Math.floor((1 - m.stT / CAST) * 3)) : Math.floor(m.animT * 10), m.angle, m.x, m.y - o.alt * DRAWN_LIFT[form()], 1);
   }
   // The mother: the mature form, twice as big again, landing and rearing and diving.
   const MOM_K = 2.3;

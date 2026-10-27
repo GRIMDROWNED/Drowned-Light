@@ -81,6 +81,8 @@ GRIDS = {
     'wyvern-f1/poses-b.png': (3, 2, POSES_B),
     'wyvern-f2/poses-a.png': (3, 2, POSES_A),
     'wyvern-f2/poses-b.png': (3, 2, POSES_B),
+    'wyvern-f3/poses-a.png': (3, 2, POSES_A),
+    'wyvern-f3/poses-b.png': (3, 2, POSES_B),
     'kindle/poses-a.png': (3, 2, POSES_A),
     'kindle/poses-b.png': (3, 2, POSES_B),
     'abigail/poses-a.png': (3, 2, POSES_A),
@@ -135,6 +137,7 @@ FRED3_H = 210  # Fred the Rotwalker (level 15), a hulking stalker taller than th
 WYV0_H = 96  # David the Hatchling (src/wyvern.js), res 4: 24 art px from wing tip to tail, wings as wide as the knight is tall
 WYV1_H = 150  # David (his second form), res 4: 37 art px from wing tip to tail, wings about 1.2 times the Hatchling's
 WYV2_H = 190  # Great David (his third form), res 4: 47 art px from wing tip to tail
+WYV3_H = 210  # David the Bloodwing (his last form), res 4: 52 art px from wing tip to tail, a little bigger than Great David
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
 ROSE_H = 368  # the Deadly Rose, cut at res 4: drawn 92 art px tall standing (x0.8 in game), about twice the knight
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
@@ -256,6 +259,7 @@ SETS = {
     'wyvern-f0': ('wyvern-f0', 'wyvern-f0/01_front.png', WYV0_H, 1, twelve('wyvern-f0', TWELVE_FILES)),
     'wyvern-f1': ('wyvern-f1', 'wyvern-f1/01_front.png', WYV1_H, 1, twelve('wyvern-f1', TWELVE_FILES)),
     'wyvern-f2': ('wyvern-f2', 'wyvern-f2/01_front.png', WYV2_H, 1, twelve('wyvern-f2', TWELVE_FILES)),
+    'wyvern-f3': ('wyvern-f3', 'wyvern-f3/01_front.png', WYV3_H, 1, twelve('wyvern-f3', TWELVE_FILES)),
     'starved-bell': ('starved-bell', 'starved-bell/01_front.png', BELL_H, 1, twelve('starved-bell', TWELVE_FILES)),
     'deadly-rose': ('deadly-rose', 'deadly-rose/01_front.png', ROSE_H, 1, twelve('deadly-rose', TWELVE_FILES)),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
@@ -398,6 +402,11 @@ SHEETS = {
         ('wyvern-f2/walk-side-4.png', 4, 1, 208, 'side/walk'),
         ('wyvern-f2/fly-front.png', 4, 1, 265, 'walkF'),
         ('wyvern-f2/fly-back.png', 4, 1, 259, 'walkB'),
+    ],
+    'wyvern-f3': [
+        ('wyvern-f3/walk-side-4.png', 4, 1, 255, 'side/walk'),
+        ('wyvern-f3/fly-front.png', 4, 1, 287, 'walkF'),
+        ('wyvern-f3/fly-back.png', 4, 1, 285, 'walkB'),
     ],
     'fred-f1': [
         ('fred-f1/walk-side-4.png', 4, 1, FRED1_H, 'side/walk'),
@@ -601,12 +610,34 @@ PROP_OUT = 'props'
 # Renders where the magenta background tinted the art pink (the trees' moss): pull it back out (see despill).
 PROP_DESPILL = {'swampTree1', 'swampTree2', 'swampTree3'}
 
+# Sheets where two poses touch: magenta lines (x, y0, y1) painted down the gap before the sheet is split.
+SEAMS = {'wyvern-f3/poses-a.png': [(533, 0, 512)], 'wyvern-f3/fly-back.png': [(446, 0, 724)],
+         'wyvern-f2/fly-front.png': [(465, 0, 724), (1122, 0, 724), (1565, 0, 724)],
+         'wyvern-f2/fly-back.png': [(457, 0, 724), (1092, 0, 724), (1512, 0, 724)]}
+# Animation sheets whose wings reach over into the next cell: split by figure (as GRIDS are) and laid out
+# again in equal cells before cutting, so no frame picks up its neighbour's wingtip or loses its own.
+REGRID = {'wyvern-f%d/%s' % (f, n) for f in range(4) for n in ('fly-front.png', 'fly-back.png')}
+
+def open_sheet(sheet):
+    img = Image.open(os.path.join(SRC, sheet)).convert('RGB')
+    for x, y0, y1 in SEAMS.get(sheet, []):
+        img.paste((255, 0, 255), (x - 1, y0, x + 2, y1))
+    return img
+
+def regrid(img, cols, rows):
+    cells = split_grid(img, cols, rows)
+    cw, ch = max(c.width for c in cells), max(c.height for c in cells)
+    out = Image.new('RGB', (cw * cols, ch * rows), (255, 0, 255))
+    for i, c in enumerate(cells):
+        out.paste(c, ((i % cols) * cw + (cw - c.width) // 2, (i // cols) * ch + ch - c.height))
+    return out
+
 only = sys.argv[2:]  # optional character names to cut
 for sheet, (cols, rows, names) in GRIDS.items():
     p = os.path.join(SRC, sheet)
     if not os.path.exists(p): continue
     ko = KEY_OPTS.get(os.path.dirname(sheet), {})
-    for n, cell in zip(names, split_grid(Image.open(p), cols, rows, tol=ko.get('tol', 120))):
+    for n, cell in zip(names, split_grid(open_sheet(sheet), cols, rows, tol=ko.get('tol', 120))):
         f = CELL_SCALE.get(os.path.dirname(sheet) + '/' + n)
         if f: cell = cell.resize((round(cell.width * f), round(cell.height * f)), Image.NEAREST)
         cell.save(os.path.join(os.path.dirname(p), n + '.png'))
@@ -651,7 +682,8 @@ for name, sheets in SHEETS.items():
     for sheet, cols, rows, height, prefix, *row in sheets:
         p = os.path.join(SRC, sheet)
         if not os.path.exists(p): continue
-        img = Image.open(p)
+        img = open_sheet(sheet)
+        if sheet in REGRID: img = regrid(img, cols, rows)
         if row:
             h = img.height // rows
             img, rows = img.crop((0, row[0] * h, img.width, (row[0] + 1) * h)), 1

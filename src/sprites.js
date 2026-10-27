@@ -118,9 +118,10 @@
     fred("fred_f2", "fred-f2", [120, 167], [72, 167], [78, 170]), // Weeping Fred (level 10), 41 px
     fred("fred_f3", "fred-f3", [160, 248], [107, 222], [110, 216]), // Fred the Rotwalker (level 15), 52 px
     // David the Hatchling (the wyvern's first form, src/wyvern.js), res 4: 24 px from wing tip to tail
-    wyvern("wyvern_f0", "wyvern-f0", [90, 117], [70, 116], [70, 122]),
-    wyvern("wyvern_f1", "wyvern-f1", [125, 160], [98, 173], [90, 189]), // David (level 5), 37 px
-    wyvern("wyvern_f2", "wyvern-f2", [144, 210], [112, 267], [104, 261]), // Great David (level 10), 47 px
+    wyvern("wyvern_f0", "wyvern-f0", [90, 117], [81, 116], [82, 122]),
+    wyvern("wyvern_f1", "wyvern-f1", [125, 160], [123, 173], [111, 189]), // David (level 5), 37 px
+    wyvern("wyvern_f2", "wyvern-f2", [144, 210], [139, 267], [141, 261]), // Great David (level 10), 47 px
+    wyvern("wyvern_f3", "wyvern-f3", [160, 257], [152, 289], [157, 287]), // David the Bloodwing (level 15), 52 px
     abigail(),
     // Mourning Abigail (her third form): a tenth taller, in violet mourning rags
     abigail("abigail_f2", "abigail-f2", [98, 136], [78, 149], [83, 152]),
