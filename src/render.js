@@ -1213,6 +1213,16 @@
     return [[P.x - 2.2, P.y - 37], [P.x + 2.2, P.y - 37]];
   }
   R.drawWraith = drawWraith;
+  // the Soul Wisp: a lone soul with pale eyes, trailing wisps, bigger while it throws (also her Kit portrait)
+  function drawWisp(c, x, y, k, angle, id, t) {
+    for (let i = 1; i <= 4; i++) {
+      const u = (t * 1.1 + i / 4) % 1;
+      c.fillStyle = `rgba(${SOUL},${0.45 * Math.sin(Math.PI * u)})`;
+      c.beginPath(); c.arc(x + Math.sin(t * 3 + i * 2) * 5 - Math.cos(angle) * u * 14, y + 4 + u * 10, 2.6 - u * 1.5, 0, Math.PI * 2); c.fill();
+    }
+    soulOrb(c, x, y, k, t * 3 + id);
+  }
+  R.drawWisp = drawWisp;
   // A soul orb: a dark round soul with two pale eyes in a teal halo (`s` scales it, `ph` sets its flicker).
   function soulOrb(c, x, y, s, ph) {
     const sp = Art.sprites.soulOrb;
@@ -1249,16 +1259,8 @@
         c.fillStyle = g; c.fillRect(x - 5, y - 5, 10, 10);
       }
       const P = wraithPose(w, t);
-      if (DL.Summons.look("wraith").wisp) {
-        // the Soul Wisp: a lone soul with pale eyes, trailing wisps, bigger while it throws
-        const y = P.y - 22, k = w.state === "cast" ? 1.5 : 1.25;
-        for (let i = 1; i <= 4; i++) {
-          const u = (t * 1.1 + i / 4) % 1;
-          c.fillStyle = `rgba(${SOUL},${0.45 * Math.sin(Math.PI * u)})`;
-          c.beginPath(); c.arc(P.x + Math.sin(t * 3 + i * 2) * 5 - Math.cos(w.angle) * u * 14, y + 4 + u * 10, 2.6 - u * 1.5, 0, Math.PI * 2); c.fill();
-        }
-        soulOrb(c, P.x, y, k, t * 3 + w.id);
-      } else for (let i = 0; i < 2; i++) {
+      if (DL.Summons.look("wraith").wisp) drawWisp(c, P.x, P.y - 22, w.state === "cast" ? 1.5 : 1.25, w.angle, w.id, t);
+      else for (let i = 0; i < 2; i++) {
         const a = t * 1.6 + i * Math.PI + w.id;
         soulOrb(c, P.x + Math.cos(a) * 17, P.y - 26 + Math.sin(a) * 7, 0.45, t * 3 + i);
       }
