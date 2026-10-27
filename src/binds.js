@@ -12,8 +12,9 @@
     { id: "left", name: "Move left", keys: ["a"] },
     { id: "right", name: "Move right", keys: ["d"] },
     { id: "dash", name: "Dash", keys: [" ", "shift"], pad: [0] },
-    { id: "ability", name: "Kit ability", keys: ["e", "q"], pad: [1, 5] },
+    { id: "ability", name: "Kit ability", keys: ["e", "q"], pad: [1] },
     { id: "torch", name: "Place torch", keys: ["f", "t"], pad: [4] },
+    { id: "boost", name: "Familiar boost", keys: ["r"], pad: [5] },
     { id: "camp", name: "Camp menu", keys: ["c"], pad: [3] },
     { id: "pause", name: "Pause", keys: ["p"], pad: [9, 8] },
     { id: "attack", name: "Attack (manual)", keys: ["j", "k"], pad: [7, 2] },
@@ -37,6 +38,11 @@
     for (const a of ACTIONS) {
       if (s.keys && Array.isArray(s.keys[a.id])) Binds.keys[a.id] = s.keys[a.id].filter((k) => typeof k === "string");
       if (a.pad && s.pad && Array.isArray(s.pad[a.id])) Binds.pad[a.id] = s.pad[a.id].filter((b) => Number.isInteger(b));
+    }
+    // An action added since these were saved keeps its own defaults: they come off whatever older action had them.
+    for (const a of ACTIONS) for (const [kind, map] of [["keys", Binds.keys], ["pad", Binds.pad]]) {
+      if (!map[a.id] || (s[kind] && s[kind][a.id])) continue;
+      for (const id in map) if (id !== a.id && map[id].some((v) => map[a.id].includes(v)) && map[id].some((v) => !map[a.id].includes(v))) map[id] = map[id].filter((v) => !map[a.id].includes(v));
     }
   };
   Binds.save = function () {

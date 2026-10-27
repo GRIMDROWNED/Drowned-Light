@@ -74,6 +74,20 @@ GRIDS = {
     'fred-f2/poses-b.png': (3, 2, POSES_B),
     'fred-f3/poses-a.png': (3, 2, POSES_A),
     'fred-f3/poses-b.png': (3, 2, POSES_B),
+    # David the wyvern (src/wyvern.js): poses B's four flap cells stand in for the side walk
+    'wyvern-f0/poses-a.png': (3, 2, POSES_A),
+    'wyvern-f0/poses-b.png': (3, 2, POSES_B),
+    'wyvern-f1/poses-a.png': (3, 2, POSES_A),
+    'wyvern-f1/poses-b.png': (3, 2, POSES_B),
+    'wyvern-f2/poses-a.png': (3, 2, POSES_A),
+    'wyvern-f2/poses-b.png': (3, 2, POSES_B),
+    'wyvern-f3/poses-a.png': (3, 2, POSES_A),
+    'wyvern-f3/poses-b.png': (3, 2, POSES_B),
+    # the Mother Wyvern: standing poses and her fire; side flaps (as a walk strip), her dive and storm roar;
+    # flying toward and away from you, hurt and dead
+    'mother/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_rear', '09_breath', '10_rake']),
+    'mother/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '07_walk', '13_dive', '14_roar']),
+    'mother/poses-c.png': (3, 2, ['15_flyF1', '16_flyF2', '17_flyB1', '18_flyB2', '11_hurt', '12_death']),
     'kindle/poses-a.png': (3, 2, POSES_A),
     'kindle/poses-b.png': (3, 2, POSES_B),
     'abigail/poses-a.png': (3, 2, POSES_A),
@@ -100,7 +114,10 @@ CELL_SCALE.update({'derek-f0/' + n: 0.88 for n in POSES_B})
 
 # Cells redrawn on their own after a sheet came back: cell -> (redrawn image, cell whose figure height it takes).
 # The redraw is shrunk to that height before it is cut, so it matches the rest of its sheet.
-CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-bell/08_attackA': ('bell-rear.png', '03_right')}
+CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-bell/08_attackA': ('bell-rear.png', '03_right'),
+               # David's second form: his side view and shriek came back with tangled wings
+               'wyvern-f1/03_right': ('redraw-right.png', '03_right'), 'wyvern-f1/10_attackC': ('redraw-shriek.png', '10_attackC'),
+               'wyvern-f2/10_attackC': ('redraw-shriek.png', '10_attackC')}
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
@@ -122,6 +139,11 @@ FRED0_H = 80  # Fred the Sprout (Fred's first form, src/fred.js), res 4: 20 art 
 FRED1_H = 107  # Fred (level 5), a third taller than the Sprout
 FRED2_H = 164  # Weeping Fred (level 10), about the knight's height
 FRED3_H = 210  # Fred the Rotwalker (level 15), a hulking stalker taller than the knight
+WYV0_H = 96  # David the Hatchling (src/wyvern.js), res 4: 24 art px from wing tip to tail, wings as wide as the knight is tall
+WYV1_H = 150  # David (his second form), res 4: 37 art px from wing tip to tail, wings about 1.2 times the Hatchling's
+WYV2_H = 190  # Great David (his third form), res 4: 47 art px from wing tip to tail
+WYV3_H = 210  # David the Bloodwing (his last form), res 4: 52 art px from wing tip to tail, a little bigger than Great David
+MOTHER_H = 380  # the Mother Wyvern boss, res 4: 95 art px standing with her wings half spread, about two and a half knights
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
 ROSE_H = 368  # the Deadly Rose, cut at res 4: drawn 92 art px tall standing (x0.8 in game), about twice the knight
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
@@ -239,6 +261,17 @@ SETS = {
     'fred-f3': ('fred-f3', 'fred-f3/01_front.png', FRED3_H, 1, dict(twelve('fred-f3', TWELVE_FILES), **{'fred-f3/10_attackC.png': 'heal'})),
     'fred-f2': ('fred-f2', 'fred-f2/01_front.png', FRED2_H, 1, dict(twelve('fred-f2', TWELVE_FILES), **{'fred-f2/10_attackC.png': 'heal'})),
     'fred-f1': ('fred-f1', 'fred-f1/01_front.png', FRED1_H, 1, dict(twelve('fred-f1', TWELVE_FILES), **{'fred-f1/10_attackC.png': 'heal'})),
+    # David: poses A put his breath (rear back), his spit and his shriek where the attacks go
+    'wyvern-f0': ('wyvern-f0', 'wyvern-f0/01_front.png', WYV0_H, 1, twelve('wyvern-f0', TWELVE_FILES)),
+    'wyvern-f1': ('wyvern-f1', 'wyvern-f1/01_front.png', WYV1_H, 1, twelve('wyvern-f1', TWELVE_FILES)),
+    'wyvern-f2': ('wyvern-f2', 'wyvern-f2/01_front.png', WYV2_H, 1, twelve('wyvern-f2', TWELVE_FILES)),
+    'wyvern-f3': ('wyvern-f3', 'wyvern-f3/01_front.png', WYV3_H, 1, twelve('wyvern-f3', TWELVE_FILES)),
+    'mother': ('wyvern-mother', 'mother/01_front.png', MOTHER_H, 1, {
+        'mother/01_front.png': 'front', 'mother/02_back.png': 'back', 'mother/03_right.png': 'right',
+        'mother/08_rear.png': 'side/rear', 'mother/09_breath.png': 'side/breath', 'mother/10_rake.png': 'side/rake',
+        'mother/13_dive.png': 'side/dive', 'mother/14_roar.png': 'side/roar',
+        'mother/15_flyF1.png': 'flyF1', 'mother/16_flyF2.png': 'flyF2', 'mother/17_flyB1.png': 'flyB1', 'mother/18_flyB2.png': 'flyB2',
+        'mother/11_hurt.png': 'side/hurt', 'mother/12_death.png': 'side/death'}),
     'starved-bell': ('starved-bell', 'starved-bell/01_front.png', BELL_H, 1, twelve('starved-bell', TWELVE_FILES)),
     'deadly-rose': ('deadly-rose', 'deadly-rose/01_front.png', ROSE_H, 1, twelve('deadly-rose', TWELVE_FILES)),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
@@ -364,6 +397,34 @@ SHEETS = {
         ('fred-f0/walk-side-4.png', 4, 1, FRED0_H, 'side/walk'),
         ('fred-f0/walk-front.png', 4, 1, FRED0_H, 'walkF'),
         ('fred-f0/walk-back.png', 4, 1, FRED0_H, 'walkB'),
+    ],
+    # his flap cycles toward and away from you; the first frame has the wings raised, so it stands taller
+    'wyvern-f0': [
+        ('wyvern-f0/walk-side-4.png', 4, 1, 115, 'side/walk'),
+        ('wyvern-f0/fly-front.png', 4, 1, 114, 'walkF'),
+        ('wyvern-f0/fly-back.png', 4, 1, 120, 'walkB'),
+    ],
+    'wyvern-f1': [
+        ('wyvern-f1/walk-side-4.png', 4, 1, 158, 'side/walk'),
+        ('wyvern-f1/fly-front.png', 4, 1, 171, 'walkF'),
+        ('wyvern-f1/fly-back.png', 4, 1, 187, 'walkB'),
+    ],
+    # Great David's wings are raised far higher in the first fly frames, so they stand much taller than his poses
+    'wyvern-f2': [
+        ('wyvern-f2/walk-side-4.png', 4, 1, 208, 'side/walk'),
+        ('wyvern-f2/fly-front.png', 4, 1, 265, 'walkF'),
+        ('wyvern-f2/fly-back.png', 4, 1, 259, 'walkB'),
+    ],
+    'wyvern-f3': [
+        ('wyvern-f3/walk-side-4.png', 4, 1, 255, 'side/walk'),
+        ('wyvern-f3/fly-front.png', 4, 1, 287, 'walkF'),
+        ('wyvern-f3/fly-back.png', 4, 1, 285, 'walkB'),
+    ],
+    # her side "walk" is poses B's four wing beats: she flies side on, and stalks on foot toward and away from you
+    'mother': [
+        ('mother/walk-side-4.png', 4, 1, 392, 'side/fly'),
+        ('mother/walk-front.png', 4, 1, 380, 'walkF'),
+        ('mother/walk-back.png', 4, 1, 386, 'walkB'),
     ],
     'fred-f1': [
         ('fred-f1/walk-side-4.png', 4, 1, FRED1_H, 'side/walk'),
@@ -491,6 +552,10 @@ PROP_GRIDS = {
     'camp/workshop.png': (3, 1, ['workshop1', 'workshop2', 'workshop3']),
     'camp/shrine.png': (3, 1, ['shrine1', 'shrine2', 'shrine3']),
     'camp/toadstool.png': (3, 1, ['toadstool1', 'toadstool2', 'toadstool3']),
+    'camp/roost.png': (3, 1, ['roost1', 'roost2', 'roost3']),
+    # David's nest in the Reaches (src/wyvern.js), with its clutch and empty; his egg whole, hatching and broken
+    'world/wyvern-nest.png': (2, 1, ['wyvNest', 'wyvNestEmpty']),
+    'world/wyvern-egg.png': (3, 1, ['wyvEgg', 'wyvEggHatch', 'wyvEggShell']),
     # Fred's fairy ring in the Reaches (src/fred.js), alive and wilted
     'world/fairy-ring.png': (2, 1, ['fairyRing', 'fairyRingWilt']),
     # Fred's glowcaps: sprouting, grown, squashed underfoot
@@ -560,6 +625,9 @@ PROP_HEIGHT.update({'bellTower': 130, 'roseHeart3': 86})  # the tower well over 
 PROP_SAME.update({'roseHeart1': 'roseHeart3', 'roseHeart2': 'roseHeart3'})
 PROP_WIDTH.update({'outpost': 120, 'blackPearl11': 64, 'resBlack': 22})  # the outpost about two knights wide, a clam about a shield
 PROP_SAME.update({n: 'blackPearl11' for n in ['blackPearl11', 'blackPearl12', 'blackPearl13', 'blackPearl21', 'blackPearl22', 'blackPearl23', 'blackPearl31', 'blackPearl32', 'blackPearl33'] if n != 'blackPearl11'})
+PROP_WIDTH.update({'roost3': 116, 'wyvNest': 170})  # the eyrie with its hung wings a little wider than the other homes; the nest about two knights across
+PROP_HEIGHT['wyvEgg'] = 22  # about a quarter of the knight
+PROP_SAME.update({'roost1': 'roost3', 'roost2': 'roost3', 'wyvNestEmpty': 'wyvNest', 'wyvEggHatch': 'wyvEgg', 'wyvEggShell': 'wyvEgg'})
 PROP_SAME.update({'kennel1': 'kennel3', 'kennel2': 'kennel3', 'workshop1': 'workshop3', 'workshop2': 'workshop3', 'shrine1': 'shrine3', 'shrine2': 'shrine3', 'toadstool1': 'toadstool3', 'toadstool2': 'toadstool3', 'fairyRingWilt': 'fairyRing', 'glowcap1': 'glowcap2', 'glowcap3': 'glowcap2'})
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
@@ -567,12 +635,34 @@ PROP_OUT = 'props'
 # Renders where the magenta background tinted the art pink (the trees' moss): pull it back out (see despill).
 PROP_DESPILL = {'swampTree1', 'swampTree2', 'swampTree3'}
 
+# Sheets where two poses touch: magenta lines (x, y0, y1) painted down the gap before the sheet is split.
+SEAMS = {'wyvern-f3/poses-a.png': [(533, 0, 512)], 'wyvern-f3/fly-back.png': [(446, 0, 724)],
+         'wyvern-f2/fly-front.png': [(465, 0, 724), (1122, 0, 724), (1565, 0, 724)],
+         'wyvern-f2/fly-back.png': [(457, 0, 724), (1092, 0, 724), (1512, 0, 724)]}
+# Animation sheets whose wings reach over into the next cell: split by figure (as GRIDS are) and laid out
+# again in equal cells before cutting, so no frame picks up its neighbour's wingtip or loses its own.
+REGRID = {'wyvern-f%d/%s' % (f, n) for f in range(4) for n in ('fly-front.png', 'fly-back.png')} | {'mother/walk-front.png', 'mother/walk-back.png'}
+
+def open_sheet(sheet):
+    img = Image.open(os.path.join(SRC, sheet)).convert('RGB')
+    for x, y0, y1 in SEAMS.get(sheet, []):
+        img.paste((255, 0, 255), (x - 1, y0, x + 2, y1))
+    return img
+
+def regrid(img, cols, rows):
+    cells = split_grid(img, cols, rows)
+    cw, ch = max(c.width for c in cells), max(c.height for c in cells)
+    out = Image.new('RGB', (cw * cols, ch * rows), (255, 0, 255))
+    for i, c in enumerate(cells):
+        out.paste(c, ((i % cols) * cw + (cw - c.width) // 2, (i // cols) * ch + ch - c.height))
+    return out
+
 only = sys.argv[2:]  # optional character names to cut
 for sheet, (cols, rows, names) in GRIDS.items():
     p = os.path.join(SRC, sheet)
     if not os.path.exists(p): continue
     ko = KEY_OPTS.get(os.path.dirname(sheet), {})
-    for n, cell in zip(names, split_grid(Image.open(p), cols, rows, tol=ko.get('tol', 120))):
+    for n, cell in zip(names, split_grid(open_sheet(sheet), cols, rows, tol=ko.get('tol', 120))):
         f = CELL_SCALE.get(os.path.dirname(sheet) + '/' + n)
         if f: cell = cell.resize((round(cell.width * f), round(cell.height * f)), Image.NEAREST)
         cell.save(os.path.join(os.path.dirname(p), n + '.png'))
@@ -617,7 +707,8 @@ for name, sheets in SHEETS.items():
     for sheet, cols, rows, height, prefix, *row in sheets:
         p = os.path.join(SRC, sheet)
         if not os.path.exists(p): continue
-        img = Image.open(p)
+        img = open_sheet(sheet)
+        if sheet in REGRID: img = regrid(img, cols, rows)
         if row:
             h = img.height // rows
             img, rows = img.crop((0, row[0] * h, img.width, (row[0] + 1) * h)), 1

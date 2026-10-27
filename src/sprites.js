@@ -117,6 +117,12 @@
     fred("fred_f1", "fred-f1", [54, 109], [48, 110], [48, 109]), // Fred (level 5), 27 px
     fred("fred_f2", "fred-f2", [120, 167], [72, 167], [78, 170]), // Weeping Fred (level 10), 41 px
     fred("fred_f3", "fred-f3", [160, 248], [107, 222], [110, 216]), // Fred the Rotwalker (level 15), 52 px
+    // David the Hatchling (the wyvern's first form, src/wyvern.js), res 4: 24 px from wing tip to tail
+    wyvern("wyvern_f0", "wyvern-f0", [90, 117], [81, 116], [82, 122]),
+    wyvern("wyvern_f1", "wyvern-f1", [125, 160], [123, 173], [111, 189]), // David (level 5), 37 px
+    wyvern("wyvern_f2", "wyvern-f2", [144, 210], [139, 267], [141, 261]), // Great David (level 10), 47 px
+    wyvern("wyvern_f3", "wyvern-f3", [160, 257], [152, 289], [157, 287]), // David the Bloodwing (level 15), 52 px
+    wyvernMother(),
     abigail(),
     // Mourning Abigail (her third form): a tenth taller, in violet mourning rags
     abigail("abigail_f2", "abigail-f2", [98, 136], [78, 149], [83, 152]),
@@ -143,6 +149,29 @@
     const set = Object.assign(walking(key, side, front, back, 4), { path: "assets/sprites/" + folder + "/", keys: { [key]: [0, false] } });
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
       Object.assign(set.views[dir], { attack: ["attackA", "attackB", "attackB"], heal: ["heal"], hurt: ["side/hurt"], death: ["side/death"], idle: [p] });
+    return set;
+  }
+
+  // David the wyvern familiar: he always flies, so his walk is a flap (poses B's four wing beats side on, the fly
+  // sheets toward and away from you). His attack rears back and spits a bolt, and "roar" is his shriek.
+  function wyvern(key, folder, side, front, back) {
+    const set = Object.assign(walking(key, side, front, back, 4), { path: "assets/sprites/" + folder + "/", keys: { [key]: [0, false] } });
+    for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
+      Object.assign(set.views[dir], { attack: ["attackA", "attackB", "attackB"], roar: ["attackC"], hurt: ["side/hurt"], death: ["side/death"], idle: [p] });
+    return set;
+  }
+
+  // The Mother Wyvern, David's mother (src/wyvern.js), cut at res 4: 95 px standing, wings half spread. She stalks on
+  // foot (front and back walk sheets, a step side on) and flies ("fly": four wing beats side on, two toward and away
+  // from you). Her other moves are drawn side on only: "rear" gathering a breath, "breath" breathing fire, "rake" a
+  // claw, "dive" and "roar" (calling the storm). Feet: the side wing beats share one, the walks theirs.
+  function wyvernMother() {
+    const set = Object.assign(walking("wyvern", [241, 394], [193, 431], [190, 429], 4), { path: "assets/sprites/wyvern-mother/", keys: { wyvern: [0, false] } });
+    Object.assign(set.feet, sheetFeet([1, 2, 3, 4].map((i) => "side/fly" + i), [241, 394]));
+    const sideOnly = { rear: ["side/rear"], breath: ["side/breath"], rake: ["side/rake"], attack: ["side/rake"], dive: ["side/dive"], roar: ["side/roar"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] };
+    Object.assign(set.views.side, sideOnly, { walk: stepped(["right", "right", "right", "right"]), fly: [1, 1, 2, 2, 3, 3, 4, 4].map((i) => "side/fly" + i + "@-") });
+    Object.assign(set.views.down, sideOnly, { fly: ["flyF1", "flyF1", "flyF2", "flyF2"] });
+    Object.assign(set.views.up, sideOnly, { fly: ["flyB1", "flyB1", "flyB2", "flyB2"] });
     return set;
   }
 
@@ -203,7 +232,7 @@
     "swampTree1", "swampTree2", "swampTree3",
     "boulder11", "boulder12", "boulder13", "boulder21", "boulder22", "boulder23", "boulder31", "boulder32", "boulder33", "boulder41", "boulder42", "boulder43",
     "flame1", "flame2", "flame3", "forge1", "forge2", "forge3", "forge4", "armory1", "armory2", "armory3", "armory4", "workbench1", "workbench2", "workbench3", "workbench4", "tower1", "tower2", "tower3", "pylon1", "pylon2", "pylon3", "stake", "palisade", "palisade2", "gatePost", "gatePost2", "palisadeSide", "palisadeSide2", "cornerPost", "cornerPost2", "tent", "banner", "torch", "burnt", "brazier", "fire1", "fire2", "fire3", "fire4", "fire5", "fire6", "iron11", "iron12", "iron13", "iron21", "iron22", "iron23", "iron31", "iron32", "iron33", "amethyst11", "amethyst12", "amethyst13", "amethyst21", "amethyst22", "amethyst23", "amethyst31", "amethyst32", "amethyst33", "resWood", "resStone", "resResin", "resIron", "resPearl", "denGuarded", "denCleared", "caveSealed", "caveOpen", "headstone", "grave", "grave2", "pillar", "soulOrb", "soulFly1", "soulFly2", "roseBriar1", "roseBriar2", "roseBriar3", "roseBriar4", "roseBriar5", "roseLash1", "roseLash2", "roseLash3", "roseWaltz1", "roseWaltz2", "roseWaltz3", "roseWaltz4", "roseBud", "roseWither", "roseBush0", "roseBush1", "roseBush2", "rosePetal1", "rosePetal2", "rosePetal3", "rosePetal4", "rosePetal5", "rosePetal6",
-    "kennel1", "kennel2", "kennel3", "workshop1", "workshop2", "workshop3", "shrine1", "shrine2", "shrine3", "toadstool1", "toadstool2", "toadstool3", "fairyRing", "fairyRingWilt", "glowcap1", "glowcap2", "glowcap3",
+    "kennel1", "kennel2", "kennel3", "workshop1", "workshop2", "workshop3", "shrine1", "shrine2", "shrine3", "toadstool1", "toadstool2", "toadstool3", "fairyRing", "fairyRingWilt", "glowcap1", "glowcap2", "glowcap3", "roost1", "roost2", "roost3", "wyvNest", "wyvNestEmpty", "wyvEgg", "wyvEggHatch", "wyvEggShell",
     "bellTower", "roseHeart1", "roseHeart2", "roseHeart3", "outpost",
     "blackPearl11", "blackPearl12", "blackPearl13", "blackPearl21", "blackPearl22", "blackPearl23", "blackPearl31", "blackPearl32", "blackPearl33", "resBlack"];
   const PROPS = {

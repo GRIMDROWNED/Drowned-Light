@@ -89,6 +89,8 @@ body.touch kbd { display: none; }
 .chip.no { color: var(--danger); }
 .chip.soul { color: #9ff5dc; }
 .chip.carcass { color: #e6dcc0; }
+.chip.egg { color: #ff9a86; }
+.chip.egg i { background: radial-gradient(circle at 40% 35%, #c04030, #5a0e0e); border-color: #ff6a50; border-radius: 50% 50% 46% 46% / 60% 60% 40% 40%; transform: none; }
 .chip.carcass i { background: #d9cdae; border-radius: 2px; transform: none; }
 .chip.soul i { background: #071311; border-color: #5af5cd; border-radius: 50%; transform: none; box-shadow: 0 0 6px #5af5cd; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -169,6 +171,12 @@ body.touch kbd { display: none; }
 body.manual .act.big:not(.attack) { width: 70px; height: 70px; font-size: 11px; border-color: var(--line); }
 #btnAbility { font-size: 9.5px; letter-spacing: 0; border-color: rgba(255, 210, 140, 0.7); box-shadow: 0 0 14px rgba(255, 190, 110, 0.25); }
 #btnAbility.low { border-color: var(--line); box-shadow: none; opacity: 0.7; }
+/* Gerald's boost: storm-blue (Tailwind) or fire-orange (War Fury), lit while it lasts */
+#btnBoost { font-size: 8.5px; letter-spacing: 0; border-color: rgba(255, 110, 80, 0.7); }
+#btnBoost.storm { border-color: rgba(170, 210, 255, 0.85); }
+#btnBoost.on { box-shadow: 0 0 16px rgba(255, 130, 70, 0.6); background: radial-gradient(circle at 50% 35%, #5a2a1a, #1c0f0b); }
+#btnBoost.storm.on { box-shadow: 0 0 16px rgba(170, 210, 255, 0.6); background: radial-gradient(circle at 50% 35%, #2a3a5a, #0f141c); }
+
 .act:active { transform: scale(0.94); }
 .act kbd { font-size: 9px; padding: 0 4px; }
 

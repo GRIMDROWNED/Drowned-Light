@@ -31,6 +31,7 @@
     press("btnDash", () => DL.Input.trigger("dash"));
     press("btnAbility", () => DL.Input.trigger("ability"));
     press("btnTorch", () => DL.Input.trigger("torch"));
+    press("btnBoost", () => DL.Input.trigger("boost"));
     // Manual Attack button: strikes for as long as it's held.
     // The Attack button doubles as an aiming stick: press to strike, drag to aim
     // (so you can back away while striking the other way). A plain press strikes the way you face.
@@ -199,6 +200,8 @@
       else if (act === "trainSummon") DL.Summons.train(arg);
       else if (act === "fredPath") DL.Summons.choose(arg);
       else if (act === "fredRepick") DL.Summons.repick();
+      else if (act === "wyvPath") DL.Summons.choose(arg, "wyvern");
+      else if (act === "wyvRepick") DL.Summons.repick("wyvern");
       else if (act === "travel") { if (DL.Outposts.travel(arg)) { UI.closeCamp(); return; } }
       else if (act === "torch") G.craftTorch();
       else if (act === "rest") { G.restUntilDusk(); UI.closeCamp(); UI.toast("You rest by the fire until dusk.", "warn"); return; }
@@ -320,7 +323,7 @@
   // HUD and title hints follow the bindings.
   UI.refreshBinds = function () {
     UI.renderBinds();
-    const hud = { btnTorch: "torch", btnAbility: "ability", btnDash: "dash", btnAttack: "attack", btnMine: "mine" };
+    const hud = { btnTorch: "torch", btnAbility: "ability", btnBoost: "boost", btnDash: "dash", btnAttack: "attack", btnMine: "mine" };
     for (const id in hud) {
       const k = $(id).querySelector("kbd");
       k.textContent = UI.keyLabel(hud[id])[0] || "";
@@ -329,8 +332,8 @@
     UI.campShown = null; // redraws the camp button's hint
     const K = (id) => `<kbd>${UI.keyLabel(id)[0] || "—"}</kbd>`, P = (id) => `<kbd>${UI.padLabel(id)[0] || "—"}</kbd>`;
     const mv = ["up", "left", "down", "right"].map((id) => UI.keyLabel(id)[0] || "").join("");
-    $("hintDesk").innerHTML = `Move <kbd>${mv}</kbd> · Attack (manual) ${K("attack")} or click · Mine (manual) ${K("mine")} or right-click · Dash ${K("dash")} · Ability ${K("ability")} · Torch ${K("torch")} · Camp ${K("camp")} · Pause <kbd>Esc</kbd>`;
-    $("hintPad").innerHTML = `Controller: move <kbd>Left stick</kbd> · Dash ${P("dash")} · Ability ${P("ability")} · Attack ${P("attack")} · Torch ${P("torch")} · Camp ${P("camp")} · Pause ${P("pause")}`;
+    $("hintDesk").innerHTML = `Move <kbd>${mv}</kbd> · Attack (manual) ${K("attack")} or click · Mine (manual) ${K("mine")} or right-click · Dash ${K("dash")} · Ability ${K("ability")} · Torch ${K("torch")} · Familiar boost ${K("boost")} · Camp ${K("camp")} · Pause <kbd>Esc</kbd>`;
+    $("hintPad").innerHTML = `Controller: move <kbd>Left stick</kbd> · Dash ${P("dash")} · Ability ${P("ability")} · Attack ${P("attack")} · Torch ${P("torch")} · Boost ${P("boost")} · Camp ${P("camp")} · Pause ${P("pause")}`;
   };
   UI.capture = null;
   UI.startCapture = function (kind, id) {
@@ -527,6 +530,11 @@
       g.clearRect(0, 0, cv.width, cv.height);
       DL.Fred.portrait(g, cv, t);
     }
+    for (const cv of document.querySelectorAll("canvas[data-wyvern]")) {
+      const g = cv.getContext("2d");
+      g.clearRect(0, 0, cv.width, cv.height);
+      DL.Wyvern.portrait(g, cv, t);
+    }
     for (const cv of document.querySelectorAll("canvas[data-golem]")) {
       const g = cv.getContext("2d");
       g.clearRect(0, 0, cv.width, cv.height);
@@ -642,6 +650,7 @@
       html += golemCard(G);
       html += wraithCard(G);
       html += fredCard(G);
+      html += wyvernCard(G);
       const d = G.diff();
       html += `<article class="card"><header><h3>${d.name}</h3><span class="tag">Difficulty</span></header>
         <p class="motto">${d.motto}</p><ul class="guide">${d.notes.map((n) => `<li>${n}</li>`).join("")}</ul></article>`;
@@ -670,6 +679,7 @@
           <li>${DL.Kindle.guideLine()}</li>
           <li>${DL.Abigail.guideLine()}</li>
           <li>${DL.Fred.guideLine()}</li>
+          <li>${DL.Wyvern.guideLine()}</li>
           <li>${DL.Rose.guideLine()}</li>
           <li><b>Black Pearls</b> are found only in the Abyss: in clams half sunk in its mud, now and then on its Drowned, and on its great bosses. The last levels of the camp need them.</li>
           <li>${DL.Siege.line()}${s.trophies.bell ? " Your Bell Tower, hung with the Starved Bell's clapper, warns of every wave." : ""}</li>
@@ -688,6 +698,7 @@
     if (kind === "golem") return G.isGuest() ? !!DL.Net.profile().golem : !!G.save.golem;
     if (kind === "wraith") return DL.Abigail.won();
     if (kind === "fred") return DL.Fred.won();
+    if (kind === "wyvern") return DL.Wyvern.won();
     return true;
   }
   UI.owns = owns;
@@ -837,6 +848,44 @@
       <footer>${action}</footer></article>`;
   }
 
+  // David: a wyvern familiar, one per knight, won by stealing an egg from his mother's nest and killing her.
+  // His card also shows his roads: at levels 5, 10 and 15 the Storm's (A) or the Fire's (B).
+  function wyvernCard(G) {
+    const W = DL.WYVERN, Sm = DL.Summons, ws = Sm.wyvern(), mine = DL.Wyvern.mine(), w = DL.Wyvern.where(), found = G.isGuest() || G.save.wyvNest.found;
+    UI.wyvernShown = !!mine;
+    let action;
+    if (mine) action = `<span class="maxed">At your side${DL.Wyvern.boostT > 0 ? ` · ${DL.Wyvern.boostName()} now` : ""}</span>`;
+    else if (DL.Wyvern.carrying()) action = `<span class="req">You carry her egg: slay the mother wyvern before she kills you</span>`;
+    else if (DL.Wyvern.empty()) action = `<span class="req">The nest lies empty · its mother is gone for a few days</span>`;
+    else action = `<span class="req">A wyvern's nest lies in the Drowned Reaches${found ? `, ${w.m} m ${w.dir} of camp` : ""}</span>`;
+    const hint = `A wyvern nests on the rocks of the Drowned Reaches${found ? `, ${w.m} m ${w.dir} of camp` : ""}, and while she hunts her clutch of blood-red eggs lies unguarded. Walk into the nest and take one, and she will hunt you wherever you run, over walls and water, until one of you is dead. Slay her and see what hatches; fall, and she takes her egg back.`;
+    if (!owns("wyvern")) return lockedCard(`data-wyvern="1"`, hint, action);
+    let roads = "";
+    if (Sm.anyHas("wyvern")) {
+      const L = Sm.level("wyvern"), path = Sm.path("wyvern");
+      roads = `<ol class="ms-list">${W.roads.map((pair, i) => {
+        const lv = DL.SUMMON.formAt[i + 1], got = path[i];
+        if (got) { const r = pair[got === "A" ? 0 : 1]; return `<li class="got"><span>Lv ${lv}</span><b>${r.name}</b> (${got === "A" ? "Storm" : "Fire"}). ${r.text}.</li>`; }
+        if (L < lv) return `<li><span>Lv ${lv}</span>Choose: <b>${pair[0].name}</b> (A, Storm) or <b>${pair[1].name}</b> (B, Fire).</li>`;
+        return `<li class="new"><span>Lv ${lv}</span>Choose his road:<br><b>A · ${pair[0].name}</b>: ${pair[0].text}.<br><b>B · ${pair[1].name}</b>: ${pair[1].text}.
+          <div class="road-pick"><button data-act="wyvPath:${i}-A">A · ${pair[0].name}</button> <button data-act="wyvPath:${i}-B">B · ${pair[1].name}</button></div></li>`;
+      }).join("")}</ol>`;
+      if (path.some((v) => v)) {
+        const lock = Sm.repickLock("wyvern"), ok = !lock && G.canAfford(W.repick);
+        roads += `<footer class="train"><div class="cost">${costHtml(W.repick)}</div>${lock ? `<span class="req">${lock}</span>` : ""}<button data-act="wyvRepick" ${ok ? "" : "disabled"}>Choose his roads again</button></footer>`;
+      }
+    }
+    const boost = ws.boost ? `<br>${DL.Wyvern.boostName()}: press <b>Boost</b> (${UI.keyLabel("boost")[0] || "—"}) · lasts ${W.boostFor} s · again ${W.boostEvery} s after it began` : "";
+    return `<article class="card hound-card">
+      <header><canvas class="portrait" data-wyvern="1" width="66" height="52"></canvas>
+        <div><span class="tag">Familiar · Ranged · Boost</span><h3>${W.name}</h3><span class="motto">Stolen as an egg. His mother never forgave you.</span></div></header>
+      <p>A wyvern of bone and torn red wings who flies at your shoulder, over walls and water alike, and spits bolts at the Drowned. At levels 5, 10 and 15 he takes the road of the Storm (lightning that leaps between foes, and speed) or of the Fire (great single blows, and fury).</p>
+      <p class="effect">${ws.chain ? "Chain lightning" : ws.sear ? "Searing bolt" : "Bolt"} ${Math.round(DL.Wyvern.dmg() * (ws.sear ? W.searMult : 1) * 10) / 10} damage every ${ws.cd.toFixed(1)} s${ws.chain ? `, leaping to ${W.chainN} more` : ws.sear ? ", sets it burning" : ""}${boost}<br>Can't be hurt · stays with you for good · one per knight</p>
+      ${summonTrain("wyvern")}
+      ${roads}
+      <footer>${action}</footer></article>`;
+  }
+
   /* ---------------- per-frame HUD ---------------- */
   UI.update = function () {
     const G = DL.Game;
@@ -919,7 +968,7 @@
     }
 
     // soul orbs and a hauled Bone Wolf carcass go in the satchel line too
-    const souls = DL.Abigail.won() ? 0 : DL.Abigail.held(), carcass = DL.Den.carrying() ? `<span class="chip carcass"><i></i>Bone Wolf carcass</span>` : "";
+    const souls = DL.Abigail.won() ? 0 : DL.Abigail.held(), carcass = (DL.Den.carrying() ? `<span class="chip carcass"><i></i>Bone Wolf carcass</span>` : "") + (DL.Wyvern.carrying() ? `<span class="chip egg"><i></i>Wyvern egg</span>` : "");
     const carried = DL.RES_KEYS.filter((k) => p.carried[k] > 0).map((k) => chip(k, p.carried[k])).join("") + (souls ? `<span class="chip soul"><i></i>${souls} soul orb${souls > 1 ? "s" : ""}</span>` : "") + carcass;
     set($("carried"), "html", carried ? `<span class="lbl">Carrying</span>${carried}` : "");
 
@@ -927,6 +976,7 @@
     let obj = "";
     if (G.cave) obj = DL.Cave.objective();
     else if (G.isGuest() && (G.hostState === "dead" || G.hostState === "dying")) obj = "Your friend has fallen — waiting for them to rise";
+    else if (DL.Wyvern.carrying()) obj = "The mother wyvern hunts you — slay her to keep the egg";
     else if (!G.flame.lit) obj = "The Central Flame is out — survive until dawn";
     else if (G.night && Math.hypot(p.x, p.y) < G.siegeRadius()) obj = `Defend the camp · Flame ${Math.ceil(G.flame.hp)} / ${G.flame.max}`;
     else if (G.rootEvent && !G.rootEvent.obj.dead && Math.hypot(p.x - G.rootEvent.obj.x, p.y - G.rootEvent.obj.y) < 650) obj = `Defend the Mother Root until dawn · ${Math.ceil(G.rootEvent.obj.hp)} / ${Math.round(G.rootEvent.obj.maxHp)}`;
@@ -940,6 +990,13 @@
     set($("btnAbility"), "--cd", abFrac.toFixed(3));
     set($("btnAbility"), "class", "act" + (p.oil < kit.ability.oil ? " low" : ""));
     set($("btnDash"), "--cd", (p.dashCd / 2.2).toFixed(3));
+    // David's boost: shown once his level 10 road is chosen
+    const hb = DL.Wyvern.hasBoost();
+    set($("btnBoost"), "class", "act small" + (hb ? "" : " hidden") + (DL.Wyvern.boostKind === "A" || DL.Summons.wyvern().boost === "A" ? " storm" : "") + (DL.Wyvern.boostT > 0 ? " on" : ""));
+    if (hb) {
+      set($("btnBoost"), "--cd", (DL.Wyvern.boostT > 0 ? 0 : DL.Wyvern.boostCd / DL.WYVERN.boostEvery).toFixed(3));
+      set($("boostName"), "text", DL.Wyvern.boostT > 0 ? Math.ceil(DL.Wyvern.boostT) + " s" : DL.Wyvern.boostName());
+    }
     set($("torchCount"), "text", String(G.save.torches));
     const manual = G.save.attackMode === "manual";
     set($("btnAttack"), "hidden", !manual);
@@ -949,6 +1006,6 @@
     set($("campBtn"), "hidden", !cl);
     if (cl && UI.campShown !== cl) { UI.campShown = cl; $("campBtn").innerHTML = `${cl} <kbd data-pad="${UI.padLabel("camp")[0] || ""}">${UI.keyLabel("camp")[0] || ""}</kbd>`; }
     // the Bone Hound card follows the hound rising, going down or getting up while the menu is open
-    if (G.state === "camp" && UI.campTab === "kit" && (houndState(DL.Hounds.mine()) !== UI.houndShown || !!DL.Golems.mine() !== UI.golemShown || !!DL.Abigail.mine() !== UI.wraithShown || !!DL.Fred.mine() !== UI.fredShown)) UI.renderCamp();
+    if (G.state === "camp" && UI.campTab === "kit" && (houndState(DL.Hounds.mine()) !== UI.houndShown || !!DL.Golems.mine() !== UI.golemShown || !!DL.Abigail.mine() !== UI.wraithShown || !!DL.Fred.mine() !== UI.fredShown || !!DL.Wyvern.mine() !== UI.wyvernShown)) UI.renderCamp();
   };
 })(window.DL);

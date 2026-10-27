@@ -52,6 +52,8 @@
       const rl = DL.Rose.lair(), rlHere = Math.hypot(mx - rl.x, my - rl.y) < CH + DL.ROSE.clear;
       // and Fred's fairy ring one for its toadstools (src/fred.js)
       const fr = DL.Fred.ringSpot(), frHere = Math.hypot(mx - fr.x, my - fr.y) < CH + DL.FRED.clear;
+      // and the wyvern's nest one for its rocks (src/wyvern.js)
+      const wn = DL.Wyvern.nestSpot(), wnHere = Math.hypot(mx - wn.x, my - wn.y) < CH + DL.WYVERN.clear;
       const n = Math.round(DL.ZONES[zi].density * D.density * (0.7 + DL.hash(cx, cy, 5) * 0.6));
       for (let i = 0; i < n; i++) {
         const x = (cx + DL.hash(cx, cy, i * 3 + 1)) * CH, y = (cy + DL.hash(cx, cy, i * 3 + 2)) * CH;
@@ -71,6 +73,7 @@
         if (gsHere && Math.hypot(x - gs.x, y - gs.y) < gsR) continue;
         if (rlHere && DL.Rose.clears(x, y)) continue;
         if (frHere && DL.Fred.clears(x, y)) continue;
+        if (wnHere && DL.Wyvern.clears(x, y)) continue;
         objs.push(this.makeObj(type, x, y, `${cx},${cy},${i}`, ozi, DL.hash(cx, cy, i * 5 + 4)));
       }
       // The blooms of this chunk's grove that stand inside it.

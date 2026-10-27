@@ -486,6 +486,26 @@
       }
     });
     S.toadstool1 = toadstool(1); S.toadstool2 = toadstool(2); S.toadstool3 = toadstool(3);
+    // Wyvern Roost, levels 1–3: a ledge of piled stones and bones, then a perch of black timber on it, then a tall eyrie with torn red banners.
+    const timber = "#2a1d14", timberHi = "#4a3626", wingRed = "#7a1e1e";
+    const roost = (lv) => mk(34, 56, (P) => {
+      P.ell(17, 52, 16, 3.5, "#2a2018");
+      P.poly([2, 52, 5, 43, 11, 39, 23, 38, 30, 42, 32, 52], C.stoneDk); P.poly([5, 43, 11, 39, 23, 38, 30, 42, 24, 44, 10, 45], C.stone);
+      P.rect(10, 39, 5, 1, C.stoneHi); P.rect(21, 39, 4, 1, C.stoneHi);
+      for (const [x, y] of [[8, 47], [15, 49], [25, 47]]) { P.line([x - 3, y, x + 3, y - 1], 2, bone); P.px(x - 3, y, boneDk); }
+      P.ell(17, 39, 7, 2.5, timber); for (let x = 11; x <= 23; x += 3) P.line([x, 40, x + 2, 37], 1, x % 2 ? bone : timberHi); // a nest of sticks and bones
+      if (lv >= 2) {
+        P.line([6, 44, 8, 14], 3, timber); P.line([28, 44, 26, 14], 3, timber); P.line([4, 16, 30, 16], 3, timber); P.rect(4, 15, 26, 1, timberHi);
+        P.line([8, 30, 26, 24], 2, timberHi);
+        for (let x = 9; x <= 25; x += 4) { P.line([x, 16, x, 20], 1, bone); P.px(x, 21, boneDk); } // hanging bones
+      }
+      if (lv >= 3) {
+        P.line([17, 16, 17, 5], 2, timber); P.ell(17, 5, 4, 3, bone); P.rect(15, 4, 1, 1, "#120c08"); P.rect(18, 4, 1, 1, "#120c08"); P.px(16, 5, "#ff3a2a"); P.px(18, 5, "#ff3a2a"); // a wyvern skull on the peak
+        P.poly([4, 16, 1, 20, 2, 32, 6, 28], wingRed); P.poly([30, 16, 33, 20, 32, 32, 28, 28], wingRed); P.px(2, 26, "#1a0808"); P.px(32, 24, "#1a0808");
+        P.poly([8, 8, 17, 12, 26, 8, 25, 14, 9, 14], wingRed); P.line([8, 8, 17, 12, 26, 8], 1, bone);
+      }
+    });
+    S.roost1 = roost(1); S.roost2 = roost(2); S.roost3 = roost(3);
     // The Starved Bell Tower: a frame of black timber with the Bell's clapper of vertebrae hung in it.
     S.bellTower = mk(36, 66, (P) => {
       P.ell(18, 63, 16, 3, "#2a2018");

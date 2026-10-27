@@ -49,6 +49,7 @@
     if (DL.Abigail) list.push({ id: "graves", name: "the old graves in the Abyss", at: DL.Abigail.graveSpot, found: () => !!G.save.souls.found });
     if (DL.Rose) list.push({ id: "rose", name: "the Deadly Rose's garden", at: DL.Rose.lair, found: () => !!G.save.rose.found });
     if (DL.Fred) list.push({ id: "ring", name: "the fairy ring in the Reaches", at: DL.Fred.ringSpot, found: () => !!G.save.fredRing.found });
+    if (DL.Wyvern) list.push({ id: "nest", name: "the wyvern's nest in the Reaches", at: DL.Wyvern.nestSpot, found: () => !!G.save.wyvNest.found });
     return list;
   };
   const site = (id) => Kindle.sites().find((s) => s.id === id) || null;
