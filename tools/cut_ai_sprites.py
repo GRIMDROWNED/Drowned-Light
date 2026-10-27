@@ -552,6 +552,10 @@ PROP_GRIDS = {
     'camp/workshop.png': (3, 1, ['workshop1', 'workshop2', 'workshop3']),
     'camp/shrine.png': (3, 1, ['shrine1', 'shrine2', 'shrine3']),
     'camp/toadstool.png': (3, 1, ['toadstool1', 'toadstool2', 'toadstool3']),
+    'camp/roost.png': (3, 1, ['roost1', 'roost2', 'roost3']),
+    # David's nest in the Reaches (src/wyvern.js), with its clutch and empty; his egg whole, hatching and broken
+    'world/wyvern-nest.png': (2, 1, ['wyvNest', 'wyvNestEmpty']),
+    'world/wyvern-egg.png': (3, 1, ['wyvEgg', 'wyvEggHatch', 'wyvEggShell']),
     # Fred's fairy ring in the Reaches (src/fred.js), alive and wilted
     'world/fairy-ring.png': (2, 1, ['fairyRing', 'fairyRingWilt']),
     # Fred's glowcaps: sprouting, grown, squashed underfoot
@@ -621,6 +625,9 @@ PROP_HEIGHT.update({'bellTower': 130, 'roseHeart3': 86})  # the tower well over 
 PROP_SAME.update({'roseHeart1': 'roseHeart3', 'roseHeart2': 'roseHeart3'})
 PROP_WIDTH.update({'outpost': 120, 'blackPearl11': 64, 'resBlack': 22})  # the outpost about two knights wide, a clam about a shield
 PROP_SAME.update({n: 'blackPearl11' for n in ['blackPearl11', 'blackPearl12', 'blackPearl13', 'blackPearl21', 'blackPearl22', 'blackPearl23', 'blackPearl31', 'blackPearl32', 'blackPearl33'] if n != 'blackPearl11'})
+PROP_WIDTH.update({'roost3': 116, 'wyvNest': 170})  # the eyrie with its hung wings a little wider than the other homes; the nest about two knights across
+PROP_HEIGHT['wyvEgg'] = 22  # about a quarter of the knight
+PROP_SAME.update({'roost1': 'roost3', 'roost2': 'roost3', 'wyvNestEmpty': 'wyvNest', 'wyvEggHatch': 'wyvEgg', 'wyvEggShell': 'wyvEgg'})
 PROP_SAME.update({'kennel1': 'kennel3', 'kennel2': 'kennel3', 'workshop1': 'workshop3', 'workshop2': 'workshop3', 'shrine1': 'shrine3', 'shrine2': 'shrine3', 'toadstool1': 'toadstool3', 'toadstool2': 'toadstool3', 'fairyRingWilt': 'fairyRing', 'glowcap1': 'glowcap2', 'glowcap3': 'glowcap2'})
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}

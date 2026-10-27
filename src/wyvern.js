@@ -133,7 +133,7 @@
     for (const k of G.knights()) {
       const kid = k === G.player ? 0 : k.id;
       if (hasOwn(kid) || (kid !== id && dist(k.x, k.y, e.x, e.y) > W.winR)) continue;
-      if (kid === 0) { G.save.wyvern = 1; say(kid === id ? hatch : clutch, "good"); }
+      if (kid === 0) { G.save.wyvern = 1; say(kid === id ? hatch : clutch, "good"); hatchAt(k); }
       else DL.Net.sendTo(kid, { t: "wyvWon", m: kid === id ? hatch : clutch });
       spawn(kid, k.x, k.y);
     }
@@ -147,6 +147,7 @@
     DL.Net.saveProfile(pr);
     sfx("milestone");
     say(m, "good");
+    hatchAt(G.player);
   };
   Wyv.dawn = function () {
     const n = G.save.wyvNest;
@@ -751,14 +752,45 @@
     if (G.cave) return;
     const s = Wyv.nestSpot();
     if (!inView(s.x, s.y, 200)) return;
-    list.push({ y: s.y - 40, f: () => {
-      ell(c, s.x, s.y - 4, 74, 40, "#2b2622"); ell(c, s.x, s.y - 6, 64, 33, "#3a332c"); ell(c, s.x, s.y - 4, 50, 24, "#1d1611");
-      for (const k of nestSticks()) if (k.y < s.y) drawStick(c, k);
-    } });
-    const eggs = Wyv.empty() ? 0 : Wyv.carrier() >= 0 ? 2 : 3;
-    if (eggs) list.push({ y: s.y, f: () => { const at = [[-11, 2], [10, 0], [0, 8]]; for (let i = 0; i < eggs; i++) drawEgg(c, s.x + at[i][0], s.y + at[i][1], t, i); } });
-    list.push({ y: s.y + 32, f: () => { for (const k of nestSticks()) if (k.y >= s.y) drawStick(c, k); } });
+    const art = DL.Art.sprites[Wyv.empty() ? "wyvNestEmpty" : "wyvNest"];
+    if (art && art.res) list.push({ y: s.y - 10, f: () => drawArt(c, art, s.x, s.y + NEST_FOOT) }); // Robert's drawing, its clutch drawn in
+    else {
+      list.push({ y: s.y - 40, f: () => {
+        ell(c, s.x, s.y - 4, 74, 40, "#2b2622"); ell(c, s.x, s.y - 6, 64, 33, "#3a332c"); ell(c, s.x, s.y - 4, 50, 24, "#1d1611");
+        for (const k of nestSticks()) if (k.y < s.y) drawStick(c, k);
+      } });
+      const eggs = Wyv.empty() ? 0 : Wyv.carrier() >= 0 ? 2 : 3;
+      if (eggs) list.push({ y: s.y, f: () => { const at = [[-11, 2], [10, 0], [0, 8]]; for (let i = 0; i < eggs; i++) drawEgg(c, s.x + at[i][0], s.y + at[i][1], t, i); } });
+      list.push({ y: s.y + 32, f: () => { for (const k of nestSticks()) if (k.y >= s.y) drawStick(c, k); } });
+    }
+    // the stolen egg, held at the carrier's chest
+    const egg = DL.Art.sprites.wyvEgg, cid = Wyv.carrier();
+    if (egg && egg.res && cid >= 0) {
+      const k = cid === myId() ? G.player : G.allies.find((a) => a.id === cid);
+      if (k && !k.down) list.push({ y: k.y + 1, f: () => drawArt(c, egg, k.x + 7, k.y - 18) });
+    }
+    // a hatching: the egg cracks in its knight's arms, then its shell lies broken on the ground a while
+    for (let i = hatches.length - 1; i >= 0; i--) {
+      const h = hatches[i];
+      if (h.t0 == null) h.t0 = t;
+      const age = t - h.t0, cracking = age < HATCH_CRACK;
+      if (age > HATCH_LIE) { hatches.splice(i, 1); continue; }
+      const a = DL.Art.sprites[cracking ? "wyvEggHatch" : "wyvEggShell"];
+      if (!a || !a.res || !inView(h.x, h.y)) continue;
+      list.push({ y: cracking ? h.y + 1 : h.y - 2, f: () => drawArt(c, a, cracking ? h.x + 7 : h.x + 12, cracking ? h.y - 18 : h.y + 6, Math.min(1, (HATCH_LIE - age) / 3)) });
+    }
   };
+  // Robert's drawn props (src/sprites.js): bottom centre at (x, y), 2 screen px per art px.
+  function drawArt(c, a, x, y, alpha = 1) {
+    const w = a.w * 2, h = a.h * 2;
+    c.save(); c.globalAlpha *= alpha;
+    c.drawImage(a.c, Math.round(x - w / 2), Math.round(y - h), w, h);
+    c.restore();
+  }
+  const NEST_FOOT = 46; // the drawn nest's bowl sits on the nest spot, its rocks below it
+  const HATCH_CRACK = 1.4, HATCH_LIE = 20;
+  const hatches = []; // { x, y, t0 }: eggs hatching on this device
+  const hatchAt = (k) => hatches.push({ x: k.x, y: k.y, t0: null });
 
   // Over the dark: his eyes and his mother's, her fire and her storm, his lightning arcs, the egg's glow.
   function glow(c, x, y, r, col, a) {
