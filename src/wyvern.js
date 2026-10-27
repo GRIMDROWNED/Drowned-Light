@@ -763,12 +763,7 @@
       if (eggs) list.push({ y: s.y, f: () => { const at = [[-11, 2], [10, 0], [0, 8]]; for (let i = 0; i < eggs; i++) drawEgg(c, s.x + at[i][0], s.y + at[i][1], t, i); } });
       list.push({ y: s.y + 32, f: () => { for (const k of nestSticks()) if (k.y >= s.y) drawStick(c, k); } });
     }
-    // the stolen egg, held at the carrier's chest
-    const egg = DL.Art.sprites.wyvEgg, cid = Wyv.carrier();
-    if (egg && egg.res && cid >= 0) {
-      const k = cid === myId() ? G.player : G.allies.find((a) => a.id === cid);
-      if (k && !k.down) list.push({ y: k.y + 1, f: () => drawArt(c, egg, k.x + 7, k.y - 18) });
-    }
+    // (the stolen egg shows under Carrying in the HUD, like a Bone Wolf's carcass, not on the knight)
     // a hatching: the egg cracks in its knight's arms, then its shell lies broken on the ground a while
     for (let i = hatches.length - 1; i >= 0; i--) {
       const h = hatches[i];
