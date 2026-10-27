@@ -83,6 +83,11 @@ GRIDS = {
     'wyvern-f2/poses-b.png': (3, 2, POSES_B),
     'wyvern-f3/poses-a.png': (3, 2, POSES_A),
     'wyvern-f3/poses-b.png': (3, 2, POSES_B),
+    # the Mother Wyvern: standing poses and her fire; side flaps (as a walk strip), her dive and storm roar;
+    # flying toward and away from you, hurt and dead
+    'mother/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_rear', '09_breath', '10_rake']),
+    'mother/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '07_walk', '13_dive', '14_roar']),
+    'mother/poses-c.png': (3, 2, ['15_flyF1', '16_flyF2', '17_flyB1', '18_flyB2', '11_hurt', '12_death']),
     'kindle/poses-a.png': (3, 2, POSES_A),
     'kindle/poses-b.png': (3, 2, POSES_B),
     'abigail/poses-a.png': (3, 2, POSES_A),
@@ -138,6 +143,7 @@ WYV0_H = 96  # David the Hatchling (src/wyvern.js), res 4: 24 art px from wing t
 WYV1_H = 150  # David (his second form), res 4: 37 art px from wing tip to tail, wings about 1.2 times the Hatchling's
 WYV2_H = 190  # Great David (his third form), res 4: 47 art px from wing tip to tail
 WYV3_H = 210  # David the Bloodwing (his last form), res 4: 52 art px from wing tip to tail, a little bigger than Great David
+MOTHER_H = 380  # the Mother Wyvern boss, res 4: 95 art px standing with her wings half spread, about two and a half knights
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
 ROSE_H = 368  # the Deadly Rose, cut at res 4: drawn 92 art px tall standing (x0.8 in game), about twice the knight
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
@@ -260,6 +266,12 @@ SETS = {
     'wyvern-f1': ('wyvern-f1', 'wyvern-f1/01_front.png', WYV1_H, 1, twelve('wyvern-f1', TWELVE_FILES)),
     'wyvern-f2': ('wyvern-f2', 'wyvern-f2/01_front.png', WYV2_H, 1, twelve('wyvern-f2', TWELVE_FILES)),
     'wyvern-f3': ('wyvern-f3', 'wyvern-f3/01_front.png', WYV3_H, 1, twelve('wyvern-f3', TWELVE_FILES)),
+    'mother': ('wyvern-mother', 'mother/01_front.png', MOTHER_H, 1, {
+        'mother/01_front.png': 'front', 'mother/02_back.png': 'back', 'mother/03_right.png': 'right',
+        'mother/08_rear.png': 'side/rear', 'mother/09_breath.png': 'side/breath', 'mother/10_rake.png': 'side/rake',
+        'mother/13_dive.png': 'side/dive', 'mother/14_roar.png': 'side/roar',
+        'mother/15_flyF1.png': 'flyF1', 'mother/16_flyF2.png': 'flyF2', 'mother/17_flyB1.png': 'flyB1', 'mother/18_flyB2.png': 'flyB2',
+        'mother/11_hurt.png': 'side/hurt', 'mother/12_death.png': 'side/death'}),
     'starved-bell': ('starved-bell', 'starved-bell/01_front.png', BELL_H, 1, twelve('starved-bell', TWELVE_FILES)),
     'deadly-rose': ('deadly-rose', 'deadly-rose/01_front.png', ROSE_H, 1, twelve('deadly-rose', TWELVE_FILES)),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
@@ -407,6 +419,12 @@ SHEETS = {
         ('wyvern-f3/walk-side-4.png', 4, 1, 255, 'side/walk'),
         ('wyvern-f3/fly-front.png', 4, 1, 287, 'walkF'),
         ('wyvern-f3/fly-back.png', 4, 1, 285, 'walkB'),
+    ],
+    # her side "walk" is poses B's four wing beats: she flies side on, and stalks on foot toward and away from you
+    'mother': [
+        ('mother/walk-side-4.png', 4, 1, 392, 'side/fly'),
+        ('mother/walk-front.png', 4, 1, 380, 'walkF'),
+        ('mother/walk-back.png', 4, 1, 386, 'walkB'),
     ],
     'fred-f1': [
         ('fred-f1/walk-side-4.png', 4, 1, FRED1_H, 'side/walk'),
@@ -616,7 +634,7 @@ SEAMS = {'wyvern-f3/poses-a.png': [(533, 0, 512)], 'wyvern-f3/fly-back.png': [(4
          'wyvern-f2/fly-back.png': [(457, 0, 724), (1092, 0, 724), (1512, 0, 724)]}
 # Animation sheets whose wings reach over into the next cell: split by figure (as GRIDS are) and laid out
 # again in equal cells before cutting, so no frame picks up its neighbour's wingtip or loses its own.
-REGRID = {'wyvern-f%d/%s' % (f, n) for f in range(4) for n in ('fly-front.png', 'fly-back.png')}
+REGRID = {'wyvern-f%d/%s' % (f, n) for f in range(4) for n in ('fly-front.png', 'fly-back.png')} | {'mother/walk-front.png', 'mother/walk-back.png'}
 
 def open_sheet(sheet):
     img = Image.open(os.path.join(SRC, sheet)).convert('RGB')

@@ -122,6 +122,7 @@
     wyvern("wyvern_f1", "wyvern-f1", [125, 160], [123, 173], [111, 189]), // David (level 5), 37 px
     wyvern("wyvern_f2", "wyvern-f2", [144, 210], [139, 267], [141, 261]), // Great David (level 10), 47 px
     wyvern("wyvern_f3", "wyvern-f3", [160, 257], [152, 289], [157, 287]), // David the Bloodwing (level 15), 52 px
+    wyvernMother(),
     abigail(),
     // Mourning Abigail (her third form): a tenth taller, in violet mourning rags
     abigail("abigail_f2", "abigail-f2", [98, 136], [78, 149], [83, 152]),
@@ -157,6 +158,20 @@
     const set = Object.assign(walking(key, side, front, back, 4), { path: "assets/sprites/" + folder + "/", keys: { [key]: [0, false] } });
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
       Object.assign(set.views[dir], { attack: ["attackA", "attackB", "attackB"], roar: ["attackC"], hurt: ["side/hurt"], death: ["side/death"], idle: [p] });
+    return set;
+  }
+
+  // The Mother Wyvern, David's mother (src/wyvern.js), cut at res 4: 95 px standing, wings half spread. She stalks on
+  // foot (front and back walk sheets, a step side on) and flies ("fly": four wing beats side on, two toward and away
+  // from you). Her other moves are drawn side on only: "rear" gathering a breath, "breath" breathing fire, "rake" a
+  // claw, "dive" and "roar" (calling the storm). Feet: the side wing beats share one, the walks theirs.
+  function wyvernMother() {
+    const set = Object.assign(walking("wyvern", [241, 394], [193, 431], [190, 429], 4), { path: "assets/sprites/wyvern-mother/", keys: { wyvern: [0, false] } });
+    Object.assign(set.feet, sheetFeet([1, 2, 3, 4].map((i) => "side/fly" + i), [241, 394]));
+    const sideOnly = { rear: ["side/rear"], breath: ["side/breath"], rake: ["side/rake"], attack: ["side/rake"], dive: ["side/dive"], roar: ["side/roar"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] };
+    Object.assign(set.views.side, sideOnly, { walk: stepped(["right", "right", "right", "right"]), fly: [1, 1, 2, 2, 3, 3, 4, 4].map((i) => "side/fly" + i + "@-") });
+    Object.assign(set.views.down, sideOnly, { fly: ["flyF1", "flyF1", "flyF2", "flyF2"] });
+    Object.assign(set.views.up, sideOnly, { fly: ["flyB1", "flyB1", "flyB2", "flyB2"] });
     return set;
   }
 

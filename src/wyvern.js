@@ -665,6 +665,30 @@
     const anim = kind === "rear" || kind === "roar" || kind === "breath" ? "roar" : e.state === "windup" ? "cast" : e.alt > 0.05 ? "fly" : "idle";
     return { k: MOM_K, dir, flip, alt: (e.alt || 0) * 90, ph: e.animT * 7, anim, drip: true, t, id: e.id % 7 };
   }
+  // Robert's drawings of her, once loaded (src/sprites.js), replace the coded figure. They hang from the tail tip in
+  // the air, so she is lifted a little less than the coded figure.
+  const momDrawn = () => { const sh = DL.Art.sheets.wyvern; return sh && !sh.down.idle[0].blank && !sh.down.walk[0].blank; };
+  const MOM_LIFT = 0.6;
+  const sideOn = (a) => (Math.cos(a) >= 0 ? 0 : Math.PI);
+  function momFrame(e, m) {
+    const kind = m ? m.kind : "";
+    if (kind === "dive") return ["dive", 0, sideOn(e.angle)];
+    if (kind === "roar") return ["roar", 0, sideOn(e.angle)];
+    if (kind === "rear") return ["rear", 0, sideOn(m.ang)];
+    if (kind === "breath") return ["breath", 0, sideOn(m.ang)];
+    if (e.state === "windup" || e.state === "recover") return ["rake", 0, sideOn(e.aim)];
+    if (e.alt > 0.05) return ["fly", Math.floor(e.animT * 9), e.angle];
+    if (e.moving) return ["walk", Math.floor(e.animT * 8), e.angle];
+    return ["idle", 0, e.angle];
+  }
+  // Where her mouth is on the drawings, from her feet (in screen px), for the glow of her breath and roar.
+  function momMouth(e, o) {
+    const m = e.move, kind = m ? m.kind : "", y = e.y - o.alt * MOM_LIFT;
+    if (kind === "roar") return [e.x + (Math.cos(e.angle) >= 0 ? 1 : -1) * 70, y - 175];
+    const s = Math.cos(kind === "rear" || kind === "breath" ? m.ang : e.angle) >= 0 ? 1 : -1;
+    if (kind === "breath") return [e.x + s * 95, y - 105];
+    return [e.x + s * 70, y - 160];
+  }
   Wyv.drawMother = function (c, e, t) {
     const o = momOpts(e, t), m = e.move;
     shadow(c, e.x, e.y, 30 * (1 - (e.alt || 0) * 0.3), 10 * (1 - (e.alt || 0) * 0.3), 0.32 - (e.alt || 0) * 0.12);
@@ -680,12 +704,17 @@
       c.fillStyle = `rgba(255,120,40,${0.1 + 0.2 * k})`;
       c.beginPath(); c.moveTo(e.x, e.y); c.ellipse(e.x, e.y, B.range, B.range * 0.7, 0, m.ang - B.arc, m.ang + B.arc); c.closePath(); c.fill();
     }
-    c.save();
-    if (e.flash > 0) c.filter = "brightness(2.2)";
-    figure(c, e.x, e.y, o);
-    c.restore();
+    if (momDrawn()) {
+      const [a, fr, ang] = momFrame(e, m);
+      DL.Art.drawUnit(c, "wyvern", a, fr, ang, e.x, e.y - o.alt * MOM_LIFT, 1, e.flash > 0 ? { flash: 0.6, flashColor: "#ffffff" } : {});
+    } else {
+      c.save();
+      if (e.flash > 0) c.filter = "brightness(2.2)";
+      figure(c, e.x, e.y, o);
+      c.restore();
+    }
     if (e.hp < e.maxHp) {
-      const w = e.def.barW, y = e.y - o.alt - e.def.barY;
+      const w = e.def.barW, y = momDrawn() ? e.y - o.alt * MOM_LIFT - 205 : e.y - o.alt - e.def.barY; // over her head, drawn or coded
       c.fillStyle = "rgba(0,0,0,0.6)"; c.fillRect(e.x - w / 2 - 1, y - 1, w + 2, 5);
       c.fillStyle = "#ff6a50"; c.fillRect(e.x - w / 2, y, w * Math.max(0, e.hp / e.maxHp), 3);
     }
@@ -756,17 +785,17 @@
     }
     for (const e of G.enemies) {
       if (!e.def.wyvern) continue;
-      const o = momOpts(e, t), m = e.move;
-      for (const [x, y] of eyes(e.x, e.y, o)) glow(c, x, y, 6, BLOOD, 0.75);
+      const o = momOpts(e, t), m = e.move, drawn = momDrawn();
+      if (!drawn) for (const [x, y] of eyes(e.x, e.y, o)) glow(c, x, y, 6, BLOOD, 0.75);
       if (m && m.kind === "breath") {
         // a roaring cone of fire, ragged at the edges
-        const B = W.breath, hy = e.y - o.alt - 60;
+        const B = W.breath, hy = drawn ? momMouth(e, o)[1] : e.y - o.alt - 60;
         for (let i = 0; i < 26; i++) {
           const u = ((t * 2.4 + i / 26) % 1), a = m.ang + Math.sin(i * 7.3 + t * 9) * B.arc * 0.85, r = 20 + u * B.range;
           glow(c, e.x + Math.cos(a) * r, hy + (e.y - hy) * u + Math.sin(a) * r * 0.7, 10 + u * 22, FIRE, 0.55 * (1 - u * 0.6));
         }
       }
-      if (m && (m.kind === "rear" || m.kind === "roar")) { const [x, y] = eyes(e.x, e.y, o)[0] || [e.x, e.y - 80]; glow(c, x, y + 8, 22, m.kind === "roar" ? STORM : FIRE, 0.6); }
+      if (m && (m.kind === "rear" || m.kind === "roar")) { const [x, y] = drawn ? momMouth(e, o) : eyes(e.x, e.y, o)[0] || [e.x, e.y - 80]; glow(c, x, y + 8, 22, m.kind === "roar" ? STORM : FIRE, 0.6); }
     }
     // whoever carries an egg glows red with it
     const cid = Wyv.carrier();

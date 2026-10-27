@@ -2,7 +2,7 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.108";
+const VERSION = "0.15.109";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
@@ -66,6 +66,8 @@ const FILES = [
     "wyvern-f2/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "wyvern-f3/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "wyvern-f3/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
+    "wyvern-mother/": ["back", "flyB1", "flyB2", "flyF1", "flyF2", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
+    "wyvern-mother/side/": ["breath", "death", "dive", "fly1", "fly2", "fly3", "fly4", "hurt", "rake", "rear", "roar"],
     "fred-f1/": ["attackA", "attackB", "back", "front", "heal", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "fred-f1/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "fred-f2/": ["attackA", "attackB", "back", "front", "heal", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
