@@ -1,11 +1,12 @@
 /* Drowned Light — game controller (Xbox layout, the browser's standard gamepad mapping).
-   In play the pad feeds DL.Input like the keyboard does. On menus it moves a highlight
-   between the buttons of the open screen: D-pad or left stick to move, A to press, B to go back. */
+   In play the pad feeds DL.Input like the keyboard does, through the player's bindings (src/binds.js).
+   On menus it moves a highlight between the buttons of the open screen: D-pad or left stick to move,
+   A to press, B to go back. Those menu buttons are fixed, so a bad binding can't lock anyone out. */
 "use strict";
 (function (DL) {
   const $ = (id) => document.getElementById(id);
   // standard mapping button numbers
-  const A = 0, B = 1, X = 2, Y = 3, LB = 4, RB = 5, LT = 6, RT = 7, VIEW = 8, MENU = 9, UP = 12, DOWN = 13, LEFT = 14, RIGHT = 15;
+  const A = 0, B = 1, LB = 4, RB = 5, UP = 12, DOWN = 13, LEFT = 14, RIGHT = 15;
   const DEAD = 0.2;      // stick deadzone in play
   const NAV = 0.55;      // stick push that counts as a menu move
   const REPEAT_FIRST = 0.38, REPEAT_NEXT = 0.12;
@@ -75,13 +76,10 @@
     I.pad.x = x; I.pad.y = y;
     const rx = ax[2] || 0, ry = ax[3] || 0;
     I.padAim = Math.hypot(rx, ry) > 0.4 ? Math.atan2(ry, rx) : null;
-    I.padAttack = btn[RT] || btn[X];
-    I.padMine = btn[LT];
-    if (down(A)) I.trigger("dash");
-    if (down(B) || down(RB)) I.trigger("ability");
-    if (down(LB)) I.trigger("torch");
-    if (down(Y)) I.trigger("camp");
-    if (down(MENU) || down(VIEW)) I.trigger("pause");
+    const Bn = DL.Binds;
+    I.padAttack = Bn.padHeld("attack", btn);
+    I.padMine = Bn.padHeld("mine", btn);
+    for (const a of ["dash", "ability", "torch", "camp", "pause"]) if (Bn.pad[a].some(down)) I.trigger(a);
   }
 
   /* ---------------- on menus ---------------- */
@@ -148,6 +146,14 @@
   }
 
   function menuInput(btn, ax, down, dt) {
+    // Rebinding on the Controls screen: the next button pressed is the new one.
+    const cap = DL.UI.capture;
+    if (cap && cap.kind === "pad") {
+      const b = btn.findIndex((on, i) => on && !Pad.prev[i]);
+      if (b >= 0) DL.UI.endCapture(b);
+      return;
+    }
+    if (cap && down(B)) { DL.UI.endCapture(); return; }
     const scr = openScreen();
     if (!scr) { mark(null); return; }
     const list = targets(scr);
@@ -182,10 +188,11 @@
       else el.click();
     }
     if (down(B)) back(scr);
+    const bound = (a) => DL.Binds.pad[a].some(down);
     if (scr.id === "screenCamp") {
       if (down(LB)) campTab(-1);
       if (down(RB)) campTab(1);
-      if (down(Y) || down(MENU) || down(VIEW)) DL.UI.closeCamp();
-    } else if (down(MENU) && (scr.id === "screenPause" || scr.id === "screenControls")) back(scr);
+      if (bound("camp") || bound("pause")) DL.UI.closeCamp();
+    } else if (bound("pause") && (scr.id === "screenPause" || scr.id === "screenControls")) back(scr);
   }
 })(window.DL);

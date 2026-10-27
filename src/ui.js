@@ -174,6 +174,21 @@
     $("btnControls").addEventListener("click", () => UI.openControls("screenTitle"));
     $("btnControls2").addEventListener("click", () => UI.openControls("screenPause"));
     $("btnControlsBack").addEventListener("click", () => UI.closeControls());
+    $("bindRows").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-bind]");
+      if (b) UI.startCapture(b.dataset.bind, b.dataset.act);
+    });
+    $("btnBindsReset").addEventListener("click", () => { UI.endCapture(); DL.Binds.reset(); UI.refreshBinds(); DL.Sound.play("chime"); });
+    // Rebinding a key: the next key pressed (Esc cancels). Runs before the game's own key handler.
+    addEventListener("keydown", (e) => {
+      const cap = UI.capture;
+      if (!cap) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const k = e.key.toLowerCase();
+      if (k === "escape" || cap.kind !== "keys") UI.endCapture();
+      else UI.endCapture(k);
+    }, true);
     $("campClose").addEventListener("click", () => UI.closeCamp());
     $("campBody").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-act]");
@@ -197,6 +212,7 @@
     if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
     UI.updateSoundLabel();
     UI.updateViewLabel();
+    UI.refreshBinds();
   };
 
   UI.showTitle = function () {
@@ -283,11 +299,57 @@
   UI.openControls = function (from) {
     UI.controlsFrom = from;
     $(from).classList.add("hidden");
+    UI.renderBinds();
     $("screenControls").classList.remove("hidden");
   };
   UI.closeControls = function () {
+    UI.endCapture();
     $("screenControls").classList.add("hidden");
     $(UI.controlsFrom || "screenTitle").classList.remove("hidden");
+  };
+
+  /* ---------------- bindings (src/binds.js) ---------------- */
+  const kbds = (list) => list.map((x) => `<kbd>${x}</kbd>`).join(" / ") || `<span class="muted">none</span>`;
+  UI.keyLabel = (id) => DL.Binds.keys[id].map(DL.Binds.keyName);
+  UI.padLabel = (id) => (DL.Binds.pad[id] || []).map(DL.Binds.padName);
+  UI.renderBinds = function () {
+    const cell = (kind, a, list) => `<td><button class="bind" data-bind="${kind}" data-act="${a.id}" aria-label="Rebind ${a.name}">${kbds(list)}</button></td>`;
+    $("bindRows").innerHTML = DL.Binds.ACTIONS.map((a) => `<tr><th>${a.name}</th>${cell("keys", a, UI.keyLabel(a.id))}` +
+      (a.pad ? cell("pad", a, UI.padLabel(a.id)) : `<td><kbd>Left stick</kbd> / <kbd>D-pad</kbd></td>`) + "</tr>").join("");
+  };
+  // HUD and title hints follow the bindings.
+  UI.refreshBinds = function () {
+    UI.renderBinds();
+    const hud = { btnTorch: "torch", btnAbility: "ability", btnDash: "dash", btnAttack: "attack", btnMine: "mine" };
+    for (const id in hud) {
+      const k = $(id).querySelector("kbd");
+      k.textContent = UI.keyLabel(hud[id])[0] || "";
+      k.dataset.pad = UI.padLabel(hud[id])[0] || "";
+    }
+    UI.campShown = null; // redraws the camp button's hint
+    const K = (id) => `<kbd>${UI.keyLabel(id)[0] || "—"}</kbd>`, P = (id) => `<kbd>${UI.padLabel(id)[0] || "—"}</kbd>`;
+    const mv = ["up", "left", "down", "right"].map((id) => UI.keyLabel(id)[0] || "").join("");
+    $("hintDesk").innerHTML = `Move <kbd>${mv}</kbd> · Attack (manual) ${K("attack")} or click · Mine (manual) ${K("mine")} or right-click · Dash ${K("dash")} · Ability ${K("ability")} · Torch ${K("torch")} · Camp ${K("camp")} · Pause <kbd>Esc</kbd>`;
+    $("hintPad").innerHTML = `Controller: move <kbd>Left stick</kbd> · Dash ${P("dash")} · Ability ${P("ability")} · Attack ${P("attack")} · Torch ${P("torch")} · Camp ${P("camp")} · Pause ${P("pause")}`;
+  };
+  UI.capture = null;
+  UI.startCapture = function (kind, id) {
+    UI.endCapture();
+    const el = $("bindRows").querySelector(`button[data-bind="${kind}"][data-act="${id}"]`);
+    if (!el) return;
+    el.blur();
+    el.classList.add("listening");
+    el.textContent = kind === "pad" ? "Press a button…" : "Press a key… (Esc cancels)";
+    UI.capture = { kind, id, timer: setTimeout(() => UI.endCapture(), 8000) };
+  };
+  // Finish rebinding: v is the new key or pad button, or undefined to cancel.
+  UI.endCapture = function (v) {
+    const cap = UI.capture;
+    if (!cap) return;
+    UI.capture = null;
+    clearTimeout(cap.timer);
+    if (v !== undefined) { DL.Binds.set(cap.kind, cap.id, v); DL.Sound.play("chime"); }
+    UI.refreshBinds();
   };
 
   UI.updateCombatLabel = function () {
@@ -885,7 +947,7 @@
     document.body.classList.toggle("manual", manual);
     const cl = UI.campLabel();
     set($("campBtn"), "hidden", !cl);
-    if (cl && UI.campShown !== cl) { UI.campShown = cl; $("campBtn").innerHTML = `${cl} <kbd data-pad="Y">C</kbd>`; }
+    if (cl && UI.campShown !== cl) { UI.campShown = cl; $("campBtn").innerHTML = `${cl} <kbd data-pad="${UI.padLabel("camp")[0] || ""}">${UI.keyLabel("camp")[0] || ""}</kbd>`; }
     // the Bone Hound card follows the hound rising, going down or getting up while the menu is open
     if (G.state === "camp" && UI.campTab === "kit" && (houndState(DL.Hounds.mine()) !== UI.houndShown || !!DL.Golems.mine() !== UI.golemShown || !!DL.Abigail.mine() !== UI.wraithShown || !!DL.Fred.mine() !== UI.fredShown)) UI.renderCamp();
   };

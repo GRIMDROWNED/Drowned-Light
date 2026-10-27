@@ -219,6 +219,10 @@ body.pad .controls-hint kbd { display: inline; }
 .controls-table thead th { font: 700 12px var(--font-title); letter-spacing: 0.08em; color: var(--gold); }
 .controls-table tr.sub th { padding-top: 14px; font: 700 12px var(--font-title); letter-spacing: 0.08em; color: var(--gold); }
 #screenControls kbd { display: inline; }
+.controls-table button.bind { min-width: 110px; padding: 5px 8px; border-radius: 6px; background: rgba(12, 24, 30, 0.9); border: 1px solid var(--line); text-align: left; }
+.controls-table button.bind:hover { filter: brightness(1.2); }
+.controls-table button.bind.listening { border-color: var(--warm); color: #ffe6c2; box-shadow: 0 0 12px rgba(255, 160, 70, 0.4); }
+#btnBindsReset { margin-bottom: 4px; }
 .death h2 { font-size: clamp(28px, 7vw, 42px); color: #c9fbff; text-shadow: 0 0 26px rgba(95, 230, 238, 0.6); }
 .death p { line-height: 1.5; }
 .death .chips, #deathLost .chips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
