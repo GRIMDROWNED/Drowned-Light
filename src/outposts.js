@@ -93,7 +93,7 @@
   };
   // Why you can't travel now (null when you can).
   Outposts.travelLock = function () {
-    if (!DL.Kindle.lit()) return "Light your Kindle first: he knows the old paths";
+    if (!DL.Kindle.lit()) return "You need a guide who knows the old paths. Something lost in the Mire still remembers them";
     if (G.night && G.enemies.some((e) => !e.removed && e.rise <= 0 && dist(e.x, e.y, G.player.x, G.player.y) < O.safeR)) return "The Drowned are too close";
     return null;
   };

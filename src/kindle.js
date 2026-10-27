@@ -249,7 +249,7 @@
   Kindle.guideLine = function () {
     const M = mine();
     if (M.lit) return `<b>Kindle</b> follows you. He tops up your lantern oil now and then (not your corruption), and every ${K.guideEvery} nights he leads you somewhere worth finding.`;
-    if (G.save.kindle.found || M.fed) { const s = Kindle.spot(); return `A broken lantern lies to the ${compass(s.x, s.y)} of the camp. Walk up to it with torches: ${K.torches - M.fed} more and your <b>Kindle</b> burns again.`; }
+    if (G.save.kindle.found || M.fed) { const s = Kindle.spot(); return `A broken lantern lies to the ${compass(s.x, s.y)} of the camp. Walk up to it with torches: ${K.torches - M.fed} more and it burns again.`; }
     return `Somewhere in the Mire, where the iron starts, a broken lantern waits for ${K.torches} torches.`;
   };
 
