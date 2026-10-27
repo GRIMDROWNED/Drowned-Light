@@ -171,6 +171,9 @@
       if (guest) UI.toTitle(); else UI.resume();
     });
     for (const id of ["btnSound", "btnSound2"]) $(id).addEventListener("click", () => UI.toggleSound());
+    $("btnControls").addEventListener("click", () => UI.openControls("screenTitle"));
+    $("btnControls2").addEventListener("click", () => UI.openControls("screenPause"));
+    $("btnControlsBack").addEventListener("click", () => UI.closeControls());
     $("campClose").addEventListener("click", () => UI.closeCamp());
     $("campBody").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-act]");
@@ -274,6 +277,17 @@
     $("screenPause").classList.add("hidden");
     if (G.state === "pause") G.state = "play";
     DL.Input.clear();
+  };
+
+  // Controls reference, opened from the title or the pause menu; Back returns there.
+  UI.openControls = function (from) {
+    UI.controlsFrom = from;
+    $(from).classList.add("hidden");
+    $("screenControls").classList.remove("hidden");
+  };
+  UI.closeControls = function () {
+    $("screenControls").classList.add("hidden");
+    $(UI.controlsFrom || "screenTitle").classList.remove("hidden");
   };
 
   UI.updateCombatLabel = function () {
@@ -871,7 +885,7 @@
     document.body.classList.toggle("manual", manual);
     const cl = UI.campLabel();
     set($("campBtn"), "hidden", !cl);
-    if (cl && UI.campShown !== cl) { UI.campShown = cl; $("campBtn").innerHTML = `${cl} <kbd>C</kbd>`; }
+    if (cl && UI.campShown !== cl) { UI.campShown = cl; $("campBtn").innerHTML = `${cl} <kbd data-pad="Y">C</kbd>`; }
     // the Bone Hound card follows the hound rising, going down or getting up while the menu is open
     if (G.state === "camp" && UI.campTab === "kit" && (houndState(DL.Hounds.mine()) !== UI.houndShown || !!DL.Golems.mine() !== UI.golemShown || !!DL.Abigail.mine() !== UI.wraithShown || !!DL.Fred.mine() !== UI.fredShown)) UI.renderCamp();
   };

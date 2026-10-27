@@ -202,6 +202,23 @@ h2 { font: 700 26px var(--font-title); margin: 0 0 10px; letter-spacing: 0.05em;
 .version { margin-top: 6px; font-size: 11px; color: var(--muted); opacity: 0.7; font-variant-numeric: tabular-nums; }
 body.touch .controls-hint .mob { display: inline; }
 body.touch .controls-hint .desk { display: none; }
+.controls-hint .padline { display: none; }
+body.pad .controls-hint .padline { display: inline; }
+body.pad .controls-hint .desk, body.pad .controls-hint .mob { display: none; }
+
+/* ---------- game controller ---------- */
+/* While a pad is in use the HUD hints show its buttons, and menus show which button is picked. */
+body.pad kbd[data-pad] { font-size: 0; display: inline; }
+body.pad kbd[data-pad]::after { content: attr(data-pad); font-size: 9px; }
+body.pad .controls-hint kbd { display: inline; }
+.pad-focus { outline: 3px solid var(--warm) !important; outline-offset: 2px; box-shadow: 0 0 18px rgba(255, 170, 80, 0.55) !important; }
+.controls { width: min(620px, 100%); }
+.controls-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; text-align: left; }
+.controls-table th, .controls-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.controls-table tbody th { color: var(--ink); font-weight: 600; white-space: nowrap; }
+.controls-table thead th { font: 700 12px var(--font-title); letter-spacing: 0.08em; color: var(--gold); }
+.controls-table tr.sub th { padding-top: 14px; font: 700 12px var(--font-title); letter-spacing: 0.08em; color: var(--gold); }
+#screenControls kbd { display: inline; }
 .death h2 { font-size: clamp(28px, 7vw, 42px); color: #c9fbff; text-shadow: 0 0 26px rgba(95, 230, 238, 0.6); }
 .death p { line-height: 1.5; }
 .death .chips, #deathLost .chips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }

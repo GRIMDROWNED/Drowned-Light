@@ -653,10 +653,11 @@
     say("Torch placed. It will burn for a short while.");
   }
 
-  // Manual aim: toward the mouse when one is in use, otherwise the way the knight faces.
+  // Manual aim: the Attack-button drag or the right stick, then the mouse when one is in use, otherwise the way the knight faces.
   function aimAngle(p) {
     const m = DL.Input.mouse, v = DL.Render.view;
     if (DL.Input.attackAim != null) return DL.Input.attackAim; // dragging the Attack button
+    if (DL.Input.padAim != null) return DL.Input.padAim; // a controller's right stick
     if (G.save.attackMode === "manual" && v && performance.now() - m.seen < 4000 && !DL.Input.touch) {
       return Math.atan2(v.top + m.y / v.z - (p.y - 24), v.left + m.x / v.z - p.x);
     }
@@ -1276,6 +1277,7 @@
     if (!DL.Kits.steady(p)) { p.kx += Math.cos(ang) * 160; p.ky += Math.sin(ang) * 160; }
     G.camera.shake = 7;
     sfx("hurt");
+    DL.Pad.rumble(0.6, 0.4, 140);
     text(p.x, p.y - 70, "-" + Math.round(dmg), "#ff6a6a");
     if (p.hp <= 0 && !DL.Fred.rebloom(p)) die("wounds"); // Fred's Second Bloom stands you back up once a night
   }

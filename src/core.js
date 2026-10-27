@@ -59,6 +59,11 @@ window.DL = window.DL || {};
     actions: new Set(),
     joy: { id: null, ox: 0, oy: 0, x: 0, y: 0 },
     touch: false,
+    // Game controller (src/pad.js): left stick, right-stick aim, held attack and mine.
+    pad: { x: 0, y: 0 },
+    padAim: null,
+    padAttack: false,
+    padMine: false,
 
     // Manual attack: J / K, the left mouse button, or the on-screen Attack button (held to keep striking).
     // Manual mining has its own control: G, the right mouse button, or the on-screen Mine button.
@@ -66,8 +71,8 @@ window.DL = window.DL || {};
     attackBtn: false,
     attackAim: null, // angle set by dragging on the Attack button (an aiming stick); null = not aiming
     mineBtn: false,
-    attacking() { return this.keys.has("j") || this.keys.has("k") || this.mouse.down || this.attackBtn; },
-    mining() { return this.keys.has("g") || this.mouse.mine || this.mineBtn; },
+    attacking() { return this.keys.has("j") || this.keys.has("k") || this.mouse.down || this.attackBtn || this.padAttack; },
+    mining() { return this.keys.has("g") || this.mouse.mine || this.mineBtn || this.padMine; },
 
     init() {
       const keymap = {
@@ -153,7 +158,7 @@ window.DL = window.DL || {};
     clear() { this.actions.clear(); },
 
     axis() {
-      let x = this.joy.x, y = this.joy.y;
+      let x = this.joy.x + this.pad.x, y = this.joy.y + this.pad.y;
       const k = this.keys;
       if (k.has("d") || k.has("arrowright")) x += 1;
       if (k.has("a") || k.has("arrowleft")) x -= 1;

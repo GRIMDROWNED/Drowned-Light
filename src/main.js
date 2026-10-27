@@ -5,7 +5,8 @@
 
   function handleGlobalKeys() {
     if (Input.take("pause")) {
-      if (G.state === "play") UI.pause();
+      if (!document.getElementById("screenControls").classList.contains("hidden")) UI.closeControls();
+      else if (G.state === "play") UI.pause();
       else if (G.state === "pause") UI.resume();
       else if (G.state === "camp") UI.closeCamp();
     }
@@ -22,6 +23,7 @@
     requestAnimationFrame(frame); // scheduled first, so one bad frame can't stop the game
     const dt = Math.min(0.05, (ts - last) / 1000 || 0);
     last = ts;
+    DL.Pad.poll(dt);
     handleGlobalKeys();
     G.update(dt);
     DL.Net.tick(dt);
@@ -47,12 +49,14 @@
   if (splashEl) {
     splashEl.addEventListener("pointerdown", hideSplash);
     addEventListener("keydown", hideSplash, { once: true });
+    addEventListener("gamepadconnected", hideSplash, { once: true });
   }
 
   async function boot() {
     DL.View.init();
     DL.View.lock();
     Input.init();
+    DL.Pad.init();
     DL.Render.init();
     G.init();
     UI.init();
