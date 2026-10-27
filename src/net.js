@@ -149,6 +149,7 @@
       DL.Kindle.leave(g.id);
       DL.Abigail.leave(g.id);
       DL.Fred.leave(g.id);
+      DL.Wyvern.leave(g.id);
       say(`The ${g.ally.label} left the game.`, "warn");
     }
   }
@@ -184,6 +185,7 @@
       if (m.kindle) DL.Kindle.join(g.id); // and one who lit their Kindle, theirs
       if (m.abigail) DL.Abigail.join(g.id); // and Abigail, for one who won her
       if (m.fred) DL.Fred.join(g.id); // and Fred
+      if (m.wyvern) DL.Wyvern.join(g.id); // and Gerald
       const harvested = [];
       for (const c of DL.World.chunks.values()) for (const o of c.objects) if (o.harvested || o.dead || (o.maxHp && o.hp < o.maxHp)) harvested.push(objRow(o));
       sendTo(g, { t: "welcome", v: VERSION, id: g.id, up: G.save.up, difficulty: G.save.difficulty, day: G.save.day, nights: G.save.nights, time: G.time, ob: harvested });
@@ -249,11 +251,16 @@
       DL.Fred.startHost();
     } else if (ev.t === "fredCap") DL.Fred.capEaten(ev.id);
     else if (ev.t === "fredPath") {
-      // Fred's roads belong to the world, like his level
-      if (DL.Summons.chooseHost(ev.arg)) say(`${who} chose a road for Fred.`, "good");
-      else sendTo(g, { t: "say", m: "Couldn't choose that road for Fred.", k: "warn" });
+      // Fred's and Gerald's roads belong to the world, like their levels
+      const kind = ev.kind === "wyvern" ? "wyvern" : "fred", nm = DL.SUMMON[kind].name;
+      if (DL.Summons.chooseHost(ev.arg, kind)) say(`${who} chose a road for ${nm}.`, "good");
+      else sendTo(g, { t: "say", m: `Couldn't choose that road for ${nm}.`, k: "warn" });
     } else if (ev.t === "fredRepick") {
-      if (!DL.Summons.repickHost()) sendTo(g, { t: "say", m: "Couldn't reset Fred's roads — check the stash and the Toadstool Cottage.", k: "warn" });
+      const kind = ev.kind === "wyvern" ? "wyvern" : "fred";
+      if (!DL.Summons.repickHost(kind)) sendTo(g, { t: "say", m: `Couldn't reset ${DL.SUMMON[kind].name}'s roads — check the stash and his home.`, k: "warn" });
+    } else if (ev.t === "wyvEgg") {
+      // a friend walked into the wyvern's nest and took an egg: the mother comes for them
+      DL.Wyvern.takeHost(g.id);
     } else if (ev.t === "deposit") {
       const parts = [];
       for (const k of DL.RES_KEYS) if (ev.res[k] > 0) { G.save.stash[k] += ev.res[k]; parts.push(`${ev.res[k]} ${DL.RESOURCES[k].name}`); }
@@ -314,7 +321,7 @@
       wa: G.walls.map((w) => [r1(w.x1), r1(w.y1), r1(w.x2), r1(w.y2), r1(w.t), w.max]),
       py: G.pylons.map((q) => [Math.round(q.hp), q.lit ? 1 : 0]),
       pk: G.pickups.filter((k) => near(k.x, k.y, 800)).map((k) => [k.id, r1(k.x), r1(k.y), k.res]),
-      tg: G.telegraphs.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.delay, q.rose ? 1 : 0]),
+      tg: G.telegraphs.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.delay, q.rose ? 1 : q.wyv ? 2 : 0]),
       hx: G.hexPools.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.life]),
       // Bone Hounds: [id, owner, x, y, angle, moving, hp, maxHp, biting, bite time left, hit flash, knocked out for]
       hd: G.hounds.filter((h) => near(h.x, h.y, 1100)).map((h) => [h.id, h.owner, r1(h.x), r1(h.y), r1(h.angle), h.moving ? 1 : 0, Math.round(h.hp), h.maxHp,
@@ -332,6 +339,8 @@
       ab: DL.Abigail.rows(),
       // Freds, their glowcaps and fairy rings, and the night at his ring (src/fred.js)
       fd: DL.Fred.rows(),
+      // Geralds, who carries a wyvern egg, the mother's move, and whether her nest lies empty (src/wyvern.js)
+      wy: DL.Wyvern.rows(),
       // companion levels, Abyss trophies, the Great Siege, outposts [grove x, grove y, x, y, lit, hp], the Rose Heart's briar
       sm: G.save.summons, tr: G.save.trophies, gs: DL.Siege.on ? 1 : 0,
       op: DL.Outposts.rows(), rh: DL.Trophies.rows(),
@@ -361,6 +370,8 @@
   Net.hasAbigail = () => !!Net.profile().abigail || G.listSlots().some(({ save }) => save && save.abigail);
   // And Fred.
   Net.hasFred = () => !!Net.profile().fred || G.listSlots().some(({ save }) => save && save.fred);
+  // And Gerald.
+  Net.hasWyvern = () => !!Net.profile().wyvern || G.listSlots().some(({ save }) => save && save.wyvern);
 
   Net.join = async function (code, kit) {
     Net.joinKit = DL.KITS[kit] ? kit : G.save.kit;
@@ -389,7 +400,7 @@
         if (c.peerConnection) c.peerConnection.addEventListener("signalingstatechange", () => { if (c.peerConnection.signalingState === "stable") reached = true; });
         c.on("open", () => {
           Net.connected = true;
-          Net.send({ t: "hello", v: VERSION, kit: Net.joinKit, level: Net.joinLevel(Net.joinKit), hound: Net.hasHound() ? 1 : 0, golem: Net.profile().golem ? 1 : 0, kindle: Net.hasKindle() ? 1 : 0, abigail: Net.hasAbigail() ? 1 : 0, fred: Net.hasFred() ? 1 : 0 });
+          Net.send({ t: "hello", v: VERSION, kit: Net.joinKit, level: Net.joinLevel(Net.joinKit), hound: Net.hasHound() ? 1 : 0, golem: Net.profile().golem ? 1 : 0, kindle: Net.hasKindle() ? 1 : 0, abigail: Net.hasAbigail() ? 1 : 0, fred: Net.hasFred() ? 1 : 0, wyvern: Net.hasWyvern() ? 1 : 0 });
         });
         c.on("data", (raw) => wireRecv(c, raw, (m) => {
           if (m && m.t === "full") { clearTimeout(timer); fail(`That room is full (${MAX_GUESTS + 1} players).`); return; }
@@ -481,6 +492,9 @@
     } else if (m.t === "fredWon") {
       DL.Fred.wonGuest();
       if (DL.UI.refreshCamp) DL.UI.refreshCamp();
+    } else if (m.t === "wyvWon") {
+      DL.Wyvern.wonGuest(m.m);
+      if (DL.UI.refreshCamp) DL.UI.refreshCamp();
     } else if (m.t === "cave" || m.t === "caveMend") DL.Cave.guestMsg(m);
     else if (m.t === "snap") applySnap(m);
   }
@@ -540,7 +554,7 @@
     G.walls = m.wa.map((w) => ({ x1: w[0], y1: w[1], x2: w[2], y2: w[3], t: w[4], max: w[5], dps: 0, net: 1 }));
     m.py.forEach((q, i) => { if (G.pylons[i]) { G.pylons[i].hp = q[0]; G.pylons[i].lit = !!q[1]; } });
     G.pickups = m.pk.map((k) => ({ id: k[0], x: k[1], y: k[2], res: k[3], t: 1, vx: 0, vy: 0 }));
-    G.telegraphs = m.tg.map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], delay: q[4], rose: !!q[5], done: true }));
+    G.telegraphs = m.tg.map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], delay: q[4], rose: q[5] === 1, wyv: q[5] === 2, done: true }));
     G.hexPools = (m.hx || []).map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], life: q[4] }));
     // Bone Hounds: puppets kept between snapshots so they glide and run
     const hounds = new Map(G.hounds.map((h) => [h.id, h]));
@@ -555,6 +569,7 @@
     DL.Kindle.apply(m.kd);
     DL.Abigail.apply(m.ab);
     DL.Fred.apply(m.fd);
+    DL.Wyvern.apply(m.wy);
     // Derek and his walls: a wall that appears rises with its dust, one that vanishes close by crumbles
     const golems = new Map(G.golems.map((o) => [o.id, o]));
     G.golems = (m.gm || []).map((r) => {
@@ -597,6 +612,7 @@
     DL.Kindle.guest(dt, k);
     DL.Abigail.guest(dt, k);
     DL.Fred.guest(dt, k);
+    DL.Wyvern.guest(dt, k);
   };
 
   // Lights, walls and torches the guest makes become the host's; the guest sees them come back in the next snapshot.
@@ -655,6 +671,7 @@
     DL.Den.view = null;
     DL.Abigail.forget();
     DL.Fred.forget();
+    DL.Wyvern.forget();
     if (was === "guest") { G.save = G.load(); DL.World.chunks.clear(); }
     if (!quiet && was) say("Co-op session ended.");
   };

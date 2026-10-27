@@ -114,6 +114,9 @@
     colossus: { name: "Drowned Colossus", hp: 1100, speed: 34, dmg: 26, range: 92, windup: 0.95, cd: 2.4, scale: 1,
       radius: 30, mass: 40, armor: 0.2, boss: true, colossus: true, arc: 2.6, shadow: 70, sink: 130, barY: 144, barW: 90, eyeX: 60, eyeY: 72, eyeR: 14,
       drop: { iron: 1, pearl: 1 } },
+    // The mother wyvern: she hunts whoever stole one of her eggs, until one of them is dead (src/wyvern.js). Her moves: DL.WYVERN.
+    wyvern: { name: "The Mother Wyvern", hp: 820, speed: 74, dmg: 20, range: 62, windup: 0.55, cd: 1.6, scale: 1,
+      radius: 22, mass: 9, armor: 0.1, boss: true, wyvern: true, fly: true, shadow: 34, barY: 120, barW: 60, drop: { iron: 2, pearl: 2, resin: 2 } },
     self: { name: "Your Drowned Self", hp: 200, speed: 70, dmg: 15, range: 44, windup: 0.5, cd: 1.3, scale: 1.05,
       radius: 14, mass: 2, boss: true, drop: {} },
   };
@@ -336,6 +339,47 @@
         { name: "Spore Storm", text: "Every 25 s every Drowned near you falls asleep for 2.5 s (a blow wakes it)" }],
     ],
   };
+  /* Gerald, the wyvern familiar (src/wyvern.js). A nest of bones on the rocks of the Drowned Reaches, `nestDist` px
+     out (a clearing of `clear` px), holds a clutch of blood-red eggs while their mother hunts. Walk into the nest
+     (within `grab` px of its heart) and you take one (`warnR`: how near you're warned first). She comes at once,
+     from `arriveR` px off, and hunts whoever carries it, wherever they go, over walls and water, never tiring.
+     Slay her and the egg hatches: the carrier and every knight within `winR` px of her wins their own Gerald. Kill
+     the carrier, and she snatches the egg back and flies home with it. Slain, she's gone `respawnDays` days and her
+     nest lies empty. Her moves (her body and claw are DL.ENEMIES.wyvern):
+       swoop  every `every` s, when her prey is `min`–`max` px off: she rises (`windup` s, the lane shows on the
+              ground) and dives straight through at `speed` px/s for `dur` s, raking every knight she passes
+              (`dmg` of her blow, hurled `kb` px back);
+       breath every `every` s, when her prey is within `range` px: `windup` s rearing, then `dur` s of fire in a
+              cone `arc` radians each side, `dmg` of her blow every `tick` s to everyone in it;
+       storm  (below `phase2` of her health) every `every` s: lightning falls `delay` s after its marks, one on
+              each knight and `extra` more near them (`r` px, `dmg` of her blow).
+     She flies to catch up when her prey is more than `catchUp` px off. The carrier carries the egg at `haulSpeed`.
+     Gerald himself flies at his knight's shoulder at `speed` and every `cd` s spits a bolt (`dmg`, growing by
+     `perFlame` per Central Flame level past `reqFlame`) at a Drowned within `sight` px of his knight. At levels 5,
+     10 and 15 you choose his road, A (Storm) or B (Fire): `roads`. Each road's level 10 power is a boost you call
+     with the Boost button: it lasts `boostFor` s and can be called again `boostEvery` s after it began. */
+  DL.WYVERN = {
+    name: "Gerald", speed: 190, sight: 300, cd: 2, dmg: 5, perFlame: 0.15, reqFlame: 2, boltSpeed: 380, boltLife: 1.6,
+    chainN: 3, chainR: 130, chainDmg: 0.6,             // A at 5: Chain Lightning
+    searMult: 2.5, searCd: 1.35, searBurn: 4,          // B at 5: Searing Bolt (its fire burns for 3 s)
+    boostFor: 20, boostEvery: 40, tailwind: 0.3, fury: 0.25, // A at 10: Tailwind (speed); B at 10: War Fury (damage)
+    shock: 0.8,                                        // A at 15: Static Shock (stun, never a boss)
+    cauterAt: 0.3, cauterHeal: 0.3, cauterFor: 3, cauterEvery: 60, // B at 15: Cauterize
+    nestDist: 3400, clear: 170, grab: 40, warnR: 230, arriveR: 760, winR: 900, respawnDays: 3, haulSpeed: 0.92, catchUp: 620,
+    swoop: { first: 5, every: 9, min: 110, max: 430, windup: 0.8, speed: 720, dur: 0.6, dmg: 0.9, kb: 300 },
+    breath: { first: 3, every: 11, range: 230, windup: 0.8, dur: 1.4, arc: 0.48, tick: 0.25, dmg: 0.22 },
+    storm: { every: 12, delay: 1.2, extra: 3, r: 40, dmg: 0.85 },
+    phase2: 0.5,
+    repick: { iron: 30, pearl: 10, black: 5 }, // choosing his roads again, at a level 3 Wyvern Roost
+    roads: [
+      [{ name: "Chain Lightning", text: "His bolt is lightning that leaps to 3 more Drowned nearby for 60% of its damage" },
+        { name: "Searing Bolt", text: "A slower fireball for 2.5 times the damage that sets its target burning; he aims for the biggest foe" }],
+      [{ name: "Tailwind", text: "Boost: you move 30% faster for 20 s (again 40 s after it began)" },
+        { name: "War Fury", text: "Boost: you deal 25% more damage for 20 s (again 40 s after it began)" }],
+      [{ name: "Static Shock", text: "His lightning stuns every Drowned it strikes for 0.8 s (never a boss)" },
+        { name: "Cauterize", text: "Once a minute, when you drop below 30% health, he burns your wounds shut: you heal 30% over 3 s" }],
+    ],
+  };
   /* The Starved Bell (src/bell.js): one roams the Abyss, `r` px out from the camp, creeping `roam` radians a second
      round the ring while nobody is near. It rises from the deep (comes into play) when a knight is within `spawn` px
      and sinks back, healed, once every knight is `forget` px away. It lies buried until a knight comes within its
@@ -452,6 +496,9 @@
     fred: { home: "toadstool", name: "Fred", forms: ["Fred the Sprout", "Fred", "Weeping Fred", "Fred the Rotwalker"],
       powers: ["Spits slowing spores and grows healing glowcaps", "Choose his road: Bloomcaps or Befuddling Spores",
         "Choose his road: Fairy Ring or Mindrot", "Choose his road: Second Bloom or Spore Storm"] },
+    wyvern: { home: "roost", name: "Gerald", forms: ["Gerald the Hatchling", "Gerald", "Great Gerald", "Gerald the Bloodwing"],
+      powers: ["Spits bolts of blood-red fire at the Drowned", "Choose his road: Chain Lightning or Searing Bolt",
+        "Choose his road: Tailwind or War Fury", "Choose his road: Static Shock or Cauterize"] },
   };
   // Price to train a companion from level L to L + 1.
   DL.summonCost = function (L) {
@@ -527,6 +574,10 @@
       effect: (l) => (l ? `Fred training up to level ${5 * l}${DL.FRED.campCaps[l] ? ` · ${DL.FRED.campCaps[l]} glowcap${DL.FRED.campCaps[l] > 1 ? "s" : ""} in the camp each dawn` : ""}${l >= 3 ? " · lets you choose Fred's roads again" : ""}` : "Not built"),
       costs: [{ wood: 14, stone: 8, resin: 12 }, { wood: 22, resin: 20, pearl: 3 }, { wood: 30, resin: 30, pearl: 5, black: 2 }],
       reqFlame: (t) => [0, 2, 3, 5][t] },
+    { id: "roost", name: "Wyvern Roost", max: 3, needs: "wyvern", info: "A ledge of piled stones and bones, then a perch of black timber, then a great eyrie hung with old banners, where Gerald roosts and grows. Each level lets him train five more levels.",
+      effect: (l) => (l ? `Gerald training up to level ${5 * l}${l >= 3 ? " · lets you choose Gerald's roads again" : ""}` : "Not built"),
+      costs: [{ wood: 16, stone: 16, iron: 6 }, { wood: 26, stone: 24, iron: 14, pearl: 3 }, { wood: 34, iron: 26, pearl: 5, black: 2 }],
+      reqFlame: (t) => [0, 2, 3, 5][t] },
     /* Trophies of the Abyss bosses: `trophy` = the boss that must have been slain (save.trophies) before it can be built. */
     { id: "bell", name: "Starved Bell Tower", max: 1, trophy: "bell", info: "The Starved Bell's clapper, hung from a frame of black timber. It tolls before every wave that comes for the camp, and calls out where it's coming from.",
       effect: (l) => (l ? `Warns ${DL.SIEGE.warn} s before each wave · warned waves arrive dazed for ${DL.SIEGE.daze} s` : "Slay the Starved Bell in the Abyss for its clapper"),
@@ -545,6 +596,7 @@
   for (const u of DL.UPGRADES) u.costs = u.costs.map((c) => (c ? scaleCost(c) : c));
   DL.OUTPOST.cost = scaleCost(DL.OUTPOST.cost);
   DL.FRED.repick = scaleCost(DL.FRED.repick);
+  DL.WYVERN.repick = scaleCost(DL.WYVERN.repick);
 
   // Camp siege waves get nastier each night.
   DL.campPool = function (day) {

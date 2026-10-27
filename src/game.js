@@ -21,7 +21,7 @@
   G.defaultSave = () => ({
     v: 1, day: 1, nights: 0, deepest: 0, muted: false,
     stash: emptyRes(),
-    up: { flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, bell: 0, roseheart: 0 },
+    up: { flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, roost: 0, bell: 0, roseheart: 0 },
     kit: "lanternBlade",
     kitLevel: 1,
     difficulty: "dark",
@@ -43,13 +43,16 @@
     // Fred, the mushroom familiar: 1 once he's yours; his fairy ring in the Reaches: found yet, and the night it wilted (-1: never)
     fred: 0,
     fredRing: { found: false, fail: -1 },
+    // Gerald, the wyvern familiar: 1 once he's yours; his mother's nest in the Reaches: found yet, and the day she was slain (-1: alive)
+    wyvern: 0,
+    wyvNest: { found: false, dead: -1 },
     // the Starved Bell that roams the Abyss: where on its ring it lies (radians), and the day it was slain (-1: alive)
     bell: { a: null, dead: -1 },
     // the Deadly Rose in her Abyss garden: found yet, and the day she was slain (-1: alive)
     rose: { found: false, dead: -1 },
     // companion levels (src/summons.js), trained at their homes in the camp; the same for every knight's companion in this world
-    // (Fred's roads: the A or B chosen at levels 5, 10 and 15, null until chosen)
-    summons: { hound: 0, golem: 0, wraith: 0, fred: 0, fredPath: [null, null, null] },
+    // (Fred's and Gerald's roads: the A or B chosen at levels 5, 10 and 15, null until chosen)
+    summons: { hound: 0, golem: 0, wraith: 0, fred: 0, fredPath: [null, null, null], wyvern: 0, wyvernPath: [null, null, null] },
     // Abyss bosses slain at least once: their trophies can be built in the camp
     trophies: { bell: 0, rose: 0 },
     // outposts raised in bloom groves (src/outposts.js): [grove cell x, grove cell y, x, y]
@@ -132,7 +135,7 @@
       maxHp: 100 + 25 * u.armory,
       maxOil: 60 + 25 * u.workbench,
       lanternR: (70 + 14 * u.workbench) * DL.Kits.lanternMult() * G.diff().light,
-      dmgMult: (1 + 0.2 * u.forge) * DL.Abigail.mult(), // Abigail's blessing
+      dmgMult: (1 + 0.2 * u.forge) * DL.Abigail.mult() * DL.Wyvern.dmgMult(), // Abigail's blessing, Gerald's War Fury
       flameR: (180 + 40 * u.flame) * G.diff().light,
       flameHp: 150 + 100 * u.flame,
       torchMax: 3 + u.workbench,
@@ -226,6 +229,7 @@
     DL.Kindle.reset();
     DL.Abigail.reset();
     DL.Fred.reset();
+    DL.Wyvern.reset();
     DL.Bell.reset();
     DL.Rose.reset();
     G.state = "play";
@@ -298,6 +302,7 @@
     DL.Kindle.update(dt);
     DL.Abigail.update(dt);
     DL.Fred.update(dt);
+    DL.Wyvern.update(dt);
     updateDefenses(dt);
     DL.Trophies.update(dt);
     DL.Outposts.update(dt);
@@ -378,6 +383,7 @@
     DL.Siege.dawn();
     DL.Outposts.dawn();
     DL.Fred.dawn();
+    DL.Wyvern.dawn();
     if (G.rootEvent) {
       const o = G.rootEvent.obj;
       if (!o.dead) {
@@ -468,6 +474,7 @@
     DL.Kindle.lights(L);
     DL.Abigail.lights(L);
     DL.Fred.lights(L);
+    DL.Wyvern.lights(L);
     DL.Outposts.lights(L);
     DL.Trophies.lights(L);
     DL.Rose.lights(L);
@@ -537,6 +544,7 @@
     if (DL.Input.take("dash")) tryDash(inp);
     if (DL.Input.take("ability")) useAbility();
     if (DL.Input.take("torch")) placeTorch();
+    if (DL.Input.take("boost")) DL.Wyvern.boost(); // Gerald's Tailwind or War Fury (src/wyvern.js)
 
     if (p.dashT > 0) {
       p.dashT -= dt;
@@ -546,7 +554,7 @@
       DL.Kits.dashTick(p, st, dt);
     } else {
       const wet = W.isWater(p.x, p.y) ? 0.82 : 1;
-      const spd = 150 * wet * (p.corrupt >= 75 ? 0.9 : 1) * (DL.Den.carrying() ? DL.DEN.haulSpeed : 1) * DL.Abigail.mult();
+      const spd = 150 * wet * (p.corrupt >= 75 ? 0.9 : 1) * (DL.Den.carrying() ? DL.DEN.haulSpeed : 1) * (DL.Wyvern.carrying() ? DL.WYVERN.haulSpeed : 1) * DL.Abigail.mult() * DL.Wyvern.speedMult();
       p.moving = inp.m > 0.15;
       p.stillT = p.moving ? 0 : (p.stillT || 0) + dt;
       if (p.moving) {
@@ -892,6 +900,8 @@
   // Each Drowned hunts whichever knight is nearest (host or a co-op friend), or a Bone Hound close by.
   G.knights = () => [...(G.player.downT > 0 ? [] : [G.player]), ...G.allies.filter((a) => !a.down)];
   function targetFor(e) {
+    // the mother wyvern hunts whoever carries her egg (src/wyvern.js)
+    if (e.def.wyvern) return DL.Wyvern.prey(e, G.player);
     // turned by Fred's Mindrot: it fights the other Drowned (src/fred.js)
     if (e.mind > 0) { const v = DL.Fred.prey(e); if (v) return v; }
     // a knight down in the Hollow is left alone
@@ -921,7 +931,7 @@
         continue;
       }
       const eZ = DL.ZONES[W.zoneIndex(e.x, e.y)];
-      if (!G.night && !eZ.abyss && !e.isSelf && !e.def.den) {
+      if (!G.night && !eZ.abyss && !e.isSelf && !e.def.den && !e.def.wyvern) {
         e.hp -= 30 * dt; // the sun unmakes them
         if (Math.random() < 0.3) puff(e.x + rand(-8, 8), e.y - rand(10, 40), "rgba(40,60,70,0.6)", 30, 0.8);
         if (e.hp <= 0) { kill(e, false); continue; }
@@ -988,6 +998,8 @@
         // the Starved Bell rearing to swallow, lunging, or eating
       } else if (e.def.rose && DL.Rose.busy(e, dt, p)) {
         // the Deadly Rose whirling her whips
+      } else if (e.def.wyvern && DL.Wyvern.busy(e, dt, p, dp)) {
+        // the mother wyvern on the wing, diving, or breathing fire
       } else if (e.state === "windup") {
         e.stT -= dt;
         if (e.stT <= 0) { strike(e); e.state = "recover"; e.stT = 0.35; e.cd = e.def.cd; }
@@ -1012,7 +1024,7 @@
         e.backT = want === -1 ? 1.5 : Math.max(0, (e.backT || 0) - dt); // backing away lately: the Bone Hound runs these down first
         const spd = e.speed * (humanLightAt(e.x, e.y) ? 0.72 : 1) * (e.slow > 0 ? 0.6 : 1) * (e.spore > 0 ? e.sporeK : 1) * (e.rallied > 0 ? 1.2 : 1);
         // Walls in the way: head for the nearest gate first.
-        const wp = want === 1 ? DL.Camp.route(e.x, e.y, tx, ty, G.save.up) : null;
+        const wp = want === 1 && !e.def.fly ? DL.Camp.route(e.x, e.y, tx, ty, G.save.up) : null; // what flies goes over the walls
         let mx = wp ? wp.x - e.x : dx, my = wp ? wp.y - e.y : dy;
         if (e.def.zigzag && want === 1 && !wp && d > 80) { // weave from side to side on the way in
           const w = Math.sin(e.animT * 5 + e.id) * 0.9, ox = mx;
@@ -1051,7 +1063,7 @@
 
       // Barricade: stakes wound attackers as they cross the perimeter (at the gates once walls stand).
       const lv = G.save.up.stakes;
-      if (lv > 0) {
+      if (lv > 0 && !e.def.fly) {
         const dc = DL.Camp.sq(e.x, e.y);
         if (dc < DL.WALL_R + 4) {
           e.slow = Math.max(e.slow, lv >= 3 ? 0.4 : 0.2);
@@ -1086,6 +1098,7 @@
         const dx = a.x - h.x, dy = a.y - h.y, d = Math.hypot(dx, dy) || 0.01, min = a.def.radius + 6;
         if (d < min) { a.x = h.x + (dx / d) * min; a.y = h.y + (dy / d) * min; }
       }
+      if (a.def.fly) continue; // the mother wyvern flies over rocks, trees and walls
       DL.Golems.push(a, a.def.radius * 0.6);
       W.collide(a, a.def.radius * 0.6);
       collideCamp(a, a.def.radius * 0.6);
@@ -1112,6 +1125,7 @@
     if (d.caster) hexbearer(e, dt, p, dp);
     if (d.bell) DL.Bell.behave(e, dt, p, dp);
     if (d.colossus) DL.Colossus.think(e, dt, p, dp);
+    if (d.wyvern) DL.Wyvern.think(e, dt, p, dp); // the mother wyvern picks her moves (src/wyvern.js)
     if (d.rose) DL.Rose.think(e, dt, p, dp); // the Deadly Rose picks her moves (src/rose.js) // the Drowned Colossus picks its moves (src/colossus.js)
   }
 
@@ -1327,6 +1341,7 @@
     if (e.def.den) { DL.Den.slain(e); return; } // a Bone Wolf leaves its carcass
     if (e.def.bell) DL.Bell.slain(e);
     if (e.def.rose) DL.Rose.slain(e);
+    if (e.def.wyvern) DL.Wyvern.slain(e);
     sfx("kill");
     G.effects.push({ type: "dissolve", e, t: 0, max: 0.6 });
     for (let i = 0; i < 16; i++) puff(e.x + rand(-10, 10), e.y - rand(0, 50) * e.def.scale, "rgba(60,220,230,0.7)", 50, 0.9, -40);
@@ -1447,6 +1462,7 @@
           if (dist(b.x, b.y, e.x, e.y - 20 * e.def.scale) < e.def.radius + (b.r || 8)) {
             if (b.soul) DL.Abigail.curse(e); // first, so this orb already bites harder
             if (b.spore) DL.Fred.sporeHit(e, b);
+            if (b.wyv) DL.Wyvern.boltHit(e, b); // Gerald's bolt: burning, stunning, or leaping on as lightning
             hitEnemy(e, b.dmg * DL.Kits.farShotMult(b), Math.atan2(b.vy, b.vx), b.soul ? 20 : 60);
             if (b.flare) flare(b.x, b.y, b.dmg);
             if (b.hit) b.hit.add(e);
@@ -1485,8 +1501,9 @@
         }
         for (const a of G.allies) if (!a.down && dist(t.x, t.y, a.x, a.y) < t.r + 6) DL.Net.hurtAlly(a, t.dmg, Math.atan2(a.y - t.y, a.x - t.x));
         for (const h of G.hounds.slice()) if (dist(t.x, t.y, h.x, h.y) < t.r + 4) DL.Hounds.hurt(h, t.dmg, Math.atan2(h.y - t.y, h.x - t.x));
-        for (let i = 0; i < 10; i++) spark(t.x + rand(-t.r, t.r) * 0.6, t.y + rand(-t.r, t.r) * 0.3, t.rose ? "220,40,60" : "90,235,245", 120);
-        if (!t.rose) G.effects.push({ type: "spikes", x: t.x, y: t.y, r: t.r, t: 0, max: 0.5 }); // the Deadly Rose's thorns draw themselves
+        for (let i = 0; i < 10; i++) spark(t.x + rand(-t.r, t.r) * 0.6, t.y + rand(-t.r, t.r) * 0.3, t.rose ? "220,40,60" : t.wyv ? "170,210,255" : "90,235,245", 120);
+        if (t.bolt) { G.effects.push({ type: "wyvStrike", x: t.x, y: t.y, t: 0, max: 0.35 }); G.camera.shake = Math.max(G.camera.shake, 4); } // the mother wyvern's lightning
+        else if (!t.rose) G.effects.push({ type: "spikes", x: t.x, y: t.y, r: t.r, t: 0, max: 0.5 }); // the Deadly Rose's thorns draw themselves
       }
     }
     G.telegraphs = G.telegraphs.filter((t) => t.t < t.delay + 0.05);
@@ -1608,6 +1625,7 @@
     if (G.isGuest()) { if (!(p.downT > 0)) guestDown(); return; }
     G.state = "dying";
     G.dying = 0;
+    DL.Wyvern.fell(0); // carrying a wyvern egg: its mother takes it back
     sfx("death");
     const lost = { ...p.carried };
     p.carried = emptyRes(); // they stay with your drowned self

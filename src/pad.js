@@ -79,7 +79,7 @@
     const Bn = DL.Binds;
     I.padAttack = Bn.padHeld("attack", btn);
     I.padMine = Bn.padHeld("mine", btn);
-    for (const a of ["dash", "ability", "torch", "camp", "pause"]) if (Bn.pad[a].some(down)) I.trigger(a);
+    for (const a of ["dash", "ability", "torch", "boost", "camp", "pause"]) if (Bn.pad[a].some(down)) I.trigger(a);
   }
 
   /* ---------------- on menus ---------------- */

@@ -76,7 +76,7 @@ window.DL = window.DL || {};
 
     init() {
       // Esc always pauses; everything else comes from the player's bindings (src/binds.js).
-      const PRESS = ["dash", "ability", "torch", "camp", "pause"];
+      const PRESS = ["dash", "ability", "torch", "boost", "camp", "pause"];
       addEventListener("keydown", (e) => {
         const k = e.key.toLowerCase();
         if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(k)) e.preventDefault();
