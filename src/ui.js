@@ -989,7 +989,7 @@
     set($("kitLine"), "text", `${kit.name} · Lv ${G.save.kitLevel} · ${G.diff().name}${DL.Abigail.buffed() ? " · Abigail's blessing" : ""}`);
     set($("btnAbility"), "--cd", abFrac.toFixed(3));
     set($("btnAbility"), "class", "act" + (p.oil < kit.ability.oil ? " low" : ""));
-    set($("btnDash"), "--cd", (p.dashCd / 2.2).toFixed(3));
+    set($("btnDash"), "--cd", (p.dashCd / DL.Kits.dashCd()).toFixed(3));
     // David's boost: shown once his level 10 road is chosen
     const hb = DL.Wyvern.hasBoost();
     set($("btnBoost"), "class", "act small" + (hb ? "" : " hidden") + (DL.Wyvern.boostKind === "A" || DL.Summons.wyvern().boost === "A" ? " storm" : "") + (DL.Wyvern.boostT > 0 ? " on" : ""));

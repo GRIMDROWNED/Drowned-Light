@@ -111,6 +111,7 @@ The setting is remembered on that device.
 | **03 Ashen Arbalist**: *Quiet light. Farther truths.* | Piercing Bolt (long-range crossbow) | plain | **Scatter Shot**: a fan of bolts; light flares where they land | **Quiet Light**: bolts deal up to +35% damage the farther they fly |
 | **04 Relic Bearer**: *Lost things still shine.* | Relic Orb (seeking orbs) | plain | **Beacon Pulse**: lights the area, purges corruption, slows the Drowned, dispels arrows | wider lantern, slower oil burn |
 | **05 Flame Bastion**: *Some light burns brighter.* | Bastion Blade (heavy sword) | Shield Slam (staggers) | **Flame Bastion**: a wall of fire that blocks and burns | shield blocks 25% of damage |
+| **06 Chain Reaper**: *The dark is only a tether.* | Sickle Throw (a sickle on a chain, cuts along its line out and back) | Reaping Dash (damages what you pass through), every 1.1 s | **Violet Snare**: whirls the chain, cutting and rooting everything near for 2 s | **Reaper's Rush**: a kill resets the dash and gives a burst of speed. Glass cannon: 70% health, 20% faster |
 
 **Kit levels 1–20** are trained at camp (Base Camp → **Kit**) with iron, resin and, from level 10, pearls. Every level adds +5% damage and a slightly faster ability.
 
@@ -177,7 +178,7 @@ No build step, no dependencies. These are plain scripts loaded in order:
 | `src/view.js` | Auto / Portrait / Landscape view: orientation lock, rotated stage, letterboxing |
 | `src/net.js` | online co-op: rooms, host snapshots, guest state and events (PeerJS) |
 | `src/data.js` | **all balance numbers**: day/night lengths, zones, enemies, kits and milestones, kit level costs, difficulties, upgrade costs |
-| `src/kits.js` | the five kits in play: attacks, dashes, abilities, passives, training and milestone effects |
+| `src/kits.js` | the six kits in play: attacks, dashes, abilities, passives, training and milestone effects |
 | `src/camp.js` | base camp layout per tier, palisade walls, gate pathing |
 | `src/art.js` | procedural pixel sprites for the world, camp and effects |
 | `src/units.js` | the knight, Drowned Knight, Bone Hound, Derek and Starved Bell sprite sheets (all animations, corruption stages) |
@@ -213,6 +214,7 @@ Sheets have the shape `Art.sheets[key][dir][anim][frame]`, so hand-drawn sprite 
 **Hand-drawn art** (`src/sprites.js`) replaces coded art with PNG files in `assets/sprites/`. The art is being redone piece by piece from AI renders: one pose per image on a flat magenta background, made from prompts in the project's art-prompts file.
 - **Lantern Blade knight**: front, back and side poses, 4-frame side, front and back walks cut from sheets, a 3-frame attack, dash, hurt and death. The frames are cut at twice the art resolution (`res: 2`) so the detail survives. Corruption stages and the drowned self are tinted from the same frames.
 - **Pike Warden**, **Ashen Arbalist**, **Relic Bearer** and **Flame Bastion knights**: the same 12 poses and walk sheets as an enemy, tinted for every corruption stage. Walks that stepped with one foot (Pike Warden and Relic Bearer front, Flame Bastion back) get the other step by mirroring the legs (`FRAME_ORDER`, `MIRROR_AT`).
+- **Chain Reaper knight** (kit 06): drawn on a green background (his violet sits too close to magenta), so `KEY_OPTS`/`PROP_KEY` key green for him. The 12 poses, walk sheets and a dash lunge; his throw is cut off at the fist (`CELL_CROP`) since the game draws the flying sickle and its chain (`reaperSickle1-4`, `reaperChain`), and the chain whirled overhead is his cast pose. Violet Snare's ring and the coil on a snared Drowned are props too.
 - **Mire Stalker** (squire): the 12 poses from the enemy prompt (three views, a 4-frame side walk, three attack frames, hurt and death), also at `res: 2`.
 - **Drowned Wretch** (footman): two batches of renders. The first batch came out as the knight with cyan details, so `match_colors` in `tools/cutlib.py` recolours it to match the second.
 - **Tide Archer** (archer): the 12 poses. Six of them came as cells of one 3×2 sheet, cut into frames before cutting.

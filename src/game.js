@@ -132,7 +132,7 @@
   G.stats = function () {
     const u = G.save.up;
     return {
-      maxHp: 100 + 25 * u.armory,
+      maxHp: Math.round((100 + 25 * u.armory) * (G.kit().hpMult || 1)), // the Chain Reaper is frailer
       maxOil: 60 + 25 * u.workbench,
       lanternR: (70 + 14 * u.workbench) * DL.Kits.lanternMult() * G.diff().light,
       dmgMult: (1 + 0.2 * u.forge) * DL.Abigail.mult() * DL.Wyvern.dmgMult(), // Abigail's blessing, David's War Fury
@@ -554,7 +554,7 @@
       DL.Kits.dashTick(p, st, dt);
     } else {
       const wet = W.isWater(p.x, p.y) ? 0.82 : 1;
-      const spd = 150 * wet * (p.corrupt >= 75 ? 0.9 : 1) * (DL.Den.carrying() ? DL.DEN.haulSpeed : 1) * (DL.Wyvern.carrying() ? DL.WYVERN.haulSpeed : 1) * DL.Abigail.mult() * DL.Wyvern.speedMult();
+      const spd = 150 * DL.Kits.speedMult(p) * wet * (p.corrupt >= 75 ? 0.9 : 1) * (DL.Den.carrying() ? DL.DEN.haulSpeed : 1) * (DL.Wyvern.carrying() ? DL.WYVERN.haulSpeed : 1) * DL.Abigail.mult() * DL.Wyvern.speedMult();
       p.moving = inp.m > 0.15;
       p.stillT = p.moving ? 0 : (p.stillT || 0) + dt;
       if (p.moving) {
@@ -630,7 +630,7 @@
     p.angle = a;
     p.dashDir = { x: Math.cos(a), y: Math.sin(a) };
     p.dashT = 0.22;
-    p.dashCd = 2.2;
+    p.dashCd = DL.Kits.dashCd();
     p.inv = Math.max(p.inv, 0.3);
     p.dashHit.clear();
     DL.Kits.dashStart(p);

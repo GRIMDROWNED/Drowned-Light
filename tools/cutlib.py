@@ -73,7 +73,9 @@ def key_mask(a, key=(255, 0, 255), tol=120, fringe=3, tint=True):
     fringe, keep the main shapes."""
     d = np.sqrt(((a - np.array(key)) ** 2).sum(-1))
     fg = d > tol
-    if tint:  # purple fringe: red and blue well above green (off for art that is purple itself)
+    if tint and key[1] > key[0]:  # green fringe (a green key): green well above red and blue
+        fg &= (a[..., 1] - np.maximum(a[..., 0], a[..., 2])) <= 70
+    elif tint:  # purple fringe: red and blue well above green (off for art that is purple itself)
         fg &= (np.minimum(a[..., 0], a[..., 2]) - a[..., 1]) <= 70
     fg = ndimage.binary_opening(fg, iterations=1)
     lab, n = ndimage.label(fg, structure=np.ones((3, 3)))
@@ -84,7 +86,7 @@ def key_mask(a, key=(255, 0, 255), tol=120, fringe=3, tint=True):
     return fg
 
 
-def cut_sheet(img, cols, rows, height, fringe=1, colors=32, outline=(10, 11, 12), tol=120, tint=True):
+def cut_sheet(img, cols, rows, height, fringe=1, colors=32, outline=(10, 11, 12), tol=120, tint=True, key=(255, 0, 255)):
     """Cut an animation sheet (equal cells on a key colour) into frames that share one canvas.
     The AI rarely centres a figure in its cell, so each frame is lined up by its own upper body
     (horizontally) and its own lowest point (on the ground line) rather than by the cell. The first
@@ -93,7 +95,7 @@ def cut_sheet(img, cols, rows, height, fringe=1, colors=32, outline=(10, 11, 12)
     a = np.asarray(img.convert('RGB')).astype(int)
     cw, ch = a.shape[1] // cols, a.shape[0] // rows
     cells = [a[r * ch:(r + 1) * ch, c * cw:(c + 1) * cw] for r in range(rows) for c in range(cols)]
-    masks = [key_mask(c, tol=tol, fringe=fringe, tint=tint) for c in cells]
+    masks = [key_mask(c, key, tol=tol, fringe=fringe, tint=tint) for c in cells]
     boxes = []
     for m in masks:
         ys, xs = np.where(m)
