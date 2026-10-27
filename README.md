@@ -13,18 +13,20 @@ A top-down dark-fantasy survival game for the browser and phones. You are a lant
 
 ### Controls
 
-| | Desktop | Phone |
-|---|---|---|
-| Move | WASD / arrows | Drag anywhere on the left half |
-| Attack (auto mode) | automatic: the nearest Drowned, or a supply node you stand beside | automatic |
-| Attack (manual mode) | hold **J** / **K** or the left mouse button; aim with the mouse | hold **ATTACK** to strike the way you face; **drag on it to aim** any direction (e.g. strike back while retreating). Leans toward nearby foes |
-| Mine (manual mode) | hold **G** or the right mouse button | hold **MINE** (lights up when supplies are in reach) |
-| Dash | Space / Shift | DASH |
-| Kit ability | E / Q | ability button |
-| Place torch | F / T | TORCH |
-| Camp menu | C (at camp) | ENTER CAMP |
-| Pause | Esc / P | ❚❚ |
-| View | title or pause screen → **View: Auto / Portrait / Landscape** | same |
+| | Desktop | Xbox controller | Phone |
+|---|---|---|---|
+| Move | WASD / arrows | left stick / D-pad | Drag anywhere on the left half |
+| Attack (auto mode) | automatic: the nearest Drowned, or a supply node you stand beside | automatic | automatic |
+| Attack (manual mode) | hold **J** / **K** or the left mouse button; aim with the mouse | hold **RT** or **X**; aim with the right stick (else the way you face) | hold **ATTACK** to strike the way you face; **drag on it to aim** any direction (e.g. strike back while retreating). Leans toward nearby foes |
+| Mine (manual mode) | hold **G** or the right mouse button | hold **LT** | hold **MINE** (lights up when supplies are in reach) |
+| Dash | Space / Shift | **A** | DASH |
+| Kit ability | E / Q | **B** / **RB** | ability button |
+| Place torch | F / T | **LB** | TORCH |
+| Camp menu | C (at camp) | **Y** | ENTER CAMP |
+| Pause | Esc / P | **Menu** / **View** | ❚❚ |
+| View | title or pause screen → **View: Auto / Portrait / Landscape** | same | same |
+
+**Controller on menus** (`src/pad.js`): D-pad or left stick moves the highlight, **A** presses, **B** goes back or closes, **LB / RB** switch camp tabs, the right stick scrolls. A disconnected controller pauses the game. Title or pause screen → **Controls** shows the full list in game. Typing a co-op room code still needs a keyboard (or the on-screen one).
 
 ## The core loop
 
