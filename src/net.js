@@ -185,7 +185,7 @@
       if (m.kindle) DL.Kindle.join(g.id); // and one who lit their Kindle, theirs
       if (m.abigail) DL.Abigail.join(g.id); // and Abigail, for one who won her
       if (m.fred) DL.Fred.join(g.id); // and Fred
-      if (m.wyvern) DL.Wyvern.join(g.id); // and Gerald
+      if (m.wyvern) DL.Wyvern.join(g.id); // and David
       const harvested = [];
       for (const c of DL.World.chunks.values()) for (const o of c.objects) if (o.harvested || o.dead || (o.maxHp && o.hp < o.maxHp)) harvested.push(objRow(o));
       sendTo(g, { t: "welcome", v: VERSION, id: g.id, up: G.save.up, difficulty: G.save.difficulty, day: G.save.day, nights: G.save.nights, time: G.time, ob: harvested });
@@ -251,7 +251,7 @@
       DL.Fred.startHost();
     } else if (ev.t === "fredCap") DL.Fred.capEaten(ev.id);
     else if (ev.t === "fredPath") {
-      // Fred's and Gerald's roads belong to the world, like their levels
+      // Fred's and David's roads belong to the world, like their levels
       const kind = ev.kind === "wyvern" ? "wyvern" : "fred", nm = DL.SUMMON[kind].name;
       if (DL.Summons.chooseHost(ev.arg, kind)) say(`${who} chose a road for ${nm}.`, "good");
       else sendTo(g, { t: "say", m: `Couldn't choose that road for ${nm}.`, k: "warn" });
@@ -339,7 +339,7 @@
       ab: DL.Abigail.rows(),
       // Freds, their glowcaps and fairy rings, and the night at his ring (src/fred.js)
       fd: DL.Fred.rows(),
-      // Geralds, who carries a wyvern egg, the mother's move, and whether her nest lies empty (src/wyvern.js)
+      // Davids, who carries a wyvern egg, the mother's move, and whether her nest lies empty (src/wyvern.js)
       wy: DL.Wyvern.rows(),
       // companion levels, Abyss trophies, the Great Siege, outposts [grove x, grove y, x, y, lit, hp], the Rose Heart's briar
       sm: G.save.summons, tr: G.save.trophies, gs: DL.Siege.on ? 1 : 0,
@@ -370,7 +370,7 @@
   Net.hasAbigail = () => !!Net.profile().abigail || G.listSlots().some(({ save }) => save && save.abigail);
   // And Fred.
   Net.hasFred = () => !!Net.profile().fred || G.listSlots().some(({ save }) => save && save.fred);
-  // And Gerald.
+  // And David.
   Net.hasWyvern = () => !!Net.profile().wyvern || G.listSlots().some(({ save }) => save && save.wyvern);
 
   Net.join = async function (code, kit) {

@@ -43,7 +43,7 @@
     // Fred, the mushroom familiar: 1 once he's yours; his fairy ring in the Reaches: found yet, and the night it wilted (-1: never)
     fred: 0,
     fredRing: { found: false, fail: -1 },
-    // Gerald, the wyvern familiar: 1 once he's yours; his mother's nest in the Reaches: found yet, and the day she was slain (-1: alive)
+    // David, the wyvern familiar: 1 once he's yours; his mother's nest in the Reaches: found yet, and the day she was slain (-1: alive)
     wyvern: 0,
     wyvNest: { found: false, dead: -1 },
     // the Starved Bell that roams the Abyss: where on its ring it lies (radians), and the day it was slain (-1: alive)
@@ -51,7 +51,7 @@
     // the Deadly Rose in her Abyss garden: found yet, and the day she was slain (-1: alive)
     rose: { found: false, dead: -1 },
     // companion levels (src/summons.js), trained at their homes in the camp; the same for every knight's companion in this world
-    // (Fred's and Gerald's roads: the A or B chosen at levels 5, 10 and 15, null until chosen)
+    // (Fred's and David's roads: the A or B chosen at levels 5, 10 and 15, null until chosen)
     summons: { hound: 0, golem: 0, wraith: 0, fred: 0, fredPath: [null, null, null], wyvern: 0, wyvernPath: [null, null, null] },
     // Abyss bosses slain at least once: their trophies can be built in the camp
     trophies: { bell: 0, rose: 0 },
@@ -135,7 +135,7 @@
       maxHp: 100 + 25 * u.armory,
       maxOil: 60 + 25 * u.workbench,
       lanternR: (70 + 14 * u.workbench) * DL.Kits.lanternMult() * G.diff().light,
-      dmgMult: (1 + 0.2 * u.forge) * DL.Abigail.mult() * DL.Wyvern.dmgMult(), // Abigail's blessing, Gerald's War Fury
+      dmgMult: (1 + 0.2 * u.forge) * DL.Abigail.mult() * DL.Wyvern.dmgMult(), // Abigail's blessing, David's War Fury
       flameR: (180 + 40 * u.flame) * G.diff().light,
       flameHp: 150 + 100 * u.flame,
       torchMax: 3 + u.workbench,
@@ -544,7 +544,7 @@
     if (DL.Input.take("dash")) tryDash(inp);
     if (DL.Input.take("ability")) useAbility();
     if (DL.Input.take("torch")) placeTorch();
-    if (DL.Input.take("boost")) DL.Wyvern.boost(); // Gerald's Tailwind or War Fury (src/wyvern.js)
+    if (DL.Input.take("boost")) DL.Wyvern.boost(); // David's Tailwind or War Fury (src/wyvern.js)
 
     if (p.dashT > 0) {
       p.dashT -= dt;
@@ -1462,7 +1462,7 @@
           if (dist(b.x, b.y, e.x, e.y - 20 * e.def.scale) < e.def.radius + (b.r || 8)) {
             if (b.soul) DL.Abigail.curse(e); // first, so this orb already bites harder
             if (b.spore) DL.Fred.sporeHit(e, b);
-            if (b.wyv) DL.Wyvern.boltHit(e, b); // Gerald's bolt: burning, stunning, or leaping on as lightning
+            if (b.wyv) DL.Wyvern.boltHit(e, b); // David's bolt: burning, stunning, or leaping on as lightning
             hitEnemy(e, b.dmg * DL.Kits.farShotMult(b), Math.atan2(b.vy, b.vx), b.soul ? 20 : 60);
             if (b.flare) flare(b.x, b.y, b.dmg);
             if (b.hit) b.hit.add(e);

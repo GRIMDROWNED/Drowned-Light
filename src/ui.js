@@ -848,7 +848,7 @@
       <footer>${action}</footer></article>`;
   }
 
-  // Gerald: a wyvern familiar, one per knight, won by stealing an egg from his mother's nest and killing her.
+  // David: a wyvern familiar, one per knight, won by stealing an egg from his mother's nest and killing her.
   // His card also shows his roads: at levels 5, 10 and 15 the Storm's (A) or the Fire's (B).
   function wyvernCard(G) {
     const W = DL.WYVERN, Sm = DL.Summons, ws = Sm.wyvern(), mine = DL.Wyvern.mine(), w = DL.Wyvern.where(), found = G.isGuest() || G.save.wyvNest.found;
@@ -990,7 +990,7 @@
     set($("btnAbility"), "--cd", abFrac.toFixed(3));
     set($("btnAbility"), "class", "act" + (p.oil < kit.ability.oil ? " low" : ""));
     set($("btnDash"), "--cd", (p.dashCd / 2.2).toFixed(3));
-    // Gerald's boost: shown once his level 10 road is chosen
+    // David's boost: shown once his level 10 road is chosen
     const hb = DL.Wyvern.hasBoost();
     set($("btnBoost"), "class", "act small" + (hb ? "" : " hidden") + (DL.Wyvern.boostKind === "A" || DL.Summons.wyvern().boost === "A" ? " storm" : "") + (DL.Wyvern.boostT > 0 ? " on" : ""));
     if (hb) {

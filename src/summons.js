@@ -68,9 +68,9 @@
     };
   };
 
-  /* Fred and Gerald choose a road at levels 5, 10 and 15 ("A" or "B", null until chosen), kept for the world in
+  /* Fred and David choose a road at levels 5, 10 and 15 ("A" or "B", null until chosen), kept for the world in
      save.summons.fredPath and save.summons.wyvernPath. Fred's roads (DL.FRED.roads): A, the Mender, or B, the
-     Blight. Gerald's (DL.WYVERN.roads): A, the Storm, or B, the Fire. A level 3 home lets you choose them again. */
+     Blight. David's (DL.WYVERN.roads): A, the Storm, or B, the Fire. A level 3 home lets you choose them again. */
   const ROADS = {
     fred: { roads: () => DL.FRED.roads, names: ["Mender", "Blight"], repick: () => DL.FRED.repick },
     wyvern: { roads: () => DL.WYVERN.roads, names: ["Storm", "Fire"], repick: () => DL.WYVERN.repick },
@@ -95,7 +95,7 @@
       storm: p[2] === "B",
     };
   };
-  // Gerald: his bolt from 70% to 160% and quicker with each level; the rest comes from his roads.
+  // David: his bolt from 70% to 160% and quicker with each level; the rest comes from his roads.
   Summons.wyvern = function () {
     const L = Summons.level("wyvern"), W = DL.WYVERN, p = Summons.path("wyvern"), sear = p[0] === "B";
     return {
@@ -169,7 +169,7 @@
     ],
     // Fred is drawn in code for now (src/fred.js); only the burst of light at a new form uses this
     fred: [{ ember: "255,180,80" }, { ember: "255,180,80" }, { ember: "255,180,80" }, { ember: "255,180,80" }],
-    // so is Gerald (src/wyvern.js)
+    // so is David (src/wyvern.js)
     wyvern: [{ ember: "255,90,60" }, { ember: "255,90,60" }, { ember: "255,90,60" }, { ember: "255,90,60" }],
   };
   const BASE = { hound: "boneHound", golem: "derek", wraith: "abigail" };

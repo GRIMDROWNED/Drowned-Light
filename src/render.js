@@ -1342,7 +1342,7 @@
       return;
     }
     if (b.kind === "spore") return DL.Fred.drawGlob(c, b); // Fred's spore glob
-    if (b.kind === "wyvBolt") return DL.Wyvern.drawBolt(c, b); // Gerald's bolt
+    if (b.kind === "wyvBolt") return DL.Wyvern.drawBolt(c, b); // David's bolt
     if (b.kind === "orb") {
       const g = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, 12);
       g.addColorStop(0, "rgba(255,255,240,1)"); g.addColorStop(0.35, `rgba(${b.col},0.9)`); g.addColorStop(1, `rgba(${b.col},0)`);

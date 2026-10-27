@@ -1,4 +1,4 @@
-/* Drowned Light — Gerald, a wyvern familiar, won by stealing an egg from a nest and killing its mother.
+/* Drowned Light — David, a wyvern familiar, won by stealing an egg from a nest and killing its mother.
    A nest of bones and black branches sits on the rocks of the Drowned Reaches with a clutch of blood-red eggs in
    it, while the mother is out hunting. Walk into the nest and you take an egg, and she comes for it at once: she
    hunts whoever carries it wherever they run, over walls and water, until one of them is dead. Slay her and the
@@ -6,12 +6,12 @@
    she snatches the egg back and flies home with it. Slain, she's gone a few days and her nest lies empty.
    Her moves: a claw (her ordinary blow); the swoop, rising and diving straight through her prey; fire breath in a
    cone; and below half her health, lightning called down on every knight near her.
-   Gerald flies at his knight's shoulder and spits bolts at the Drowned. At levels 5, 10 and 15 you choose his
+   David flies at his knight's shoulder and spits bolts at the Drowned. At levels 5, 10 and 15 you choose his
    road: A, the Storm (Chain Lightning, Tailwind, Static Shock) or B, the Fire (Searing Bolt, War Fury,
    Cauterize). Tailwind and War Fury are boosts the knight calls with the Boost button: 20 s on, 40 s from one to
-   the next. The host runs every Gerald, the mother and the egg, and sends them in its snapshots; each device
+   the next. The host runs every David, the mother and the egg, and sends them in its snapshots; each device
    calls its own boost and is healed by its own Cauterize. Numbers: DL.WYVERN, DL.ENEMIES.wyvern.
-   Until Robert's drawings are in, Gerald, his mother and the nest are drawn here in code. */
+   Until Robert's drawings are in, David, his mother and the nest are drawn here in code. */
 "use strict";
 (function (DL) {
   const { dist, rand, TAU, angleDiff } = DL;
@@ -128,8 +128,8 @@
     const id = heist ? heist.carrier : -1;
     heist = null; mom = null;
     G.save.wyvNest.dead = G.save.day;
-    const hatch = "The mother wyvern crashes down and lies still. The egg in your arms cracks, and out pushes a hatchling, all bone and wet red wings. It shrieks at you once, then climbs onto your shoulder. You call him Gerald.";
-    const clutch = "The mother wyvern crashes down and lies still. You take an egg from her clutch, and it hatches in your hands: a hatchling, all bone and wet red wings. You call him Gerald.";
+    const hatch = "The mother wyvern crashes down and lies still. The egg in your arms cracks, and out pushes a hatchling, all bone and wet red wings. It shrieks at you once, then climbs onto your shoulder. You call him David.";
+    const clutch = "The mother wyvern crashes down and lies still. You take an egg from her clutch, and it hatches in your hands: a hatchling, all bone and wet red wings. You call him David.";
     for (const k of G.knights()) {
       const kid = k === G.player ? 0 : k.id;
       if (hasOwn(kid) || (kid !== id && dist(k.x, k.y, e.x, e.y) > W.winR)) continue;
@@ -303,7 +303,7 @@
     return false;
   };
 
-  /* ---------------- Gerald himself (host only) ---------------- */
+  /* ---------------- David himself (host only) ---------------- */
   function ownerOf(m) {
     if (m.owner === 0) return G.state === "play" || G.state === "camp" ? G.player : null;
     return G.allies.find((a) => a.id === m.owner) || null;
@@ -316,7 +316,7 @@
     for (let i = 0; i < 16; i++) G.puff(m.x + rand(-12, 12), m.y - rand(10, 40), "rgba(160,40,40,0.5)", 50, 1, -25);
     return m;
   }
-  // A new life (or a reload): your Gerald is back at your side, and every friend's; any egg is back in the nest.
+  // A new life (or a reload): your David is back at your side, and every friend's; any egg is back in the nest.
   Wyv.reset = function () {
     const friends = G.wyverns.filter((m) => m.owner !== 0).map((m) => m.owner);
     if (heist && heist.carrier !== 0) tell(heist.carrier, "The mother wyvern took back her egg while the camp slept.", "warn");
@@ -437,7 +437,7 @@
   Wyv.hasBoost = () => !!(Wyv.mine() && lv().boost);
   Wyv.boostName = () => (lv().boost === "A" ? W.roads[1][0].name : W.roads[1][1].name);
   Wyv.boost = function () {
-    if (!Wyv.hasBoost()) { if (Wyv.mine()) say("Gerald has no boost yet. Choose his road at level 10.", "warn"); sfx("deny"); return; }
+    if (!Wyv.hasBoost()) { if (Wyv.mine()) say("David has no boost yet. Choose his road at level 10.", "warn"); sfx("deny"); return; }
     if (Wyv.boostCd > 0) { say(`${Wyv.boostName()} is ready again in ${Math.ceil(Wyv.boostCd)} s.`, "warn"); sfx("deny"); return; }
     const p = G.player, m = Wyv.mine(), k = lv().boost;
     Wyv.boostT = W.boostFor; Wyv.boostCd = W.boostEvery; Wyv.boostKind = k;
@@ -446,7 +446,7 @@
     G.effects.push({ type: "wyvArc", x1: m.x, y1: m.y - 40, x2: p.x, y2: p.y - 30, t: 0, max: 0.4, seed: rand(0, 100), col });
     for (let i = 0; i < 16; i++) G.spark(p.x, p.y - 30, col, 120);
     sfx("ability");
-    say(k === "A" ? "Gerald shrieks and the wind is at your back. (Tailwind: 30% faster for 20 s.)" : "Gerald roars fire over you. (War Fury: 25% more damage for 20 s.)", "good");
+    say(k === "A" ? "David shrieks and the wind is at your back. (Tailwind: 30% faster for 20 s.)" : "David roars fire over you. (War Fury: 25% more damage for 20 s.)", "good");
   };
   Wyv.speedMult = () => (Wyv.boostT > 0 && Wyv.boostKind === "A" ? 1 + W.tailwind : 1);
   Wyv.dmgMult = () => (Wyv.boostT > 0 && Wyv.boostKind === "B" ? 1 + W.fury : 1);
@@ -470,7 +470,7 @@
       G.effects.push({ type: "howl", x: p.x, y: p.y - 6, t: 0, max: 0.7, col: FIRE, r: 60 });
       for (let i = 0; i < 20; i++) G.puff(p.x + rand(-12, 12), p.y - rand(0, 50), "rgba(255,140,50,0.5)", 50, 1, -30);
       sfx("torch");
-      say("Gerald breathes fire over your wounds and burns them shut. (Cauterize: once a minute.)", "good");
+      say("David breathes fire over your wounds and burns them shut. (Cauterize: once a minute.)", "good");
     }
   }
 
@@ -536,7 +536,7 @@
 
   // The field guide's line.
   Wyv.guideLine = function () {
-    if (Wyv.won()) return `<b>Gerald</b> flies at your shoulder, a wyvern of bone and red wings you stole as an egg.`;
+    if (Wyv.won()) return `<b>David</b> flies at your shoulder, a wyvern of bone and red wings you stole as an egg.`;
     const w = Wyv.where(), found = G.isGuest() ? guestFound : G.save.wyvNest.found;
     return `A wyvern nests on the rocks of the Drowned Reaches${found ? `, ${w.m} m ${w.dir} of camp` : ""}. Steal one of her eggs and she will hunt you until one of you is dead.`;
   };
@@ -634,7 +634,7 @@
   }
   function shadow(c, x, y, rx, ry, a = 0.3) { c.fillStyle = `rgba(0,0,0,${a})`; c.beginPath(); c.ellipse(x, y, rx, ry, 0, 0, TAU); c.fill(); }
   const KSIZE = [0.55, 0.78, 1.0, 1.2]; // each form's size on the coded figure
-  function geraldOpts(m, t) {
+  function davidOpts(m, t) {
     const f = form(), { dir, flip } = DL.Art.unitDir(m.angle);
     return { k: KSIZE[f], dir, flip, alt: ALT[f] + Math.sin(m.animT * 2.2) * 3, ph: m.animT * 9, anim: m.state === "cast" ? "cast" : "fly", drip: f === 3, t, id: m.id % 7 };
   }
@@ -650,8 +650,8 @@
     const [dx, dy] = DRAWN_HEAD[o.dir];
     return [m.x + dx * (o.flip ? -1 : 1), m.y - o.alt * DRAWN_LIFT + dy];
   }
-  function drawGerald(c, m, t) {
-    const o = geraldOpts(m, t), key = drawnKey(form());
+  function drawDavid(c, m, t) {
+    const o = davidOpts(m, t), key = drawnKey(form());
     shadow(c, m.x, m.y, 10 * o.k, 3.5 * o.k, 0.22);
     if (!key) return figure(c, m.x, m.y, o);
     const cast = m.state === "cast";
@@ -717,7 +717,7 @@
   }
   Wyv.push = function (list, c, t, view) {
     const inView = (x, y, m = 120) => x > view.left - m && x < view.right + m && y > view.top - m && y < view.bottom + m * 1.6;
-    for (const m of G.wyverns) list.push({ y: m.y + 8, f: () => drawGerald(c, m, t) }); // he flies: drawn a little over what stands by him
+    for (const m of G.wyverns) list.push({ y: m.y + 8, f: () => drawDavid(c, m, t) }); // he flies: drawn a little over what stands by him
     if (G.cave) return;
     const s = Wyv.nestSpot();
     if (!inView(s.x, s.y, 200)) return;
@@ -748,7 +748,7 @@
   Wyv.glow = function (c, t, view) {
     const col = Wyv.col();
     for (const m of G.wyverns) {
-      const o = geraldOpts(m, t), drawn = drawnKey(form());
+      const o = davidOpts(m, t), drawn = drawnKey(form());
       const pts = drawn ? [] : eyes(m.x, m.y, o);
       for (const [x, y] of pts) glow(c, x, y, 5 + o.k * 3, BLOOD, 0.8);
       if (m.state === "cast") { const [x, y] = drawn ? drawnHead(m, o) : pts[0] || [m.x, m.y - o.alt - 30]; glow(c, x, y + 4, 14, col, 0.5); }
