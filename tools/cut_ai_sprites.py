@@ -214,8 +214,8 @@ SETS = {
     'pike-warden': ('pike-warden', 'pike-warden/01_front.png', 104, 1, twelve('pike-warden', TWELVE_FILES)),
     'ashen-arbalist': ('ashen-arbalist', 'ashen-arbalist/01_front.png', 83, 1, twelve('ashen-arbalist', TWELVE_FILES)),
     'relic-bearer': ('relic-bearer', 'relic-bearer/01_front.png', 98, 1, twelve('relic-bearer', TWELVE_FILES)),
-    # the heaviest kit (bulk 1 in src/units.js), a little bigger than the Lantern Knight
-    'flame-bastion': ('flame-bastion', 'flame-bastion/01_front.png', 84, 1, twelve('flame-bastion', TWELVE_FILES)),
+    # the heaviest kit (bulk 1 in src/units.js): broader than the others, his horns and big sword make up the height
+    'flame-bastion': ('flame-bastion', 'flame-bastion/01_front.png', 94, 1, twelve('flame-bastion', TWELVE_FILES)),
     # the Bone Hound summon: a dog, so shorter than a knight (its spines and raised tail make up the height)
     'bone-hound': ('bone-hound', 'bone-hound/01_front.png', HOUND_H, 1, twelve('bone-hound', TWELVE_FILES)),
     'bone-hound-f2': ('bone-hound-f2', 'bone-hound-f2/01_front.png', EMBER_H, 1, twelve('bone-hound-f2', TWELVE_FILES)),
@@ -366,9 +366,9 @@ SHEETS = {
         ('relic-bearer/walk-back-4.png', 4, 1, 99, 'walkB'),
     ],
     'flame-bastion': [
-        ('flame-bastion/walk-side-4.png', 4, 1, 82, 'side/walk'),
-        ('flame-bastion/walk-front-4.png', 4, 1, 84, 'walkF'),
-        ('flame-bastion/walk-back-4.png', 4, 1, 84, 'walkB'),
+        ('flame-bastion/walk-side-4.png', 4, 1, 92, 'side/walk'),
+        ('flame-bastion/walk-front-4.png', 4, 1, 94, 'walkF'),
+        ('flame-bastion/walk-back-4.png', 4, 1, 90, 'walkB'),
     ],
     # the side gallop's first frame is stretched out low, so it is much shorter than the standing pose
     'bone-hound': [
@@ -508,11 +508,11 @@ FRAME_ORDER = {('lantern-knight', 'walkB'): [2, 1, 4, -1], ('mire-stalker', 'wal
                # every frame steps with the same foot
                ('pike-warden', 'walkF'): [1, 3, -1, 3],
                # frames 2 and 4 both lift the same foot
-               ('relic-bearer', 'walkF'): [1, 2, 3, -2], ('flame-bastion', 'walkB'): [1, 2, 3, -2]}
+               ('relic-bearer', 'walkF'): [1, 2, 3, -2]}
 
 # Where to mirror legs when the feet can't be found from the bottom rows (one foot lifted, a staff butt
 # beside them): character -> (legs share, half width, centre x) for mirror_legs.
-MIRROR_AT = {'relic-bearer': (0.32, 10, 39), 'flame-bastion': (0.32, 10, 36)}
+MIRROR_AT = {'relic-bearer': (0.32, 10, 39)}
 
 # Walk sheets rendered in other colours than the character's first batch: recolour to this image.
 SHEET_MATCH = {'tide-archer': 'tide-archer/01_front.png'}
@@ -594,6 +594,8 @@ PROP_GRIDS = {
     'chain-reaper/chain-weight.png': (2, 1, ['reaperChain', 'reaperWeight']),
     'chain-reaper/snare-ring.png': (1, 1, ['reaperSnare']),
     'chain-reaper/snared.png': (1, 1, ['reaperSnared']),
+    # the Flame Bastion's fire wall (src/kits.js, drawn in src/render.js): one section of the wall flickering, lined up along it
+    'flame-bastion/fire-wall.png': (4, 1, ['wallFire1', 'wallFire2', 'wallFire3', 'wallFire4']),
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
@@ -660,6 +662,8 @@ PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'ro
 PROP_HEIGHT.update({'reaperSickle1': 30, 'reaperChain': 6, 'reaperWeight': 14})  # the sickle as big as in his hand; the chain's links 3 px across
 PROP_WIDTH.update({'reaperSnare': 230, 'reaperSnared': 36})  # the ring as wide as the snare reaches (DL.KITS.chainReaper.ability.radius); the coil a Drowned's ankles
 PROP_SAME.update({'reaperSickle2': 'reaperSickle1', 'reaperSickle3': 'reaperSickle1', 'reaperSickle4': 'reaperSickle1'})
+PROP_WIDTH['wallFire1'] = 84  # a section about half the wall's 170 px, so they overlap along it
+PROP_SAME.update({'wallFire2': 'wallFire1', 'wallFire3': 'wallFire1', 'wallFire4': 'wallFire1'})
 # Prop sheets drawn on another key colour than magenta, by folder.
 PROP_KEY = {'chain-reaper': (0, 255, 0)}
 PROP_OUT = 'props'
