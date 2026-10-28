@@ -93,7 +93,7 @@
     walking("footman", [56, 78], [36, 84], [37, 83]),
     // the other kits' knights: the 12 poses and walk sheets like an enemy's, at every corruption stage
     Object.assign(walking("pikeWarden", [48, 103], [33, 103], [31, 103]), { path: "assets/sprites/pike-warden/", keys: stages("pikeWarden") }),
-    Object.assign(walking("ashenArbalist", [57, 81], [35, 85], [42, 86]), { path: "assets/sprites/ashen-arbalist/", keys: stages("ashenArbalist") }),
+    arbalist(),
     Object.assign(walking("relicBearer", [57, 105], [39, 101], [40, 101]), { path: "assets/sprites/relic-bearer/", keys: stages("relicBearer") }),
     Object.assign(walking("flameBastion", [58, 97], [39, 97], [33, 93]), { path: "assets/sprites/flame-bastion/", keys: stages("flameBastion") }),
     reaper(),
@@ -136,6 +136,13 @@
 
   // The Chain Reaper (kit 06): the 12 poses and walk sheets, plus a lunge for his dash. His throw is the wind-up and
   // the empty hand flung out (the game draws the flying sickle and chain); the chain whirled overhead is his cast.
+  // The Ashen Arbalist (redrawn 2026-10-28): aims, looses and reloads; kneels to loose Scatter Shot; a low sidestep for his dash.
+  function arbalist() {
+    const set = Object.assign(walking("ashenArbalist", [37, 83], [31, 84], [33, 84]), { path: "assets/sprites/ashen-arbalist/", keys: stages("ashenArbalist") });
+    for (const dir in set.views) Object.assign(set.views[dir], { cast: ["side/castA", "side/castB", "side/castB"], dash: ["side/dash"] });
+    return set;
+  }
+
   function reaper() {
     const set = Object.assign(walking("chainReaper", [44, 80], [26, 86], [29, 86]), { path: "assets/sprites/chain-reaper/", keys: stages("chainReaper") });
     for (const dir in set.views) Object.assign(set.views[dir], { attack: ["attackA", "attackB", "attackB"], cast: ["attackC"], dash: ["side/dash"] });
@@ -247,7 +254,9 @@
     // the Chain Reaper's flying sickle, chain and its weight, Violet Snare's ring and the coil on a snared Drowned (src/render.js)
     "reaperSickle1", "reaperSickle2", "reaperSickle3", "reaperSickle4", "reaperChain", "reaperWeight", "reaperSnare", "reaperSnared",
     // the Flame Bastion's drawn fire wall, four flickering frames (src/render.js)
-    "wallFire1", "wallFire2", "wallFire3", "wallFire4"];
+    "wallFire1", "wallFire2", "wallFire3", "wallFire4",
+    // the Ashen Arbalist's bolts and the burst where a flare lands (src/render.js)
+    "arbBolt", "arbFlareBolt", "arbFlare1", "arbFlare2", "arbFlare3", "arbFlare4"];
   const PROPS = {
     path: "assets/sprites/",
     // cut at 2 file px per art pixel, like the units

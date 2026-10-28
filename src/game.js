@@ -1473,6 +1473,7 @@
       if (b.life <= 0 && b.lightOnEnd && !b.ended) {
         b.ended = true;
         G.lightZones.push({ x: b.x, y: b.y + 10, r: 60 * G.diff().light, t: 2.5 });
+        G.effects.push({ type: "flare", x: b.x, y: b.y + 10, s: 0.55, t: 0, max: 0.5 }); // Scatter Shot: light flares where it lands
         spark(b.x, b.y, b.col, 60);
       }
     }
@@ -1483,6 +1484,7 @@
   // Ashen Arbalist flare bolt: a burst of searing light.
   function flare(x, y, dmg) {
     G.effects.push({ type: "ring", x, y, r0: 6, r1: 58, t: 0, max: 0.35, col: "255,200,120", w: 6 });
+    G.effects.push({ type: "flare", x, y: y + 10, s: 1, t: 0, max: 0.5 });
     for (const e of G.enemies.slice()) if (!e.removed && dist(x, y, e.x, e.y - 20) < 58 + e.def.radius) hitEnemy(e, dmg * 0.6, Math.atan2(e.y - y, e.x - x), 120);
     G.lightZones.push({ x, y: y + 16, r: 70 * G.diff().light, t: 3 });
     for (let i = 0; i < 10; i++) spark(x, y, "255,210,140", 140);
