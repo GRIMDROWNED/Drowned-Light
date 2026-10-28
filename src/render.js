@@ -176,8 +176,9 @@
     DL.Fred.push(list, c, t, view);
     DL.Wyvern.push(list, c, t, view);
     for (const tr of G.torches) list.push({ y: tr.y, f: () => drawTorch(c, tr, t) });
-    // Flame Bastion walls: tall flames that shoot up from the middle outward as the wall rises, and sink as it dies
+    // Flame Bastion walls: flames that shoot up from the middle outward as the wall rises, and sink as it dies
     for (const w of G.walls || []) {
+      if (Art.sprites.wallFire1) { pushWallFire(list, c, w, t); continue; }
       const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1), n = Math.max(2, Math.round(len / 12)), f = Math.min(1, w.t / 1);
       const up = Math.min(1, (w.max - w.t) / 0.35);
       for (let i = 0; i <= n; i++) {
@@ -862,6 +863,29 @@
         c.beginPath(); c.arc(0, 0, 9, 0.4, Math.PI * 1.6); c.stroke();
       }
       c.restore();
+    }
+  }
+
+  // The drawn fire wall: sections of flame lined up along the wall and overlapping, each flickering through
+  // the four frames out of step with its neighbours, every other one mirrored so the pattern doesn't repeat.
+  function pushWallFire(list, c, w, t) {
+    const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1), n = Math.max(1, Math.round(len / 42));
+    const f = Math.min(1, w.t / 1), up = Math.min(1, (w.max - w.t) / 0.35);
+    for (let i = 0; i < n; i++) {
+      const u = (i + 0.5) / n, x = w.x1 + (w.x2 - w.x1) * u, y = w.y1 + (w.y2 - w.y1) * u;
+      const g = Math.max(0, Math.min(1, up * 2 - Math.abs(u - 0.5) * 2)) * f; // the middle first, then out to the ends
+      if (g < 0.05) continue;
+      const s = Art.sprites["wallFire" + (1 + ((Math.floor(t * 10) + i * 3) % 4))];
+      // as wide as its share of the wall seen across the screen (and some), so a wall running up the screen stays thin
+      const span = Math.min(1, Math.max(0.5, (Math.abs(w.x2 - w.x1) / n * 2) / (s.w * PS)));
+      const sw = s.w * PS * span * (0.8 + 0.2 * g), sh = s.h * PS * 1.25 * g * (1 + 0.06 * Math.sin(t * 7 + i * 2.1));
+      list.push({ y, f: () => {
+        c.save();
+        c.translate(Math.round(x), Math.round(y + 4));
+        if (i % 2) c.scale(-1, 1);
+        c.drawImage(s.c, Math.round(-sw / 2), Math.round(-sh), sw, sh);
+        c.restore();
+      } });
     }
   }
 
