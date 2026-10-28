@@ -247,7 +247,11 @@
     // the Chain Reaper's flying sickle, chain and its weight, Violet Snare's ring and the coil on a snared Drowned (src/render.js)
     "reaperSickle1", "reaperSickle2", "reaperSickle3", "reaperSickle4", "reaperChain", "reaperWeight", "reaperSnare", "reaperSnared",
     // the Flame Bastion's drawn fire wall, four flickering frames (src/render.js)
-    "wallFire1", "wallFire2", "wallFire3", "wallFire4"];
+    "wallFire1", "wallFire2", "wallFire3", "wallFire4",
+    // the finale (src/finale.js): the Sunken King's body (still, heart open, roaring, dying), his hand, the Drowned Gate
+    "fnKingStill", "fnKingOpen", "fnKingRoar", "fnKingDying", "fnHandRest", "fnHandRaised", "fnHandSlam", "fnHandSweep", "fnGate1", "fnGate2", "fnGate3", "fnWall", "fnPost",
+    "fnRuinA1", "fnRuinA2", "fnRuinA3", "fnRuinA4", "fnRuinB1", "fnRuinB2", "fnRuinB3", "fnRuinB4",
+    "fbFront", "fbBack", "fbSide", "fbCamp", "fbHurl", "fbDown"];
   const PROPS = {
     path: "assets/sprites/",
     // cut at 2 file px per art pixel, like the units

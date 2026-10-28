@@ -130,6 +130,7 @@
     switch (scr.id) {
       case "screenPause": UI.resume(); break;
       case "screenCamp": UI.closeCamp(); break;
+      case "screenWin": UI.closeWin(); break;
       case "screenControls": UI.closeControls(); break;
       case "screenSetup": $("setupBack").click(); break;
       case "screenSaves": $("btnSavesBack").click(); break;

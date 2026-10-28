@@ -115,6 +115,7 @@
       UI.renderSetup();
     });
     $("btnRise").addEventListener("click", () => { UI.hideScreens(); G.respawn(); UI.showHud(true); });
+    $("btnWinGo").addEventListener("click", () => UI.closeWin());
     $("btnResume").addEventListener("click", () => UI.resume());
     $("btnQuit").addEventListener("click", () => { G.persist(); DL.Net.leave(true); UI.toTitle(); });
 
@@ -204,6 +205,7 @@
       else if (act === "wyvRepick") DL.Summons.repick("wyvern");
       else if (act === "travel") { if (DL.Outposts.travel(arg)) { UI.closeCamp(); return; } }
       else if (act === "torch") G.craftTorch();
+      else if (act === "march") { if (DL.Finale.begin()) { UI.closeCamp(); return; } }
       else if (act === "rest") { G.restUntilDusk(); UI.closeCamp(); UI.toast("You rest by the fire until dusk.", "warn"); return; }
       UI.renderCamp();
     });
@@ -401,6 +403,27 @@
     $("screenDeath").classList.remove("hidden");
   };
 
+  /* The victory screen: the Drowned Gate is open (src/finale.js). The world stands still behind it until you go on. */
+  UI.showWin = function () {
+    const G = DL.Game;
+    if (G.state !== "play" && G.state !== "camp") return;
+    if (G.state === "camp") UI.closeCamp();
+    UI.winFrom = G.state;
+    G.state = "victory";
+    UI.showHud(false);
+    const s = G.save, n = G.isGuest() ? null : s.nights;
+    $("winStats").textContent = `${G.kit().name} · level ${s.kitLevel} · ${G.diff().name}` + (n != null ? ` · day ${s.day} · nights survived: ${n}` : "");
+    $("screenWin").classList.remove("hidden");
+    DL.Sound.play("milestone");
+  };
+  UI.closeWin = function () {
+    const G = DL.Game;
+    $("screenWin").classList.add("hidden");
+    if (G.state === "victory") G.state = "play";
+    UI.showHud(true);
+    DL.Input.clear();
+  };
+
   /* ---------------- new game: choose a kit, then a difficulty ---------------- */
   UI.setup = { step: 1, kit: "lanternBlade", diff: "dark", attack: "auto" };
   /* ---------------- save slots ---------------- */
@@ -592,6 +615,7 @@
       ` · ${DL.Siege.on ? "GREAT SIEGE" : siegeIn === 0 ? "Great Siege tonight" : `Great Siege in ${siegeIn} night${siegeIn > 1 ? "s" : ""}`}`;
     let html = "";
     if (UI.campTab === "build") {
+      html += DL.Finale.card(); // the Fire Bearer, once it has risen (src/finale.js)
       let hidden = 0;
       for (const u of DL.UPGRADES) {
         const lvl = s.up[u.id], max = lvl >= u.max;
@@ -681,6 +705,7 @@
           <li>${DL.Fred.guideLine()}</li>
           <li>${DL.Wyvern.guideLine()}</li>
           <li>${DL.Rose.guideLine()}</li>
+          ${DL.Finale.guideLine() ? `<li>${DL.Finale.guideLine()}</li>` : ""}
           <li><b>Black Pearls</b> are found only in the Abyss: in clams half sunk in its mud, now and then on its Drowned, and on its great bosses. The last levels of the camp need them.</li>
           <li>${DL.Siege.line()}${s.trophies.bell ? " Your Bell Tower, hung with the Starved Bell's clapper, warns of every wave." : ""}</li>
           <li>From Central Flame ${DL.OUTPOST.reqFlame}, stand at the heart of a bloom grove to raise an <b>outpost</b>. Supplies brought there go home${DL.Kindle.lit() ? ", and with your Kindle lit you can travel between outposts and the camp" : ". Something lost in the Mire still remembers the old paths between them"}.</li>
@@ -951,6 +976,13 @@
       set($("roseArrow"), "transform", `rotate(${(Math.atan2(m.y - p.y, m.x - p.x) * 180) / Math.PI}deg)`);
       set($("roseDist"), "text", `Rose ${Math.round(Math.hypot(m.x - p.x, m.y - p.y) / 10)}m`);
     }
+    // the Fire Bearer and the Drowned Gate, on the march (src/finale.js)
+    const fn = DL.Finale.nav(p);
+    set($("gateNav"), "hidden", !fn);
+    if (fn) {
+      set($("gateArrow"), "transform", `rotate(${(Math.atan2(fn.y - p.y, fn.x - p.x) * 180) / Math.PI}deg)`);
+      set($("gateDist"), "text", `${fn.label} ${Math.round(Math.hypot(fn.x - p.x, fn.y - p.y) / 10)}m`);
+    }
     const ds = G.save.drownedSelf;
     set($("selfNav"), "hidden", !ds);
     // where your nearest co-op friend is
@@ -977,6 +1009,7 @@
     if (G.cave) obj = DL.Cave.objective();
     else if (G.isGuest() && (G.hostState === "dead" || G.hostState === "dying")) obj = "Your friend has fallen — waiting for them to rise";
     else if (DL.Wyvern.carrying()) obj = "The mother wyvern hunts you — slay her to keep the egg";
+    else if (DL.Finale.objective(p)) obj = DL.Finale.objective(p);
     else if (!G.flame.lit) obj = "The Central Flame is out — survive until dawn";
     else if (G.night && Math.hypot(p.x, p.y) < G.siegeRadius()) obj = `Defend the camp · Flame ${Math.ceil(G.flame.hp)} / ${G.flame.max}`;
     else if (G.rootEvent && !G.rootEvent.obj.dead && Math.hypot(p.x - G.rootEvent.obj.x, p.y - G.rootEvent.obj.y) < 650) obj = `Defend the Mother Root until dawn · ${Math.ceil(G.rootEvent.obj.hp)} / ${Math.round(G.rootEvent.obj.maxHp)}`;

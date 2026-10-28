@@ -824,6 +824,49 @@ if not only or 'props' in only or any(os.path.dirname(sh) in only for sh in PROP
         print(dst, im.size)
     if done: contact(done, os.path.join(SRC, 'plants-preview.png'))
 
+# The finale (src/finale.js): the Sunken King's body (2x2, cut flat at the waterline), his right hand (2x2) and the
+# Drowned Gate (3x1). The sheets aren't evenly spaced, so each cell has its own box in the returned image. FINALE_K
+# is each sheet's shrink; the King's body is drawn at twice its file size in the game (DKG.scale in finale.js).
+FINALE_CELLS = {
+    'finale/king-body.png': [('fnKingStill', (0, 0, 772, 485)), ('fnKingOpen', (772, 0, 1536, 485)),
+                             ('fnKingRoar', (0, 488, 772, 1024)), ('fnKingDying', (772, 488, 1536, 1024))],
+    'finale/king-hands.png': [('fnHandRest', (0, 0, 765, 514)), ('fnHandRaised', (765, 0, 1536, 514)),
+                              ('fnHandSlam', (0, 514, 765, 1024)), ('fnHandSweep', (765, 514, 1536, 1024))],
+    'finale/drowned-gate.png': [('fnGate1', (0, 0, 724, 724)), ('fnGate2', (724, 0, 1448, 724)), ('fnGate3', (1448, 0, 2172, 724))],
+    # the causeway's low wall (running away from the viewer) and its fire-bowl post; the broken piece faces the viewer
+    # and isn't used (causeway-walls-iso.png is an isometric try, unused too)
+    'finale/causeway-walls.png': [('fnWall', (0, 0, 500, 887)), ('fnPost', (1340, 0, 1774, 887))],
+    # ruins standing in the black lake, two sets: an arch, a broken arch with its fallen stones, a tall pillar, a stump
+    'finale/lake-ruins.png': [('fnRuinA1', (0, 0, 720, 724)), ('fnRuinA2', (720, 0, 1394, 724)), ('fnRuinA3', (1394, 0, 1726, 724)), ('fnRuinA4', (1726, 0, 2172, 724))],
+    # the Fire Bearer (3x2): front, back, side (facing right), planted for the night, hurling its flame (right), guttered out.
+    # A third item lists boxes (inside the cell) to blank first: the hurled flame reaches over the next cell.
+    'finale/fire-bearer.png': [('fbFront', (0, 0, 437, 582)), ('fbBack', (437, 0, 875, 582)), ('fbSide', (875, 0, 1312, 582)),
+                               ('fbCamp', (0, 582, 437, 1199)), ('fbHurl', (437, 582, 1060, 1199), [(450, 300, 623, 617)]),
+                               ('fbDown', (875, 760, 1312, 1199), [(0, 0, 200, 90)])],
+    'finale/lake-ruins-2.png': [('fnRuinB1', (0, 0, 720, 724)), ('fnRuinB2', (720, 0, 1382, 724)), ('fnRuinB3', (1382, 0, 1704, 724)), ('fnRuinB4', (1704, 0, 2172, 724))],
+}
+FINALE_COLORS = {'finale/drowned-gate.png': 160, 'finale/causeway-walls.png': 96, 'finale/lake-ruins.png': 96, 'finale/lake-ruins-2.png': 96, 'finale/fire-bearer.png': 96}  # its small red and green hollows and the flames need the room
+FINALE_K = {'finale/king-body.png': 0.6, 'finale/king-hands.png': 0.48, 'finale/drowned-gate.png': 0.51, 'finale/causeway-walls.png': 0.17, 'finale/lake-ruins.png': 0.33, 'finale/lake-ruins-2.png': 0.33, 'finale/fire-bearer.png': 0.32}
+
+if not only or 'finale' in only:
+    done = []
+    for sheet, cells in FINALE_CELLS.items():
+        p = os.path.join(SRC, sheet)
+        if not os.path.exists(p): continue
+        img = Image.open(p).convert('RGB')
+        for n, box, *blank in cells:
+            cell = img.crop(box)
+            for b in (blank[0] if blank else []): cell.paste((255, 0, 255), b)
+            im = cut_keyed(cell, FINALE_K[sheet], fringe=1, colors=FINALE_COLORS.get(sheet, 64))
+            w, h = im.width + im.width % 2, im.height + im.height % 2
+            if (w, h) != im.size:
+                pad = Image.new('RGBA', (w, h)); pad.paste(im, (w - im.width, h - im.height)); im = pad
+            dst = os.path.join(OUT, PROP_OUT, n + '.png')
+            im.save(dst)
+            done.append(im)
+            print(dst, im.size)
+    if done: contact(done, os.path.join(SRC, 'finale-preview.png'), scale=1)
+
 # Ground textures: a square render per terrain, shrunk so one texel is one ground texel (2 world px) and made to
 # repeat: the last BLEND texels of each edge are cross-faded into the first ones, then cut off, so the right edge
 # runs on into the left and the bottom into the top. `World` in src/world.js samples them.

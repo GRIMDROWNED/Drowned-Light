@@ -42,6 +42,7 @@
       // nobody near: it creeps on round the ring, deep in the mud
       s.a = (s.a + D.roam * dt) % TAU;
       const at = Bell.spot();
+      if (DL.Finale.fighting()) return; // it keeps away from the Sunken King's arena (src/finale.js)
       if (!G.knights().some((k) => dist(k.x, k.y, at.x, at.y) < D.spawn)) return;
       e = Bell.e = G.makeEnemy("bell", at.x, at.y, 4, { dormant: true, tollT: 3, gulpT: 4, angle: Math.atan2(-at.y, -at.x) });
       G.enemies.push(e);
