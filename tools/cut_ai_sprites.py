@@ -838,10 +838,15 @@ FINALE_CELLS = {
     'finale/causeway-walls.png': [('fnWall', (0, 0, 500, 887)), ('fnPost', (1340, 0, 1774, 887))],
     # ruins standing in the black lake, two sets: an arch, a broken arch with its fallen stones, a tall pillar, a stump
     'finale/lake-ruins.png': [('fnRuinA1', (0, 0, 720, 724)), ('fnRuinA2', (720, 0, 1394, 724)), ('fnRuinA3', (1394, 0, 1726, 724)), ('fnRuinA4', (1726, 0, 2172, 724))],
+    # the Fire Bearer (3x2): front, back, side (facing right), planted for the night, hurling its flame (right), guttered out.
+    # A third item lists boxes (inside the cell) to blank first: the hurled flame reaches over the next cell.
+    'finale/fire-bearer.png': [('fbFront', (0, 0, 437, 582)), ('fbBack', (437, 0, 875, 582)), ('fbSide', (875, 0, 1312, 582)),
+                               ('fbCamp', (0, 582, 437, 1199)), ('fbHurl', (437, 582, 1060, 1199), [(450, 300, 623, 617)]),
+                               ('fbDown', (875, 760, 1312, 1199), [(0, 0, 200, 90)])],
     'finale/lake-ruins-2.png': [('fnRuinB1', (0, 0, 720, 724)), ('fnRuinB2', (720, 0, 1382, 724)), ('fnRuinB3', (1382, 0, 1704, 724)), ('fnRuinB4', (1704, 0, 2172, 724))],
 }
-FINALE_COLORS = {'finale/drowned-gate.png': 160, 'finale/causeway-walls.png': 96, 'finale/lake-ruins.png': 96, 'finale/lake-ruins-2.png': 96}  # its small red and green hollows and the flames need the room
-FINALE_K = {'finale/king-body.png': 0.6, 'finale/king-hands.png': 0.48, 'finale/drowned-gate.png': 0.51, 'finale/causeway-walls.png': 0.17, 'finale/lake-ruins.png': 0.33, 'finale/lake-ruins-2.png': 0.33}
+FINALE_COLORS = {'finale/drowned-gate.png': 160, 'finale/causeway-walls.png': 96, 'finale/lake-ruins.png': 96, 'finale/lake-ruins-2.png': 96, 'finale/fire-bearer.png': 96}  # its small red and green hollows and the flames need the room
+FINALE_K = {'finale/king-body.png': 0.6, 'finale/king-hands.png': 0.48, 'finale/drowned-gate.png': 0.51, 'finale/causeway-walls.png': 0.17, 'finale/lake-ruins.png': 0.33, 'finale/lake-ruins-2.png': 0.33, 'finale/fire-bearer.png': 0.32}
 
 if not only or 'finale' in only:
     done = []
@@ -849,8 +854,10 @@ if not only or 'finale' in only:
         p = os.path.join(SRC, sheet)
         if not os.path.exists(p): continue
         img = Image.open(p).convert('RGB')
-        for n, box in cells:
-            im = cut_keyed(img.crop(box), FINALE_K[sheet], fringe=1, colors=FINALE_COLORS.get(sheet, 64))
+        for n, box, *blank in cells:
+            cell = img.crop(box)
+            for b in (blank[0] if blank else []): cell.paste((255, 0, 255), b)
+            im = cut_keyed(cell, FINALE_K[sheet], fringe=1, colors=FINALE_COLORS.get(sheet, 64))
             w, h = im.width + im.width % 2, im.height + im.height % 2
             if (w, h) != im.size:
                 pad = Image.new('RGBA', (w, h)); pad.paste(im, (w - im.width, h - im.height)); im = pad

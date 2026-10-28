@@ -883,7 +883,7 @@
       c.fillStyle = gr; c.fillRect(x - r, y - r, r * 2, r * 2);
     };
     if (b && !b.down) {
-      const s = bearerScale(b), x = b.x, y = b.y - 15 * s, r = (16 + Math.sin(t * 7) * 2) * s;
+      const s = bearerScale(b), x = b.x, y = b.y - (DL.Art.sprites.fbFront ? 24 : 15) * s, r = (16 + Math.sin(t * 7) * 2) * s;
       blob(x, y, r, "rgba(255,220,140,0.8)", "rgba(255,140,50,0)");
       const ch = G.isGuest() ? net.charge : b.charge;
       if (Finale.stage() === 3 && ch > 0) {
@@ -932,13 +932,27 @@
     const grow = b.grow != null ? b.grow : 1, leave = b.leave != null ? b.leave : 0;
     return (1 + 3.4 * grow) * (1 - 0.75 * Math.max(0, leave - 0.5) * 2);
   }
+  // Robert's drawn Fire Bearer (props/fb*): facing the way it walks, planted at night and at the gate, hurling its flame,
+  // guttered out. `k` is its size (1 when grown).
+  function drawnBearer(c, b, t, k) {
+    const ca = Math.cos(b.angle), sa = Math.sin(b.angle);
+    let n = "fbFront", flip = false;
+    if (b.down) n = "fbDown";
+    else if (beam && age(beam) < beam.max) { n = "fbHurl"; flip = beam.x2 < b.x; }
+    else if (b.camp || (Finale.stage() === 3 && !b.moving && b.leave == null)) n = "fbCamp";
+    else if (b.moving && Math.abs(ca) > Math.abs(sa) * 1.2) { n = "fbSide"; flip = ca < 0; }
+    else if (b.moving && sa < 0) n = "fbBack";
+    const bob = b.moving ? Math.round(Math.abs(Math.sin(b.animT * 13)) * 3) : 0;
+    spr(c, n, b.x, b.y - bob, k, flip);
+  }
   function drawBearer(c, b, t) {
     const s = bearerScale(b);
     c.save();
     c.fillStyle = "rgba(0,0,0,0.4)";
     c.beginPath(); c.ellipse(b.x, b.y, 12 * s, 4.4 * s, 0, 0, TAU); c.fill();
     if (b.hitT > 0) c.filter = "brightness(1.8)";
-    DL.Render.kindleUnit(c, { x: b.x, y: b.y, angle: b.angle, moving: b.moving, animT: b.animT }, t, s, b.down);
+    if (DL.Art.sprites.fbFront) drawnBearer(c, b, t, s / 4.4);
+    else DL.Render.kindleUnit(c, { x: b.x, y: b.y, angle: b.angle, moving: b.moving, animT: b.animT }, t, s, b.down);
     c.restore();
     // its health, while it's hurt
     if (b.hp < b.max && !b.down) {
