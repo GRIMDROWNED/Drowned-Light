@@ -820,6 +820,36 @@ if not only or 'props' in only or any(os.path.dirname(sh) in only for sh in PROP
         print(dst, im.size)
     if done: contact(done, os.path.join(SRC, 'plants-preview.png'))
 
+# The finale (src/finale.js): the Sunken King's body (2x2, cut flat at the waterline), his right hand (2x2) and the
+# Drowned Gate (3x1). The sheets aren't evenly spaced, so each cell has its own box in the returned image. FINALE_K
+# is each sheet's shrink; the King's body is drawn at twice its file size in the game (DKG.scale in finale.js).
+FINALE_CELLS = {
+    'finale/king-body.png': [('fnKingStill', (0, 0, 772, 485)), ('fnKingOpen', (772, 0, 1536, 485)),
+                             ('fnKingRoar', (0, 488, 772, 1024)), ('fnKingDying', (772, 488, 1536, 1024))],
+    'finale/king-hands.png': [('fnHandRest', (0, 0, 765, 514)), ('fnHandRaised', (765, 0, 1536, 514)),
+                              ('fnHandSlam', (0, 514, 765, 1024)), ('fnHandSweep', (765, 514, 1536, 1024))],
+    'finale/drowned-gate.png': [('fnGate1', (0, 0, 724, 724)), ('fnGate2', (724, 0, 1448, 724)), ('fnGate3', (1448, 0, 2172, 724))],
+}
+FINALE_COLORS = {'finale/drowned-gate.png': 160}  # its small red and green hollows and the flames need the room
+FINALE_K = {'finale/king-body.png': 0.6, 'finale/king-hands.png': 0.48, 'finale/drowned-gate.png': 0.51}
+
+if not only or 'finale' in only:
+    done = []
+    for sheet, cells in FINALE_CELLS.items():
+        p = os.path.join(SRC, sheet)
+        if not os.path.exists(p): continue
+        img = Image.open(p).convert('RGB')
+        for n, box in cells:
+            im = cut_keyed(img.crop(box), FINALE_K[sheet], fringe=1, colors=FINALE_COLORS.get(sheet, 64))
+            w, h = im.width + im.width % 2, im.height + im.height % 2
+            if (w, h) != im.size:
+                pad = Image.new('RGBA', (w, h)); pad.paste(im, (w - im.width, h - im.height)); im = pad
+            dst = os.path.join(OUT, PROP_OUT, n + '.png')
+            im.save(dst)
+            done.append(im)
+            print(dst, im.size)
+    if done: contact(done, os.path.join(SRC, 'finale-preview.png'), scale=1)
+
 # Ground textures: a square render per terrain, shrunk so one texel is one ground texel (2 world px) and made to
 # repeat: the last BLEND texels of each edge are cross-faded into the first ones, then cut off, so the right edge
 # runs on into the left and the bottom into the top. `World` in src/world.js samples them.

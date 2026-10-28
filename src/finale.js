@@ -320,7 +320,7 @@
     e.special = null;
     blows = blows.filter((q) => q.t >= q.delay); // whatever he was winding up comes to nothing
     G.telegraphs = G.telegraphs.filter((q) => !q.king);
-    beam = { x1: b.x, y1: b.y - 70, x2: e.x, y2: Finale.gate().y + KG.heart + kingDrop(e), t: 0, max: 0.9 };
+    beam = { x1: b.x, y1: b.y - 70, x2: e.x + GK().heartX, y2: Finale.gate().y + GK().heart + kingDrop(e), t: 0, max: 0.9 };
     G.camera.shake = 12;
     sfx("milestone");
     say("The Fire Bearer hurls its flame! The King's heart burns open: strike it now!", "good");
@@ -371,6 +371,7 @@
   // He doesn't walk or strike like the other Drowned: his hands do everything.
   Finale.busy = () => true;
   function enrage(e) {
+    roarAt = now();
     G.camera.shake = 14;
     sfx("growl");
     say(e.phase >= 2 ? "The King tears at the gate and roars. Both his hands come for you now!" : "The King's heart seals over, and he roars. Black water begins to rain.", "danger");
@@ -434,6 +435,7 @@
     const s = S(), b = Finale.b;
     s.stage = 4;
     s.won = G.save.day;
+    deathAt = now();
     blows = [];
     G.telegraphs = G.telegraphs.filter((q) => !q.king);
     for (const q of G.enemies) if (q.fromKing) q.removed = true;
@@ -525,7 +527,7 @@
   };
   // In the arena the camera pulls back and leans toward the King, so you can see him (src/render.js, src/game.js).
   Finale.view = function (p) {
-    if (G.cave || Finale.stage() !== 3) return null;
+    if (G.cave || (Finale.stage() !== 3 && !(Finale.stage() === 4 && now() - deathAt < 6))) return null; // and while he sinks
     const a = arena(), g = Finale.gate();
     return dist(p.x, p.y, a.x, a.y) < GT.arenaR + 450 ? { need: GT.view, needW: GT.viewW, x: g.x, y: g.y - 780 } : null;
   };
@@ -552,7 +554,7 @@
     const cam = G.camera;
     if (cam && Math.abs(cam.x - g.x) < 2200 && Math.abs(cam.y - g.y) < 2200) {
       for (const sx of [-1, 1]) {
-        L.push({ x: g.x + sx * KG.bowl, y: g.y - 250, r: 210, s: 0.7, col: "255,160,70", a: 0.75, flick: 1 });
+        L.push({ x: g.x + sx * bowlX(), y: g.y - 255, r: 210, s: 0.7, col: "255,160,70", a: 0.75, flick: 1 });
         for (const ty of TORCHES) L.push({ x: g.x + sx * (CW + 16), y: g.y + ty - 70, r: 150, s: 0.6, col: "255,160,70", a: 0.7, flick: 1 });
       }
     }
@@ -561,7 +563,7 @@
       // a cold sheen off the black water lights him from below, so he looms out of the dark
       const k = kingRise(e);
       L.push({ x: g.x, y: g.y - 400, r: 820 * (0.4 + 0.6 * k), s: 0.75 * k, col: "70,230,240", a: 0.5 * k });
-      if (Finale.isOpen(e)) L.push({ x: g.x, y: g.y + KG.heart + kingDrop(e), r: 260, s: 0.8, col: "255,120,40", a: 0.9, flick: 1 });
+      if (Finale.isOpen(e)) L.push({ x: g.x + GK().heartX, y: g.y + GK().heart + kingDrop(e), r: 260, s: 0.8, col: "255,120,40", a: 0.9, flick: 1 });
     }
   };
 
@@ -581,7 +583,7 @@
     const at = now(), was = net.stage;
     net.stage = m[0];
     if (seen < 0) seen = net.stage; // the stage when we joined: a gate opened before we came shows no victory
-    if (net.stage === 4 && was !== 4 && seen !== 4) winAt = now() + 8;
+    if (net.stage === 4 && was !== 4 && seen !== 4) { winAt = now() + 8; deathAt = now(); }
     const r = m[1];
     if (r) {
       const b = Finale.b || (Finale.b = { kind: "bearer", x: r[0], y: r[1], rad: 34, animT: 0, hitT: 0 });
@@ -589,7 +591,9 @@
         leave: r[7] >= 0 ? r[7] : null, grow: r[8] });
       net.charge = r[6];
     } else Finale.b = null;
+    const ph = net.phase;
     net.kingId = m[2] ? m[2][0] : 0; net.open = m[2] ? m[2][1] : 0; net.phase = m[2] ? m[2][2] : 0;
+    if (net.phase > ph) roarAt = now();
     for (const e of G.enemies) if (e.def.king) { e.open = e.id === net.kingId ? net.open : 0; e.phase = net.phase; }
     blows = m[3].map((q) => ({ kind: q[0], side: q[1], x: q[2], y: q[3], t: q[4], delay: q[5], r: q[6], x2: q[7], at, landed: q[4] >= q[5] }));
     beam = m[4] ? { x1: m[4][0], y1: m[4][1], x2: m[4][2], y2: m[4][3], t: m[4][4], max: 0.9, at } : null;
@@ -609,6 +613,28 @@
   // through coarse buffers (P world px to the pixel) so it comes out in the same chunky pixels as the sprites.
   const P = 3;
   const KG = { water: -70, heart: -340, eyes: -505, eyeDx: 30, elbow: 590, elbowY: -300, rest: 450, restY: 40, bowl: 152, drop: 880, lift: 72 }; // lift: how far his whole body stands above where it's painted
+  KG.heartX = 0;
+  // Robert's drawn King (2026-10-28, cut by tools/cut_ai_sprites.py into props/fnKing*, fnHand*, fnGate*) stands farther
+  // back: his body is cut off at the belly, drawn at `scale` × its file size, its bottom edge `water` px off the gate.
+  const DKG = { water: -205, heart: -358, heartX: 24, eyes: -560, eyeDx: 22, elbow: 360, elbowY: -230, rest: 450, restY: 40, drop: 620, lift: 0, scale: 2 };
+  const kingArt = () => !!DL.Art.sprites.fnKingStill;
+  const gateArt = () => !!DL.Art.sprites.fnGate1;
+  const GK = () => (kingArt() ? DKG : KG);
+  const bowlX = () => (gateArt() ? 124 : KG.bowl); // the gate's fire bowls
+  // a drawn sprite, `k` world px per file px, anchored at (ax, ay) of its size, mirrored if asked
+  function spr(c, n, x, y, k, flip, ax, ay) {
+    const s = DL.Art.sprites[n];
+    if (!s) return false;
+    const w = Math.round(s.w * s.res * k), h = Math.round(s.h * s.res * k), sm = c.imageSmoothingEnabled;
+    c.save();
+    c.translate(Math.round(x), Math.round(y));
+    if (flip) c.scale(-1, 1);
+    c.imageSmoothingEnabled = false;
+    c.drawImage(s.c, Math.round(-w * (ax == null ? 0.5 : ax)), Math.round(-h * (ay == null ? 1 : ay)), w, h);
+    c.imageSmoothingEnabled = sm;
+    c.restore();
+    return true;
+  }
   const TORCHES = [190, 540]; // the causeway's torch posts, px south of the gate
   const CYAN = "90,235,245";
   const C = { ink: "#05080a", s0: "#111719", s1: "#1b2326", s2: "#283337", s3: "#3a484d", s4: "#566a70",
@@ -821,6 +847,11 @@
       for (const a of ARCHES) list.push({ y: g.y + a[1], f: () => drawArch(c, g.x + a[0], g.y + a[1], a[2], a[3], t) });
       for (const w of WALLS) list.push({ y: g.y + w.y, f: () => drawWall(c, g, w, t) });
       if (e) list.push({ y: g.y - 40, f: () => drawKing(c, e, t) });
+      else if (kingArt() && now() - deathAt < 5) {
+        // slain, he sinks
+        const u = (now() - deathAt) / 5;
+        list.push({ y: g.y - 40, f: () => drawDrawnKing(c, g, "fnKingDying", Math.round((u * u * DKG.drop) / P) * P, 1 - u, t) });
+      }
       list.push({ y: g.y, f: () => drawGate(c, g, t) });
     }
     if (e && kingRise(e) > 0.6) for (const side of [-1, 1]) { const h = handAt(e, side); list.push({ y: h.y + 2, f: () => drawHand(c, e, h, side, t) }); }
@@ -846,15 +877,15 @@
       }
     }
     if (e) {
-      const k = kingRise(e), dy = kingDrop(e) + bob(t), top = g.y + KG.water;
-      const ey = g.y + KG.eyes + dy, hy = g.y + KG.heart + dy;
+      const k = kingRise(e), dy = kingDrop(e) + bob(t), Q = GK(), top = g.y + Q.water, hx = g.x + Q.heartX;
+      const ey = g.y + Q.eyes + dy, hy = g.y + Q.heart + dy;
       if (ey < top) {
-        for (const sx of [-1, 1]) blob(g.x + sx * KG.eyeDx, ey, 26 + Math.sin(t * 3 + sx) * 3, `rgba(130,250,255,${0.9 * k})`, "rgba(60,220,230,0)");
+        for (const sx of [-1, 1]) blob(g.x + sx * Q.eyeDx, ey, 26 + Math.sin(t * 3 + sx) * 3, `rgba(130,250,255,${0.9 * k})`, "rgba(60,220,230,0)");
         blob(g.x, ey + 20, 90, `rgba(${CYAN},${0.22 * k})`, `rgba(${CYAN},0)`);
       }
       if (hy < top) {
-        if (Finale.isOpen(e)) blob(g.x, hy, 64 + Math.sin(t * 9) * 6, "rgba(255,240,180,0.95)", "rgba(255,80,20,0)");
-        else blob(g.x, hy, 95, `rgba(${CYAN},${(0.3 + 0.12 * Math.sin(t * 2.2)) * k})`, `rgba(${CYAN},0)`);
+        if (Finale.isOpen(e)) blob(hx, hy, 64 + Math.sin(t * 9) * 6, "rgba(255,240,180,0.95)", "rgba(255,80,20,0)");
+        else blob(hx, hy, 95, `rgba(${CYAN},${(0.3 + 0.12 * Math.sin(t * 2.2)) * k})`, `rgba(${CYAN},0)`);
       }
     }
     if (beam) {
@@ -867,8 +898,9 @@
       }
     }
     if (g.x > view.left - 400 && g.x < view.right + 400 && g.y - 300 < view.bottom && g.y + 100 > view.top) {
-      for (const sx of [-1, 1]) blob(g.x + sx * KG.bowl, g.y - 252, 46 + Math.sin(t * 8 + sx) * 4, "rgba(255,190,100,0.5)", "rgba(255,120,40,0)");
-      if (Finale.stage() === 4) {
+      for (const sx of [-1, 1]) blob(g.x + sx * bowlX(), g.y - (gateArt() ? 268 : 252), 46 + Math.sin(t * 8 + sx) * 4, "rgba(255,190,100,0.5)", "rgba(255,120,40,0)");
+      if (Finale.stage() === 4 && gateArt()) blob(g.x, g.y - 110, 170 + Math.sin(t * 2) * 8, "rgba(255,210,130,0.45)", "rgba(255,170,80,0)");
+      else if (Finale.stage() === 4) {
         const gr = c.createLinearGradient(0, g.y - 268, 0, g.y);
         gr.addColorStop(0, "rgba(255,200,120,0)"); gr.addColorStop(1, `rgba(255,200,120,${0.45 + 0.1 * Math.sin(t * 2)})`);
         c.save(); openingPath(c, g.x, g.y); c.clip();
@@ -970,7 +1002,7 @@
   /* the Sunken King */
   // How far he has risen out of the water (0 to 1), and how far below his full height he stands.
   function kingRise(e) { return e.rise > 0 ? clamp(1 - e.rise / K.rise, 0, 1) : 1; }
-  function kingDrop(e) { return Math.round(((1 - kingRise(e)) * KG.drop + (Finale.isOpen(e) ? 27 : 0)) / P) * P - KG.lift; }
+  function kingDrop(e) { const Q = GK(); return Math.round(((1 - kingRise(e)) * Q.drop + (Finale.isOpen(e) && Q === KG ? 27 : 0)) / P) * P - Q.lift; }
   const bob = (t) => Math.round(Math.sin(t * 0.9) * 1.4) * P; // his slow breathing
   // his back half: the hunched body, the black hollow of his chest, his upper arms out to the elbows
   function paintKingBack(g) {
@@ -1077,8 +1109,33 @@
     });
     if (open) DL.Art.drawFire(c, x, y + 34, 2.4, t);
   }
+  // Which drawing of him: roaring when he rises and when he's enraged, slumped with his heart burned open, or sinking.
+  let roarAt = -9, deathAt = -99;
+  function kingPose(e) { return Finale.isOpen(e) ? "fnKingOpen" : now() - roarAt < 1.8 ? "fnKingRoar" : "fnKingStill"; }
+  function drawDrawnKing(c, g, pose, dy, k, t) {
+    const wy = g.y + DKG.water;
+    c.save();
+    c.beginPath(); c.rect(g.x - 900, wy - 1700, 1800, 1700); c.clip(); // nothing of him below the water
+    spr(c, pose, g.x, wy + dy, DKG.scale);
+    for (let i = 0; i < 18; i++) {
+      const x = g.x + (H(i, 91) - 0.5) * 800, y0 = wy - 420 + H(i, 92) * 300 + dy, ph = (t * 0.7 + H(i, 93)) % 1;
+      c.fillStyle = `rgba(${CYAN},${0.7 * (1 - ph)})`;
+      c.fillRect(Math.round(x), Math.round(y0 + ph * 160), 3, 9);
+    }
+    c.restore();
+    c.save();
+    c.fillStyle = `rgba(${CYAN},${(0.14 + 0.06 * Math.sin(t * 3)) * k})`;
+    c.beginPath(); c.ellipse(g.x, wy + 4, 470, 34, 0, 0, TAU); c.fill();
+    c.strokeStyle = `rgba(${CYAN},${0.35 * k})`; c.lineWidth = 3;
+    for (let i = 0; i < 2; i++) { const q = (t * 0.3 + i / 2) % 1; c.globalAlpha = 1 - q; c.beginPath(); c.ellipse(g.x, wy + 6, 450 + 160 * q, 30 + 30 * q, 0, 0, TAU); c.stroke(); }
+    c.restore();
+  }
   function drawKing(c, e, t) {
     const g = Finale.gate(), k = kingRise(e), dy = kingDrop(e) + bob(t), wy = g.y + KG.water;
+    if (kingArt()) {
+      if (k >= 1 && !e.roared) { e.roared = true; roarAt = now(); } // up, he roars
+      return drawDrawnKing(c, g, kingPose(e), dy, k, t);
+    }
     const back = cached("kingB", -720, -800, 1440, 890, paintKingBack, true), front = cached("kingF", -720, -800, 1440, 890, paintKingFront, true);
     c.save();
     c.beginPath(); c.rect(g.x - 900, wy - 1700, 1800, 1700); c.clip(); // nothing of him below the water
@@ -1102,8 +1159,8 @@
   }
   // Where each hand is: resting in the water beside the causeway, raised over a knight, or sweeping the arena.
   function handAt(e, side) {
-    const g = Finale.gate(), rest = { x: g.x + side * KG.rest, y: g.y + KG.restY, lift: 0 }, k = kingRise(e);
-    if (k < 1) { const u = clamp((k - 0.6) / 0.4, 0, 1); return { x: g.x + side * (560 - 110 * u), y: g.y - 60 + 100 * u, lift: 140 * Math.sin(Math.PI * u) }; } // up out of the water
+    const g = Finale.gate(), rest = { x: g.x + side * KG.rest, y: g.y + KG.restY, lift: 0, pose: "rest" }, k = kingRise(e);
+    if (k < 1) { const u = clamp((k - 0.6) / 0.4, 0, 1); return { x: g.x + side * (560 - 110 * u), y: g.y - 60 + 100 * u, lift: 140 * Math.sin(Math.PI * u), pose: u < 0.5 ? "raised" : "rest" }; } // up out of the water
     const q = blows.find((o) => o.side === side && age(o) < o.delay + (o.kind === "sweep" ? 1.2 : 1));
     if (!q) return rest;
     const T = age(q);
@@ -1111,17 +1168,17 @@
       if (T < q.delay) {
         const u = T / q.delay, fly = Math.min(1, u * 2.5);
         const lift = u < 0.85 ? 260 * Math.min(1, u * 3) : 260 * (1 - (u - 0.85) / 0.15);
-        return { x: rest.x + (q.x - rest.x) * fly, y: rest.y + (q.y - rest.y) * fly, lift };
+        return { x: rest.x + (q.x - rest.x) * fly, y: rest.y + (q.y - rest.y) * fly, lift, pose: u > 0.88 ? "slam" : "raised" };
       }
       const back = clamp((T - q.delay - 0.4) / 0.6, 0, 1);
-      return { x: q.x + (rest.x - q.x) * back, y: q.y + (rest.y - q.y) * back, lift: Math.sin(Math.PI * back) * 80 };
+      return { x: q.x + (rest.x - q.x) * back, y: q.y + (rest.y - q.y) * back, lift: Math.sin(Math.PI * back) * 80, pose: back > 0 ? "rest" : "slam" };
     }
     // the sweep: out to the far end of the lane, then across it, then home
-    if (T < q.delay) { const u = Math.min(1, T / (q.delay * 0.6)); return { x: rest.x + (q.x - rest.x) * u, y: rest.y + (q.y - rest.y) * u, lift: 60 * Math.sin(Math.PI * u) }; }
+    if (T < q.delay) { const u = Math.min(1, T / (q.delay * 0.6)); return { x: rest.x + (q.x - rest.x) * u, y: rest.y + (q.y - rest.y) * u, lift: 60 * Math.sin(Math.PI * u), pose: u < 1 ? "rest" : "sweep" }; }
     const u = clamp((T - q.delay) / 0.5, 0, 1);
-    if (u < 1) return { x: q.x + (q.x2 - q.x) * u, y: q.y, lift: 0 };
+    if (u < 1) return { x: q.x + (q.x2 - q.x) * u, y: q.y, lift: 0, pose: "sweep", dir: Math.sign(q.x2 - q.x) };
     const back = clamp((T - q.delay - 0.5) / 0.7, 0, 1);
-    return { x: q.x2 + (rest.x - q.x2) * back, y: q.y + (rest.y - q.y) * back, lift: Math.sin(Math.PI * back) * 60 };
+    return { x: q.x2 + (rest.x - q.x2) * back, y: q.y + (rest.y - q.y) * back, lift: Math.sin(Math.PI * back) * 60, pose: "rest" };
   }
   // A great hand, palm down, its bone claws reaching for the causeway; (x, y) is where the claws touch.
   function paintHand(g, x, y0, side, lift) {
@@ -1152,17 +1209,18 @@
   }
   function drawHand(c, e, h, side, t) {
     const g = Finale.gate(), k = kingRise(e), dy = kingDrop(e) + bob(t);
-    const ex = g.x + side * KG.elbow, ey = g.y + KG.elbowY + dy, hx = Math.round(h.x), hy = Math.round(h.y - h.lift);
+    const ex = g.x + side * GK().elbow, ey = g.y + GK().elbowY + dy, hx = Math.round(h.x), hy = Math.round(h.y - h.lift);
     const wet = lakeD(h.x - g.x, h.y - g.y) < 1 && !(Math.abs(h.x - g.x) < CW && h.y > g.y + 4);
     c.save();
     c.globalAlpha = clamp((k - 0.4) / 0.6, 0, 1);
     if (wet) ripple(c, h.x, h.y + 10, 260, t, side > 0 ? 0.3 : 0.7);
     else { c.fillStyle = `rgba(0,0,0,${0.25 + 0.3 * Math.max(0, 1 - h.lift / 260)})`; c.beginPath(); c.ellipse(h.x, h.y + 4, 110, 30, 0, 0, TAU); c.fill(); }
-    const x0 = Math.min(ex, hx) - 170, y0 = Math.min(ey, hy - 150) - 120;
+    if (DL.Art.sprites.fnHandRest) drawnHand(c, h, side, ex, ey, hx, hy);
+    else { const x0 = Math.min(ex, hx) - 170, y0 = Math.min(ey, hy - 150) - 120;
     pix(c, "hand" + side, x0, y0, Math.max(ex, hx) + 170 - x0, hy + 90 - y0, (q) => {
       limb(q, ex, ey, hx + side * 22, hy - 120, 92, 72, side > 0 ? 5 : 6);
       paintHand(q, hx, hy, side, h.lift);
-    });
+    }); }
     // resting in the water, its claws sunk in it
     if (wet && h.lift < 12) {
       c.fillStyle = "rgba(5,14,17,0.55)";
@@ -1172,6 +1230,44 @@
     }
     c.restore();
     if (Math.random() < 0.08) G.puff(hx + rand(-60, 60), hy - 40, `rgba(${CYAN},0.5)`, 20, 0.6, 30);
+  }
+
+  // Robert's drawn hand (a right hand; the left is it mirrored): resting, raised, slammed, sweeping. Each pose has the
+  // point (fractions of its size) set where the claws touch, and where its forearm leaves the picture: a coded stone limb
+  // joins that to his elbow.
+  const HAND = { rest: ["fnHandRest", 0.5, 0.96, 0.5, 0.02], raised: ["fnHandRaised", 0.5, 0.6, 0.8, 0.98],
+    slam: ["fnHandSlam", 0.5, 0.86, 0.5, 0.02], sweep: ["fnHandSweep", 0.62, 0.86, 0.04, 0.3] };
+  // His forearm, from the elbow to the hand: the drawn forearm out of the resting hand's picture, laid along it end to end.
+  let strip = null;
+  function forearm(c, ex, ey, wx, wy) {
+    const s = DL.Art.sprites.fnHandRest;
+    if (!strip) {
+      const fw = s.c.width, fh = s.c.height, cx = Math.round(fw * 0.33), cw = Math.round(fw * 0.34), ch = Math.round(fh * 0.34);
+      strip = document.createElement("canvas"); strip.width = ch; strip.height = cw;
+      const g = strip.getContext("2d");
+      g.imageSmoothingEnabled = false;
+      g.translate(0, cw); g.rotate(-Math.PI / 2);
+      g.drawImage(s.c, cx, 0, cw, ch, 0, 0, cw, ch);
+      strip.k = (s.w * s.res) / fw; // world px per pixel of the picture
+    }
+    const L = Math.hypot(wx - ex, wy - ey), k = strip.k, len = strip.width * k - 4, W = strip.height * k, sm = c.imageSmoothingEnabled;
+    c.save();
+    c.translate(Math.round(ex), Math.round(ey)); c.rotate(Math.atan2(wy - ey, wx - ex));
+    c.imageSmoothingEnabled = false;
+    for (let d = 0; d < L; d += len) {
+      const part = Math.min(len + 4, L - d + 4);
+      c.drawImage(strip, 0, 0, part / k, strip.height, Math.round(d), Math.round(-W / 2), Math.round(part), Math.round(W));
+    }
+    c.imageSmoothingEnabled = sm;
+    c.restore();
+  }
+  function drawnHand(c, h, side, ex, ey, hx, hy) {
+    const H2 = HAND[h.pose] || HAND.rest, s = DL.Art.sprites[H2[0]], flip = h.pose === "sweep" ? (h.dir || side) < 0 : side < 0;
+    if (!s) return;
+    const w = s.w * s.res, ht = s.h * s.res, fx = flip ? 1 - H2[3] : H2[3], ax = flip ? 1 - H2[1] : H2[1];
+    const wx = hx + (fx - ax) * w, wy = hy + (H2[4] - H2[2]) * ht + 20;
+    if (Math.hypot(wx - ex, wy - ey) > 30) forearm(c, ex, ey, wx, wy);
+    spr(c, H2[0], hx, hy, 1, flip, H2[1], H2[2]);
   }
 
   // The Drowned Gate: a round arch of black stone on two pillars with fire bowls, a red banner with a gold cross hanging in
@@ -1228,8 +1324,15 @@
     oval(g, 0, -199, 7, 7, C.gold2, 3);
     for (const [a, b] of [[0, -230], [0, -146], [-20, -199], [20, -199]]) poly(g, [[a, b - 5], [a + 5, b], [a, b + 5], [a - 5, b]], C.gold2);
   }
+  // Robert's drawn gate: sealed, its hollows lit (from the Bearer's rising), and open.
   function drawGate(c, g, t) {
     const st = Finale.stage(), x = g.x, y = g.y;
+    if (gateArt()) {
+      c.fillStyle = "rgba(0,0,0,0.45)";
+      c.beginPath(); c.ellipse(x, y + 6, 200, 26, 0, 0, TAU); c.fill();
+      spr(c, st === 4 ? "fnGate3" : st >= 1 ? "fnGate2" : "fnGate1", x, y + 6, 1);
+      return kingBar(c, x, y);
+    }
     c.save();
     c.fillStyle = "rgba(0,0,0,0.45)";
     c.beginPath(); c.ellipse(x, y + 8, 240, 28, 0, 0, TAU); c.fill();
@@ -1250,7 +1353,10 @@
       c.beginPath(); c.arc(x + hx, y + hy, 7, 0, TAU); c.fill();
     }
     for (const sx of [-1, 1]) DL.Art.drawFire(c, x + sx * KG.bowl, y - 246, 2.3, t);
-    // his health, on the gate's step
+    kingBar(c, x, y);
+  }
+  // his health, on the gate's step
+  function kingBar(c, x, y) {
     const e = Finale.king();
     if (e && (e.hp < e.maxHp || Finale.isOpen(e))) {
       const w = 300, bx = x - w / 2, by = y + 22;
