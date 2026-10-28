@@ -226,3 +226,24 @@ def split_grid(img, cols, rows, key=(255, 0, 255), tol=120):
         cell[m[y0:y1, x0:x1]] = a[y0:y1, x0:x1][m[y0:y1, x0:x1]]
         out.append(Image.fromarray(cell))
     return out
+
+
+def cool_violet(x):
+    """The Chain Reaper's tone: his renders came out muddy mauve, so the weakly coloured parts (armour, chain)
+    become cool silver with more contrast, and the violet cloth is pulled from pink toward blue-violet so it
+    stays violet under the game's warm firelight. x is an (..., 3) float array, 0..255."""
+    a = x / 255.0
+    mx, mn = a.max(-1), a.min(-1)
+    d = np.maximum(mx - mn, 1e-6)
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    v, s = mx, np.where(mx > 0, (mx - mn) / np.maximum(mx, 1e-6), 0)
+    h = np.where(mx == r, ((g - b) / d) % 6, np.where(mx == g, (b - r) / d + 2, (r - g) / d + 4)) / 6
+    armour = s < 0.3
+    cloth = ~armour & (h > 0.7)
+    h = np.where(armour, 0.64, np.where(cloth, h - (h - 0.74) * 0.6, h))
+    s = np.where(armour, s * 0.35, np.minimum(1, s * 1.08))
+    v = np.where(armour, np.clip((v - 0.12) * 1.45 + 0.08, 0, 1), np.clip(v * 1.12, 0, 1))
+    i = (h * 6).astype(int) % 6
+    f = h * 6 - np.floor(h * 6)
+    p, q, t = v * (1 - s), v * (1 - f * s), v * (1 - (1 - f) * s)
+    return np.stack([np.choose(i, [v, q, p, p, t, v]), np.choose(i, [t, v, v, q, p, p]), np.choose(i, [p, p, t, v, v, q])], -1) * 255
