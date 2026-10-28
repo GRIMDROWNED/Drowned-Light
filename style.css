@@ -91,6 +91,8 @@ body.touch kbd { display: none; }
 .chip.carcass { color: #e6dcc0; }
 .chip.egg { color: #ff9a86; }
 .chip.egg i { background: radial-gradient(circle at 40% 35%, #c04030, #5a0e0e); border-color: #ff6a50; border-radius: 50% 50% 46% 46% / 60% 60% 40% 40%; transform: none; }
+/* Robert's drawn egg over the coded one, once its file is there */
+.chip.egg i { width: 10px; height: 12px; border: 0; background: url("assets/sprites/props/wyvEgg.png") center / contain no-repeat, radial-gradient(circle at 40% 35%, #c04030, #5a0e0e); image-rendering: pixelated; }
 .chip.carcass i { background: #d9cdae; border-radius: 2px; transform: none; }
 .chip.soul i { background: #071311; border-color: #5af5cd; border-radius: 50%; transform: none; box-shadow: 0 0 6px #5af5cd; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -233,6 +235,10 @@ body.pad .controls-hint kbd { display: inline; }
 #btnBindsReset { margin-bottom: 4px; }
 .death h2 { font-size: clamp(28px, 7vw, 42px); color: #c9fbff; text-shadow: 0 0 26px rgba(95, 230, 238, 0.6); }
 .death p { line-height: 1.5; }
+/* the victory screen (src/finale.js): firelight instead of drowned cyan */
+.win h2 { color: #ffe2b0; text-shadow: 0 0 28px rgba(255, 150, 60, 0.7); }
+.finale-card { border-color: rgba(255, 160, 80, 0.55); box-shadow: inset 0 0 24px rgba(255, 130, 50, 0.12); }
+.finale-card h3 { color: #ffd59a; }
 .death .chips, #deathLost .chips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
 #deathLost { margin: 18px 0; }
 #deathLost b { color: var(--cold); }

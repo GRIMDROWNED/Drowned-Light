@@ -103,7 +103,10 @@
   }
 
   R.draw = function (G) {
-    const c = R.ctx, z = R.zoom, cam = G.camera, dpr = R.dpr;
+    // facing the Sunken King, the camera pulls back far enough to show him (src/finale.js)
+    const fv = G.player && G.state !== "title" ? DL.Finale.view(G.player) : null;
+    R.zoomMul = (R.zoomMul || 1) + ((fv ? Math.min(1, R.H / (R.zoom * fv.need), R.W / (R.zoom * fv.needW)) : 1) - (R.zoomMul || 1)) * 0.03;
+    const c = R.ctx, z = R.zoom * R.zoomMul, cam = G.camera, dpr = R.dpr;
     const shx = (Math.random() - 0.5) * cam.shake, shy = (Math.random() - 0.5) * cam.shake;
     const vw = R.W / z, vh = R.H / z, left = cam.x - vw / 2, top = cam.y - vh / 2;
     const view = { left, top, right: left + vw, bottom: top + vh };
@@ -134,6 +137,7 @@
     drawCampGround(c, G);
     DL.Cave.drawGround(c, view);
     DL.Rose.drawGround(c, view);
+    DL.Finale.drawGround(c, view, t);
 
     for (const d of G.decals) sprite(c, d.type, d.x, d.y, false, Math.min(1, d.t / 3));
 
@@ -175,6 +179,7 @@
     DL.Outposts.push(list, c, t, view, sprite, Art.drawFire, bar);
     DL.Fred.push(list, c, t, view);
     DL.Wyvern.push(list, c, t, view);
+    DL.Finale.push(list, c, t, view);
     for (const tr of G.torches) list.push({ y: tr.y, f: () => drawTorch(c, tr, t) });
     // Flame Bastion walls: flames that shoot up from the middle outward as the wall rises, and sink as it dies
     for (const w of G.walls || []) {
@@ -377,7 +382,7 @@
       c.moveTo(x0 + Math.cos(a + 2.4) * 6, y0 + Math.sin(a + 2.4) * 6); c.lineTo(x1, y1); c.lineTo(x0 + Math.cos(a - 2.4) * 6, y0 + Math.sin(a - 2.4) * 6);
       c.stroke();
     }
-    for (const e of G.enemies) if (e.rise <= 0 && !(e.def.rose && e.dormant && Art.sprites.roseBud)) drawEyes(c, e, t);
+    for (const e of G.enemies) if (e.rise <= 0 && !e.def.king && !(e.def.rose && e.dormant && Art.sprites.roseBud)) drawEyes(c, e, t);
     for (const h of G.hounds) drawHoundEyes(c, h, t);
     // once the pack is broken, the carcasses glow faintly so you can find one to carry home
     if (den.cleared && !DL.Hounds.mine()) for (const b of den.bodies) {
@@ -394,6 +399,7 @@
     drawSoulGlow(c, G, view, t);
     DL.Fred.glow(c, t, view);
     DL.Wyvern.glow(c, t, view);
+    DL.Finale.glow(c, t, view);
     if (kb && Math.sin(t * 1.3) > 0.6) { c.fillStyle = "rgba(255,110,50,0.35)"; c.fillRect(kb.x - 2, kb.y - 8, 4, 4); }
     drawMotes(c, G, view, t);
     c.globalCompositeOperation = "source-over";
@@ -952,6 +958,7 @@
     if (d.bell && e.dormant) { drawBuriedBell(c, e, t); return; }
     if (d.rose && e.dormant && Art.sprites.roseBud) return; // the Deadly Rose asleep inside her bud (src/rose.js)
     if (d.wyvern) return DL.Wyvern.drawMother(c, e, t); // the mother wyvern, drawn in code until her drawings are in (src/wyvern.js)
+    if (d.king) return; // the Sunken King is drawn behind the gate, with his hands (src/finale.js)
     if (e.rise > 0) {
       // clawing up out of the water
       const k = 1 - e.rise / 0.9;
@@ -1164,6 +1171,21 @@
     kindleBody(c, true, 0, t);
     c.restore();
   }
+  // Kindle at any size (the Fire Bearer, src/finale.js), standing, walking or guttered out.
+  R.kindleUnit = function (c, k, t, sc, down) {
+    if (kindleDrawn()) {
+      const [anim, fr, ang] = down ? ["death", 0, k.angle] : kindleAnim(k);
+      return Art.drawUnit(c, "kindle", anim, fr, ang, k.x, k.y, sc);
+    }
+    c.save();
+    c.translate(Math.round(k.x), Math.round(k.y));
+    c.scale(sc, sc);
+    if (down) c.rotate(-1.25);
+    kindleLegs(c, k, t, down ? 1 : 8);
+    c.translate(0, down ? -2 : -8 - (k.moving ? Math.abs(Math.sin(k.animT * 13)) * 1.5 : 0));
+    kindleBody(c, !down, 0, t);
+    c.restore();
+  };
   // Over the dark: his flame, and while he leads the way, a trail of embers pointing where.
   function drawKindleGlow(c, k, t) {
     const x = k.x, y = k.y - (kindleDrawn() ? 13 : 18), r = 14 + Math.sin(t * 9) * 1.5, g = c.createRadialGradient(x, y, 0, x, y, r);
