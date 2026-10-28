@@ -830,10 +830,47 @@
     g.fillStyle = gr; g.fillRect(-CW - 20, y1 - 300, (CW + 20) * 2, 320);
     g.globalCompositeOperation = "source-over";
   }
+  // Robert asked (2026-10-28) for the game's own drawn ground here: the deep-water texture for the lake and the camp's
+  // flagstones for the causeway, darkened. Painted once at full size when both have loaded; the coded ground until then.
+  let tgCanvas = null;
+  function texturedGround() {
+    if (tgCanvas) return tgCanvas;
+    const W = DL.World.canvases, deep = W.deep, flags = W.campFlags;
+    if (!deep || !flags) return null;
+    const cv = document.createElement("canvas"), g = cv.getContext("2d");
+    cv.width = 1720; cv.height = 1560;
+    g.translate(860, 760);
+    const pat = (img) => { const q = g.createPattern(img, "repeat"); q.setTransform(new DOMMatrix().scale(2)); return q; };
+    // the lake: deep water, darker still
+    lakePath(g, 1, 0, 0); g.fillStyle = pat(deep); g.fill();
+    g.fillStyle = "rgba(2,8,10,0.45)"; g.fill();
+    lakePath(g, 0.8, 0, -30); g.fillStyle = "rgba(0,4,6,0.3)"; g.fill();
+    // its muddy shore
+    lakePath(g, 1, 0, 0); g.strokeStyle = "#0a0e0d"; g.lineWidth = 22; g.stroke();
+    for (let i = 0; i < 150; i++) {
+      const th = (i / 150) * TAU, cs = Math.cos(th), sn = Math.sin(th), r = 1 + (H(i, 6) - 0.5) * 0.04;
+      const x = r * LK.rx * Math.sign(cs) * Math.sqrt(Math.abs(cs)), y = LK.cy + r * LK.ry * Math.sign(sn) * Math.sqrt(Math.abs(sn)), s = 6 + H(i, 7) * 11;
+      oval(g, x, y, s, s * 0.6, "#1a201f");
+      oval(g, x - 2, y - 2, s * 0.55, s * 0.3, "#2b3331");
+    }
+    // the causeway: flagstones, as dark as the ground round them, with a dark kerb
+    const y1 = LK.cy + LK.ry + 360;
+    g.fillStyle = C.ink; g.fillRect(-CW - 10, -12, (CW + 10) * 2, y1 + 12);
+    g.fillStyle = pat(flags); g.fillRect(-CW - 6, -10, (CW + 6) * 2, y1 + 10);
+    g.fillStyle = "rgba(0,0,0,0.4)"; g.fillRect(-CW - 6, -10, (CW + 6) * 2, y1 + 10);
+    // its far end sinks into the mud
+    g.globalCompositeOperation = "destination-out";
+    const gr = g.createLinearGradient(0, y1 - 300, 0, y1);
+    gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,1)");
+    g.fillStyle = gr; g.fillRect(-CW - 20, y1 - 300, (CW + 20) * 2, 320);
+    return (tgCanvas = cv);
+  }
   Finale.drawGround = function (c, view, t) {
     const g = Finale.gate(), p = plant();
     if (g.x + 880 < view.left || g.x - 880 > view.right || g.y - 780 > view.bottom || g.y + 820 < view.top) return;
-    stamp(c, cached("ground", -860, -760, 1720, 1560, paintGround), g.x - 860, g.y - 760);
+    const tg = texturedGround();
+    if (tg) c.drawImage(tg, g.x - 860, g.y - 760);
+    else stamp(c, cached("ground", -860, -760, 1720, 1560, paintGround), g.x - 860, g.y - 760);
     c.save();
     // glints on the black water
     for (let i = 0; i < 50; i++) {
