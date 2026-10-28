@@ -249,7 +249,8 @@
     // the Flame Bastion's drawn fire wall, four flickering frames (src/render.js)
     "wallFire1", "wallFire2", "wallFire3", "wallFire4",
     // the finale (src/finale.js): the Sunken King's body (still, heart open, roaring, dying), his hand, the Drowned Gate
-    "fnKingStill", "fnKingOpen", "fnKingRoar", "fnKingDying", "fnHandRest", "fnHandRaised", "fnHandSlam", "fnHandSweep", "fnGate1", "fnGate2", "fnGate3", "fnWall", "fnPost"];
+    "fnKingStill", "fnKingOpen", "fnKingRoar", "fnKingDying", "fnHandRest", "fnHandRaised", "fnHandSlam", "fnHandSweep", "fnGate1", "fnGate2", "fnGate3", "fnWall", "fnPost",
+    "fnRuinA1", "fnRuinA2", "fnRuinA3", "fnRuinA4", "fnRuinB1", "fnRuinB2", "fnRuinB3", "fnRuinB4"];
   const PROPS = {
     path: "assets/sprites/",
     // cut at 2 file px per art pixel, like the units

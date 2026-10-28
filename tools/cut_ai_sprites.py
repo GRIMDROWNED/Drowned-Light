@@ -836,9 +836,12 @@ FINALE_CELLS = {
     # the causeway's low wall (running away from the viewer) and its fire-bowl post; the broken piece faces the viewer
     # and isn't used (causeway-walls-iso.png is an isometric try, unused too)
     'finale/causeway-walls.png': [('fnWall', (0, 0, 500, 887)), ('fnPost', (1340, 0, 1774, 887))],
+    # ruins standing in the black lake, two sets: an arch, a broken arch with its fallen stones, a tall pillar, a stump
+    'finale/lake-ruins.png': [('fnRuinA1', (0, 0, 720, 724)), ('fnRuinA2', (720, 0, 1394, 724)), ('fnRuinA3', (1394, 0, 1726, 724)), ('fnRuinA4', (1726, 0, 2172, 724))],
+    'finale/lake-ruins-2.png': [('fnRuinB1', (0, 0, 720, 724)), ('fnRuinB2', (720, 0, 1382, 724)), ('fnRuinB3', (1382, 0, 1704, 724)), ('fnRuinB4', (1704, 0, 2172, 724))],
 }
-FINALE_COLORS = {'finale/drowned-gate.png': 160, 'finale/causeway-walls.png': 96}  # its small red and green hollows and the flames need the room
-FINALE_K = {'finale/king-body.png': 0.6, 'finale/king-hands.png': 0.48, 'finale/drowned-gate.png': 0.51, 'finale/causeway-walls.png': 0.17}
+FINALE_COLORS = {'finale/drowned-gate.png': 160, 'finale/causeway-walls.png': 96, 'finale/lake-ruins.png': 96, 'finale/lake-ruins-2.png': 96}  # its small red and green hollows and the flames need the room
+FINALE_K = {'finale/king-body.png': 0.6, 'finale/king-hands.png': 0.48, 'finale/drowned-gate.png': 0.51, 'finale/causeway-walls.png': 0.17, 'finale/lake-ruins.png': 0.33, 'finale/lake-ruins-2.png': 0.33}
 
 if not only or 'finale' in only:
     done = []

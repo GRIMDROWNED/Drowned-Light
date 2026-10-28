@@ -647,6 +647,10 @@
   const RUINS = [[-720, -560, 1, 0], [-540, -650, 0.8, 0.3], [-780, -330, 0.9, 0.4], [-690, -120, 1.05, 0], [-760, 160, 0.9, 0.3],
     [680, -590, 0.85, 0.2], [520, -660, 0.75, 0], [780, -360, 1, 0], [700, -110, 0.95, 0.4], [760, 190, 0.85, 0], [-330, -700, 0.7, 0.45], [330, -680, 0.7, 0.2]];
   const ARCHES = [[-640, -430, 150, 0], [600, -470, 140, 1]];
+  // the same out of Robert's drawn ruins (props/fnRuinA1-4, B1-4: arch, broken arch, tall pillar, stump): [x, y, name, mirrored]
+  const DRUINS = [[-640, -430, "fnRuinA1", 0], [600, -470, "fnRuinB2", 1], [-330, -700, "fnRuinB1", 0], [330, -690, "fnRuinA2", 0],
+    [-720, -600, "fnRuinB3", 0], [-520, -660, "fnRuinA4", 1], [-780, -290, "fnRuinA3", 0], [-690, -90, "fnRuinB4", 0], [-760, 170, "fnRuinB3", 1],
+    [700, -620, "fnRuinA3", 1], [520, -680, "fnRuinB4", 1], [780, -290, "fnRuinB3", 1], [700, -90, "fnRuinA4", 0], [760, 190, "fnRuinA4", 1]];
   // the causeway's low broken walls, their posts and torches
   const WALLS = [];
   for (const sx of [-1, 1]) {
@@ -853,8 +857,11 @@
   Finale.push = function (list, c, t, view) {
     const g = Finale.gate(), b = Finale.b, e = Finale.king();
     if (g.x + 900 > view.left && g.x - 900 < view.right && g.y - 820 < view.bottom && g.y + 820 > view.top) {
-      for (const r of RUINS) list.push({ y: g.y + r[1], f: () => drawRuin(c, g.x + r[0], g.y + r[1], r[2], r[3], t) });
-      for (const a of ARCHES) list.push({ y: g.y + a[1], f: () => drawArch(c, g.x + a[0], g.y + a[1], a[2], a[3], t) });
+      if (DL.Art.sprites.fnRuinA1) for (const r of DRUINS) list.push({ y: g.y + r[1], f: () => drawnRuin(c, g.x + r[0], g.y + r[1], r[2], r[3], t) });
+      else {
+        for (const r of RUINS) list.push({ y: g.y + r[1], f: () => drawRuin(c, g.x + r[0], g.y + r[1], r[2], r[3], t) });
+        for (const a of ARCHES) list.push({ y: g.y + a[1], f: () => drawArch(c, g.x + a[0], g.y + a[1], a[2], a[3], t) });
+      }
       for (const w of DL.Art.sprites.fnWall ? DWALLS : WALLS) list.push({ y: g.y + w.y, f: () => drawWall(c, g, w, t) });
       if (e) list.push({ y: g.y - 40, f: () => drawKing(c, e, t) });
       else if (kingArt() && now() - deathAt < 5) {
@@ -972,6 +979,18 @@
     c.restore();
     if (!dry) ripple(c, x, y, w, t, H(x | 0, 70));
     return y - h + sink;
+  }
+  // a drawn ruin, its foot sunk in the black water
+  function drawnRuin(c, x, y, name, flip, t) {
+    const s = DL.Art.sprites[name];
+    if (!s) return;
+    const w = s.w * s.res, h = s.h * s.res;
+    c.save();
+    c.beginPath(); c.rect(x - w, y - h * 1.2, w * 2, h * 1.2); c.clip();
+    spr(c, name, x, y + Math.round(h * 0.1), 1, !!flip);
+    c.restore();
+    if (w > 150) for (const sx of [-1, 1]) ripple(c, x + sx * w * 0.36, y, 90, t, H(x | 0, 72 + sx)); // an arch stands on two feet
+    else ripple(c, x, y, w * 1.4, t, H(x | 0, 72));
   }
   function drawArch(c, x, y, span, broken, t) {
     const top = drawRuin(c, x - span / 2, y, 0.85, 0, t);
