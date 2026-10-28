@@ -7,7 +7,8 @@
                 (braziers round it, its light grows), and the night's waves come for it there. It heals some at dawn.
                 Struck down, it gutters and falls back to its last camp, and rekindles at dawn. The Great Siege doesn't
                 come for the camp while it's out: the Drowned hunt the Bearer instead.
-     the gate   a gate of black stone with three hollows above its doors, alone in the Abyss, with black water behind it.
+     the gate   a round arch of black stone with three hollows round it, alone in the Abyss in a lake of black water, a
+                causeway running out to it.
                 Anyone can come upon it before the end; it only says it's sealed.
      the King   when the Bearer plants on the hearth before the gate, the Sunken King rises out of the black water behind it:
                 a drowned giant, crowned, so big the gate only reaches his waist. Blades can't hurt him. While the Bearer
@@ -79,15 +80,24 @@
   const arena = () => { const g = Finale.gate(); return { x: g.x, y: g.y + GT.arenaY }; };
   const plant = () => { const g = Finale.gate(); return { x: g.x, y: g.y + GT.plantY }; };
   Finale.where = function () { const g = Finale.gate(); return { dir: compass(g.x, g.y), m: Math.round(Math.hypot(g.x, g.y) / 10) }; };
-  // No rocks or trees in the arena, nor in the black water behind the gate.
+  // The black lake round the gate: a rounded box (1 at its shore), and the causeway that crosses it to the gate.
+  const LK = GT.lake, CW = GT.causeway;
+  const lakeD = (dx, dy) => Math.pow(Math.pow(Math.abs(dx / LK.rx), 4) + Math.pow(Math.abs((dy - LK.cy) / LK.ry), 4), 0.25);
+  // No rocks or trees in the lake, on the causeway or in the arena.
   Finale.clears = function (x, y) {
-    const g = Finale.gate(), a = arena();
-    return Math.hypot(x - a.x, y - a.y) < GT.clear || Math.hypot(x - g.x, (y - g.y + 150) * 1.6) < 520;
+    const g = Finale.gate(), a = arena(), dx = x - g.x, dy = y - g.y;
+    return lakeD(dx, dy) < 1.1 || Math.hypot(x - a.x, y - a.y) < GT.clear || (Math.abs(dx) < CW + 90 && dy > 0 && dy < LK.cy + LK.ry + 420);
   };
-  // Nobody walks behind the gate into the black water.
+  // Nobody wades the black water: out onto the causeway or back to the shore, whichever is nearer.
   Finale.collide = function (ent) {
-    const g = Finale.gate();
-    if (Math.abs(ent.x - g.x) < 430 && ent.y < g.y + 4 && ent.y > g.y - 700) ent.y = g.y + 4;
+    const g = Finale.gate(), dx = ent.x - g.x, dy = ent.y - g.y, ax = Math.abs(dx);
+    if (ax >= LK.rx || Math.abs(dy - LK.cy) >= LK.ry) return;
+    const d = lakeD(dx, dy);
+    if (d >= 1 || (ax < CW && dy > 4)) return;
+    let nx = g.x + dx / d, ny = g.y + LK.cy + (dy - LK.cy) / d, best = Math.hypot(nx - ent.x, ny - ent.y);
+    if (dy > 4 && ax - CW < best) { nx = g.x + Math.sign(dx) * (CW - 0.5); ny = ent.y; }
+    else if (dy <= 4 && ax < CW && 4 - dy < best) { nx = ent.x; ny = g.y + 4.5; }
+    ent.x = nx; ent.y = ny;
   };
 
   /* ---------------- the Bearer ---------------- */
@@ -310,7 +320,7 @@
     e.special = null;
     blows = blows.filter((q) => q.t >= q.delay); // whatever he was winding up comes to nothing
     G.telegraphs = G.telegraphs.filter((q) => !q.king);
-    beam = { x1: b.x, y1: b.y - 70, x2: e.x, y2: e.y - 284, t: 0, max: 0.9 };
+    beam = { x1: b.x, y1: b.y - 70, x2: e.x, y2: Finale.gate().y + KG.heart + kingDrop(e), t: 0, max: 0.9 };
     G.camera.shake = 12;
     sfx("milestone");
     say("The Fire Bearer hurls its flame! The King's heart burns open: strike it now!", "good");
@@ -392,10 +402,10 @@
     const g = Finale.gate(), b = Finale.b, live = G.enemies.filter((q) => q.fromKing && !q.removed).length;
     const n = Math.min(14 - live, Math.round((K.call.n + e.phase) * G.partyScale()));
     for (let i = 0; i < n; i++) {
-      const x = g.x + rand(-380, 380), y = g.y + rand(30, 90);
+      const x = g.x + rand(-CW + 30, CW - 30), y = g.y + rand(30, 150); // up out of the cracks in the causeway
       G.enemies.push(G.makeEnemy(DL.weighted(DL.ZONES[4].pool), x, y, 4, { rise: 0.9, goal: b && !b.down ? b : null, fromKing: true }));
     }
-    if (n > 0) for (let i = 0; i < 16; i++) G.puff(g.x + rand(-380, 380), g.y + rand(20, 80), "rgba(60,200,210,0.6)", 60, 0.9, -30);
+    if (n > 0) for (let i = 0; i < 16; i++) G.puff(g.x + rand(-CW, CW), g.y + rand(30, 150), "rgba(60,200,210,0.6)", 60, 0.9, -30);
   }
   function rain(e, ks) {
     const R = K.rain;
@@ -461,7 +471,7 @@
     found = true;
     if (!G.isGuest() && !S().found) { S().found = true; G.persist(); }
     const st = Finale.stage();
-    if (st === 0) toast("A gate of black stone stands alone here, taller than any tree, sealed shut. Black water laps behind it. Three hollows are carved above its doors, and before it lies a cold hearth as wide as a house.", "warn");
+    if (st === 0) toast("A gate of black stone stands alone in a lake of black water, taller than any tree, a causeway running out to it. Black water falls in its arch like a curtain. Three hollows are carved round the arch, and on the causeway lies a cold hearth as wide as a house.", "warn");
     else if (st === 4) toast("The Drowned Gate stands open. Warm light breathes out of it.", "good");
   };
   Finale.found = () => found || !!S().found;
@@ -484,7 +494,7 @@
   // The field guide's line: nothing at all until the gate is found or the Bearer has risen.
   Finale.guideLine = function () {
     const st = Finale.stage(), w = Finale.where();
-    if (st === 0) return Finale.found() ? `A sealed gate of black stone stands in the Abyss, ${w.m} m ${w.dir} of camp. Three hollows are carved above its doors.` : "";
+    if (st === 0) return Finale.found() ? `A sealed gate of black stone stands in the Abyss, ${w.m} m ${w.dir} of camp, out in a black lake. Three hollows are carved round its arch.` : "";
     if (st === 4) return `<b>The Drowned Gate</b> stands open, ${w.m} m ${w.dir} of camp.`;
     return `<b>The Fire Bearer</b> carries the Central Flame's fire to the gate in the Abyss, ${w.m} m ${w.dir} of camp. It walks only while you walk beside it, and makes camp at night.`;
   };
@@ -517,7 +527,7 @@
   Finale.view = function (p) {
     if (G.cave || Finale.stage() !== 3) return null;
     const a = arena(), g = Finale.gate();
-    return dist(p.x, p.y, a.x, a.y) < GT.arenaR + 450 ? { need: GT.view, needW: GT.viewW, x: g.x, y: g.y - 440 } : null;
+    return dist(p.x, p.y, a.x, a.y) < GT.arenaR + 450 ? { need: GT.view, needW: GT.viewW, x: g.x, y: g.y - 780 } : null;
   };
   // While the Bearer camps, and in the arena, only its waves and the King's Drowned come (src/game.js).
   Finale.busySpot = function (p) {
@@ -538,12 +548,20 @@
       L.push({ x: b.x, y: b.y - 60, r, s: 1, col: FIRE, a: 0.95 * fade, flick: 1, kind: "human" });
     } else if (b && b.down) L.push({ x: b.x, y: b.y - 20, r: 60, s: 0.4, col: "255,80,30", a: 0.4, flick: 1 });
     if (st === 4) L.push({ x: g.x, y: g.y - 60, r: 260, s: 0.8, col: "255,200,120", a: 0.85, flick: 1, kind: "human" });
+    // the gate's fire bowls and the causeway's torches never go out
+    const cam = G.camera;
+    if (cam && Math.abs(cam.x - g.x) < 2200 && Math.abs(cam.y - g.y) < 2200) {
+      for (const sx of [-1, 1]) {
+        L.push({ x: g.x + sx * KG.bowl, y: g.y - 250, r: 210, s: 0.7, col: "255,160,70", a: 0.75, flick: 1 });
+        for (const ty of TORCHES) L.push({ x: g.x + sx * (CW + 16), y: g.y + ty - 70, r: 150, s: 0.6, col: "255,160,70", a: 0.7, flick: 1 });
+      }
+    }
     const e = Finale.king();
     if (e) {
       // a cold sheen off the black water lights him from below, so he looms out of the dark
       const k = kingRise(e);
-      L.push({ x: g.x, y: g.y - 230, r: 520 * (0.4 + 0.6 * k), s: 0.7 * k, col: "70,230,240", a: 0.45 * k });
-      if (Finale.isOpen(e)) L.push({ x: g.x, y: g.y - 270, r: 220, s: 0.8, col: "255,120,40", a: 0.9, flick: 1 });
+      L.push({ x: g.x, y: g.y - 400, r: 820 * (0.4 + 0.6 * k), s: 0.75 * k, col: "70,230,240", a: 0.5 * k });
+      if (Finale.isOpen(e)) L.push({ x: g.x, y: g.y + KG.heart + kingDrop(e), r: 260, s: 0.8, col: "255,120,40", a: 0.9, flick: 1 });
     }
   };
 
@@ -585,33 +603,205 @@
   };
 
   /* ---------------- drawing ---------------- */
-  // On the ground: the black water behind the gate, the old flagstones of the arena, and the hearth.
+  // Laid out after Robert's concept (art-prompts/kit-refs/sunken-king-concept.png): a causeway across a black lake to a
+  // round-arched gate with fire bowls, ruins standing in the water, and the King rising behind the gate, his arms reaching
+  // round both sides so his hands rest in the water beside the causeway. It's all drawn in code until the drawings come,
+  // through coarse buffers (P world px to the pixel) so it comes out in the same chunky pixels as the sprites.
+  const P = 3;
+  const KG = { water: -70, heart: -340, eyes: -505, eyeDx: 30, elbow: 590, elbowY: -300, rest: 450, restY: 40, bowl: 152, drop: 880, lift: 72 }; // lift: how far his whole body stands above where it's painted
+  const TORCHES = [190, 540]; // the causeway's torch posts, px south of the gate
+  const CYAN = "90,235,245";
+  const C = { ink: "#05080a", s0: "#111719", s1: "#1b2326", s2: "#283337", s3: "#3a484d", s4: "#566a70",
+    gold0: "#5a4318", gold1: "#9a7530", gold2: "#d6ad55", gold3: "#f3dc93", weed0: "#1d3a22", weed1: "#2f5a2e", weed2: "#4f8a3a",
+    bone0: "#8d8466", bone1: "#d6cfae", bone2: "#f2edd6", cyan0: "#0f5d66", cyan1: "#2fb9c6", cyan2: "#7ff4fa", cyan3: "#e2ffff",
+    water0: "#03080a", water1: "#071316", water2: "#0f272b", red0: "#3a0c12", red1: "#6e1a24", red2: "#93283a" };
+  const H = (a, b, c2) => DL.hash(97, a, b * 31 + (c2 || 0));
+  const HOLLOWS = [[-103, -237, "90,235,245"], [0, -285, "220,40,60"], [103, -237, "130,190,90"]]; // the Bell, the Rose, the Colossus
+  // ruins in the lake: [x, y, scale, how deep it's sunk] and broken arches: [x, y, span, broken]
+  const RUINS = [[-720, -560, 1, 0], [-540, -650, 0.8, 0.3], [-780, -330, 0.9, 0.4], [-690, -120, 1.05, 0], [-760, 160, 0.9, 0.3],
+    [680, -590, 0.85, 0.2], [520, -660, 0.75, 0], [780, -360, 1, 0], [700, -110, 0.95, 0.4], [760, 190, 0.85, 0], [-330, -700, 0.7, 0.45], [330, -680, 0.7, 0.2]];
+  const ARCHES = [[-640, -430, 150, 0], [600, -470, 140, 1]];
+  // the causeway's low broken walls, their posts and torches
+  const WALLS = [];
+  for (const sx of [-1, 1]) {
+    for (let i = 0, y = 24; y < 720; i++) {
+      const len = 40 + Math.floor(H(i, sx > 0 ? 5 : 6) * 30);
+      if (H(i, sx > 0 ? 7 : 8) > 0.2) WALLS.push({ x: sx * (CW + 16), y: y + len, len, h: 16 + Math.floor(H(i, 10 + sx) * 3) * 4 });
+      y += len + 4;
+    }
+    for (const py of [24, 370, 720]) WALLS.push({ x: sx * (CW + 16), y: py, post: true });
+    for (const ty of TORCHES) WALLS.push({ x: sx * (CW + 16), y: ty, torch: true });
+  }
+
+  // Coarse buffers: paint in world (or gate-local) coordinates at 1/P scale, then stamp them back up unsmoothed.
+  const bufs = {};
+  function buf(key, w, h) {
+    let b = bufs[key];
+    if (!b) { b = bufs[key] = document.createElement("canvas"); b.g = b.getContext("2d", { willReadFrequently: true }); }
+    const bw = Math.ceil(w / P) + 1, bh = Math.ceil(h / P) + 1;
+    if (b.width !== bw || b.height !== bh) { b.width = bw; b.height = bh; } else { b.g.setTransform(1, 0, 0, 1, 0, 0); b.g.clearRect(0, 0, bw, bh); }
+    return b;
+  }
+  // hard edges, like the drawn sprites (no soft half-see-through rims)
+  function crisp(b) {
+    const d = b.g.getImageData(0, 0, b.width, b.height), a = d.data;
+    for (let i = 3; i < a.length; i += 4) a[i] = a[i] < 110 ? 0 : 255;
+    b.g.putImageData(d, 0, 0);
+  }
+  function paint(b, x0, y0, fn, hard) {
+    b.g.setTransform(1 / P, 0, 0, 1 / P, -x0 / P, -y0 / P);
+    fn(b.g);
+    b.g.setTransform(1, 0, 0, 1, 0, 0);
+    if (hard) crisp(b);
+  }
+  function stamp(c, b, x, y) {
+    const sm = c.imageSmoothingEnabled;
+    c.imageSmoothingEnabled = false;
+    c.drawImage(b, Math.round(x), Math.round(y), b.width * P, b.height * P);
+    c.imageSmoothingEnabled = sm;
+  }
+  // painted fresh every frame (the hands, the heart)
+  function pix(c, key, x0, y0, w, h, fn) {
+    x0 = Math.floor(x0 / P) * P; y0 = Math.floor(y0 / P) * P;
+    const b = buf(key, w, h);
+    paint(b, x0, y0, fn, true);
+    stamp(c, b, x0, y0);
+  }
+  // painted once, round the gate (gate-local coordinates)
+  const done = {};
+  function cached(key, x0, y0, w, h, fn, hard) {
+    if (!done[key]) { const b = buf(key, w, h); paint(b, x0, y0, fn, hard); done[key] = b; }
+    return done[key];
+  }
+
+  // a few drawing helpers
+  function poly(g, pts, fill, outline) {
+    g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+    g.closePath();
+    if (outline) { g.strokeStyle = C.ink; g.lineWidth = outline; g.lineJoin = "round"; g.stroke(); }
+    g.fillStyle = fill; g.fill();
+  }
+  function oval(g, x, y, rx, ry, fill, outline) {
+    g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, TAU);
+    if (outline) { g.strokeStyle = C.ink; g.lineWidth = outline; g.stroke(); }
+    g.fillStyle = fill; g.fill();
+  }
+  function line(g, x1, y1, x2, y2, col, w) {
+    g.strokeStyle = col; g.lineWidth = w; g.lineCap = "round";
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+  }
+  // a strand of waterweed hanging off him, a bead of water at its tip
+  function strand(g, x, y, len, w, col, seed) {
+    const amp = 6 + (seed % 5) * 3;
+    const path = () => {
+      g.beginPath(); g.moveTo(x, y);
+      for (let k = 1; k <= 8; k++) g.lineTo(x + Math.sin(seed * 7 + k * 1.1) * amp * (k / 8), y + (len * k) / 8);
+    };
+    g.lineCap = "round"; g.lineJoin = "round";
+    path(); g.strokeStyle = C.ink; g.lineWidth = w + 5; g.stroke();
+    path(); g.strokeStyle = col; g.lineWidth = w; g.stroke();
+    if (seed % 3 === 0) { g.fillStyle = C.cyan1; g.fillRect(x + Math.sin(seed * 7 + 7.8) * 7 - 2, y + len + 2, 4, 8); }
+  }
+  function barnacles(g, x, y, n, seed) {
+    for (let i = 0; i < n; i++) {
+      const bx = x + (H(seed, 60, i) - 0.5) * 50, by = y + (H(seed, 61, i) - 0.5) * 30, r = 5 + H(seed, 62, i) * 5;
+      oval(g, bx, by, r, r * 0.8, C.bone0, 3);
+      oval(g, bx - 1, by - 1, r * 0.55, r * 0.45, C.bone1);
+      oval(g, bx, by, 2, 2, C.ink);
+    }
+  }
+  // a great stone limb from (ax, ay) to (bx, by), lit along its top, bound with stone bracers and hung with weed
+  function limb(g, ax, ay, bx, by, wa, wb, seed) {
+    const dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1;
+    let nx = -dy / L, ny = dx / L;
+    if (ny > 0) { nx = -nx; ny = -ny; }
+    oval(g, ax, ay, wa, wa * 0.92, C.s1, 6);
+    poly(g, [[ax + nx * wa, ay + ny * wa], [bx + nx * wb, by + ny * wb], [bx - nx * wb, by - ny * wb], [ax - nx * wa, ay - ny * wa]], C.s1, 6);
+    oval(g, ax, ay, wa - 3, wa * 0.92 - 3, C.s1);
+    poly(g, [[ax + nx * wa * 0.9, ay + ny * wa * 0.9], [bx + nx * wb * 0.9, by + ny * wb * 0.9], [bx + nx * wb * 0.3, by + ny * wb * 0.3], [ax + nx * wa * 0.3, ay + ny * wa * 0.3]], C.s2);
+    line(g, ax + nx * (wa - 10), ay + ny * (wa - 10), bx + nx * (wb - 10), by + ny * (wb - 10), C.s3, 5);
+    for (let i = 0; i < 18; i++) {
+      const f = H(seed, 63, i), s = (H(seed, 64, i) - 0.5) * 1.6, w = wa + (wb - wa) * f;
+      g.fillStyle = i % 3 ? C.s0 : C.s3;
+      g.fillRect(ax + dx * f + nx * w * s, ay + dy * f + ny * w * s, 10 + H(seed, 65, i) * 14, 4);
+    }
+    for (const f of [0.3, 0.58, 0.84]) {
+      const px = ax + dx * f, py = ay + dy * f, w = wa + (wb - wa) * f + 4;
+      line(g, px + nx * w, py + ny * w, px - nx * w, py - ny * w, C.ink, 22);
+      line(g, px + nx * w, py + ny * w, px - nx * w, py - ny * w, C.s0, 15);
+      line(g, px + nx * w * 0.8, py + ny * w * 0.8, px - nx * w * 0.8, py - ny * w * 0.8, C.gold0, 3);
+    }
+    barnacles(g, ax + dx * 0.18 + nx * wa * 0.4, ay + dy * 0.18 + ny * wa * 0.4, 6, seed);
+    barnacles(g, ax + dx * 0.7 - nx * wb * 0.3, ay + dy * 0.7 - ny * wb * 0.3, 4, seed + 1);
+    for (let i = 0; i < 8; i++) {
+      const f = 0.05 + i * 0.12, px = ax + dx * f + nx * (wa + (wb - wa) * f) * 0.8, py = ay + dy * f + ny * (wa + (wb - wa) * f) * 0.8;
+      strand(g, px, py, 50 + H(seed, 66, i) * 130, 7 + (i % 2) * 3, [C.weed0, C.weed1, C.weed2][i % 3], seed * 11 + i);
+    }
+  }
+
+  // On the ground: the black lake, its muddy shore, the causeway's flagstones, and the hearth the Bearer plants on.
+  const lakePath = (g, s, cx, cy) => {
+    g.beginPath();
+    for (let i = 0; i <= 96; i++) {
+      const th = (i / 96) * TAU, cs = Math.cos(th), sn = Math.sin(th);
+      const x = cx + s * LK.rx * Math.sign(cs) * Math.sqrt(Math.abs(cs)), y = cy + LK.cy + s * LK.ry * Math.sign(sn) * Math.sqrt(Math.abs(sn));
+      if (i) g.lineTo(x, y); else g.moveTo(x, y);
+    }
+    g.closePath();
+  };
+  function paintGround(g) {
+    lakePath(g, 1, 0, 0); g.fillStyle = C.water1; g.fill();
+    lakePath(g, 0.8, 0, -30); g.fillStyle = C.water0; g.fill();
+    for (let i = 0; i < 320; i++) {
+      const x = (H(i, 1) - 0.5) * 2 * LK.rx, y = LK.cy + (H(i, 2) - 0.5) * 2 * LK.ry;
+      if (lakeD(x, y) > 0.96) continue;
+      g.fillStyle = H(i, 3) < 0.75 ? C.water2 : "#16363b";
+      g.fillRect(Math.round(x), Math.round(y), 9 + Math.round(H(i, 4) * 27), 3);
+    }
+    lakePath(g, 1, 0, 0); g.strokeStyle = "#0a0e0d"; g.lineWidth = 22; g.stroke();
+    for (let i = 0; i < 150; i++) {
+      const th = (i / 150) * TAU, cs = Math.cos(th), sn = Math.sin(th), r = 1 + (H(i, 6) - 0.5) * 0.04;
+      const x = r * LK.rx * Math.sign(cs) * Math.sqrt(Math.abs(cs)), y = LK.cy + r * LK.ry * Math.sign(sn) * Math.sqrt(Math.abs(sn)), s = 6 + H(i, 7) * 11;
+      oval(g, x, y, s, s * 0.6, "#1a201f");
+      oval(g, x - 2, y - 2, s * 0.55, s * 0.3, "#2b3331");
+    }
+    // the causeway, from the gate's step out past the shore
+    const y1 = LK.cy + LK.ry + 360;
+    g.fillStyle = C.ink; g.fillRect(-CW - 10, -12, (CW + 10) * 2, y1 + 12);
+    for (let row = 0, y = -10; y < y1; row++, y += 34) {
+      for (let j = 0, x = -CW - 8 - (row % 2) * 30; x < CW + 8; j++) {
+        const w = 50 + Math.round(H(row, 40, j) * 40), x0 = Math.max(x, -CW - 8), x1 = Math.min(x + w, CW + 8), v = H(row, 41, j);
+        g.fillStyle = v < 0.33 ? C.s1 : v < 0.75 ? "#20292c" : C.s2;
+        g.fillRect(x0 + 2, y + 2, x1 - x0 - 4, 30);
+        g.fillStyle = "#2f3a3e"; g.fillRect(x0 + 2, y + 2, x1 - x0 - 4, 3);
+        if (H(row, 42, j) < 0.12) { g.fillStyle = C.weed0; g.fillRect(x0 + 6, y + 18, 14, 8); }
+        if (H(row, 43, j) < 0.16) {
+          g.strokeStyle = C.ink; g.lineWidth = 3;
+          g.beginPath(); g.moveTo(x0 + 8, y + 6); g.lineTo(x0 + 20, y + 16); g.lineTo(x0 + 14, y + 28); g.stroke();
+        }
+        x += w;
+      }
+    }
+    // its far end sinks into the mud
+    g.globalCompositeOperation = "destination-out";
+    const gr = g.createLinearGradient(0, y1 - 300, 0, y1);
+    gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,1)");
+    g.fillStyle = gr; g.fillRect(-CW - 20, y1 - 300, (CW + 20) * 2, 320);
+    g.globalCompositeOperation = "source-over";
+  }
   Finale.drawGround = function (c, view, t) {
-    const g = Finale.gate(), a = arena(), p = plant();
-    if (g.x + 700 < view.left || g.x - 700 > view.right || g.y - 500 > view.bottom || g.y + 900 < view.top) return;
+    const g = Finale.gate(), p = plant();
+    if (g.x + 880 < view.left || g.x - 880 > view.right || g.y - 780 > view.bottom || g.y + 820 < view.top) return;
+    stamp(c, cached("ground", -860, -760, 1720, 1560, paintGround), g.x - 860, g.y - 760);
     c.save();
-    // flagstones, cracked and half sunk
-    c.fillStyle = "rgba(20,26,28,0.55)";
-    c.beginPath(); c.ellipse(a.x, a.y, GT.arenaR, GT.arenaR * 0.62, 0, 0, TAU); c.fill();
-    c.strokeStyle = "rgba(70,84,86,0.35)";
-    c.lineWidth = 2;
-    for (let i = 0; i < 26; i++) {
-      const u = DL.hash(71, i, 11), v = DL.hash(71, i, 12), x = a.x + (u - 0.5) * GT.arenaR * 1.7, y = a.y + (v - 0.5) * GT.arenaR * 1.05;
-      if (Math.hypot((x - a.x) / GT.arenaR, (y - a.y) / (GT.arenaR * 0.62)) > 0.95) continue;
-      c.strokeRect(Math.round(x - 18), Math.round(y - 9), 36, 18);
+    // glints on the black water
+    for (let i = 0; i < 50; i++) {
+      const lx = (H(i, 31) - 0.5) * 1.9 * LK.rx, ly = LK.cy + (H(i, 32) - 0.5) * 1.9 * LK.ry, a = Math.sin(t * 1.3 + i * 2.1);
+      if (a < 0.2 || lakeD(lx, ly) > 0.95 || (Math.abs(lx) < CW + 30 && ly > -10)) continue;
+      c.fillStyle = `rgba(${CYAN},${0.2 * a})`;
+      c.fillRect(Math.round(g.x + lx + Math.sin(t * 0.5 + i) * 6), Math.round(g.y + ly), 12 + Math.round(H(i, 33) * 22), 3);
     }
-    // the black water
-    const wy = g.y - 150;
-    c.fillStyle = "#03090b";
-    c.beginPath(); c.ellipse(g.x, wy, 520, 190, 0, 0, TAU); c.fill();
-    c.strokeStyle = "rgba(70,200,210,0.25)";
-    c.lineWidth = 2;
-    for (let i = 0; i < 3; i++) {
-      const k = (t * 0.25 + i / 3) % 1;
-      c.globalAlpha = 1 - k;
-      c.beginPath(); c.ellipse(g.x, wy + 20, 120 + 380 * k, 40 + 140 * k, 0, 0, TAU); c.stroke();
-    }
-    c.globalAlpha = 1;
     // the hearth: a ring of great stones the Bearer plants on
     for (let i = 0; i < 12; i++) {
       const an = (i / 12) * TAU, x = p.x + Math.cos(an) * 62, y = p.y + Math.sin(an) * 34;
@@ -623,23 +813,30 @@
     c.restore();
   };
 
-  // Into the y-sorted scene: the King behind the gate, the gate, his hands, and the Bearer.
+  // Into the y-sorted scene: the ruins, the causeway's walls, the King behind the gate, the gate, his hands, and the Bearer.
   Finale.push = function (list, c, t, view) {
     const g = Finale.gate(), b = Finale.b, e = Finale.king();
-    const inView = (x, y, m) => x > view.left - m && x < view.right + m && y > view.top - 80 && y < view.bottom + m + 600;
-    if (e && inView(g.x, g.y, 900)) list.push({ y: g.y - 40, f: () => drawKing(c, e, t) });
-    if (inView(g.x, g.y, 500)) list.push({ y: g.y, f: () => drawGate(c, g, t) });
-    if (e && kingRise(e) > 0.6) for (const side of [-1, 1]) { const h = handAt(e, side); list.push({ y: h.y + 2, f: () => drawHand(c, h, side, t) }); }
-    if (b && inView(b.x, b.y, 300)) list.push({ y: b.y, f: () => drawBearer(c, b, t) });
+    if (g.x + 900 > view.left && g.x - 900 < view.right && g.y - 820 < view.bottom && g.y + 820 > view.top) {
+      for (const r of RUINS) list.push({ y: g.y + r[1], f: () => drawRuin(c, g.x + r[0], g.y + r[1], r[2], r[3], t) });
+      for (const a of ARCHES) list.push({ y: g.y + a[1], f: () => drawArch(c, g.x + a[0], g.y + a[1], a[2], a[3], t) });
+      for (const w of WALLS) list.push({ y: g.y + w.y, f: () => drawWall(c, g, w, t) });
+      if (e) list.push({ y: g.y - 40, f: () => drawKing(c, e, t) });
+      list.push({ y: g.y, f: () => drawGate(c, g, t) });
+    }
+    if (e && kingRise(e) > 0.6) for (const side of [-1, 1]) { const h = handAt(e, side); list.push({ y: h.y + 2, f: () => drawHand(c, e, h, side, t) }); }
+    if (b && b.x > view.left - 300 && b.x < view.right + 300 && b.y > view.top - 80 && b.y < view.bottom + 900) list.push({ y: b.y, f: () => drawBearer(c, b, t) });
   };
-  // Over the dark: the Bearer's fire, the King's eyes and heart, and the flame it hurls.
+  // Over the dark: the Bearer's fire, the King's eyes, face and heart, and the flame it hurls.
   Finale.glow = function (c, t, view) {
     const b = Finale.b, e = Finale.king(), g = Finale.gate();
+    const blob = (x, y, r, inner, outer) => {
+      const gr = c.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, inner); gr.addColorStop(1, outer);
+      c.fillStyle = gr; c.fillRect(x - r, y - r, r * 2, r * 2);
+    };
     if (b && !b.down) {
       const s = bearerScale(b), x = b.x, y = b.y - 15 * s, r = (16 + Math.sin(t * 7) * 2) * s;
-      const gr = c.createRadialGradient(x, y, 0, x, y, r);
-      gr.addColorStop(0, "rgba(255,220,140,0.8)"); gr.addColorStop(1, "rgba(255,140,50,0)");
-      c.fillStyle = gr; c.fillRect(x - r, y - r, r * 2, r * 2);
+      blob(x, y, r, "rgba(255,220,140,0.8)", "rgba(255,140,50,0)");
       const ch = G.isGuest() ? net.charge : b.charge;
       if (Finale.stage() === 3 && ch > 0) {
         // the flame it gathers: a ring that closes as it fills
@@ -648,17 +845,16 @@
         c.beginPath(); c.arc(x, y, r * 0.9 + 30 * (1 - ch), -Math.PI / 2, -Math.PI / 2 + TAU * ch); c.stroke();
       }
     }
-    if (e && e.rise <= 0) {
-      const k = kingRise(e), wy = g.y - 40, base = wy + (1 - k) * 560, at = (dy) => wy + (base + dy - wy) * KS;
-      for (const sx of [-26, 26]) {
-        const x = g.x + sx * KS, y = at(-470), r = 22 + Math.sin(t * 3 + sx) * 3, gr = c.createRadialGradient(x, y, 0, x, y, r);
-        gr.addColorStop(0, "rgba(120,250,255,0.9)"); gr.addColorStop(1, "rgba(60,220,230,0)");
-        c.fillStyle = gr; c.fillRect(x - r, y - r, r * 2, r * 2);
+    if (e) {
+      const k = kingRise(e), dy = kingDrop(e) + bob(t), top = g.y + KG.water;
+      const ey = g.y + KG.eyes + dy, hy = g.y + KG.heart + dy;
+      if (ey < top) {
+        for (const sx of [-1, 1]) blob(g.x + sx * KG.eyeDx, ey, 26 + Math.sin(t * 3 + sx) * 3, `rgba(130,250,255,${0.9 * k})`, "rgba(60,220,230,0)");
+        blob(g.x, ey + 20, 90, `rgba(${CYAN},${0.22 * k})`, `rgba(${CYAN},0)`);
       }
-      if (Finale.isOpen(e)) {
-        const x = g.x, y = at(30 - 270), r = 50 + Math.sin(t * 9) * 6, gr = c.createRadialGradient(x, y, 0, x, y, r);
-        gr.addColorStop(0, "rgba(255,240,180,0.95)"); gr.addColorStop(0.5, "rgba(255,140,40,0.7)"); gr.addColorStop(1, "rgba(255,80,20,0)");
-        c.fillStyle = gr; c.fillRect(x - r, y - r, r * 2, r * 2);
+      if (hy < top) {
+        if (Finale.isOpen(e)) blob(g.x, hy, 64 + Math.sin(t * 9) * 6, "rgba(255,240,180,0.95)", "rgba(255,80,20,0)");
+        else blob(g.x, hy, 95, `rgba(${CYAN},${(0.3 + 0.12 * Math.sin(t * 2.2)) * k})`, `rgba(${CYAN},0)`);
       }
     }
     if (beam) {
@@ -666,16 +862,19 @@
       for (let i = 0; i < 10; i++) {
         const u = Math.min(1, k * 1.8 - i * 0.06);
         if (u <= 0) continue;
-        const x = beam.x1 + (beam.x2 - beam.x1) * u, y = beam.y1 + (beam.y2 - beam.y1) * u - Math.sin(Math.PI * u) * 120;
-        const r = 16 - i, gr = c.createRadialGradient(x, y, 0, x, y, r * 2);
-        gr.addColorStop(0, `rgba(255,230,160,${0.95 * (1 - k * 0.5)})`); gr.addColorStop(1, "rgba(255,120,40,0)");
-        c.fillStyle = gr; c.fillRect(x - r * 2, y - r * 2, r * 4, r * 4);
+        const x = beam.x1 + (beam.x2 - beam.x1) * u, y = beam.y1 + (beam.y2 - beam.y1) * u - Math.sin(Math.PI * u) * 120, r = 16 - i;
+        blob(x, y, r * 2, `rgba(255,230,160,${0.95 * (1 - k * 0.5)})`, "rgba(255,120,40,0)");
       }
     }
-    if (Finale.stage() === 4 && g.x > view.left - 400 && g.x < view.right + 400) {
-      const gr = c.createLinearGradient(0, g.y - 170, 0, g.y);
-      gr.addColorStop(0, "rgba(255,200,120,0)"); gr.addColorStop(1, `rgba(255,200,120,${0.45 + 0.1 * Math.sin(t * 2)})`);
-      c.fillStyle = gr; c.fillRect(g.x - 104, g.y - 170, 208, 170);
+    if (g.x > view.left - 400 && g.x < view.right + 400 && g.y - 300 < view.bottom && g.y + 100 > view.top) {
+      for (const sx of [-1, 1]) blob(g.x + sx * KG.bowl, g.y - 252, 46 + Math.sin(t * 8 + sx) * 4, "rgba(255,190,100,0.5)", "rgba(255,120,40,0)");
+      if (Finale.stage() === 4) {
+        const gr = c.createLinearGradient(0, g.y - 268, 0, g.y);
+        gr.addColorStop(0, "rgba(255,200,120,0)"); gr.addColorStop(1, `rgba(255,200,120,${0.45 + 0.1 * Math.sin(t * 2)})`);
+        c.save(); openingPath(c, g.x, g.y); c.clip();
+        c.fillStyle = gr; c.fillRect(g.x - 120, g.y - 268, 240, 268);
+        c.restore();
+      }
     }
   };
 
@@ -699,98 +898,212 @@
       c.fillStyle = "#ffae52"; c.fillRect(x, y, w * clamp(b.hp / b.max, 0, 1), 4);
     }
   }
-  const Art = () => DL.Art;
 
-  // How far he has risen out of the water (0 to 1).
-  function kingRise(e) { return e.rise > 0 ? clamp(1 - e.rise / K.rise, 0, 1) : 1; }
-  const KS = 0.85, STONE = "#1d2b30", STONE_HI = "#34484f", STONE_LT = "#56727a", WEED = "#2a4a36", WEED_HI = "#3f6e4c", CYAN = "90,235,245";
-  function drawKing(c, e, t) {
-    const g = Finale.gate(), k = kingRise(e), open = Finale.isOpen(e);
-    const wy = g.y - 40, base = wy + (1 - k) * 560, sway = Math.sin(t * 0.7) * 6, x = g.x + sway * 0.3;
-    const slump = open ? 30 : 0, y0 = base + slump;
-    // arms, from the shoulders to wherever the hands are (they come up out of the water with him)
+  /* the ruins in the water: the old drawn pillar, darkened and sunk */
+  let ruinArt = null;
+  function ruin() {
+    if (ruinArt) return ruinArt;
+    const s = DL.Art.sprites.pillar;
+    if (!s) return null;
+    const cv = document.createElement("canvas"), g = cv.getContext("2d");
+    cv.width = s.c.width; cv.height = s.c.height;
+    g.drawImage(s.c, 0, 0);
+    g.globalCompositeOperation = "source-atop";
+    g.fillStyle = "rgba(8,20,26,0.55)"; g.fillRect(0, 0, cv.width, cv.height);
+    return (ruinArt = { c: cv, w: s.w, h: s.h });
+  }
+  function ripple(c, x, y, w, t, seed) {
+    c.fillStyle = "rgba(3,8,10,0.75)";
+    c.beginPath(); c.ellipse(x, y, w * 0.45, w * 0.11, 0, 0, TAU); c.fill();
+    const k = (t * 0.35 + seed) % 1;
+    c.strokeStyle = `rgba(${CYAN},${0.3 * (1 - k)})`; c.lineWidth = 2;
+    c.beginPath(); c.ellipse(x, y, w * (0.4 + 0.5 * k), w * (0.1 + 0.12 * k), 0, 0, TAU); c.stroke();
+  }
+  // returns the y of its top
+  function drawRuin(c, x, y, sc, sunk, t, dry) {
+    const s = ruin(), w = (s ? s.w : 35) * 2 * sc, h = (s ? s.h : 53) * 2 * sc, sink = dry ? 0 : h * (0.18 + sunk);
+    if (dry) { c.fillStyle = "rgba(0,0,0,0.4)"; c.beginPath(); c.ellipse(x, y, w * 0.4, w * 0.12, 0, 0, TAU); c.fill(); }
     c.save();
-    c.globalAlpha = clamp((k - 0.4) / 0.6, 0, 1);
-    for (const side of [-1, 1]) {
-      const h = handAt(e, side), sx = x + side * 220 * KS, sy = wy + (y0 - 380 - wy) * KS;
-      const ex = (sx + h.x) / 2 + side * 120, ey = Math.min(sy, h.y - h.lift) - 40;
-      c.strokeStyle = STONE; c.lineWidth = 70; c.lineCap = "round"; c.lineJoin = "round";
-      c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo(ex, ey, h.x, h.y - h.lift - 20); c.stroke();
-      c.strokeStyle = STONE_HI; c.lineWidth = 40;
-      c.beginPath(); c.moveTo(sx - side * 6, sy - 10); c.quadraticCurveTo(ex - side * 6, ey - 10, h.x, h.y - h.lift - 30); c.stroke();
-      c.strokeStyle = WEED; c.lineWidth = 10;
-      c.beginPath(); c.moveTo(sx, sy - 28); c.quadraticCurveTo(ex, ey - 30, (ex + h.x) / 2, (ey + h.y - h.lift) / 2 - 20); c.stroke();
-    }
+    c.beginPath(); c.rect(x - w, y - h * 1.5, w * 2, h * 1.5 + (dry ? 4 : 0)); c.clip();
+    if (s) c.drawImage(s.c, Math.round(x - w / 2), Math.round(y - h + sink), Math.round(w), Math.round(h));
+    else { c.fillStyle = C.s2; c.fillRect(x - w * 0.3, y - h + sink, w * 0.6, h); }
     c.restore();
+    if (!dry) ripple(c, x, y, w, t, H(x | 0, 70));
+    return y - h + sink;
+  }
+  function drawArch(c, x, y, span, broken, t) {
+    const top = drawRuin(c, x - span / 2, y, 0.85, 0, t);
+    drawRuin(c, x + span / 2, y, 0.85, broken ? 0.25 : 0, t);
+    const cy = top + 12, r = span / 2, a1 = broken ? Math.PI * 1.55 : TAU;
     c.save();
-    c.beginPath(); c.rect(g.x - 900, wy - 1200, 1800, 1200); c.clip(); // nothing of him below the water
-    c.translate(x, wy); c.scale(KS, KS); c.translate(-x, -wy); // his body drawn a little smaller than his reach
-    // the great body, hunched, rising out of the water
-    c.fillStyle = STONE;
-    c.beginPath();
-    c.moveTo(x - 190, wy + 10); c.lineTo(x - 250, y0 - 330); c.quadraticCurveTo(x - 200, y0 - 430, x - 70, y0 - 420);
-    c.lineTo(x + 70, y0 - 420); c.quadraticCurveTo(x + 200, y0 - 430, x + 250, y0 - 330); c.lineTo(x + 190, wy + 10); c.closePath(); c.fill();
-    c.fillStyle = STONE_HI;
-    c.beginPath(); c.moveTo(x - 160, wy); c.lineTo(x - 215, y0 - 320); c.quadraticCurveTo(x - 160, y0 - 400, x - 40, y0 - 395); c.lineTo(x - 30, wy); c.closePath(); c.fill();
-    // ribs of black plate across the chest, and the heart behind them
-    const hy = y0 - 270;
-    if (open) {
-      c.fillStyle = "#3b1206"; c.beginPath(); c.ellipse(x, hy, 70, 60, 0, 0, TAU); c.fill();
-      c.fillStyle = "#ff8a2a"; c.beginPath(); c.ellipse(x, hy, 40 + Math.sin(t * 9) * 4, 36, 0, 0, TAU); c.fill();
-      c.fillStyle = "#ffe9a8"; c.beginPath(); c.ellipse(x, hy - 4, 18, 16, 0, 0, TAU); c.fill();
-      Art().drawFire(c, x, hy + 30, 1.6, t);
-    } else {
-      c.fillStyle = "#081013"; c.beginPath(); c.ellipse(x, hy, 62, 54, 0, 0, TAU); c.fill();
-      c.strokeStyle = `rgba(${CYAN},${0.35 + 0.15 * Math.sin(t * 2)})`; c.lineWidth = 3;
-      c.beginPath(); c.moveTo(x - 30, hy - 30); c.lineTo(x - 6, hy - 4); c.lineTo(x - 20, hy + 28); c.moveTo(x - 6, hy - 4); c.lineTo(x + 26, hy - 14); c.stroke();
+    c.lineCap = "butt";
+    c.strokeStyle = C.ink; c.lineWidth = 30; c.beginPath(); c.arc(x, cy, r, Math.PI, a1); c.stroke();
+    c.strokeStyle = "#232c2b"; c.lineWidth = 24; c.beginPath(); c.arc(x, cy, r, Math.PI, a1); c.stroke();
+    c.strokeStyle = "#3a4440"; c.lineWidth = 5; c.beginPath(); c.arc(x, cy, r + 8, Math.PI, a1); c.stroke();
+    c.strokeStyle = C.ink; c.lineWidth = 3;
+    for (let a = Math.PI + 0.3; a < a1 - 0.1; a += 0.3) { c.beginPath(); c.moveTo(x + Math.cos(a) * (r - 12), cy + Math.sin(a) * (r - 12)); c.lineTo(x + Math.cos(a) * (r + 12), cy + Math.sin(a) * (r + 12)); c.stroke(); }
+    c.restore();
+  }
+  // a stretch of the causeway's low wall (its top, and its south face), a post, or a torch
+  function drawWall(c, g, w, t) {
+    const x = g.x + w.x, y = g.y + w.y;
+    if (w.torch) {
+      const s = DL.Art.sprites.torch;
+      if (!s) return;
+      const sw = s.w * 2, sh = s.h * 2;
+      c.fillStyle = "rgba(0,0,0,0.4)"; c.beginPath(); c.ellipse(x, y, 10, 4, 0, 0, TAU); c.fill();
+      c.drawImage(s.c, Math.round(x - sw / 2), Math.round(y - sh + 2), sw, sh);
+      DL.Art.drawFire(c, x, y + 10 - sh, 1.1, t);
+      return;
     }
-    c.strokeStyle = STONE_LT; c.lineWidth = 9;
-    for (let i = 0; i < 4; i++) {
-      const yy = hy - 60 + i * 38, w = 150 - Math.abs(i - 1.5) * 18;
-      c.beginPath(); c.moveTo(x - w, yy + 12); c.quadraticCurveTo(x, yy - 14 + (open ? -18 : 0), x + w, yy + 12); c.stroke();
+    if (w.post) { drawRuin(c, x, y, 0.42, 0, t, true); return; }
+    const top = y - w.len - w.h;
+    c.fillStyle = C.ink; c.fillRect(x - 14, top - 2, 28, w.len + w.h + 3);
+    c.fillStyle = C.s3; c.fillRect(x - 12, top, 24, w.len);
+    c.fillStyle = C.s4; c.fillRect(x - 12, top, 24, 3);
+    c.fillStyle = C.s1; c.fillRect(x - 12, y - w.h, 24, w.h);
+    c.fillStyle = C.s0; c.fillRect(x - 12, y - w.h + 6, 24, 2);
+    if (w.len > 52) { c.fillStyle = C.ink; c.fillRect(x - 12, top + (w.len >> 1), 24, 2); }
+    if (H(w.y, 71, w.x) < 0.4) { c.fillStyle = C.weed1; c.fillRect(x - 12 + ((w.y * 7) % 14), top + 4, 8, 5); }
+  }
+
+  /* the Sunken King */
+  // How far he has risen out of the water (0 to 1), and how far below his full height he stands.
+  function kingRise(e) { return e.rise > 0 ? clamp(1 - e.rise / K.rise, 0, 1) : 1; }
+  function kingDrop(e) { return Math.round(((1 - kingRise(e)) * KG.drop + (Finale.isOpen(e) ? 27 : 0)) / P) * P - KG.lift; }
+  const bob = (t) => Math.round(Math.sin(t * 0.9) * 1.4) * P; // his slow breathing
+  // his back half: the hunched body, the black hollow of his chest, his upper arms out to the elbows
+  function paintKingBack(g) {
+    for (const s of [-1, 1]) limb(g, s * 290, -450, s * KG.elbow, KG.elbowY, 100, 92, s > 0 ? 3 : 4);
+    const torso = [[-300, 80], [-335, -300], [-255, -475], [-120, -548], [120, -548], [255, -475], [335, -300], [300, 80]];
+    poly(g, torso, C.s1, 7);
+    g.save(); poly(g, torso, C.s1); g.clip();
+    for (let row = 0, y = -540; y < 80; row++, y += 44) {
+      g.fillStyle = C.s0; g.fillRect(-340, y, 680, 4);
+      for (let x = -340 + (row % 2) * 40; x < 340; x += 80 + H(row, 80, x) * 30) g.fillRect(x, y, 4, 44);
+      g.fillStyle = C.s2; g.fillRect(-300 + H(row, 81) * 500, y + 8, 40, 6);
     }
-    // weed hanging off him, and the water running down
-    for (let i = 0; i < 14; i++) {
-      const u = DL.hash(73, i, 1), xx = x - 220 + u * 440, top = y0 - 330 - DL.hash(73, i, 2) * 80, len = 60 + DL.hash(73, i, 3) * 160;
-      c.strokeStyle = i % 3 ? WEED : WEED_HI; c.lineWidth = 6;
-      c.beginPath(); c.moveTo(xx, top); c.quadraticCurveTo(xx + Math.sin(t + i) * 10, top + len / 2, xx + Math.sin(t * 0.8 + i) * 6, top + len); c.stroke();
+    g.restore();
+    oval(g, 0, -350, 178, 142, "#060a0b", 6);
+    oval(g, 0, -335, 150, 110, "#04211f");
+    // water running down his front
+    for (let i = 0; i < 16; i++) { const x = -260 + H(i, 82) * 520; g.fillStyle = "rgba(47,185,198,0.45)"; g.fillRect(x, -470 + H(i, 83) * 200, 3, 60 + H(i, 84) * 160); }
+  }
+  // his front half: ribs, shoulders, the drowned skull and its crown, and the weed hanging off it all
+  function paintKingFront(g) {
+    // ribs, caging the heart
+    for (let i = 0; i < 6; i++) for (const s of [-1, 1]) {
+      const y0 = -462 + i * 26, rib = () => { g.beginPath(); g.moveTo(s * (i < 2 ? 24 : 84 - i * 3), y0); g.quadraticCurveTo(s * (205 - i * 6), y0 - 30 + i * 6, s * (160 - i * 12), y0 + 120 - i * 4); };
+      g.lineCap = "round";
+      rib(); g.strokeStyle = C.ink; g.lineWidth = 25; g.stroke();
+      rib(); g.strokeStyle = C.s2; g.lineWidth = 16; g.stroke();
+      g.save(); g.translate(0, -4); rib(); g.strokeStyle = C.s3; g.lineWidth = 5; g.stroke(); g.restore();
     }
-    // the head: a drowned skull of a king, its crown a ring of broken spires
-    const hx = x + sway * 0.5, hyy = y0 - 470;
-    c.fillStyle = STONE;
-    c.beginPath(); c.ellipse(hx, hyy, 66, 74, 0, 0, TAU); c.fill();
-    c.fillStyle = STONE_HI;
-    c.beginPath(); c.ellipse(hx - 14, hyy - 12, 42, 52, 0, 0, TAU); c.fill();
-    c.fillStyle = "#03080a";
-    for (const sx of [-26, 26]) { c.beginPath(); c.ellipse(hx + sx, hyy, 16, 12, 0, 0, TAU); c.fill(); }
-    c.fillStyle = `rgba(${CYAN},0.95)`;
-    for (const sx of [-26, 26]) { c.beginPath(); c.ellipse(hx + sx, hyy + 1, 6, 4, 0, 0, TAU); c.fill(); }
-    c.fillStyle = "#03080a"; c.fillRect(hx - 28, hyy + 30, 56, 26);
-    c.fillStyle = `rgba(${CYAN},0.55)`;
-    for (let i = 0; i < 6; i++) c.fillRect(hx - 24 + i * 9, hyy + 30, 3, 20);
-    c.fillStyle = "#2a2618";
+    poly(g, [[-16, -492], [16, -492], [12, -428], [-12, -428]], C.s2, 6);
+    oval(g, 0, -478, 15, 15, C.gold1, 5); oval(g, -3, -481, 7, 7, C.gold2);
+    // shoulders, great rounded plates of stone trimmed in old gold
+    for (const s of [-1, 1]) {
+      oval(g, s * 300, -485, 152, 108, C.s1, 7);
+      g.save(); g.beginPath(); g.ellipse(s * 300, -485, 152, 108, 0, 0, TAU); g.clip();
+      oval(g, s * 300 - s * 20, -522, 130, 72, C.s2);
+      oval(g, s * 300 - s * 40, -556, 70, 18, C.s3);
+      g.strokeStyle = C.s0; g.lineWidth = 4;
+      for (let i = 0; i < 5; i++) { const a = s * 300 - 120 + i * 60; g.beginPath(); g.moveTo(a, -590); g.lineTo(a + 14, -520); g.lineTo(a - 6, -440); g.stroke(); }
+      g.strokeStyle = C.gold1; g.lineWidth = 7; g.beginPath(); g.ellipse(s * 300, -470, 140, 96, 0, 0.15 * Math.PI, 0.85 * Math.PI); g.stroke();
+      for (let i = 0; i < 10; i++) { g.fillStyle = C.s1; g.fillRect(s * 300 - 140 + H(i, 85, s) * 260, -560 + H(i, 86, s) * 150, 18, 4); }
+      g.restore();
+      barnacles(g, s * 360, -520, 9, s > 0 ? 7 : 8);
+      barnacles(g, s * 230, -430, 5, s > 0 ? 9 : 10);
+    }
+    // the hood of stone his skull hangs in
+    oval(g, 0, -505, 108, 98, C.s1, 7);
+    oval(g, -14, -540, 76, 50, C.s2);
+    // the skull: cold cyan, burning eyes, a grin of glowing teeth
+    poly(g, [[-62, -560], [62, -560], [70, -505], [52, -470], [44, -428], [-44, -428], [-52, -470], [-70, -505]], C.cyan0, 6);
+    oval(g, -30, -488, 26, 18, C.cyan1); oval(g, 30, -488, 26, 18, C.cyan1);
+    oval(g, 0, -545, 46, 14, C.cyan1);
+    poly(g, [[-66, -548], [66, -548], [62, -526], [-62, -526]], C.s1, 4); // the brow
+    for (const s of [-1, 1]) {
+      oval(g, s * KG.eyeDx, KG.eyes, 20, 13, C.ink);
+      oval(g, s * KG.eyeDx, KG.eyes, 12, 7, C.cyan2);
+      oval(g, s * KG.eyeDx, KG.eyes, 5, 3, C.cyan3);
+    }
+    poly(g, [[-9, -486], [9, -486], [0, -468]], C.ink);
+    g.fillStyle = C.ink; g.fillRect(-40, -462, 80, 34);
     for (let i = 0; i < 7; i++) {
-      const an = -Math.PI / 2 + (i - 3) * 0.32, bx = hx + Math.cos(an) * 60, by = hyy - 50 + Math.abs(i - 3) * 6, h = 50 + ((i * 37) % 30) - Math.abs(i - 3) * 6;
-      c.beginPath(); c.moveTo(bx - 9, by); c.lineTo(bx + (i % 2 ? 4 : -4), by - h); c.lineTo(bx + 9, by); c.closePath(); c.fill();
+      g.fillStyle = C.cyan2; g.fillRect(-36 + i * 10.5, -460, 7, 13);
+      g.fillStyle = C.cyan1; g.fillRect(-36 + i * 10.5, -444, 7, 13);
     }
-    c.fillStyle = "#4a4126"; c.fillRect(hx - 60, hyy - 54, 120, 12);
+    for (let i = 0; i < 6; i++) { g.fillStyle = "rgba(127,244,250,0.6)"; g.fillRect(-32 + i * 13, -428, 3, 14 + H(i, 87) * 40); }
+    // the crown: a band of old gold and seven tall spires
+    const sp = [62, 86, 108, 140, 108, 86, 62];
+    for (let i = -3; i <= 3; i++) {
+      const bx = i * 33, by = -572 + Math.abs(i) * 3, tip = by - sp[i + 3], tx = bx + i * 7;
+      poly(g, [[bx - 15, by], [tx, tip], [bx + 15, by]], C.gold1, 6);
+      poly(g, [[bx - 13, by], [tx, tip + 4], [bx - 1, by]], C.gold2);
+      line(g, tx - 1, tip + 8, bx - 8, by - 6, C.gold3, 2);
+      if (i > -3) poly(g, [[bx - 30, by + 2], [bx - 17, by - 34], [bx - 4, by + 2]], C.gold0, 4);
+    }
+    poly(g, [[-118, -584], [118, -584], [112, -552], [-112, -552]], C.gold1, 6);
+    g.fillStyle = C.gold3; g.fillRect(-114, -583, 228, 4);
+    g.fillStyle = C.gold0; g.fillRect(-112, -558, 224, 5);
+    oval(g, 0, -569, 9, 10, C.red2, 4); oval(g, -60, -568, 7, 7, C.cyan1, 4); oval(g, 60, -568, 7, 7, C.cyan1, 4);
+    // weed off his hood and shoulders, falling over his chest and arms
+    for (let i = 0; i < 60; i++) {
+      const x = -390 + H(i, 88) * 780;
+      if (Math.abs(x) < 80) continue;
+      const y = -565 + Math.min(1, Math.abs(x) / 380) * 90 + H(i, 89) * 40, len = 50 + H(i, 90) * H(i, 95) * 330;
+      strand(g, x, y, len, 4 + (i % 3) * 2, i % 5 === 0 ? C.weed2 : i % 2 ? C.weed0 : C.weed1, i);
+    }
+    for (const s of [-1, 1]) for (let i = 0; i < 5; i++) strand(g, s * (72 + i * 9), -552 + i * 8, 70 + i * 22, 7, i % 2 ? C.weed1 : C.weed2, 50 + i + (s > 0 ? 10 : 0));
+  }
+  // His heart, between his back and his ribs: cracked cyan crystal, or burned open.
+  function drawHeart(c, x, y, open, t) {
+    pix(c, "heart", x - 110, y - 110, 220, 220, (g) => {
+      if (open) {
+        oval(g, x, y, 72, 64, "#3b1206", 5);
+        oval(g, x, y, 44 + Math.sin(t * 9) * 4, 40, "#ff8a2a");
+        oval(g, x, y - 4, 20, 18, "#ffe9a8");
+        return;
+      }
+      const at = (pts) => pts.map(([a, b]) => [x + a * 1.35, y + b * 1.35]);
+      poly(g, at([[0, -50], [22, -60], [46, -48], [56, -14], [36, 30], [0, 60], [-36, 30], [-56, -14], [-46, -48], [-22, -60]]), C.cyan0, 6);
+      poly(g, at([[0, -38], [20, -48], [38, -38], [44, -12], [0, 40], [-44, -12], [-38, -38], [-20, -48]]), C.cyan1);
+      poly(g, at([[-8, -30], [10, -36], [22, -14], [0, 14], [-20, -10]]), C.cyan2);
+      g.globalAlpha = 0.6 + 0.4 * Math.sin(t * 2.2);
+      g.strokeStyle = C.cyan3; g.lineWidth = 4; g.lineCap = "round";
+      g.beginPath(); g.moveTo(x - 50, y - 40); g.lineTo(x - 8, y - 6); g.lineTo(x - 26, y + 44); g.moveTo(x - 8, y - 6); g.lineTo(x + 40, y - 20); g.lineTo(x + 30, y + 34); g.moveTo(x + 4, y - 64); g.lineTo(x - 8, y - 6); g.stroke();
+      g.globalAlpha = 1;
+    });
+    if (open) DL.Art.drawFire(c, x, y + 34, 2.4, t);
+  }
+  function drawKing(c, e, t) {
+    const g = Finale.gate(), k = kingRise(e), dy = kingDrop(e) + bob(t), wy = g.y + KG.water;
+    const back = cached("kingB", -720, -800, 1440, 890, paintKingBack, true), front = cached("kingF", -720, -800, 1440, 890, paintKingFront, true);
+    c.save();
+    c.beginPath(); c.rect(g.x - 900, wy - 1700, 1800, 1700); c.clip(); // nothing of him below the water
+    stamp(c, back, g.x - 720, g.y - 800 + dy);
+    drawHeart(c, g.x, g.y + KG.heart + dy, Finale.isOpen(e), t);
+    stamp(c, front, g.x - 720, g.y - 800 + dy);
+    // water running off him
+    for (let i = 0; i < 26; i++) {
+      const x = g.x + (H(i, 91) - 0.5) * (i < 18 ? 640 : 1100), y0 = g.y - 470 + H(i, 92) * 260 + dy, ph = (t * 0.7 + H(i, 93)) % 1;
+      c.fillStyle = `rgba(${CYAN},${0.75 * (1 - ph)})`;
+      c.fillRect(Math.round(x), Math.round(y0 + ph * 160), 3, 9);
+    }
     c.restore();
     // the water breaking round him
-    c.fillStyle = `rgba(${CYAN},${0.25 + 0.1 * Math.sin(t * 3)})`;
-    c.beginPath(); c.ellipse(g.x, wy + 6, 230, 26, 0, 0, TAU); c.fill();
-    // his health, under the gate's lintel
-    if (e.hp < e.maxHp || open) {
-      const w = 260, bx = g.x - w / 2, by = g.y - 452;
-      c.fillStyle = "rgba(0,0,0,0.7)"; c.fillRect(bx - 2, by - 2, w + 4, 9);
-      c.fillStyle = open ? "#ffae52" : "#7ff6ff"; c.fillRect(bx, by, w * clamp(e.hp / e.maxHp, 0, 1), 5);
-      c.fillStyle = "#000";
-      for (const q of K.phases) c.fillRect(bx + w * q - 1, by - 2, 2, 9);
-    }
+    c.save();
+    c.fillStyle = `rgba(${CYAN},${(0.16 + 0.06 * Math.sin(t * 3)) * k})`;
+    c.beginPath(); c.ellipse(g.x, wy + 4, 360, 30, 0, 0, TAU); c.fill();
+    c.strokeStyle = `rgba(${CYAN},${0.35 * k})`; c.lineWidth = 3;
+    for (let i = 0; i < 2; i++) { const q = (t * 0.3 + i / 2) % 1; c.globalAlpha = 1 - q; c.beginPath(); c.ellipse(g.x, wy + 6, 340 + 160 * q, 28 + 30 * q, 0, 0, TAU); c.stroke(); }
+    c.restore();
   }
-  // Where each hand is: resting on the ground beside the gate, raised over a knight, or sweeping the arena.
+  // Where each hand is: resting in the water beside the causeway, raised over a knight, or sweeping the arena.
   function handAt(e, side) {
-    const g = Finale.gate(), rest = { x: g.x + side * 330, y: g.y + 60, lift: 0 }, k = kingRise(e);
-    if (k < 1) { const u = clamp((k - 0.6) / 0.4, 0, 1); return { x: g.x + side * (240 + 90 * u), y: g.y - 60 + 120 * u, lift: 140 * Math.sin(Math.PI * u) }; } // up out of the water and over onto the ground
+    const g = Finale.gate(), rest = { x: g.x + side * KG.rest, y: g.y + KG.restY, lift: 0 }, k = kingRise(e);
+    if (k < 1) { const u = clamp((k - 0.6) / 0.4, 0, 1); return { x: g.x + side * (560 - 110 * u), y: g.y - 60 + 100 * u, lift: 140 * Math.sin(Math.PI * u) }; } // up out of the water
     const q = blows.find((o) => o.side === side && age(o) < o.delay + (o.kind === "sweep" ? 1.2 : 1));
     if (!q) return rest;
     const T = age(q);
@@ -810,55 +1123,141 @@
     const back = clamp((T - q.delay - 0.5) / 0.7, 0, 1);
     return { x: q.x2 + (rest.x - q.x2) * back, y: q.y + (rest.y - q.y) * back, lift: Math.sin(Math.PI * back) * 60 };
   }
-  function drawHand(c, h, side, t) {
-    const x = h.x, y = h.y - h.lift;
-    c.fillStyle = `rgba(0,0,0,${0.25 + 0.3 * Math.max(0, 1 - h.lift / 260)})`;
-    c.beginPath(); c.ellipse(h.x, h.y, 70, 26, 0, 0, TAU); c.fill();
-    c.fillStyle = STONE;
-    c.beginPath(); c.ellipse(x, y - 24, 64, 34, 0, 0, TAU); c.fill();
-    c.fillStyle = STONE_HI;
-    c.beginPath(); c.ellipse(x - side * 10, y - 32, 40, 18, 0, 0, TAU); c.fill();
+  // A great hand, palm down, its bone claws reaching for the causeway; (x, y) is where the claws touch.
+  function paintHand(g, x, y0, side, lift) {
+    const y = y0 - 20, spread = 0.16 + 0.14 * Math.min(1, lift / 200);
+    // the thumb, on the causeway side
+    const tx = x - side * 80, ty = y - 80, tdx = -side * 0.6, tdy = 0.8;
+    line(g, tx, ty, tx + tdx * 60, ty + tdy * 60, C.ink, 40); line(g, tx, ty, tx + tdx * 60, ty + tdy * 60, C.s1, 32);
+    claw(g, tx + tdx * 64, ty + tdy * 64, tdx, tdy);
+    poly(g, [[x - 78, y - 150], [x + 78, y - 150], [x + 98, y - 70], [x + 74, y - 42], [x - 74, y - 42], [x - 98, y - 70]], C.s1, 7);
+    poly(g, [[x - 70, y - 146], [x + 70, y - 146], [x + 84, y - 96], [x - 84, y - 96]], C.s2);
     for (let i = 0; i < 4; i++) {
-      const fx = x - 48 + i * 32;
-      c.fillStyle = STONE; c.beginPath(); c.ellipse(fx, y - 2, 13, 18, 0, 0, TAU); c.fill();
-      c.fillStyle = "#c9d7cf"; c.beginPath(); c.moveTo(fx - 5, y + 8); c.lineTo(fx, y + 20); c.lineTo(fx + 5, y + 8); c.fill();
+      const kx = x + (i - 1.5) * 44, ky = y - 50 + Math.abs(i - 1.5) * 6, a = Math.PI / 2 + (i - 1.5) * spread - side * 0.12;
+      const mx = kx + Math.cos(a) * 50, my = ky + Math.sin(a) * 50, a2 = a + (i < 2 ? 0.14 : -0.14), fx = mx + Math.cos(a2) * 42, fy = my + Math.sin(a2) * 42;
+      line(g, kx, ky, mx, my, C.ink, 40); line(g, mx, my, fx, fy, C.ink, 34);
+      line(g, kx, ky, mx, my, C.s1, 33); line(g, mx, my, fx, fy, C.s2, 27);
+      line(g, mx - 12, my, mx + 12, my, C.s0, 4);
+      oval(g, kx, ky - 4, 22, 17, C.s2, 5); oval(g, kx - 4, ky - 9, 10, 6, C.s3);
+      claw(g, fx + Math.cos(a2) * 6, fy + Math.sin(a2) * 6, Math.cos(a2), Math.sin(a2));
     }
-    c.fillStyle = WEED; c.fillRect(x - 30, y - 50, 60, 6);
-    if (Math.random() < 0.08) G.puff(x + rand(-50, 50), y - 10, `rgba(${CYAN},0.5)`, 20, 0.6, 30);
+    barnacles(g, x + side * 40, y - 120, 6, side > 0 ? 12 : 13);
+    for (let i = 0; i < 5; i++) strand(g, x - 70 + i * 34, y - 148, 40 + H(i, 94, side) * 60, 7, i % 2 ? C.weed1 : C.weed2, i * 3 + (side > 0 ? 1 : 2));
   }
-
-  // The Drowned Gate: two pillars of black stone, a lintel, sealed doors with three hollows (lit once the Bearer has
-  // risen: the Bell's cold cyan, the Rose's red, the Colossus's moss green), or open and breathing light at the end.
-  function drawGate(c, g, t) {
-    const st = Finale.stage(), x = g.x, y = g.y, DH = 170, PH = 215;
+  function claw(g, x, y, dx, dy) {
+    const nx = -dy, ny = dx, L = 52, W = 12;
+    poly(g, [[x + nx * W, y + ny * W], [x + dx * L + nx * 3, y + dy * L + ny * 3], [x - nx * W, y - ny * W]], C.bone1, 5);
+    poly(g, [[x - nx * W, y - ny * W], [x + dx * L + nx * 2, y + dy * L + ny * 2], [x - nx * 2, y - ny * 2]], C.bone0);
+    line(g, x + nx * 6, y + ny * 6, x + dx * L * 0.6 + nx * 4, y + dy * L * 0.6 + ny * 4, C.bone2, 3);
+  }
+  function drawHand(c, e, h, side, t) {
+    const g = Finale.gate(), k = kingRise(e), dy = kingDrop(e) + bob(t);
+    const ex = g.x + side * KG.elbow, ey = g.y + KG.elbowY + dy, hx = Math.round(h.x), hy = Math.round(h.y - h.lift);
+    const wet = lakeD(h.x - g.x, h.y - g.y) < 1 && !(Math.abs(h.x - g.x) < CW && h.y > g.y + 4);
     c.save();
-    c.fillStyle = "rgba(0,0,0,0.45)";
-    c.beginPath(); c.ellipse(x, y + 4, 220, 30, 0, 0, TAU); c.fill();
-    if (st === 4) {
-      c.fillStyle = "#1a0e06"; c.fillRect(x - 104, y - DH, 208, DH);
-    } else {
-      c.fillStyle = "#0a0f11"; c.fillRect(x - 104, y - DH, 208, DH);
-      c.fillStyle = "#141c20"; c.fillRect(x - 100, y - DH + 4, 98, DH - 8); c.fillRect(x + 2, y - DH + 4, 98, DH - 8);
-      c.strokeStyle = "#26333a"; c.lineWidth = 3;
-      for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(x - 96, y - DH + 30 + i * 38); c.lineTo(x + 96, y - DH + 30 + i * 38); c.stroke(); }
-    }
-    for (const sx of [-1, 1]) {
-      const px = x + sx * 128;
-      c.fillStyle = "#11181b"; c.fillRect(px - 26, y - PH, 52, PH);
-      c.fillStyle = "#1e2a2f"; c.fillRect(px - 26, y - PH, 18, PH);
-      c.fillStyle = "#2c3c43"; for (let i = 0; i < 4; i++) c.fillRect(px - 26, y - PH + 14 + i * 50, 52, 4);
-      c.fillStyle = "#1c3326"; c.fillRect(px - 26 + sx * 8, y - 100, 14, 70);
-    }
-    // the lintel, broken at one end, with the three hollows
-    c.fillStyle = "#0e1417"; c.fillRect(x - 175, y - PH - 34, 330, 40);
-    c.fillStyle = "#24323a"; c.fillRect(x - 175, y - PH - 34, 330, 8);
-    c.fillStyle = "#0e1417"; c.beginPath(); c.moveTo(x + 155, y - PH - 34); c.lineTo(x + 172, y - PH - 20); c.lineTo(x + 158, y - PH + 6); c.closePath(); c.fill();
-    const cols = ["90,235,245", "220,40,60", "130,190,90"];
-    for (let i = 0; i < 3; i++) {
-      const hx = x - 52 + i * 52, hy = y - PH - 14;
-      c.fillStyle = "#050809"; c.beginPath(); c.arc(hx, hy, 13, 0, TAU); c.fill();
-      if (st >= 1) { c.fillStyle = `rgba(${cols[i]},${0.6 + 0.25 * Math.sin(t * 2 + i)})`; c.beginPath(); c.arc(hx, hy, 8, 0, TAU); c.fill(); }
+    c.globalAlpha = clamp((k - 0.4) / 0.6, 0, 1);
+    if (wet) ripple(c, h.x, h.y + 10, 260, t, side > 0 ? 0.3 : 0.7);
+    else { c.fillStyle = `rgba(0,0,0,${0.25 + 0.3 * Math.max(0, 1 - h.lift / 260)})`; c.beginPath(); c.ellipse(h.x, h.y + 4, 110, 30, 0, 0, TAU); c.fill(); }
+    const x0 = Math.min(ex, hx) - 170, y0 = Math.min(ey, hy - 150) - 120;
+    pix(c, "hand" + side, x0, y0, Math.max(ex, hx) + 170 - x0, hy + 90 - y0, (q) => {
+      limb(q, ex, ey, hx + side * 22, hy - 120, 92, 72, side > 0 ? 5 : 6);
+      paintHand(q, hx, hy, side, h.lift);
+    });
+    // resting in the water, its claws sunk in it
+    if (wet && h.lift < 12) {
+      c.fillStyle = "rgba(5,14,17,0.55)";
+      c.beginPath(); c.ellipse(h.x, h.y + 18, 130, 22, 0, 0, TAU); c.fill();
+      c.strokeStyle = `rgba(${CYAN},0.35)`; c.lineWidth = 2;
+      c.beginPath(); c.ellipse(h.x, h.y + 14, 128, 20, 0, Math.PI * 1.05, Math.PI * 1.95); c.stroke();
     }
     c.restore();
+    if (Math.random() < 0.08) G.puff(hx + rand(-60, 60), hy - 40, `rgba(${CYAN},0.5)`, 20, 0.6, 30);
+  }
+
+  // The Drowned Gate: a round arch of black stone on two pillars with fire bowls, a red banner with a gold cross hanging in
+  // it, and three hollows round the arch (lit once the Bearer has risen: the Bell's cold cyan, the Rose's red, the
+  // Colossus's moss green). Sealed, black water falls in the arch like a curtain; open, it breathes golden light.
+  function openingPath(c, x, y) {
+    c.beginPath(); c.moveTo(x - 118, y); c.lineTo(x - 118, y - 150); c.arc(x, y - 150, 118, Math.PI, TAU); c.lineTo(x + 118, y); c.closePath();
+  }
+  function paintGate(g) {
+    poly(g, [[-220, -8], [220, -8], [220, 14], [-220, 14]], C.s1, 5);
+    g.fillStyle = C.s3; g.fillRect(-218, -8, 436, 4);
+    // the arch's deep jambs
+    g.fillStyle = C.s0; g.fillRect(-122, -150, 12, 150); g.fillRect(110, -150, 12, 150);
+    for (const sx of [-1, 1]) {
+      const px = sx * KG.bowl;
+      poly(g, [[px - 40, -30], [px + 40, -30], [px + 40, -6], [px - 40, -6]], C.s2, 5);
+      g.fillStyle = C.s3; g.fillRect(px - 38, -30, 76, 4);
+      poly(g, [[px - 31, -205], [px + 31, -205], [px + 31, -30], [px - 31, -30]], C.s2, 5);
+      g.fillStyle = C.s3; g.fillRect(px - 29, -205, 22, 175);
+      g.fillStyle = C.s1; g.fillRect(px + 16, -205, 13, 175);
+      g.fillStyle = C.s0; for (let y = -180; y < -30; y += 26) g.fillRect(px - 29, y, 58, 3);
+      g.fillStyle = C.gold1; g.fillRect(px - 2, -186, 4, 140);
+      poly(g, [[px, -132], [px + 9, -118], [px, -104], [px - 9, -118]], C.gold2, 3);
+      g.fillStyle = C.weed1; g.fillRect(px + sx * 14 - 5, -110, 10, 66); g.fillStyle = C.weed2; g.fillRect(px + sx * 14 - 5, -110, 4, 40);
+      poly(g, [[px - 40, -226], [px + 40, -226], [px + 40, -205], [px - 40, -205]], C.s3, 5);
+      g.fillStyle = C.s4; g.fillRect(px - 38, -226, 76, 4);
+      g.fillStyle = C.gold1; g.fillRect(px - 38, -212, 76, 3);
+      // the fire bowl
+      poly(g, [[px - 34, -246], [px + 34, -246], [px + 20, -228], [px - 20, -228]], "#2a2420", 5);
+      g.fillStyle = C.gold1; g.fillRect(px - 34, -248, 68, 5);
+      g.fillStyle = "#ff9a3a"; g.fillRect(px - 26, -252, 52, 4);
+    }
+    // the arch
+    g.lineCap = "butt";
+    g.strokeStyle = C.ink; g.lineWidth = 42; g.beginPath(); g.arc(0, -150, 135, Math.PI, TAU); g.stroke();
+    g.strokeStyle = C.s2; g.lineWidth = 34; g.beginPath(); g.arc(0, -150, 135, Math.PI, TAU); g.stroke();
+    g.strokeStyle = C.s3; g.lineWidth = 6; g.beginPath(); g.arc(0, -150, 147, Math.PI * 1.05, Math.PI * 1.6); g.stroke();
+    g.strokeStyle = C.ink; g.lineWidth = 3;
+    for (let a = Math.PI + 0.22; a < TAU - 0.1; a += 0.24) { g.beginPath(); g.moveTo(Math.cos(a) * 118, -150 + Math.sin(a) * 118); g.lineTo(Math.cos(a) * 152, -150 + Math.sin(a) * 152); g.stroke(); }
+    // the keystone, and the gold cross above it
+    poly(g, [[-22, -268], [22, -268], [28, -308], [-28, -308]], C.s3, 5);
+    poly(g, [[0, -324], [12, -312], [0, -300], [-12, -312]], C.gold1, 4);
+    oval(g, 0, -312, 4, 4, C.gold3);
+    // the three hollows
+    for (const [hx, hy] of HOLLOWS) { oval(g, hx, hy, 11, 11, C.gold0, 5); oval(g, hx, hy, 8, 8, "#030607"); }
+    // the banner, red with a gold cross, hanging in the arch
+    g.fillStyle = C.gold1; g.fillRect(-34, -258, 68, 5);
+    poly(g, [[-25, -254], [25, -254], [25, -72], [0, -92], [-25, -72]], C.red1, 5);
+    poly(g, [[-25, -254], [-17, -254], [-17, -78], [-25, -72]], C.red2);
+    poly(g, [[17, -254], [25, -254], [25, -72], [17, -79]], C.red0);
+    g.fillStyle = C.gold1; g.fillRect(-25, -246, 50, 3);
+    g.fillStyle = C.gold2; g.fillRect(-3, -226, 6, 78); g.fillRect(-17, -202, 34, 6);
+    g.fillStyle = C.gold3; g.fillRect(-3, -226, 2, 78);
+    oval(g, 0, -199, 7, 7, C.gold2, 3);
+    for (const [a, b] of [[0, -230], [0, -146], [-20, -199], [20, -199]]) poly(g, [[a, b - 5], [a + 5, b], [a, b + 5], [a - 5, b]], C.gold2);
+  }
+  function drawGate(c, g, t) {
+    const st = Finale.stage(), x = g.x, y = g.y;
+    c.save();
+    c.fillStyle = "rgba(0,0,0,0.45)";
+    c.beginPath(); c.ellipse(x, y + 8, 240, 28, 0, 0, TAU); c.fill();
+    openingPath(c, x, y); c.clip();
+    if (st === 4) { c.fillStyle = "#3a2210"; c.fillRect(x - 120, y - 270, 240, 270); }
+    else {
+      c.fillStyle = "rgba(4,14,17,0.62)"; c.fillRect(x - 120, y - 270, 240, 270);
+      c.fillStyle = `rgba(${CYAN},0.28)`;
+      for (let i = 0; i < 16; i++) {
+        const sx = x - 112 + i * 15, sp = 70 + H(i, 21) * 60, len = 30 + Math.round(H(i, 22) * 40);
+        for (let j = 0; j < 2; j++) c.fillRect(sx, Math.round(y - 270 + ((t * sp + H(i, 23 + j) * 300) % 300)), 3, len);
+      }
+    }
+    c.restore();
+    stamp(c, cached("gate", -240, -345, 480, 370, paintGate, true), x - 240, y - 345);
+    if (st >= 1) for (const [hx, hy, col] of HOLLOWS) {
+      c.fillStyle = `rgba(${col},${0.65 + 0.25 * Math.sin(t * 2 + hx)})`;
+      c.beginPath(); c.arc(x + hx, y + hy, 7, 0, TAU); c.fill();
+    }
+    for (const sx of [-1, 1]) DL.Art.drawFire(c, x + sx * KG.bowl, y - 246, 2.3, t);
+    // his health, on the gate's step
+    const e = Finale.king();
+    if (e && (e.hp < e.maxHp || Finale.isOpen(e))) {
+      const w = 300, bx = x - w / 2, by = y + 22;
+      c.fillStyle = "rgba(0,0,0,0.75)"; c.fillRect(bx - 2, by - 2, w + 4, 10);
+      c.fillStyle = Finale.isOpen(e) ? "#ffae52" : "#7ff6ff"; c.fillRect(bx, by, w * clamp(e.hp / e.maxHp, 0, 1), 6);
+      c.fillStyle = "#000";
+      for (const q of K.phases) c.fillRect(bx + w * q - 1, by - 2, 2, 10);
+    }
   }
 })(window.DL);

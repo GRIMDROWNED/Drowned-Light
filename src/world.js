@@ -55,7 +55,7 @@
       // and the wyvern's nest one for its rocks (src/wyvern.js)
       const wn = DL.Wyvern.nestSpot(), wnHere = Math.hypot(mx - wn.x, my - wn.y) < CH + DL.WYVERN.clear;
       // and the Drowned Gate's arena and black water bare ground (src/finale.js)
-      const fg = DL.Finale.gate(), fnHere = Math.hypot(mx - fg.x, my - fg.y - DL.FINALE.gate.arenaY) < CH + DL.FINALE.gate.clear + 300;
+      const fg = DL.Finale.gate(), fnHere = Math.hypot(mx - fg.x, my - fg.y - DL.FINALE.gate.arenaY) < CH + DL.FINALE.gate.clear + 900;
       const n = Math.round(DL.ZONES[zi].density * D.density * (0.7 + DL.hash(cx, cy, 5) * 0.6));
       for (let i = 0; i < n; i++) {
         const x = (cx + DL.hash(cx, cy, i * 3 + 1)) * CH, y = (cy + DL.hash(cx, cy, i * 3 + 2)) * CH;

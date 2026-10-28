@@ -447,6 +447,8 @@
                  of rocks and trees; within `foundR` px a knight has found it. The arena is a ring of `arenaR` px whose
                  heart lies `arenaY` px south of the gate; the Bearer stops `plantY` px south of the gate. In the arena the
                  camera pulls back to show at least `view` px top to bottom (and `viewW` across), and leans toward the King.
+                 The gate stands in a lake of black water (`lake`: a rounded box centred `cy` px off the gate, `rx` by `ry`
+                 px); a stone causeway `causeway` px either side of the middle runs out of it to the gate. Nobody wades it.
        march     begun from the camp by day. The Bearer walks `speed` px/s (`wade` × in water), only while a knight is within
                  `leash` px. It has `hp` health (× the party), firelight `light` px round it, and every `pulseEvery` s burns
                  the Drowned within `pulseR` px for `pulseDmg` (and sets them alight). By day, every `bandEvery` s while it
@@ -467,13 +469,14 @@
                    call   `n` (+1 per phase) Drowned climb out of the black water and go for the Bearer;
                    rain   from phase 2: black water rains on `n` spots round the knights, adding `corrupt` corruption. */
   DL.FINALE = {
-    gate: { dist: 4900, clear: 560, foundR: 650, arenaR: 420, arenaY: 250, plantY: 380, view: 1150, viewW: 760 },
+    gate: { dist: 4900, clear: 560, foundR: 650, arenaR: 420, arenaY: 250, plantY: 380, view: 1450, viewW: 1000,
+      lake: { cy: -150, rx: 820, ry: 580 }, causeway: 200 },
     speed: 24, wade: 0.6, leash: 340, hp: 1500, light: 260, restLight: 330, pulseEvery: 3, pulseR: 95, pulseDmg: 18,
     bandEvery: 15, bandN: 3, bandR: 440, braziers: 4, brazierR: 160, waveEvery: 11, waveN: 4, campR: 750, dawnHeal: 0.4,
     king: {
       rise: 3.5, charge: 16, hitCharge: 0.012, open: 9, phases: [0.66, 0.33], rate: 1.25, forget: 1500, spawn: 1000,
       slam: { first: 3, every: 4.2, windup: 1.4, r: 92, dmg: 1.3, bearer: 70 },
-      sweep: { first: 8, every: 11, windup: 1.7, n: 13, step: 62, r: 40, dmg: 1, bearer: 90 },
+      sweep: { first: 8, every: 11, windup: 1.7, n: 9, step: 58, r: 40, dmg: 1, bearer: 90 },
       call: { first: 6, every: 15, n: 4 },
       rain: { first: 4, every: 9, windup: 1.3, n: 6, r: 48, dmg: 0.5, corrupt: 10 },
     },
