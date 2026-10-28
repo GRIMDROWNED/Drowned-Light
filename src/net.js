@@ -344,6 +344,8 @@
       // companion levels, Abyss trophies, the Great Siege, outposts [grove x, grove y, x, y, lit, hp], the Rose Heart's briar
       sm: G.save.summons, tr: G.save.trophies, gs: DL.Siege.on ? 1 : 0,
       op: DL.Outposts.rows(), rh: DL.Trophies.rows(),
+      // the finale: [stage, the Fire Bearer, the Sunken King's heart, his hands' moves, the flame it hurls] (src/finale.js)
+      fn: DL.Finale.snap(),
       ob: dirty,
     };
   }
@@ -516,6 +518,7 @@
     DL.Siege.on = !!m.gs;
     DL.Outposts.apply(m.op);
     DL.Trophies.apply(m.rh);
+    DL.Finale.applySnap(m.fn);
 
     // the host's knight and the other friends': keep the same objects so they glide and animate
     const known = new Map(G.allies.map((a) => [a.id, a]));
@@ -613,6 +616,7 @@
     DL.Abigail.guest(dt, k);
     DL.Fred.guest(dt, k);
     DL.Wyvern.guest(dt, k);
+    DL.Finale.guest(dt, k);
   };
 
   // Lights, walls and torches the guest makes become the host's; the guest sees them come back in the next snapshot.

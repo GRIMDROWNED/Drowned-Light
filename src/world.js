@@ -54,6 +54,8 @@
       const fr = DL.Fred.ringSpot(), frHere = Math.hypot(mx - fr.x, my - fr.y) < CH + DL.FRED.clear;
       // and the wyvern's nest one for its rocks (src/wyvern.js)
       const wn = DL.Wyvern.nestSpot(), wnHere = Math.hypot(mx - wn.x, my - wn.y) < CH + DL.WYVERN.clear;
+      // and the Drowned Gate's arena and black water bare ground (src/finale.js)
+      const fg = DL.Finale.gate(), fnHere = Math.hypot(mx - fg.x, my - fg.y - DL.FINALE.gate.arenaY) < CH + DL.FINALE.gate.clear + 300;
       const n = Math.round(DL.ZONES[zi].density * D.density * (0.7 + DL.hash(cx, cy, 5) * 0.6));
       for (let i = 0; i < n; i++) {
         const x = (cx + DL.hash(cx, cy, i * 3 + 1)) * CH, y = (cy + DL.hash(cx, cy, i * 3 + 2)) * CH;
@@ -74,6 +76,7 @@
         if (rlHere && DL.Rose.clears(x, y)) continue;
         if (frHere && DL.Fred.clears(x, y)) continue;
         if (wnHere && DL.Wyvern.clears(x, y)) continue;
+        if (fnHere && DL.Finale.clears(x, y)) continue;
         objs.push(this.makeObj(type, x, y, `${cx},${cy},${i}`, ozi, DL.hash(cx, cy, i * 5 + 4)));
       }
       // The blooms of this chunk's grove that stand inside it.
@@ -85,7 +88,7 @@
         if (Math.floor(g.x / CH) === cx && Math.floor(g.y / CH) === cy) objs.push(this.makeObj(g.type, g.x, g.y, `${cx},${cy},grave${g.i}`, zi, (g.i * 0.37) % 1));
       }
       // Rare Mother Roots in the Mire and deeper.
-      if (zi >= 2 && DL.hash(cx, cy, 77) < 0.06 * D.bloom && !this.isWater(mx, my) && !denHere && !gsHere && !frHere && !DL.Cave.clears(mx, my)) objs.push(this.makeObj("root", mx, my, `${cx},${cy},root`, zi, 0.5));
+      if (zi >= 2 && DL.hash(cx, cy, 77) < 0.06 * D.bloom && !this.isWater(mx, my) && !denHere && !gsHere && !frHere && !fnHere && !DL.Cave.clears(mx, my)) objs.push(this.makeObj("root", mx, my, `${cx},${cy},root`, zi, 0.5));
       return objs;
     },
 

@@ -385,7 +385,7 @@
     for (const w of G.walls) {
       w.t -= dt;
       for (const e of G.enemies) {
-        if (e.rise > 0 || e.removed) continue;
+        if (e.rise > 0 || e.removed || e.def.king) continue; // the Sunken King is far too big to fence in (src/finale.js)
         const s = segDist(e.x, e.y, w), min = e.def.radius + 8;
         if (s.d < min) {
           const nx = (e.x - s.qx) / (s.d || 1), ny = (e.y - s.qy) / (s.d || 1);
@@ -403,7 +403,7 @@
     for (const z of G.lightZones) {
       if (z.fire) {
         for (const e of G.enemies) {
-          if (e.rise > 0 || e.removed || dist(z.x, z.y, e.x, e.y) > z.r * 0.7) continue;
+          if (e.rise > 0 || e.removed || e.def.king || dist(z.x, z.y, e.x, e.y) > z.r * 0.7) continue;
           e.hp -= z.dps * dt;
           if (e.hp <= 0) G.kill(e);
         }

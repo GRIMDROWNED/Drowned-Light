@@ -117,6 +117,10 @@
     // The mother wyvern: she hunts whoever stole one of her eggs, until one of them is dead (src/wyvern.js). Her moves: DL.WYVERN.
     wyvern: { name: "The Mother Wyvern", hp: 820, speed: 74, dmg: 20, range: 62, windup: 0.55, cd: 1.6, scale: 1,
       radius: 22, mass: 9, armor: 0.1, boss: true, wyvern: true, fly: true, shadow: 34, barY: 120, barW: 60, drop: { iron: 2, pearl: 2, resin: 2 } },
+    // The Sunken King: the last foe, risen at the Drowned Gate when the Fire Bearer reaches it (src/finale.js). Blades can't
+    // hurt him until the Bearer's flame burns his heart open. His moves: DL.FINALE.king.
+    king: { name: "The Sunken King", hp: 900, speed: 0, dmg: 20, range: 0, windup: 1, cd: 99, scale: 1,
+      radius: 46, mass: 1e6, boss: true, king: true, drop: {} },
     self: { name: "Your Drowned Self", hp: 200, speed: 70, dmg: 15, range: 44, windup: 0.5, cd: 1.3, scale: 1.05,
       radius: 14, mass: 2, boss: true, drop: {} },
   };
@@ -433,6 +437,44 @@
     lashKb: 260, lashShow: 0.4, phase2: 0.5, fast: 1.2, rate: 1.35, respawnDays: 4, maxVines: 30,
     waltz: { first: 5, every: 9, windup: 0.9, spin: 1.3, r: 170, drift: 0.6, hits: 3, dmg: 0.45, kb: 240 },
     briar: { first: 3, every: 11, windup: 0.6, delay: 0.5, reach: 480, n: 5, step: 58, r: 34, dmg: 0.7, life: 4, sting: 0.12 },
+  };
+  /* The finale (src/finale.js): Kindle becomes the Fire Bearer and carries the last light of the marsh to the Drowned Gate.
+     Nothing of it shows until it's earned: Central Flame 5, the Starved Bell and the Deadly Rose slain, Derek won from the
+     Colossus, and your Kindle lit. At the next dawn Kindle drinks from the Central Flame and rises as the Bearer.
+       gate      the Drowned Gate stands `dist` px out (±250) in the north half of the Abyss, on dry land, kept `clear` px clear
+                 of rocks and trees; within `foundR` px a knight has found it. The arena is a ring of `arenaR` px whose
+                 heart lies `arenaY` px south of the gate; the Bearer stops `plantY` px south of the gate. In the arena the
+                 camera pulls back to show at least `view` px top to bottom (and `viewW` across), and leans toward the King.
+       march     begun from the camp by day. The Bearer walks `speed` px/s (`wade` × in water), only while a knight is within
+                 `leash` px. It has `hp` health (× the party), firelight `light` px round it, and every `pulseEvery` s burns
+                 the Drowned within `pulseR` px for `pulseDmg` (and sets them alight). By day, every `bandEvery` s while it
+                 walks, `bandN` (+1 per zone past the Mire) Drowned rise from the mud `bandR` px off and come for it.
+       night     at dusk it plants its feet wherever it is (its last camp, where it falls back to) and lights `braziers`
+                 braziers `brazierR` px round it; its light grows to `restLight`. Every `waveEvery` s a wave of `waveN`
+                 (+ the day, like the camp's) comes for it from two sides, while a knight is within `campR` px.
+                 At dawn it heals `dawnHeal` of its health. The Great Siege doesn't come while the Bearer is out.
+       falling   at 0 health it gutters and falls back to its last camp (or the Central Flame), and rekindles at dawn.
+       king      the Sunken King rises `rise` s after the Bearer plants at the gate. While the Bearer stands it fills its
+                 charge over `charge` s (each blow it takes knocks off `hitCharge`), then hurls its flame: the King's heart
+                 burns open for `open` s, the only time he can be hurt. At `phases` of his health the burning ends and he
+                 grows angrier (his moves come `rate` × as often per phase). He sinks back, whole, if every knight
+                 goes `forget` px off. His moves, each on its own timer:
+                   slam   a great hand falls on a knight (or the Bearer): `r` px, after `windup` s, `dmg` × his damage, and
+                          `bearer` damage to the Bearer if it's under it;
+                   sweep  his arm sweeps a lane across the arena at a knight's height: `n` spots `step` px apart;
+                   call   `n` (+1 per phase) Drowned climb out of the black water and go for the Bearer;
+                   rain   from phase 2: black water rains on `n` spots round the knights, adding `corrupt` corruption. */
+  DL.FINALE = {
+    gate: { dist: 4900, clear: 560, foundR: 650, arenaR: 420, arenaY: 250, plantY: 380, view: 1150, viewW: 760 },
+    speed: 24, wade: 0.6, leash: 340, hp: 1500, light: 260, restLight: 330, pulseEvery: 3, pulseR: 95, pulseDmg: 18,
+    bandEvery: 15, bandN: 3, bandR: 440, braziers: 4, brazierR: 160, waveEvery: 11, waveN: 4, campR: 750, dawnHeal: 0.4,
+    king: {
+      rise: 3.5, charge: 16, hitCharge: 0.012, open: 9, phases: [0.66, 0.33], rate: 1.25, forget: 1500, spawn: 1000,
+      slam: { first: 3, every: 4.2, windup: 1.4, r: 92, dmg: 1.3, bearer: 70 },
+      sweep: { first: 8, every: 11, windup: 1.7, n: 13, step: 62, r: 40, dmg: 1, bearer: 90 },
+      call: { first: 6, every: 15, n: 4 },
+      rain: { first: 4, every: 9, windup: 1.3, n: 6, r: 48, dmg: 0.5, corrupt: 10 },
+    },
   };
   /* Derek, the stone golem familiar (src/golem.js): won in Derek's Hollow (DL.CAVE), one per knight.
      He can't be hurt. Every `buildCd` seconds, when a Drowned comes within `trigger` px of his knight,
