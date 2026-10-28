@@ -95,7 +95,7 @@
     Object.assign(walking("pikeWarden", [48, 103], [33, 103], [31, 103]), { path: "assets/sprites/pike-warden/", keys: stages("pikeWarden") }),
     Object.assign(walking("ashenArbalist", [57, 81], [35, 85], [42, 86]), { path: "assets/sprites/ashen-arbalist/", keys: stages("ashenArbalist") }),
     Object.assign(walking("relicBearer", [57, 105], [39, 101], [40, 101]), { path: "assets/sprites/relic-bearer/", keys: stages("relicBearer") }),
-    Object.assign(walking("flameBastion", [53, 86], [37, 86], [34, 86]), { path: "assets/sprites/flame-bastion/", keys: stages("flameBastion") }),
+    Object.assign(walking("flameBastion", [58, 97], [39, 97], [33, 93]), { path: "assets/sprites/flame-bastion/", keys: stages("flameBastion") }),
     reaper(),
     // the Bone Hound summon: the same 12 poses and walk sheets, its side walk a four-legged gallop
     Object.assign(walking("boneHound", [55, 55], [27, 64], [26, 66]), { path: "assets/sprites/bone-hound/", keys: { boneHound: [0, false] } }),
@@ -246,6 +246,8 @@
     "blackPearl11", "blackPearl12", "blackPearl13", "blackPearl21", "blackPearl22", "blackPearl23", "blackPearl31", "blackPearl32", "blackPearl33", "resBlack",
     // the Chain Reaper's flying sickle, chain and its weight, Violet Snare's ring and the coil on a snared Drowned (src/render.js)
     "reaperSickle1", "reaperSickle2", "reaperSickle3", "reaperSickle4", "reaperChain", "reaperWeight", "reaperSnare", "reaperSnared",
+    // the Flame Bastion's drawn fire wall, four flickering frames (src/render.js)
+    "wallFire1", "wallFire2", "wallFire3", "wallFire4",
     // the finale (src/finale.js): the Sunken King's body (still, heart open, roaring, dying), his hand, the Drowned Gate
     "fnKingStill", "fnKingOpen", "fnKingRoar", "fnKingDying", "fnHandRest", "fnHandRaised", "fnHandSlam", "fnHandSweep", "fnGate1", "fnGate2", "fnGate3"];
   const PROPS = {
