@@ -333,10 +333,18 @@
           G.walls.push({ x1: p.x + Math.cos(a0) * R, y1: p.y + Math.sin(a0) * R, x2: p.x + Math.cos(a1) * R, y2: p.y + Math.sin(a1) * R, t: dur, max: dur, dps });
         }
       } else {
-        const ux = Math.cos(p.angle), uy = Math.sin(p.angle), cx = p.x + ux * 55, cy = p.y + uy * 55, h = ab.length / 2;
+        // The eruption: everything between you and where the wall rises is scorched, set alight and hurled back.
+        const ang = p.aim != null && G.save.attackMode === "manual" ? p.aim : p.angle;
+        const ux = Math.cos(ang), uy = Math.sin(ang), cx = p.x + ux * ab.reach, cy = p.y + uy * ab.reach, h = ab.length / 2;
+        for (const e of G.enemies.slice()) {
+          if (e.rise > 0 || e.removed) continue;
+          const rx = e.x - p.x, ry = e.y - p.y, along = rx * ux + ry * uy, perp = Math.abs(rx * uy - ry * ux);
+          if (along > -10 && along < ab.reach + 24 + e.def.radius && perp < h + e.def.radius) G.hitEnemy(e, ab.dmg * pw, ang, 280, ab.burn * pw);
+        }
+        G.effects.push({ type: "erupt", x: p.x, y: p.y, ux, uy, reach: ab.reach, h, t: 0, max: 0.3 });
         G.walls.push({ x1: cx - uy * h, y1: cy + ux * h, x2: cx + uy * h, y2: cy - ux * h, t: dur, max: dur, dps });
       }
-      G.camera.shake = 5;
+      G.camera.shake = 8;
       sfx("torch");
     }
   };
@@ -392,12 +400,18 @@
           e.x = s.qx + nx * min; e.y = s.qy + ny * min;
           e.hp -= w.dps * dt;
           e.slow = Math.max(e.slow, 0.3);
+          if (!(e.burn > 0)) { e.burn = 2; e.burnDps = w.dps * 0.4; } // whatever touches it catches fire
           if (Math.random() < 0.05) G.spark(e.x, e.y - 20, "255,130,50", 40);
           if (e.hp <= 0) G.kill(e);
         }
       }
     }
     G.walls = G.walls.filter((w) => w.t > 0);
+    // embers rising off the walls
+    for (const w of G.walls) if (Math.random() < dt * 14) {
+      const u = Math.random();
+      G.effects.push({ type: "spark", x: w.x1 + (w.x2 - w.x1) * u, y: w.y1 + (w.y2 - w.y1) * u - rand(10, 30), vx: rand(-12, 12), vy: rand(-70, -35), t: 0, max: rand(0.6, 1.2), col: rand(0, 1) < 0.5 ? "255,190,90" : "255,120,40", size: rand(1.5, 3) });
+    }
 
     // Fire trails and healing sanctuaries.
     for (const z of G.lightZones) {

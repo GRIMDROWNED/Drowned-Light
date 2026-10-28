@@ -158,6 +158,7 @@
     }
 
     drawReaperGround(c, G, t); // the Chain Reaper's Violet Snare and Violet Gyre rings
+    drawWallCracks(c, G, t); // the molten cracks under the Flame Bastion's walls
 
     /* y-sorted scene */
     const list = [];
@@ -175,11 +176,15 @@
     DL.Fred.push(list, c, t, view);
     DL.Wyvern.push(list, c, t, view);
     for (const tr of G.torches) list.push({ y: tr.y, f: () => drawTorch(c, tr, t) });
+    // Flame Bastion walls: tall flames that shoot up from the middle outward as the wall rises, and sink as it dies
     for (const w of G.walls || []) {
-      const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1), n = Math.max(2, Math.round(len / 14)), f = Math.min(1, w.t / 1);
+      const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1), n = Math.max(2, Math.round(len / 12)), f = Math.min(1, w.t / 1);
+      const up = Math.min(1, (w.max - w.t) / 0.35);
       for (let i = 0; i <= n; i++) {
-        const x = w.x1 + ((w.x2 - w.x1) * i) / n, y = w.y1 + ((w.y2 - w.y1) * i) / n;
-        list.push({ y, f: () => { c.fillStyle = "rgba(40,16,6,0.55)"; c.fillRect(x - 7, y - 2, 14, 4); Art.drawFire(c, x, y, (1 + 0.25 * Math.sin(t * 9 + i)) * f, t + i); } });
+        const u = i / n, x = w.x1 + (w.x2 - w.x1) * u, y = w.y1 + (w.y2 - w.y1) * u;
+        const g = Math.max(0, Math.min(1, up * 2 - Math.abs(u - 0.5) * 2)); // the middle first, then out to the ends
+        const size = (1.7 + 0.35 * Math.sin(t * 9 + i * 1.7) + (i % 2) * 0.3) * f * g;
+        if (size > 0.05) list.push({ y, f: () => Art.drawFire(c, x, y, size, t + i) });
       }
     }
     for (const z of G.lightZones) if (z.fire) list.push({ y: z.y, f: () => Art.drawFire(c, z.x, z.y, 0.7 * Math.min(1, z.t), t + z.x) });
@@ -240,6 +245,13 @@
         const a = 1 - f.t / f.max;
         c.fillStyle = `rgba(${f.col},${a})`;
         c.fillRect(f.x - f.size / 2, f.y - f.size / 2, f.size, f.size);
+      } else if (f.type === "erupt") {
+        // the Flame Bastion's eruption: a front of fire racing from the knight to where the wall rises
+        const k = f.t / f.max, d = f.reach * Math.min(1, k * 1.3), n = Math.max(3, Math.round(f.h / 14));
+        for (let i = -n; i <= n; i++) {
+          const w = (i / n) * f.h * Math.min(1, 0.3 + k), x = f.x + f.ux * d - f.uy * w, y = f.y + f.uy * d + f.ux * w;
+          Art.drawFire(c, x, y, (2.2 - k * 1.2) * (1 - Math.abs(i / n) * 0.4), t + i);
+        }
       } else if (f.type === "ring") {
         const k = f.t / f.max, r = f.r0 + (f.r1 - f.r0) * Math.sqrt(k);
         c.strokeStyle = `rgba(${f.col},${(1 - k) * 0.9})`;
@@ -850,6 +862,21 @@
         c.beginPath(); c.arc(0, 0, 9, 0.4, Math.PI * 1.6); c.stroke();
       }
       c.restore();
+    }
+  }
+
+  // The molten crack a Flame Bastion wall stands in, glowing and pulsing, burning out as the wall dies.
+  function drawWallCracks(c, G, t) {
+    for (const w of G.walls || []) {
+      const f = Math.min(1, w.t / 1) * Math.min(1, (w.max - w.t) / 0.2), pulse = 0.8 + 0.2 * Math.sin(t * 6 + w.x1);
+      c.lineCap = "round";
+      c.strokeStyle = `rgba(30,8,2,${0.7 * f})`; c.lineWidth = 12;
+      c.beginPath(); c.moveTo(w.x1, w.y1); c.lineTo(w.x2, w.y2); c.stroke();
+      c.strokeStyle = `rgba(230,70,20,${0.85 * f * pulse})`; c.lineWidth = 6;
+      c.beginPath(); c.moveTo(w.x1, w.y1); c.lineTo(w.x2, w.y2); c.stroke();
+      c.strokeStyle = `rgba(255,220,140,${0.9 * f * pulse})`; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(w.x1, w.y1); c.lineTo(w.x2, w.y2); c.stroke();
+      c.lineCap = "butt";
     }
   }
 
