@@ -5,7 +5,7 @@ so poses keep their relative size."""
 import os, sys
 from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
-from cutlib import cut_keyed, cut_sheet, contact, match_colors, mirror_legs, recolor_frames, split_grid
+from cutlib import cool_violet, cut_keyed, cut_sheet, contact, match_colors, mirror_legs, recolor_frames, split_grid
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files/art-prompts/returned'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites')
@@ -131,6 +131,8 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
 KEY_OPTS = {'chain-reaper': {'key': (0, 255, 0)}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+# Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
+RECOLOR = {'chain-reaper': cool_violet}
 HOUND_H = 60
 EMBER_H = 136  # the Ember Hound (third form), cut at res 4: drawn 34 px tall with its flames, a little bigger than the hound
 WARG_H = 152  # the Grave Warg (last form), cut at res 4: drawn 38 px tall with its horns and mist, a quarter bigger than the hound
@@ -724,7 +726,7 @@ for name, (folder, ref, target, fringe, files) in SETS.items():
         out, opt = out if isinstance(out, tuple) else (out, {})
         img, fr = Image.open(p), opt.get('fringe', fringe)
         kk = opt['height'] / (cut_keyed(img, 1, fringe=fr, **ko).height - 2) if 'height' in opt else k
-        rc = match_colors(Image.open(os.path.join(SRC, opt['match']))) if 'match' in opt else None
+        rc = match_colors(Image.open(os.path.join(SRC, opt['match']))) if 'match' in opt else RECOLOR.get(name)
         im = cut_keyed(img, kk, fringe=fr, colors=64 if rc else 32, recolor=rc, **ko)
         dst = os.path.join(OUT, folder, out + '.png')
         os.makedirs(os.path.dirname(dst), exist_ok=True)
@@ -747,6 +749,7 @@ for name, sheets in SHEETS.items():
         frames, feet = cut_sheet(img, cols, rows, height, **KEY_OPTS.get(name, {}))
         if name in SHEET_MATCH:
             frames = recolor_frames(frames, match_colors(Image.open(os.path.join(SRC, SHEET_MATCH[name]))))
+        if name in RECOLOR: frames = recolor_frames(frames, RECOLOR[name])
         order = FRAME_ORDER.get((name, prefix))
         if order:
             frames = [frames[i - 1] if i > 0 else mirror_legs(frames[-i - 1], *MIRROR_AT.get(name, ())) for i in order]
