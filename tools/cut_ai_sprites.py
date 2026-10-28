@@ -5,7 +5,7 @@ so poses keep their relative size."""
 import os, sys
 from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
-from cutlib import cut_keyed, cut_sheet, contact, match_colors, mirror_legs, recolor_frames, split_grid
+from cutlib import cool_violet, cut_keyed, cut_sheet, contact, match_colors, mirror_legs, recolor_frames, split_grid
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files/art-prompts/returned'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites')
@@ -97,6 +97,11 @@ GRIDS = {
     'deadly-rose/poses-a.png': (3, 2, POSES_A),
     'deadly-rose/poses-b.png': (3, 2, POSES_B),
     # the Colossus's sheets: three side crawl frames, then a front stomp (fists up, fists down) and its collapse
+    # the Chain Reaper (kit 06), drawn on green: the throw's chain and sickle are cut off at the fist (see CELL_CROP),
+    # since the game draws the flying sickle itself; attackC is the chain whirled overhead (Violet Snare's cast)
+    'chain-reaper/poses-a.png': (3, 2, POSES_A),
+    'chain-reaper/poses-b.png': (3, 2, POSES_B),
+    'chain-reaper/dash.png': (2, 1, ['13_dash', '14_dashB']),
     'colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '11_hurt']),
     'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
 }
@@ -112,6 +117,10 @@ CELL_SCALE.update({'bone-hound-f3/' + n: 1.18 for n in POSES_B})
 # Pebble Derek's second sheet came out bigger than his first
 CELL_SCALE.update({'derek-f0/' + n: 0.88 for n in POSES_B})
 
+# Cells cut off at a share of their width (key colour painted over the rest): the Chain Reaper's throw keeps
+# its arm and loses the chain and sickle stretched out ahead, which the game draws flying (src/render.js).
+CELL_CROP = {'chain-reaper/09_attackB': 0.58}
+
 # Cells redrawn on their own after a sheet came back: cell -> (redrawn image, cell whose figure height it takes).
 # The redraw is shrunk to that height before it is cut, so it matches the rest of its sheet.
 CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-bell/08_attackA': ('bell-rear.png', '03_right'),
@@ -121,7 +130,9 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
-KEY_OPTS = {'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+KEY_OPTS = {'chain-reaper': {'key': (0, 255, 0)}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+# Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
+RECOLOR = {'chain-reaper': cool_violet}
 HOUND_H = 60
 EMBER_H = 136  # the Ember Hound (third form), cut at res 4: drawn 34 px tall with its flames, a little bigger than the hound
 WARG_H = 152  # the Grave Warg (last form), cut at res 4: drawn 38 px tall with its horns and mist, a quarter bigger than the hound
@@ -203,8 +214,8 @@ SETS = {
     'pike-warden': ('pike-warden', 'pike-warden/01_front.png', 104, 1, twelve('pike-warden', TWELVE_FILES)),
     'ashen-arbalist': ('ashen-arbalist', 'ashen-arbalist/01_front.png', 83, 1, twelve('ashen-arbalist', TWELVE_FILES)),
     'relic-bearer': ('relic-bearer', 'relic-bearer/01_front.png', 98, 1, twelve('relic-bearer', TWELVE_FILES)),
-    # the heaviest kit (bulk 1 in src/units.js), a little bigger than the Lantern Knight
-    'flame-bastion': ('flame-bastion', 'flame-bastion/01_front.png', 84, 1, twelve('flame-bastion', TWELVE_FILES)),
+    # the heaviest kit (bulk 1 in src/units.js): broader than the others, his horns and big sword make up the height
+    'flame-bastion': ('flame-bastion', 'flame-bastion/01_front.png', 94, 1, twelve('flame-bastion', TWELVE_FILES)),
     # the Bone Hound summon: a dog, so shorter than a knight (its spines and raised tail make up the height)
     'bone-hound': ('bone-hound', 'bone-hound/01_front.png', HOUND_H, 1, twelve('bone-hound', TWELVE_FILES)),
     'bone-hound-f2': ('bone-hound-f2', 'bone-hound-f2/01_front.png', EMBER_H, 1, twelve('bone-hound-f2', TWELVE_FILES)),
@@ -274,6 +285,10 @@ SETS = {
         'mother/11_hurt.png': 'side/hurt', 'mother/12_death.png': 'side/death'}),
     'starved-bell': ('starved-bell', 'starved-bell/01_front.png', BELL_H, 1, twelve('starved-bell', TWELVE_FILES)),
     'deadly-rose': ('deadly-rose', 'deadly-rose/01_front.png', ROSE_H, 1, twelve('deadly-rose', TWELVE_FILES)),
+    # the Chain Reaper (kit 06): slimmer than the Lantern Knight, his hood about as high; the dash sheet came out
+    # at a bigger scale, so its lunge gets its own height (about the throw's crouch)
+    'chain-reaper': ('chain-reaper', 'chain-reaper/01_front.png', 84, 1, dict(twelve('chain-reaper', TWELVE_FILES), **{
+        'chain-reaper/13_dash.png': ('side/dash', {'height': 70})})),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
         'colossus/01_front.png': 'front', 'colossus/02_back.png': 'back', 'colossus/03_right.png': 'right',
         'colossus/08_attackA.png': 'side/attackA', 'colossus/09_attackB.png': 'side/attackB', 'colossus/11_hurt.png': 'side/hurt',
@@ -335,6 +350,11 @@ SHEETS = {
         ('pike-warden/walk-front-4.png', 4, 1, 101, 'walkF'),
         ('pike-warden/walk-back-4.png', 4, 1, 101, 'walkB'),
     ],
+    'chain-reaper': [
+        ('chain-reaper/walk-side-4.png', 4, 1, 78, 'side/walk'),
+        ('chain-reaper/walk-front-4.png', 4, 1, 84, 'walkF'),
+        ('chain-reaper/walk-back-4.png', 4, 1, 84, 'walkB'),
+    ],
     'ashen-arbalist': [
         ('ashen-arbalist/walk-side-4.png', 4, 1, 79, 'side/walk'),
         ('ashen-arbalist/walk-front-4.png', 4, 1, 83, 'walkF'),
@@ -346,9 +366,9 @@ SHEETS = {
         ('relic-bearer/walk-back-4.png', 4, 1, 99, 'walkB'),
     ],
     'flame-bastion': [
-        ('flame-bastion/walk-side-4.png', 4, 1, 82, 'side/walk'),
-        ('flame-bastion/walk-front-4.png', 4, 1, 84, 'walkF'),
-        ('flame-bastion/walk-back-4.png', 4, 1, 84, 'walkB'),
+        ('flame-bastion/walk-side-4.png', 4, 1, 92, 'side/walk'),
+        ('flame-bastion/walk-front-4.png', 4, 1, 94, 'walkF'),
+        ('flame-bastion/walk-back-4.png', 4, 1, 90, 'walkB'),
     ],
     # the side gallop's first frame is stretched out low, so it is much shorter than the standing pose
     'bone-hound': [
@@ -488,11 +508,11 @@ FRAME_ORDER = {('lantern-knight', 'walkB'): [2, 1, 4, -1], ('mire-stalker', 'wal
                # every frame steps with the same foot
                ('pike-warden', 'walkF'): [1, 3, -1, 3],
                # frames 2 and 4 both lift the same foot
-               ('relic-bearer', 'walkF'): [1, 2, 3, -2], ('flame-bastion', 'walkB'): [1, 2, 3, -2]}
+               ('relic-bearer', 'walkF'): [1, 2, 3, -2]}
 
 # Where to mirror legs when the feet can't be found from the bottom rows (one foot lifted, a staff butt
 # beside them): character -> (legs share, half width, centre x) for mirror_legs.
-MIRROR_AT = {'relic-bearer': (0.32, 10, 39), 'flame-bastion': (0.32, 10, 36)}
+MIRROR_AT = {'relic-bearer': (0.32, 10, 39)}
 
 # Walk sheets rendered in other colours than the character's first batch: recolour to this image.
 SHEET_MATCH = {'tide-archer': 'tide-archer/01_front.png'}
@@ -568,6 +588,14 @@ PROP_GRIDS = {
     # three Black Pearl clams (the Abyss resource), each whole -> prised open -> broken, and its pickup
     'world/black-pearl.png': (3, 3, ['blackPearl11', 'blackPearl12', 'blackPearl13', 'blackPearl21', 'blackPearl22', 'blackPearl23', 'blackPearl31', 'blackPearl32', 'blackPearl33']),
     'world/res-black-pearl.png': (1, 1, ['resBlack']),
+    # the Chain Reaper's pieces (src/kits.js, drawn in src/render.js), on green: the flying sickle a quarter turn a frame,
+    # a run of chain that repeats end to end and the weight on its end, Violet Snare's ring, the coil on a snared Drowned
+    'chain-reaper/sickle-spin.png': (4, 1, ['reaperSickle1', 'reaperSickle2', 'reaperSickle3', 'reaperSickle4']),
+    'chain-reaper/chain-weight.png': (2, 1, ['reaperChain', 'reaperWeight']),
+    'chain-reaper/snare-ring.png': (1, 1, ['reaperSnare']),
+    'chain-reaper/snared.png': (1, 1, ['reaperSnared']),
+    # the Flame Bastion's fire wall (src/kits.js, drawn in src/render.js): one section of the wall flickering, lined up along it
+    'flame-bastion/fire-wall.png': (4, 1, ['wallFire1', 'wallFire2', 'wallFire3', 'wallFire4']),
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
@@ -631,6 +659,13 @@ PROP_SAME.update({'roost1': 'roost3', 'roost2': 'roost3', 'wyvNestEmpty': 'wyvNe
 PROP_SAME.update({'kennel1': 'kennel3', 'kennel2': 'kennel3', 'workshop1': 'workshop3', 'workshop2': 'workshop3', 'shrine1': 'shrine3', 'shrine2': 'shrine3', 'toadstool1': 'toadstool3', 'toadstool2': 'toadstool3', 'fairyRingWilt': 'fairyRing', 'glowcap1': 'glowcap2', 'glowcap3': 'glowcap2'})
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
              'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
+PROP_HEIGHT.update({'reaperSickle1': 30, 'reaperChain': 6, 'reaperWeight': 14})  # the sickle as big as in his hand; the chain's links 3 px across
+PROP_WIDTH.update({'reaperSnare': 230, 'reaperSnared': 36})  # the ring as wide as the snare reaches (DL.KITS.chainReaper.ability.radius); the coil a Drowned's ankles
+PROP_SAME.update({'reaperSickle2': 'reaperSickle1', 'reaperSickle3': 'reaperSickle1', 'reaperSickle4': 'reaperSickle1'})
+PROP_WIDTH['wallFire1'] = 84  # a section about half the wall's 170 px, so they overlap along it
+PROP_SAME.update({'wallFire2': 'wallFire1', 'wallFire3': 'wallFire1', 'wallFire4': 'wallFire1'})
+# Prop sheets drawn on another key colour than magenta, by folder.
+PROP_KEY = {'chain-reaper': (0, 255, 0)}
 PROP_OUT = 'props'
 # Renders where the magenta background tinted the art pink (the trees' moss): pull it back out (see despill).
 PROP_DESPILL = {'swampTree1', 'swampTree2', 'swampTree3'}
@@ -660,11 +695,14 @@ def regrid(img, cols, rows):
 only = sys.argv[2:]  # optional character names to cut
 for sheet, (cols, rows, names) in GRIDS.items():
     p = os.path.join(SRC, sheet)
-    if not os.path.exists(p): continue
+    if not os.path.exists(p) or (only and os.path.dirname(sheet) not in only): continue
     ko = KEY_OPTS.get(os.path.dirname(sheet), {})
-    for n, cell in zip(names, split_grid(open_sheet(sheet), cols, rows, tol=ko.get('tol', 120))):
+    key = ko.get('key', (255, 0, 255))
+    for n, cell in zip(names, split_grid(open_sheet(sheet), cols, rows, key=key, tol=ko.get('tol', 120))):
         f = CELL_SCALE.get(os.path.dirname(sheet) + '/' + n)
         if f: cell = cell.resize((round(cell.width * f), round(cell.height * f)), Image.NEAREST)
+        crop = CELL_CROP.get(os.path.dirname(sheet) + '/' + n)
+        if crop: cell.paste(key, (round(cell.width * crop), 0, cell.width, cell.height))
         cell.save(os.path.join(os.path.dirname(p), n + '.png'))
     for n in names:
         redo = CELL_REDRAW.get(os.path.dirname(sheet) + '/' + n)
@@ -677,7 +715,7 @@ for sheet, (cols, rows, names) in GRIDS.items():
     if walks:
         cells = [Image.open(os.path.join(os.path.dirname(p), n + '.png')) for n in walks]
         cw, ch = max(c.width for c in cells), max(c.height for c in cells)
-        strip = Image.new('RGB', (cw * len(cells), ch), (255, 0, 255))
+        strip = Image.new('RGB', (cw * len(cells), ch), key)
         for i, c in enumerate(cells):
             strip.paste(c, (i * cw + (cw - c.width) // 2, ch - c.height))
         strip.save(os.path.join(os.path.dirname(p), 'walk-side-4.png'))
@@ -692,7 +730,7 @@ for name, (folder, ref, target, fringe, files) in SETS.items():
         out, opt = out if isinstance(out, tuple) else (out, {})
         img, fr = Image.open(p), opt.get('fringe', fringe)
         kk = opt['height'] / (cut_keyed(img, 1, fringe=fr, **ko).height - 2) if 'height' in opt else k
-        rc = match_colors(Image.open(os.path.join(SRC, opt['match']))) if 'match' in opt else None
+        rc = match_colors(Image.open(os.path.join(SRC, opt['match']))) if 'match' in opt else RECOLOR.get(name)
         im = cut_keyed(img, kk, fringe=fr, colors=64 if rc else 32, recolor=rc, **ko)
         dst = os.path.join(OUT, folder, out + '.png')
         os.makedirs(os.path.dirname(dst), exist_ok=True)
@@ -715,6 +753,7 @@ for name, sheets in SHEETS.items():
         frames, feet = cut_sheet(img, cols, rows, height, **KEY_OPTS.get(name, {}))
         if name in SHEET_MATCH:
             frames = recolor_frames(frames, match_colors(Image.open(os.path.join(SRC, SHEET_MATCH[name]))))
+        if name in RECOLOR: frames = recolor_frames(frames, RECOLOR[name])
         order = FRAME_ORDER.get((name, prefix))
         if order:
             frames = [frames[i - 1] if i > 0 else mirror_legs(frames[-i - 1], *MIRROR_AT.get(name, ())) for i in order]
@@ -752,17 +791,18 @@ def base_width(im):
     xs = np.where(rows.any(axis=0))[0]
     return xs.max() - xs.min() + 1
 
-if not only or 'props' in only:
-    cells = {}
+if not only or 'props' in only or any(os.path.dirname(sh) in only for sh in PROP_GRIDS):
+    cells, keys = {}, {}
     for sheet, (cols, rows, names) in PROP_GRIDS.items():
         p = os.path.join(SRC, sheet)
-        if not os.path.exists(p): continue
-        for n, cell in zip(names, split_grid(Image.open(p), cols, rows, tol=PROP_TOL.get(names[0], 120))):
-            if n: cells[n] = cell
+        if not os.path.exists(p) or (only and 'props' not in only and os.path.dirname(sheet) not in only): continue
+        key = PROP_KEY.get(os.path.dirname(sheet), (255, 0, 255))
+        for n, cell in zip(names, split_grid(Image.open(p), cols, rows, key=key, tol=PROP_TOL.get(names[0], 120))):
+            if n: cells[n], keys[n] = cell, key
     k = {}
     for n, cell in cells.items():
-        if n in PROP_HEIGHT: k[n] = PROP_HEIGHT[n] / (cut_keyed(cell, 1, fringe=1, tol=PROP_TOL.get(n, 120), tint=n not in PROP_TOL).height - 2)
-        if n in PROP_WIDTH: k[n] = PROP_WIDTH[n] / (cut_keyed(cell, 1, fringe=1).width - 2)
+        if n in PROP_HEIGHT: k[n] = PROP_HEIGHT[n] / (cut_keyed(cell, 1, key=keys[n], fringe=1, tol=PROP_TOL.get(n, 120), tint=n not in PROP_TOL).height - 2)
+        if n in PROP_WIDTH: k[n] = PROP_WIDTH[n] / (cut_keyed(cell, 1, key=keys[n], fringe=1).width - 2)
     for n, ref in PROP_SAME.items():
         if n in cells and ref in k: k[n] = k[ref]
     for n, twin in PROP_TWIN.items():
@@ -770,7 +810,7 @@ if not only or 'props' in only:
             k[n] = k[twin] * base_width(cut_keyed(cells[twin], 1, fringe=1)) / base_width(cut_keyed(cells[n], 1, fringe=1))
     done = []
     for n, cell in cells.items():
-        im = cut_keyed(cell, k[n], fringe=1, tol=PROP_TOL.get(n, 120), tint=n not in PROP_TOL)
+        im = cut_keyed(cell, k[n], key=keys[n], fringe=1, tol=PROP_TOL.get(n, 120), tint=n not in PROP_TOL)
         if n in PROP_DESPILL: im = despill(im)
         if n in PROP_FOOT_CENTRE: im = centre_foot(im)
         # even sizes, so the art-pixel size (half) is whole; the padding goes on the top and the left
@@ -783,6 +823,49 @@ if not only or 'props' in only:
         done.append(im)
         print(dst, im.size)
     if done: contact(done, os.path.join(SRC, 'plants-preview.png'))
+
+# The finale (src/finale.js): the Sunken King's body (2x2, cut flat at the waterline), his right hand (2x2) and the
+# Drowned Gate (3x1). The sheets aren't evenly spaced, so each cell has its own box in the returned image. FINALE_K
+# is each sheet's shrink; the King's body is drawn at twice its file size in the game (DKG.scale in finale.js).
+FINALE_CELLS = {
+    'finale/king-body.png': [('fnKingStill', (0, 0, 772, 485)), ('fnKingOpen', (772, 0, 1536, 485)),
+                             ('fnKingRoar', (0, 488, 772, 1024)), ('fnKingDying', (772, 488, 1536, 1024))],
+    'finale/king-hands.png': [('fnHandRest', (0, 0, 765, 514)), ('fnHandRaised', (765, 0, 1536, 514)),
+                              ('fnHandSlam', (0, 514, 765, 1024)), ('fnHandSweep', (765, 514, 1536, 1024))],
+    'finale/drowned-gate.png': [('fnGate1', (0, 0, 724, 724)), ('fnGate2', (724, 0, 1448, 724)), ('fnGate3', (1448, 0, 2172, 724))],
+    # the causeway's low wall (running away from the viewer) and its fire-bowl post; the broken piece faces the viewer
+    # and isn't used (causeway-walls-iso.png is an isometric try, unused too)
+    'finale/causeway-walls.png': [('fnWall', (0, 0, 500, 887)), ('fnPost', (1340, 0, 1774, 887))],
+    # ruins standing in the black lake, two sets: an arch, a broken arch with its fallen stones, a tall pillar, a stump
+    'finale/lake-ruins.png': [('fnRuinA1', (0, 0, 720, 724)), ('fnRuinA2', (720, 0, 1394, 724)), ('fnRuinA3', (1394, 0, 1726, 724)), ('fnRuinA4', (1726, 0, 2172, 724))],
+    # the Fire Bearer (3x2): front, back, side (facing right), planted for the night, hurling its flame (right), guttered out.
+    # A third item lists boxes (inside the cell) to blank first: the hurled flame reaches over the next cell.
+    'finale/fire-bearer.png': [('fbFront', (0, 0, 437, 582)), ('fbBack', (437, 0, 875, 582)), ('fbSide', (875, 0, 1312, 582)),
+                               ('fbCamp', (0, 582, 437, 1199)), ('fbHurl', (437, 582, 1060, 1199), [(450, 300, 623, 617)]),
+                               ('fbDown', (875, 760, 1312, 1199), [(0, 0, 200, 90)])],
+    'finale/lake-ruins-2.png': [('fnRuinB1', (0, 0, 720, 724)), ('fnRuinB2', (720, 0, 1382, 724)), ('fnRuinB3', (1382, 0, 1704, 724)), ('fnRuinB4', (1704, 0, 2172, 724))],
+}
+FINALE_COLORS = {'finale/drowned-gate.png': 160, 'finale/causeway-walls.png': 96, 'finale/lake-ruins.png': 96, 'finale/lake-ruins-2.png': 96, 'finale/fire-bearer.png': 96}  # its small red and green hollows and the flames need the room
+FINALE_K = {'finale/king-body.png': 0.6, 'finale/king-hands.png': 0.48, 'finale/drowned-gate.png': 0.51, 'finale/causeway-walls.png': 0.17, 'finale/lake-ruins.png': 0.33, 'finale/lake-ruins-2.png': 0.33, 'finale/fire-bearer.png': 0.32}
+
+if not only or 'finale' in only:
+    done = []
+    for sheet, cells in FINALE_CELLS.items():
+        p = os.path.join(SRC, sheet)
+        if not os.path.exists(p): continue
+        img = Image.open(p).convert('RGB')
+        for n, box, *blank in cells:
+            cell = img.crop(box)
+            for b in (blank[0] if blank else []): cell.paste((255, 0, 255), b)
+            im = cut_keyed(cell, FINALE_K[sheet], fringe=1, colors=FINALE_COLORS.get(sheet, 64))
+            w, h = im.width + im.width % 2, im.height + im.height % 2
+            if (w, h) != im.size:
+                pad = Image.new('RGBA', (w, h)); pad.paste(im, (w - im.width, h - im.height)); im = pad
+            dst = os.path.join(OUT, PROP_OUT, n + '.png')
+            im.save(dst)
+            done.append(im)
+            print(dst, im.size)
+    if done: contact(done, os.path.join(SRC, 'finale-preview.png'), scale=1)
 
 # Ground textures: a square render per terrain, shrunk so one texel is one ground texel (2 world px) and made to
 # repeat: the last BLEND texels of each edge are cross-faded into the first ones, then cut off, so the right edge

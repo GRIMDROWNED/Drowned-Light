@@ -103,7 +103,10 @@
   }
 
   R.draw = function (G) {
-    const c = R.ctx, z = R.zoom, cam = G.camera, dpr = R.dpr;
+    // facing the Sunken King, the camera pulls back far enough to show him (src/finale.js)
+    const fv = G.player && G.state !== "title" ? DL.Finale.view(G.player) : null;
+    R.zoomMul = (R.zoomMul || 1) + ((fv ? Math.min(1, R.H / (R.zoom * fv.need), R.W / (R.zoom * fv.needW)) : 1) - (R.zoomMul || 1)) * 0.03;
+    const c = R.ctx, z = R.zoom * R.zoomMul, cam = G.camera, dpr = R.dpr;
     const shx = (Math.random() - 0.5) * cam.shake, shy = (Math.random() - 0.5) * cam.shake;
     const vw = R.W / z, vh = R.H / z, left = cam.x - vw / 2, top = cam.y - vh / 2;
     const view = { left, top, right: left + vw, bottom: top + vh };
@@ -134,6 +137,7 @@
     drawCampGround(c, G);
     DL.Cave.drawGround(c, view);
     DL.Rose.drawGround(c, view);
+    DL.Finale.drawGround(c, view, t);
 
     for (const d of G.decals) sprite(c, d.type, d.x, d.y, false, Math.min(1, d.t / 3));
 
@@ -157,6 +161,9 @@
       c.beginPath(); c.ellipse(q.x, q.y, q.r * pulse, q.r * 0.55 * pulse, 0, 0, Math.PI * 2); c.fill(); c.stroke();
     }
 
+    drawReaperGround(c, G, t); // the Chain Reaper's Violet Snare and Violet Gyre rings
+    drawWallCracks(c, G, t); // the molten cracks under the Flame Bastion's walls
+
     /* y-sorted scene */
     const list = [];
     const m = 120;
@@ -172,12 +179,18 @@
     DL.Outposts.push(list, c, t, view, sprite, Art.drawFire, bar);
     DL.Fred.push(list, c, t, view);
     DL.Wyvern.push(list, c, t, view);
+    DL.Finale.push(list, c, t, view);
     for (const tr of G.torches) list.push({ y: tr.y, f: () => drawTorch(c, tr, t) });
+    // Flame Bastion walls: flames that shoot up from the middle outward as the wall rises, and sink as it dies
     for (const w of G.walls || []) {
-      const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1), n = Math.max(2, Math.round(len / 14)), f = Math.min(1, w.t / 1);
+      if (Art.sprites.wallFire1) { pushWallFire(list, c, w, t); continue; }
+      const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1), n = Math.max(2, Math.round(len / 12)), f = Math.min(1, w.t / 1);
+      const up = Math.min(1, (w.max - w.t) / 0.35);
       for (let i = 0; i <= n; i++) {
-        const x = w.x1 + ((w.x2 - w.x1) * i) / n, y = w.y1 + ((w.y2 - w.y1) * i) / n;
-        list.push({ y, f: () => { c.fillStyle = "rgba(40,16,6,0.55)"; c.fillRect(x - 7, y - 2, 14, 4); Art.drawFire(c, x, y, (1 + 0.25 * Math.sin(t * 9 + i)) * f, t + i); } });
+        const u = i / n, x = w.x1 + (w.x2 - w.x1) * u, y = w.y1 + (w.y2 - w.y1) * u;
+        const g = Math.max(0, Math.min(1, up * 2 - Math.abs(u - 0.5) * 2)); // the middle first, then out to the ends
+        const size = (1.7 + 0.35 * Math.sin(t * 9 + i * 1.7) + (i % 2) * 0.3) * f * g;
+        if (size > 0.05) list.push({ y, f: () => Art.drawFire(c, x, y, size, t + i) });
       }
     }
     for (const z of G.lightZones) if (z.fire) list.push({ y: z.y, f: () => Art.drawFire(c, z.x, z.y, 0.7 * Math.min(1, z.t), t + z.x) });
@@ -201,6 +214,11 @@
     for (const b of den.bodies) list.push({ y: b[1], f: () => drawCarcass(c, b) });
     if (G.player && G.state !== "dead") list.push({ y: G.player.y, f: () => drawPlayer(c, G, t) });
     for (const a of G.allies) list.push({ y: a.y, f: () => drawAlly(c, a, t) });
+    // the Chain Reaper's sickle flying out on its chain, and the coil round a snared Drowned's ankles
+    const pl = G.player;
+    if (pl && pl.swing && pl.swing.kind === "chain") list.push({ y: pl.y + 1, f: () => drawThrow(c, pl.x, pl.y, pl.swing, t) });
+    for (const a of G.allies) if (a.swing && a.swing.kind === "chain" && !a.down) list.push({ y: a.y + 1, f: () => drawThrow(c, a.x, a.y, a.swing, t) });
+    if (Art.sprites.reaperSnared) for (const e of G.enemies) if (e.snareT > 0 && !e.removed) list.push({ y: e.y + 1, f: () => sprite(c, "reaperSnared", e.x, e.y + 5, false, Math.min(1, e.snareT * 3)) });
     list.sort((a, b) => a.y - b.y);
     for (const it of list) it.f();
 
@@ -233,6 +251,13 @@
         const a = 1 - f.t / f.max;
         c.fillStyle = `rgba(${f.col},${a})`;
         c.fillRect(f.x - f.size / 2, f.y - f.size / 2, f.size, f.size);
+      } else if (f.type === "erupt") {
+        // the Flame Bastion's eruption: a front of fire racing from the knight to where the wall rises
+        const k = f.t / f.max, d = f.reach * Math.min(1, k * 1.3), n = Math.max(3, Math.round(f.h / 14));
+        for (let i = -n; i <= n; i++) {
+          const w = (i / n) * f.h * Math.min(1, 0.3 + k), x = f.x + f.ux * d - f.uy * w, y = f.y + f.uy * d + f.ux * w;
+          Art.drawFire(c, x, y, (2.2 - k * 1.2) * (1 - Math.abs(i / n) * 0.4), t + i);
+        }
       } else if (f.type === "ring") {
         const k = f.t / f.max, r = f.r0 + (f.r1 - f.r0) * Math.sqrt(k);
         c.strokeStyle = `rgba(${f.col},${(1 - k) * 0.9})`;
@@ -353,7 +378,7 @@
       c.moveTo(x0 + Math.cos(a + 2.4) * 6, y0 + Math.sin(a + 2.4) * 6); c.lineTo(x1, y1); c.lineTo(x0 + Math.cos(a - 2.4) * 6, y0 + Math.sin(a - 2.4) * 6);
       c.stroke();
     }
-    for (const e of G.enemies) if (e.rise <= 0 && !(e.def.rose && e.dormant && Art.sprites.roseBud)) drawEyes(c, e, t);
+    for (const e of G.enemies) if (e.rise <= 0 && !e.def.king && !(e.def.rose && e.dormant && Art.sprites.roseBud)) drawEyes(c, e, t);
     for (const h of G.hounds) drawHoundEyes(c, h, t);
     // once the pack is broken, the carcasses glow faintly so you can find one to carry home
     if (den.cleared && !DL.Hounds.mine()) for (const b of den.bodies) {
@@ -370,6 +395,7 @@
     drawSoulGlow(c, G, view, t);
     DL.Fred.glow(c, t, view);
     DL.Wyvern.glow(c, t, view);
+    DL.Finale.glow(c, t, view);
     if (kb && Math.sin(t * 1.3) > 0.6) { c.fillStyle = "rgba(255,110,50,0.35)"; c.fillRect(kb.x - 2, kb.y - 8, 4, 4); }
     drawMotes(c, G, view, t);
     c.globalCompositeOperation = "source-over";
@@ -754,13 +780,16 @@
   // Walk frames per second: `rate` is for a 4-frame walk, and longer walks play faster so a stride takes as long.
   const walkRate = (key, rate) => (rate * Art.animLength(key, "walk")) / 4;
 
+  // A kit with its own casting pose (the Chain Reaper whirling his chain) shows it for its ability; the rest swing.
+  const castAnim = (key) => (Art.sheet(key).down.cast ? "cast" : "attack");
+
   // Which animation the player shows this frame: [anim, frame, facing angle].
   function playerAnim(G, p, t) {
     if (G.state === "dying") return ["death", Math.min(2, Math.floor(G.dying / 0.45)), p.angle];
     if (p.dashT > 0) return ["dash", 0, p.angle];
     if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
     if (p.swing) return ["attack", Math.min(2, Math.floor((p.swing.t / p.swing.dur) * 3)), p.swing.ang];
-    if (p.cast) return ["attack", Math.min(2, Math.floor((p.cast.t / p.cast.dur) * 3)), p.cast.ang];
+    if (p.cast) return [castAnim(G.save.kit + p.stage), Math.min(2, Math.floor((p.cast.t / p.cast.dur) * 3)), p.cast.ang];
     if (p.moving) return ["walk", Math.floor(p.animT * walkRate(G.save.kit + p.stage, 6)), p.angle];
     return ["idle", Math.floor(t * 1.6), p.angle];
   }
@@ -788,7 +817,7 @@
       let anim = "idle", fr = Math.floor(t * 1.6), ang = a.angle;
       if (a.dashT > 0) anim = "dash";
       else if (a.swing) { anim = "attack"; fr = Math.min(2, Math.floor((a.swing.t / a.swing.dur) * 3)); ang = a.swing.ang; }
-      else if (a.cast) { anim = "attack"; fr = Math.min(2, Math.floor(a.cast * 3)); }
+      else if (a.cast) { anim = castAnim(key); fr = Math.min(2, Math.floor(a.cast * 3)); }
       else if (a.moving) { anim = "walk"; fr = Math.floor(a.animT * walkRate(key, 6)); }
       Art.drawUnit(c, key, anim, fr, ang, a.x, a.y, 1);
     }
@@ -812,11 +841,120 @@
     return ["idle", Math.floor(t * 1.6 + e.animT), e.angle];
   }
 
+  /* The Chain Reaper's Sickle Throw: the sickle spins out along each line to the throw's reach and back (out at
+     half time), its chain run out from the hand behind it. Drawn in code if the drawn pieces haven't loaded. */
+  function drawThrow(c, x, y, s, t) {
+    const ch = Art.sprites.reaperChain, sk = Art.sprites["reaperSickle" + (1 + (Math.floor(t * 24) % 4))];
+    const k = Math.min(1, s.t / s.dur), len = s.range * Math.sin(k * Math.PI);
+    for (const a of s.angs || [s.ang]) {
+      const hx = x + Math.cos(a) * 12, hy = y - 30 + Math.sin(a) * 6;
+      c.save();
+      c.translate(Math.round(hx), Math.round(hy));
+      c.rotate(a);
+      if (ch) {
+        const tw = ch.w * PS, th = ch.h * PS;
+        for (let d = 0; d < len; d += tw) {
+          const seg = Math.min(tw, len - d);
+          c.drawImage(ch.c, 0, 0, (seg / tw) * ch.c.width, ch.c.height, d, -th / 2, seg, th);
+        }
+      } else {
+        c.strokeStyle = "#5c5468"; c.lineWidth = 2;
+        c.beginPath(); c.moveTo(0, 0); c.lineTo(len, 0); c.stroke();
+      }
+      c.translate(len, 0);
+      c.rotate(t * 22);
+      if (sk) c.drawImage(sk.c, (-sk.w * PS) / 2, (-sk.h * PS) / 2, sk.w * PS, sk.h * PS);
+      else {
+        c.strokeStyle = `rgb(${s.col})`; c.lineWidth = 3;
+        c.beginPath(); c.arc(0, 0, 9, 0.4, Math.PI * 1.6); c.stroke();
+      }
+      c.restore();
+    }
+  }
+
+  // The drawn fire wall: sections of flame lined up along the wall and overlapping, each flickering through
+  // the four frames out of step with its neighbours, every other one mirrored so the pattern doesn't repeat.
+  // Each section's sides are faded out (made once, below) so the overlaps blend into one ribbon of fire
+  // instead of showing the hard edges as steps on a diagonal.
+  const softFire = {};
+  function wallFireFrame(k) {
+    if (softFire[k]) return softFire[k];
+    const s = Art.sprites["wallFire" + k], cv = document.createElement("canvas");
+    cv.width = s.c.width; cv.height = s.c.height;
+    const x = cv.getContext("2d"), g = x.createLinearGradient(0, 0, cv.width, 0);
+    x.drawImage(s.c, 0, 0);
+    g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(0.28, "rgba(0,0,0,1)");
+    g.addColorStop(0.72, "rgba(0,0,0,1)"); g.addColorStop(1, "rgba(0,0,0,0)");
+    x.globalCompositeOperation = "destination-in";
+    x.fillStyle = g; x.fillRect(0, 0, cv.width, cv.height);
+    return (softFire[k] = { c: cv, w: s.w, h: s.h });
+  }
+  function pushWallFire(list, c, w, t) {
+    // closer together where the wall runs across the screen at a slant, so the soft sides overlap
+    const dx = Math.abs(w.x2 - w.x1), len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
+    const n = Math.max(1, Math.round(len / (dx / len > 0.95 ? 34 : 22)));
+    const f = Math.min(1, w.t / 1), up = Math.min(1, (w.max - w.t) / 0.35);
+    for (let i = 0; i < n; i++) {
+      const u = (i + 0.5) / n, x = w.x1 + (w.x2 - w.x1) * u, y = w.y1 + (w.y2 - w.y1) * u;
+      const g = Math.max(0, Math.min(1, up * 2 - Math.abs(u - 0.5) * 2)) * f; // the middle first, then out to the ends
+      if (g < 0.05) continue;
+      const s = wallFireFrame(1 + ((Math.floor(t * 10) + i * 3) % 4));
+      // as wide as its share of the wall seen across the screen (and plenty to blend), so a wall running up the screen stays thin
+      const span = Math.min(1, Math.max(0.55, (dx / n * 3) / (s.w * PS)));
+      const sw = s.w * PS * span * (0.8 + 0.2 * g), sh = s.h * PS * 1.25 * g * (1 + 0.06 * Math.sin(t * 7 + i * 2.1));
+      list.push({ y, f: () => {
+        c.save();
+        c.translate(Math.round(x), Math.round(y + 4));
+        if (i % 2) c.scale(-1, 1);
+        c.drawImage(s.c, Math.round(-sw / 2), Math.round(-sh), sw, sh);
+        c.restore();
+      } });
+    }
+  }
+
+  // The molten crack a Flame Bastion wall stands in, glowing and pulsing, burning out as the wall dies.
+  function drawWallCracks(c, G, t) {
+    for (const w of G.walls || []) {
+      const f = Math.min(1, w.t / 1) * Math.min(1, (w.max - w.t) / 0.2), pulse = 0.8 + 0.2 * Math.sin(t * 6 + w.x1);
+      c.lineCap = "round";
+      c.strokeStyle = `rgba(30,8,2,${0.7 * f})`; c.lineWidth = 12;
+      c.beginPath(); c.moveTo(w.x1, w.y1); c.lineTo(w.x2, w.y2); c.stroke();
+      c.strokeStyle = `rgba(230,70,20,${0.85 * f * pulse})`; c.lineWidth = 6;
+      c.beginPath(); c.moveTo(w.x1, w.y1); c.lineTo(w.x2, w.y2); c.stroke();
+      c.strokeStyle = `rgba(255,220,140,${0.9 * f * pulse})`; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(w.x1, w.y1); c.lineTo(w.x2, w.y2); c.stroke();
+      c.lineCap = "butt";
+    }
+  }
+
+  // Violet Snare's ring of whirled chain, flung out from the knight, and the Violet Gyre rings it leaves at level 20.
+  function drawReaperGround(c, G, t) {
+    const ring = Art.sprites.reaperSnare;
+    const draw = (x, y, r, a, wob) => {
+      if (ring) {
+        const w = r * 2 * (1 + wob), h = r * 0.9 * (1 + wob);
+        c.save(); c.globalAlpha = a;
+        c.drawImage(ring.c, Math.round(x - w / 2), Math.round(y - h / 2), w, h);
+        c.restore();
+      } else {
+        c.strokeStyle = `rgba(176,120,255,${a})`; c.lineWidth = 4;
+        c.beginPath(); c.ellipse(x, y, r, r * 0.45, 0, 0, Math.PI * 2); c.stroke();
+      }
+    };
+    for (const f of G.effects) {
+      if (f.type !== "snare") continue;
+      const k = f.t / f.max;
+      draw(f.x, f.y, f.r * (0.35 + 0.65 * Math.sqrt(k)), 1 - k * k, 0);
+    }
+    for (const g of DL.Kits.gyres()) draw(g.x, g.y, g.r * 0.85, Math.min(1, g.t / 0.6) * 0.85, 0.04 * Math.sin(t * 9));
+  }
+
   function drawEnemy(c, e, t) {
     const d = e.def, s = d.scale;
     if (d.bell && e.dormant) { drawBuriedBell(c, e, t); return; }
     if (d.rose && e.dormant && Art.sprites.roseBud) return; // the Deadly Rose asleep inside her bud (src/rose.js)
     if (d.wyvern) return DL.Wyvern.drawMother(c, e, t); // the mother wyvern, drawn in code until her drawings are in (src/wyvern.js)
+    if (d.king) return; // the Sunken King is drawn behind the gate, with his hands (src/finale.js)
     if (e.rise > 0) {
       // clawing up out of the water
       const k = 1 - e.rise / 0.9;
@@ -1029,6 +1167,21 @@
     kindleBody(c, true, 0, t);
     c.restore();
   }
+  // Kindle at any size (the Fire Bearer, src/finale.js), standing, walking or guttered out.
+  R.kindleUnit = function (c, k, t, sc, down) {
+    if (kindleDrawn()) {
+      const [anim, fr, ang] = down ? ["death", 0, k.angle] : kindleAnim(k);
+      return Art.drawUnit(c, "kindle", anim, fr, ang, k.x, k.y, sc);
+    }
+    c.save();
+    c.translate(Math.round(k.x), Math.round(k.y));
+    c.scale(sc, sc);
+    if (down) c.rotate(-1.25);
+    kindleLegs(c, k, t, down ? 1 : 8);
+    c.translate(0, down ? -2 : -8 - (k.moving ? Math.abs(Math.sin(k.animT * 13)) * 1.5 : 0));
+    kindleBody(c, !down, 0, t);
+    c.restore();
+  };
   // Over the dark: his flame, and while he leads the way, a trail of embers pointing where.
   function drawKindleGlow(c, k, t) {
     const x = k.x, y = k.y - (kindleDrawn() ? 13 : 18), r = 14 + Math.sin(t * 9) * 1.5, g = c.createRadialGradient(x, y, 0, x, y, r);

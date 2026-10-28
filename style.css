@@ -235,6 +235,10 @@ body.pad .controls-hint kbd { display: inline; }
 #btnBindsReset { margin-bottom: 4px; }
 .death h2 { font-size: clamp(28px, 7vw, 42px); color: #c9fbff; text-shadow: 0 0 26px rgba(95, 230, 238, 0.6); }
 .death p { line-height: 1.5; }
+/* the victory screen (src/finale.js): firelight instead of drowned cyan */
+.win h2 { color: #ffe2b0; text-shadow: 0 0 28px rgba(255, 150, 60, 0.7); }
+.finale-card { border-color: rgba(255, 160, 80, 0.55); box-shadow: inset 0 0 24px rgba(255, 130, 50, 0.12); }
+.finale-card h3 { color: #ffd59a; }
 .death .chips, #deathLost .chips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
 #deathLost { margin: 18px 0; }
 #deathLost b { color: var(--cold); }

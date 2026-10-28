@@ -57,6 +57,9 @@
     trophies: { bell: 0, rose: 0 },
     // outposts raised in bloom groves (src/outposts.js): [grove cell x, grove cell y, x, y]
     outposts: [],
+    // the finale (src/finale.js): stage (0 nothing yet, 1 the Fire Bearer waits in camp, 2 on the march, 3 at the gate, 4 won),
+    // where the Bearer stands, its health (-1: full), guttered, its last camp, the gate found yet, and the day it was won
+    finale: { stage: 0, x: 0, y: 0, hp: -1, down: false, rest: null, found: false, won: 0 },
     started: false,
     lastPlayed: 0,
   });
@@ -132,7 +135,7 @@
   G.stats = function () {
     const u = G.save.up;
     return {
-      maxHp: 100 + 25 * u.armory,
+      maxHp: Math.round((100 + 25 * u.armory) * (G.kit().hpMult || 1)), // the Chain Reaper is frailer
       maxOil: 60 + 25 * u.workbench,
       lanternR: (70 + 14 * u.workbench) * DL.Kits.lanternMult() * G.diff().light,
       dmgMult: (1 + 0.2 * u.forge) * DL.Abigail.mult() * DL.Wyvern.dmgMult(), // Abigail's blessing, David's War Fury
@@ -232,6 +235,7 @@
     DL.Wyvern.reset();
     DL.Bell.reset();
     DL.Rose.reset();
+    DL.Finale.reset();
     G.state = "play";
   };
 
@@ -303,6 +307,8 @@
     DL.Abigail.update(dt);
     DL.Fred.update(dt);
     DL.Wyvern.update(dt);
+    DL.Finale.update(dt);
+    DL.Finale.local();
     updateDefenses(dt);
     DL.Trophies.update(dt);
     DL.Outposts.update(dt);
@@ -339,6 +345,8 @@
     }
     DL.Net.smooth(dt);
     DL.Rose.local();
+    DL.Finale.update(dt);
+    DL.Finale.local();
     DL.Kits.update(dt);
     updateProjectiles(dt);
     updateEffects(dt);
@@ -369,6 +377,7 @@
     G.champSpawned = false;
     G.siegeT = 4;
     DL.Siege.nightfall();
+    DL.Finale.nightfall();
     if (G.save.nights === 0) setTimeout(() => say("Cyan Refuge Blooms halt corruption. Firelight reverses it."), 3500);
   }
 
@@ -384,6 +393,7 @@
     DL.Outposts.dawn();
     DL.Fred.dawn();
     DL.Wyvern.dawn();
+    DL.Finale.dawn();
     if (G.rootEvent) {
       const o = G.rootEvent.obj;
       if (!o.dead) {
@@ -478,10 +488,12 @@
     DL.Outposts.lights(L);
     DL.Trophies.lights(L);
     DL.Rose.lights(L);
+    DL.Finale.lights(L);
     for (const e of G.enemies) {
       if (e.type === "defiler") L.push({ x: e.x, y: e.y - 70, r: 70, s: 0.4, col: "70,230,240", a: 0.8 });
       else if (e.def.bell && e.dormant) L.push({ x: e.x, y: e.y - 16, r: 70, s: 0.3, col: "70,230,240", a: 0.45 }); // a cold glimmer off the buried Starved Bell
       else if (e.def.rose) L.push({ x: e.x, y: e.y - 100, r: 90, s: 0.3, col: "220,40,60", a: 0.6 }); // the Deadly Rose's heart
+      else if (e.def.king) continue; // the Sunken King's light is his own (src/finale.js)
       else if (e.def.boss) L.push({ x: e.x, y: e.y - 40, r: 60, s: 0.3, col: "70,230,240", a: 0.6 });
     }
     for (const pr of G.projectiles) L.push({ x: pr.x, y: pr.y, r: pr.kind === "orb" ? 44 : 26, s: 0.3, col: pr.col, a: 0.8 });
@@ -554,7 +566,7 @@
       DL.Kits.dashTick(p, st, dt);
     } else {
       const wet = W.isWater(p.x, p.y) ? 0.82 : 1;
-      const spd = 150 * wet * (p.corrupt >= 75 ? 0.9 : 1) * (DL.Den.carrying() ? DL.DEN.haulSpeed : 1) * (DL.Wyvern.carrying() ? DL.WYVERN.haulSpeed : 1) * DL.Abigail.mult() * DL.Wyvern.speedMult();
+      const spd = 150 * DL.Kits.speedMult(p) * wet * (p.corrupt >= 75 ? 0.9 : 1) * (DL.Den.carrying() ? DL.DEN.haulSpeed : 1) * (DL.Wyvern.carrying() ? DL.WYVERN.haulSpeed : 1) * DL.Abigail.mult() * DL.Wyvern.speedMult();
       p.moving = inp.m > 0.15;
       p.stillT = p.moving ? 0 : (p.stillT || 0) + dt;
       if (p.moving) {
@@ -571,6 +583,7 @@
     p.kx *= decay; p.ky *= decay;
     W.collide(p, 10);
     collideCamp(p, 10);
+    DL.Finale.collide(p);
 
     // Combat and mining. Auto mode fights the nearest Drowned, or mines a supply node you stand by
     // when none are near. Manual mode keeps them apart: Attack strikes where you aim (mouse, or the
@@ -630,7 +643,7 @@
     p.angle = a;
     p.dashDir = { x: Math.cos(a), y: Math.sin(a) };
     p.dashT = 0.22;
-    p.dashCd = 2.2;
+    p.dashCd = DL.Kits.dashCd();
     p.inv = Math.max(p.inv, 0.3);
     p.dashHit.clear();
     DL.Kits.dashStart(p);
@@ -830,6 +843,7 @@
       if (dist(p.x, p.y, ev.obj.x, ev.obj.y) < 650) return; // the knight at the root gets waves, not roamers
     }
     if (DL.Fred.busy(p)) return; // and the knights defending Fred's fairy ring get its waves (src/fred.js)
+    if (DL.Finale.busySpot(p)) return; // and the Fire Bearer's camp and the gate get theirs (src/finale.js)
 
     G.spawnT -= dt;
     if (G.spawnT > 0) return;
@@ -882,7 +896,7 @@
   /* ---------------- enemies ---------------- */
   function goalValid(g) {
     if (!g) return false;
-    if (g.kind === "flame" || g.kind === "pylon" || g.kind === "outpost") return g.lit;
+    if (g.kind === "flame" || g.kind === "pylon" || g.kind === "outpost" || g.kind === "bearer") return g.lit && (g.kind !== "bearer" || g === DL.Finale.b);
     if (g.type === "torch" || g.type === "brazier") return G.torches.includes(g);
     return !g.dead && g.active !== false;
   }
@@ -931,7 +945,7 @@
         continue;
       }
       const eZ = DL.ZONES[W.zoneIndex(e.x, e.y)];
-      if (!G.night && !eZ.abyss && !e.isSelf && !e.def.den && !e.def.wyvern) {
+      if (!G.night && !eZ.abyss && !e.isSelf && !e.def.den && !e.def.wyvern && !e.march) { // (the Drowned that rise against the Fire Bearer brave the sun)
         e.hp -= 30 * dt; // the sun unmakes them
         if (Math.random() < 0.3) puff(e.x + rand(-8, 8), e.y - rand(10, 40), "rgba(40,60,70,0.6)", 30, 0.8);
         if (e.hp <= 0) { kill(e, false); continue; }
@@ -994,6 +1008,8 @@
         e.y += Math.sin(e.wanderA) * e.speed * 0.45 * dt;
         e.angle = e.wanderA;
         e.moving = true;
+      } else if (e.def.king && DL.Finale.busy()) {
+        // the Sunken King: his hands do everything (src/finale.js)
       } else if (e.def.bell && DL.Bell.busy(e, dt, p, dp)) {
         // the Starved Bell rearing to swallow, lunging, or eating
       } else if (e.def.rose && DL.Rose.busy(e, dt, p)) {
@@ -1102,6 +1118,7 @@
       DL.Golems.push(a, a.def.radius * 0.6);
       W.collide(a, a.def.radius * 0.6);
       collideCamp(a, a.def.radius * 0.6);
+      if (!a.def.king) DL.Finale.collide(a);
     }
     G.enemies = G.enemies.filter((e) => !e.removed);
   }
@@ -1125,6 +1142,7 @@
     if (d.caster) hexbearer(e, dt, p, dp);
     if (d.bell) DL.Bell.behave(e, dt, p, dp);
     if (d.colossus) DL.Colossus.think(e, dt, p, dp);
+    if (d.king) DL.Finale.think(e, dt); // the Sunken King picks his moves (src/finale.js)
     if (d.wyvern) DL.Wyvern.think(e, dt, p, dp); // the mother wyvern picks her moves (src/wyvern.js)
     if (d.rose) DL.Rose.think(e, dt, p, dp); // the Deadly Rose picks her moves (src/rose.js) // the Drowned Colossus picks its moves (src/colossus.js)
   }
@@ -1248,6 +1266,7 @@
       return;
     }
     if (o.kind === "outpost") return DL.Outposts.hurt(o, amt);
+    if (o.kind === "bearer") return DL.Finale.hurt(o, amt);
     if (o.kind === "pylon") {
       o.hp -= amt;
       o.hitT = 0.2;
@@ -1298,6 +1317,8 @@
 
   function hitEnemy(e, dmg, ang, kb, burn, remote) {
     if (e.removed) return;
+    // the Sunken King can only be hurt while the Fire Bearer's flame has his heart open (src/finale.js)
+    if (e.def.king && !DL.Finale.isOpen(e)) { if (!remote) DL.Finale.immune(e); return; }
     const crit = !remote && Math.random() < 0.12;
     let d = dmg * (crit ? 1.6 : 1);
     if (G.isGuest()) {
@@ -1317,6 +1338,7 @@
     } else if (!e.def.shield && G.enemies.some((b) => b.def.guard && !b.removed && dist(b.x, b.y, e.x, e.y) < b.def.guard)) d *= 0.75; // guarded by a Bulwark
     d *= 1 - (e.def.armor || 0);
     if (e.cursed) d *= 1 + (e.curseK || DL.ABIGAIL.curse); // weakened by one of Abigail's orbs
+    if (e.def.king) d = DL.Finale.cap(e, d);
     e.hp -= d;
     e.flash = 0.12;
     if (e.dormant) e.dormant = false;
@@ -1342,6 +1364,7 @@
     if (e.def.bell) DL.Bell.slain(e);
     if (e.def.rose) DL.Rose.slain(e);
     if (e.def.wyvern) DL.Wyvern.slain(e);
+    if (e.def.king) { DL.Finale.slain(e); return; }
     sfx("kill");
     G.effects.push({ type: "dissolve", e, t: 0, max: 0.6 });
     for (let i = 0; i < 16; i++) puff(e.x + rand(-10, 10), e.y - rand(0, 50) * e.def.scale, "rgba(60,220,230,0.7)", 50, 0.9, -40);
@@ -1612,8 +1635,10 @@
   function updateCamera(dt) {
     const c = G.camera, p = G.player;
     const k = 1 - Math.pow(0.0005, dt);
-    c.x += (p.x - c.x) * k;
-    c.y += (p.y - 20 - c.y) * k;
+    const fv = DL.Finale.view(p); // facing the Sunken King: lean toward him (src/finale.js)
+    const tx = fv ? (p.x + fv.x) / 2 : p.x, ty = fv ? (p.y - 20 + fv.y) / 2 : p.y - 20;
+    c.x += (tx - c.x) * k;
+    c.y += (ty - c.y) * k;
     c.shake = Math.max(0, c.shake - dt * 30);
   }
 

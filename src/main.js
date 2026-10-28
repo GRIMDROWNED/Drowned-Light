@@ -27,6 +27,7 @@
     handleGlobalKeys();
     G.update(dt);
     DL.Net.tick(dt);
+    DL.Finale.tick(); // the victory screen, once the Drowned Gate has opened
     // Messages and the objective banner stay hidden while paused or in a menu.
     document.body.classList.toggle("menu-open", G.state !== "play");
     DL.Render.draw(G);

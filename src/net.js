@@ -25,7 +25,7 @@
   // One knight as sent over the link: [x, y, angle, moving, dash, stage, hp, maxHp, down, swing, cast, wisp, kit, kitLevel].
   function applyKnight(a, s) {
     a.tx = s[0]; a.ty = s[1]; a.angle = s[2]; a.moving = !!s[3]; a.dashT = s[4]; a.stage = s[5]; a.hp = s[6]; a.maxHp = s[7]; a.down = !!s[8];
-    a.swing = s[9] ? { ang: s[9][0], t: s[9][1], dur: 0.2, kind: s[9][2], range: s[9][3], arc: s[9][4], col: s[9][5], flip: !!s[9][6] } : null;
+    a.swing = s[9] ? { ang: s[9][0], t: s[9][1], dur: s[9][2] === "chain" ? 0.32 : 0.2, kind: s[9][2], range: s[9][3], arc: s[9][4], col: s[9][5], flip: !!s[9][6] } : null;
     a.cast = s[10] || 0;
     a.wisp = s[11] ? { x: s[11][0], y: s[11][1] } : null;
     if (s[12] && DL.KITS[s[12]]) a.kit = s[12];
@@ -344,6 +344,8 @@
       // companion levels, Abyss trophies, the Great Siege, outposts [grove x, grove y, x, y, lit, hp], the Rose Heart's briar
       sm: G.save.summons, tr: G.save.trophies, gs: DL.Siege.on ? 1 : 0,
       op: DL.Outposts.rows(), rh: DL.Trophies.rows(),
+      // the finale: [stage, the Fire Bearer, the Sunken King's heart, his hands' moves, the flame it hurls] (src/finale.js)
+      fn: DL.Finale.snap(),
       ob: dirty,
     };
   }
@@ -516,6 +518,7 @@
     DL.Siege.on = !!m.gs;
     DL.Outposts.apply(m.op);
     DL.Trophies.apply(m.rh);
+    DL.Finale.applySnap(m.fn);
 
     // the host's knight and the other friends': keep the same objects so they glide and animate
     const known = new Map(G.allies.map((a) => [a.id, a]));
@@ -613,6 +616,7 @@
     DL.Abigail.guest(dt, k);
     DL.Fred.guest(dt, k);
     DL.Wyvern.guest(dt, k);
+    DL.Finale.guest(dt, k);
   };
 
   // Lights, walls and torches the guest makes become the host's; the guest sees them come back in the next snapshot.

@@ -1,4 +1,4 @@
-/* Drowned Light — the five base kits in play: attacks, dashes, abilities, passives,
+/* Drowned Light — the six kits in play: attacks, dashes, abilities, passives,
    the 20-level progression and what changes at milestones 5, 10, 15 and 20. */
 "use strict";
 (function (DL) {
@@ -76,6 +76,12 @@
     if (p.guardT > 0) m *= 0.5;
     return m;
   };
+  // The Chain Reaper's pace: a fifth faster always, faster still in Reaper's Rush after a kill.
+  K.speedMult = function (p) {
+    const kit = G.kit(), rush = kit.passive && kit.passive.rush;
+    return (kit.speedMult || 1) * (rush && p.rushT > 0 ? rush.speed : 1);
+  };
+  K.dashCd = () => G.kit().dash.cd || 2.2;
   K.lanternMult = () => (G.kit().passive && G.kit().passive.lanternR) || 1;
   K.oilDrain = () => (G.kit().passive && G.kit().passive.oilDrain) || 1;
 
@@ -106,6 +112,32 @@
   }
   function lightZone(x, y, r, t, extra) {
     G.lightZones.push(Object.assign({ x, y, r: r * G.diff().light, t }, extra || {}));
+  }
+
+  /* The Chain Reaper's blows: Executioner finishes the weak, Barbed Chain makes them bleed, and a kill
+     is Reaper's Rush (the dash back and a burst of speed). On a co-op guest the host owns the Drowned,
+     so a kill is judged from the blow. */
+  function reap(e, dmg, ang, kb) {
+    if (e.removed || e.rise > 0) return;
+    const p = G.player, rush = G.kit().passive && G.kit().passive.rush;
+    if (K.has(15) && e.hp < e.maxHp * 0.3) dmg *= 1.5;
+    const hp = e.hp;
+    G.hitEnemy(e, dmg, ang, kb);
+    if (K.has(5) && !e.removed) { e.bleedN = Math.min(3, (e.bleed > 0 ? e.bleedN || 0 : 0) + 1); e.bleed = 3; }
+    if (rush && (e.removed || (G.isGuest() && hp - dmg * (1 - (e.def.armor || 0)) <= 0))) {
+      p.dashCd = 0;
+      p.rushT = rush.dur;
+      for (let i = 0; i < 8; i++) G.spark(p.x + rand(-10, 10), p.y - rand(10, 50), G.kit().color, 120);
+    }
+  }
+  // Everything along a sickle's line out to `range`, at most `width` either side of it.
+  function onLine(p, ang, range, width) {
+    const ux = Math.cos(ang), uy = Math.sin(ang);
+    return G.enemies.filter((e) => {
+      if (e.rise > 0 || e.removed) return false;
+      const rx = e.x - p.x, ry = e.y - p.y, along = rx * ux + ry * uy, perp = Math.abs(rx * uy - ry * ux);
+      return along > -6 && along < range + e.def.radius && perp < width / 2 + e.def.radius;
+    });
   }
 
   /* ---------- auto-attack ---------- */
@@ -180,6 +212,12 @@
           pierce: K.has(10) ? 3 : a.pierce, flare, r: 10 });
       }
       sfx("arrow");
+    } else if (a.type === "chain") {
+      // Sickle Throw: the sickle cuts along its line on the way out; the swing tears it back halfway (K.update).
+      const angs = K.has(10) ? [ang - 0.22, ang + 0.22] : [ang];
+      for (const g of angs) for (const e of onLine(p, g, range, a.width)) reap(e, a.dmg * pw, g, a.kb);
+      Object.assign(swing, { dur: 0.32, angs, back: false, dmg: a.dmg * a.back * pw, width: a.width });
+      sfx("swing");
     } else if (a.type === "orb") {
       const count = K.has(10) ? 2 : 1;
       for (let i = 0; i < count; i++) {
@@ -206,7 +244,8 @@
         if (e.rise > 0 || p.dashHit.has(e)) continue;
         if (dist(p.x, p.y, e.x, e.y) < e.def.radius + 22) {
           p.dashHit.add(e);
-          G.hitEnemy(e, d.dmg * pw, ang, d.type === "slam" ? 260 : 120);
+          if (G.kit().passive && G.kit().passive.rush) reap(e, d.dmg * pw, ang, 120);
+          else G.hitEnemy(e, d.dmg * pw, ang, d.type === "slam" ? 260 : 120);
           if (d.stun) e.stun = Math.max(e.stun || 0, d.stun);
         }
       }
@@ -272,6 +311,19 @@
       p.corrupt = Math.max(0, p.corrupt - ab.purify * (K.has(15) ? 2 : 1));
       if (K.has(15)) p.hp = Math.min(st.maxHp, p.hp + 25);
       lightZone(p.x, p.y - 10, r * 0.7, 4);
+    } else if (ab.id === "snare") {
+      // Violet Snare: the chain whirled round, cutting and rooting all in reach (the ring is drawn in src/render.js).
+      const r = ab.radius;
+      G.effects.push({ type: "snare", x: p.x, y: p.y, r, t: 0, max: 0.5 });
+      for (const e of G.enemies.slice()) {
+        if (e.rise > 0 || e.removed || dist(p.x, p.y, e.x, e.y) > r + e.def.radius) continue;
+        reap(e, ab.dmg * pw, Math.atan2(e.y - p.y, e.x - p.x), 60);
+        e.stun = Math.max(e.stun || 0, ab.root);
+        e.snareT = ab.root;
+      }
+      if (K.has(20)) gyres.push({ x: p.x, y: p.y, r, t: 4, max: 4 });
+      G.camera.shake = 4;
+      sfx("swing");
     } else if (ab.id === "wall") {
       const dur = ab.dur * (K.has(10) ? 1.5 : 1), dps = ab.dps * pw * (K.has(10) ? 1.6 : 1);
       if (K.has(20)) {
@@ -281,10 +333,18 @@
           G.walls.push({ x1: p.x + Math.cos(a0) * R, y1: p.y + Math.sin(a0) * R, x2: p.x + Math.cos(a1) * R, y2: p.y + Math.sin(a1) * R, t: dur, max: dur, dps });
         }
       } else {
-        const ux = Math.cos(p.angle), uy = Math.sin(p.angle), cx = p.x + ux * 55, cy = p.y + uy * 55, h = ab.length / 2;
+        // The eruption: everything between you and where the wall rises is scorched, set alight and hurled back.
+        const ang = p.aim != null && G.save.attackMode === "manual" ? p.aim : p.angle;
+        const ux = Math.cos(ang), uy = Math.sin(ang), cx = p.x + ux * ab.reach, cy = p.y + uy * ab.reach, h = ab.length / 2;
+        for (const e of G.enemies.slice()) {
+          if (e.rise > 0 || e.removed) continue;
+          const rx = e.x - p.x, ry = e.y - p.y, along = rx * ux + ry * uy, perp = Math.abs(rx * uy - ry * ux);
+          if (along > -10 && along < ab.reach + 24 + e.def.radius && perp < h + e.def.radius) G.hitEnemy(e, ab.dmg * pw, ang, 280, ab.burn * pw);
+        }
+        G.effects.push({ type: "erupt", x: p.x, y: p.y, ux, uy, reach: ab.reach, h, t: 0, max: 0.3 });
         G.walls.push({ x1: cx - uy * h, y1: cy + ux * h, x2: cx + uy * h, y2: cy - ux * h, t: dur, max: dur, dps });
       }
-      G.camera.shake = 5;
+      G.camera.shake = 8;
       sfx("torch");
     }
   };
@@ -300,33 +360,64 @@
     return { d: Math.hypot(px - qx, py - qy), qx, qy };
   }
 
+  // Violet Gyre: the rings of whirling chain Violet Snare leaves behind at level 20.
+  let gyres = [], gyreLife = null;
+  K.gyres = () => gyres;
+
   K.update = function (dt) {
     const p = G.player, kit = G.kit(), st = G.stats();
     p.guardT = Math.max(0, (p.guardT || 0) - dt);
+    p.rushT = Math.max(0, (p.rushT || 0) - dt);
+
+    // The Chain Reaper: the sickle torn back along its line halfway through the throw.
+    const sw = p.swing;
+    if (sw && sw.kind === "chain" && !sw.back && sw.t >= sw.dur / 2) {
+      sw.back = true;
+      for (const g of sw.angs) for (const e of onLine(p, g, sw.range, sw.width)) reap(e, sw.dmg, g + Math.PI, 40);
+    }
+    if (gyreLife !== p) { gyres = []; gyreLife = p; } // a new life clears them
+    for (const g of gyres) {
+      g.t -= dt;
+      for (const e of G.enemies) {
+        if (e.rise > 0 || e.removed || (e.gyreT || 0) > G.t || Math.abs(dist(g.x, g.y, e.x, e.y) - g.r * 0.85) > 22 + e.def.radius) continue;
+        e.gyreT = G.t + 1; // each Drowned cut at most once a second
+        reap(e, kit.ability.dmg * 0.5 * K.power() * st.dmgMult, Math.atan2(e.y - g.y, e.x - g.x), 40);
+        e.stun = Math.max(e.stun || 0, 1);
+        e.snareT = Math.max(e.snareT || 0, 1);
+      }
+    }
+    gyres = gyres.filter((g) => g.t > 0);
+    for (const e of G.enemies) if (e.snareT > 0) e.snareT -= dt;
 
     // Flame Bastion walls block, burn and slow the Drowned.
     for (const w of G.walls) {
       w.t -= dt;
       for (const e of G.enemies) {
-        if (e.rise > 0 || e.removed) continue;
+        if (e.rise > 0 || e.removed || e.def.king) continue; // the Sunken King is far too big to fence in (src/finale.js)
         const s = segDist(e.x, e.y, w), min = e.def.radius + 8;
         if (s.d < min) {
           const nx = (e.x - s.qx) / (s.d || 1), ny = (e.y - s.qy) / (s.d || 1);
           e.x = s.qx + nx * min; e.y = s.qy + ny * min;
           e.hp -= w.dps * dt;
           e.slow = Math.max(e.slow, 0.3);
+          if (!(e.burn > 0)) { e.burn = 2; e.burnDps = w.dps * 0.4; } // whatever touches it catches fire
           if (Math.random() < 0.05) G.spark(e.x, e.y - 20, "255,130,50", 40);
           if (e.hp <= 0) G.kill(e);
         }
       }
     }
     G.walls = G.walls.filter((w) => w.t > 0);
+    // embers rising off the walls
+    for (const w of G.walls) if (Math.random() < dt * 14) {
+      const u = Math.random();
+      G.effects.push({ type: "spark", x: w.x1 + (w.x2 - w.x1) * u, y: w.y1 + (w.y2 - w.y1) * u - rand(10, 30), vx: rand(-12, 12), vy: rand(-70, -35), t: 0, max: rand(0.6, 1.2), col: rand(0, 1) < 0.5 ? "255,190,90" : "255,120,40", size: rand(1.5, 3) });
+    }
 
     // Fire trails and healing sanctuaries.
     for (const z of G.lightZones) {
       if (z.fire) {
         for (const e of G.enemies) {
-          if (e.rise > 0 || e.removed || dist(z.x, z.y, e.x, e.y) > z.r * 0.7) continue;
+          if (e.rise > 0 || e.removed || e.def.king || dist(z.x, z.y, e.x, e.y) > z.r * 0.7) continue;
           e.hp -= z.dps * dt;
           if (e.hp <= 0) G.kill(e);
         }
