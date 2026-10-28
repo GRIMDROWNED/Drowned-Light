@@ -833,9 +833,12 @@ FINALE_CELLS = {
     'finale/king-hands.png': [('fnHandRest', (0, 0, 765, 514)), ('fnHandRaised', (765, 0, 1536, 514)),
                               ('fnHandSlam', (0, 514, 765, 1024)), ('fnHandSweep', (765, 514, 1536, 1024))],
     'finale/drowned-gate.png': [('fnGate1', (0, 0, 724, 724)), ('fnGate2', (724, 0, 1448, 724)), ('fnGate3', (1448, 0, 2172, 724))],
+    # the causeway's low wall (running away from the viewer) and its fire-bowl post; the broken piece faces the viewer
+    # and isn't used (causeway-walls-iso.png is an isometric try, unused too)
+    'finale/causeway-walls.png': [('fnWall', (0, 0, 500, 887)), ('fnPost', (1340, 0, 1774, 887))],
 }
-FINALE_COLORS = {'finale/drowned-gate.png': 160}  # its small red and green hollows and the flames need the room
-FINALE_K = {'finale/king-body.png': 0.6, 'finale/king-hands.png': 0.48, 'finale/drowned-gate.png': 0.51}
+FINALE_COLORS = {'finale/drowned-gate.png': 160, 'finale/causeway-walls.png': 96}  # its small red and green hollows and the flames need the room
+FINALE_K = {'finale/king-body.png': 0.6, 'finale/king-hands.png': 0.48, 'finale/drowned-gate.png': 0.51, 'finale/causeway-walls.png': 0.17}
 
 if not only or 'finale' in only:
     done = []

@@ -555,7 +555,7 @@
     if (cam && Math.abs(cam.x - g.x) < 2200 && Math.abs(cam.y - g.y) < 2200) {
       for (const sx of [-1, 1]) {
         L.push({ x: g.x + sx * bowlX(), y: g.y - 255, r: 210, s: 0.7, col: "255,160,70", a: 0.75, flick: 1 });
-        for (const ty of TORCHES) L.push({ x: g.x + sx * (CW + 16), y: g.y + ty - 70, r: 150, s: 0.6, col: "255,160,70", a: 0.7, flick: 1 });
+        for (const ty of TORCHES) L.push({ x: g.x + sx * (CW + 16), y: g.y + ty - (DL.Art.sprites.fnPost ? 95 : 70), r: 150, s: 0.6, col: "255,160,70", a: 0.7, flick: 1 });
       }
     }
     const e = Finale.king();
@@ -657,6 +657,16 @@
     }
     for (const py of [24, 370, 720]) WALLS.push({ x: sx * (CW + 16), y: py, post: true });
     for (const ty of TORCHES) WALLS.push({ x: sx * (CW + 16), y: ty, torch: true });
+  }
+  // the same out of Robert's drawn wall and fire-bowl post (props/fnWall, fnPost): a stretch of wall every 46 px, gaps where
+  // it's tumbled down, a post with its fire at each torch and at the far end
+  const DWALLS = [];
+  for (const sx of [-1, 1]) {
+    for (let i = 0, y = 40; y < 700; i++, y += 46) {
+      if (H(i, sx > 0 ? 17 : 18) < 0.14 && !TORCHES.some((ty) => Math.abs(ty - y) < 70)) continue;
+      DWALLS.push({ x: sx * (CW + 18), y, drawn: "fnWall" });
+    }
+    for (const ty of [...TORCHES, 720]) DWALLS.push({ x: sx * (CW + 18), y: ty + 6, drawn: "fnPost" });
   }
 
   // Coarse buffers: paint in world (or gate-local) coordinates at 1/P scale, then stamp them back up unsmoothed.
@@ -845,7 +855,7 @@
     if (g.x + 900 > view.left && g.x - 900 < view.right && g.y - 820 < view.bottom && g.y + 820 > view.top) {
       for (const r of RUINS) list.push({ y: g.y + r[1], f: () => drawRuin(c, g.x + r[0], g.y + r[1], r[2], r[3], t) });
       for (const a of ARCHES) list.push({ y: g.y + a[1], f: () => drawArch(c, g.x + a[0], g.y + a[1], a[2], a[3], t) });
-      for (const w of WALLS) list.push({ y: g.y + w.y, f: () => drawWall(c, g, w, t) });
+      for (const w of DL.Art.sprites.fnWall ? DWALLS : WALLS) list.push({ y: g.y + w.y, f: () => drawWall(c, g, w, t) });
       if (e) list.push({ y: g.y - 40, f: () => drawKing(c, e, t) });
       else if (kingArt() && now() - deathAt < 5) {
         // slain, he sinks
@@ -979,6 +989,11 @@
   // a stretch of the causeway's low wall (its top, and its south face), a post, or a torch
   function drawWall(c, g, w, t) {
     const x = g.x + w.x, y = g.y + w.y;
+    if (w.drawn) {
+      c.fillStyle = "rgba(0,0,0,0.35)"; c.beginPath(); c.ellipse(x, y, 20, 6, 0, 0, TAU); c.fill();
+      spr(c, w.drawn, x, y + 2, 1);
+      return;
+    }
     if (w.torch) {
       const s = DL.Art.sprites.torch;
       if (!s) return;
