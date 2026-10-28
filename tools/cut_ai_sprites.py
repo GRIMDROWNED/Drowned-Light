@@ -102,6 +102,8 @@ GRIDS = {
     'chain-reaper/poses-a.png': (3, 2, POSES_A),
     'chain-reaper/poses-b.png': (3, 2, POSES_B),
     'chain-reaper/dash.png': (2, 1, ['13_dash', '14_dashB']),
+    # the Ashen Arbalist's ability poses: his dash, then Scatter Shot kneeling to aim and fired
+    'ashen-arbalist/abilities.png': (3, 1, ['13_dash', '14_castA', '15_castB']),
     'colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '11_hurt']),
     'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
 }
@@ -212,7 +214,11 @@ SETS = {
     'drowned-sovereign': ('drowned/champion', 'drowned-sovereign/01_front.png', 128, 1, twelve('drowned-sovereign', TWELVE_FILES)),
     # kit knights: the body is 80 px like the Lantern Knight's, so the reference pose with its pike above the hood is taller
     'pike-warden': ('pike-warden', 'pike-warden/01_front.png', 104, 1, twelve('pike-warden', TWELVE_FILES)),
-    'ashen-arbalist': ('ashen-arbalist', 'ashen-arbalist/01_front.png', 83, 1, twelve('ashen-arbalist', TWELVE_FILES)),
+    # redrawn 2026-10-28 (white hood, crossbow): the slimmest, shortest knight; his ability poses were rendered at another scale
+    'ashen-arbalist': ('ashen-arbalist', 'ashen-arbalist/01_front.png', 82, 1, dict(twelve('ashen-arbalist', TWELVE_FILES), **{
+        'ashen-arbalist/13_dash.png': ('side/dash', {'height': 61}),
+        'ashen-arbalist/14_castA.png': ('side/castA', {'height': 58}),
+        'ashen-arbalist/15_castB.png': ('side/castB', {'height': 65})})),
     'relic-bearer': ('relic-bearer', 'relic-bearer/01_front.png', 98, 1, twelve('relic-bearer', TWELVE_FILES)),
     # the heaviest kit (bulk 1 in src/units.js): broader than the others, his horns and big sword make up the height
     'flame-bastion': ('flame-bastion', 'flame-bastion/01_front.png', 94, 1, twelve('flame-bastion', TWELVE_FILES)),
@@ -356,9 +362,9 @@ SHEETS = {
         ('chain-reaper/walk-back-4.png', 4, 1, 84, 'walkB'),
     ],
     'ashen-arbalist': [
-        ('ashen-arbalist/walk-side-4.png', 4, 1, 79, 'side/walk'),
-        ('ashen-arbalist/walk-front-4.png', 4, 1, 83, 'walkF'),
-        ('ashen-arbalist/walk-back-4.png', 4, 1, 83, 'walkB'),
+        ('ashen-arbalist/walk-side-4.png', 4, 1, 80, 'side/walk'),
+        ('ashen-arbalist/walk-front-4.png', 4, 1, 82, 'walkF'),
+        ('ashen-arbalist/walk-back-4.png', 4, 1, 82, 'walkB'),
     ],
     'relic-bearer': [
         ('relic-bearer/walk-side-4.png', 4, 1, 103, 'side/walk'),
@@ -596,6 +602,9 @@ PROP_GRIDS = {
     'chain-reaper/snared.png': (1, 1, ['reaperSnared']),
     # the Flame Bastion's fire wall (src/kits.js, drawn in src/render.js): one section of the wall flickering, lined up along it
     'flame-bastion/fire-wall.png': (4, 1, ['wallFire1', 'wallFire2', 'wallFire3', 'wallFire4']),
+    # the Ashen Arbalist's bolts in flight (plain, then the level 15 Flare Bolt) and the burst of light where a flare lands
+    'ashen-arbalist/bolts.png': (2, 1, ['arbBolt', 'arbFlareBolt']),
+    'ashen-arbalist/flare.png': (4, 1, ['arbFlare1', 'arbFlare2', 'arbFlare3', 'arbFlare4']),
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
@@ -664,6 +673,8 @@ PROP_WIDTH.update({'reaperSnare': 230, 'reaperSnared': 36})  # the ring as wide 
 PROP_SAME.update({'reaperSickle2': 'reaperSickle1', 'reaperSickle3': 'reaperSickle1', 'reaperSickle4': 'reaperSickle1'})
 PROP_WIDTH['wallFire1'] = 84  # a section about half the wall's 170 px, so they overlap along it
 PROP_SAME.update({'wallFire2': 'wallFire1', 'wallFire3': 'wallFire1', 'wallFire4': 'wallFire1'})
+PROP_WIDTH.update({'arbBolt': 28, 'arbFlare2': 124})  # a bolt about a third of the knight; the burst as wide as a flare's reach (game.js flare(), 58 px)
+PROP_SAME.update({'arbFlareBolt': 'arbBolt', 'arbFlare1': 'arbFlare2', 'arbFlare3': 'arbFlare2', 'arbFlare4': 'arbFlare2'})
 # Prop sheets drawn on another key colour than magenta, by folder.
 PROP_KEY = {'chain-reaper': (0, 255, 0)}
 PROP_OUT = 'props'

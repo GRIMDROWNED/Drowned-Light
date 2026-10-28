@@ -258,6 +258,10 @@
           const w = (i / n) * f.h * Math.min(1, 0.3 + k), x = f.x + f.ux * d - f.uy * w, y = f.y + f.uy * d + f.ux * w;
           Art.drawFire(c, x, y, (2.2 - k * 1.2) * (1 - Math.abs(i / n) * 0.4), t + i);
         }
+      } else if (f.type === "flare" && Art.sprites.arbFlare1) {
+        // the Ashen Arbalist's drawn burst of light, spark -> star and ring -> fading ring
+        const s = Art.sprites["arbFlare" + Math.min(4, 1 + Math.floor((f.t / f.max) * 4))], w = s.w * PS * f.s, h = s.h * PS * f.s;
+        c.drawImage(s.c, Math.round(f.x - w / 2), Math.round(f.y + 12 * f.s - h), w, h); // the ring's front edge on the ground
       } else if (f.type === "ring") {
         const k = f.t / f.max, r = f.r0 + (f.r1 - f.r0) * Math.sqrt(k);
         c.strokeStyle = `rgba(${f.col},${(1 - k) * 0.9})`;
@@ -1518,6 +1522,17 @@
       c.beginPath(); c.moveTo(b.x, b.y); c.lineTo(b.x - ux * 46, b.y - uy * 46); c.stroke();
       c.fillStyle = "rgba(255,255,240,0.95)";
       c.beginPath(); c.moveTo(b.x + ux * 8, b.y + uy * 8); c.lineTo(b.x - uy * 4, b.y + ux * 4); c.lineTo(b.x + uy * 4, b.y - ux * 4); c.fill();
+      return;
+    }
+    const bolt = b.kind === "bolt" && !b.hostile && Art.sprites[b.flare ? "arbFlareBolt" : "arbBolt"];
+    if (bolt) {
+      // the Ashen Arbalist's drawn bolt, its head at the front, turned the way it flies
+      const w = bolt.w * PS, h = bolt.h * PS;
+      c.save();
+      c.globalCompositeOperation = "source-over";
+      c.translate(b.x, b.y); c.rotate(a);
+      c.drawImage(bolt.c, -w + 4, -h / 2, w, h);
+      c.restore();
       return;
     }
     const len = b.kind === "arrow" ? 14 : b.kind === "bolt" ? (b.hostile === false && b.flare ? 18 : 14) : 8;
