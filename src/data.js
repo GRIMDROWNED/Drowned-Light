@@ -202,11 +202,13 @@
     flameBastion: {
       name: "Flame Bastion", tag: "Kit 05", motto: "Some light burns brighter.", roles: ["Tank", "Area damage", "Hold the line"],
       weapon: "Sword and bastion shield", color: "255,120,50",
-      desc: "An unbreakable guard. The shield blunts every blow, Shield Slam staggers, and Flame Bastion raises a wall of fire.",
-      attack: { type: "arc", name: "Bastion Blade", dmg: 16, range: 56, arc: 1.8, cd: 0.62, kb: 170 },
+      desc: "An unbreakable guard with a huge blade. Wide, heavy cleaves, a shield that blunts every blow, Shield Slam staggers, and Flame Bastion erupts into a wall of fire.",
+      // the great sword: the widest, longest swing of any kit, slower and harder than the Lantern Blade's
+      attack: { type: "arc", name: "Bastion Blade", dmg: 20, range: 74, arc: 2.2, cd: 0.7, kb: 210 },
       dash: { type: "slam", dmg: 14, stun: 0.8 },
-      ability: { id: "wall", name: "Flame Bastion", oil: 14, cd: 15, length: 150, dps: 14, dur: 7,
-        desc: "Raise a wall of fire that blocks the Drowned, burns them and lights the night." },
+      // fire erupts from your feet and races `reach` px ahead (hitting and lighting all in its path), then stands as the wall
+      ability: { id: "wall", name: "Flame Bastion", oil: 14, cd: 14, length: 170, dps: 14, dur: 7, reach: 80, dmg: 24, burn: 6,
+        desc: "Fire erupts from your feet and races ahead, hurling back and setting alight everything in its path, then stands as a wall that blocks and burns the Drowned and lights the night." },
       passive: { guard: 0.25 },
       special: { name: "Bastion Shield", desc: "Your shield blocks 25% of every blow." },
       milestones: [
