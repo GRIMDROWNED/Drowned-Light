@@ -169,6 +169,24 @@ def match_colors(ref_img, key=(255, 0, 255), tol=120):
     return recolor
 
 
+def match_hist(ref_img, key=(255, 0, 255), tol=120):
+    """A recolor function that gives a render the exact colour spread of a reference render: each channel's
+    values are mapped quantile for quantile onto the reference's, glow included. Used when separate AI renders
+    of one character drift in colour and shading (the Jade Breaker's single-pose renders)."""
+    a = np.asarray(ref_img.convert('RGB')).astype(float)
+    fg = np.sqrt(((a - np.array(key)) ** 2).sum(-1)) > tol
+    q = np.linspace(0, 100, 257)
+    ref = np.percentile(a[fg], q, axis=0)
+    def recolor(x):
+        x = x.copy()
+        m = x.sum(-1) > 0
+        v = x[m]
+        for i in range(3):
+            x[..., i][m] = np.interp(v[:, i], np.percentile(v[:, i], q), ref[:, i])
+        return x
+    return recolor
+
+
 def mirror_legs(im, legs=0.32, half=9, cx=None):
     """Make the other foot's step from a front or back walk frame: flip the lowest `legs` share of the
     figure left to right inside a strip `half` px either side of the feet's centre. Runs of feet columns
