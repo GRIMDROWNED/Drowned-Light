@@ -29,7 +29,8 @@
       el.addEventListener("contextmenu", (e) => e.preventDefault());
     };
     press("btnDash", () => DL.Input.trigger("dash"));
-    press("btnAbility", () => DL.Input.trigger("ability"));
+    press("btnAbility", () => { DL.Input.abilityBtn = true; DL.Input.trigger("ability"); });
+    for (const ev of ["pointerup", "pointercancel", "pointerleave"]) $("btnAbility").addEventListener(ev, () => { DL.Input.abilityBtn = false; });
     press("btnTorch", () => DL.Input.trigger("torch"));
     press("btnBoost", () => DL.Input.trigger("boost"));
     // Manual Attack button: strikes for as long as it's held.

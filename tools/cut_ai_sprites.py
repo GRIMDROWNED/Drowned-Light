@@ -373,9 +373,9 @@ SHEETS = {
         ('chain-reaper/walk-front-4.png', 4, 1, 84, 'walkF'),
         ('chain-reaper/walk-back-4.png', 4, 1, 84, 'walkB'),
     ],
-    # no front walk was drawn: his front view steps on its own (src/sprites.js)
     'jade-breaker': [
         ('jade-breaker/walk-side-4.png', 4, 1, 88, 'side/walk'),
+        ('jade-breaker/walk-front.png', 4, 1, 90, 'walkF'),
         ('jade-breaker/walk-back.png', 4, 1, 90, 'walkB'),
     ],
     'ashen-arbalist': [

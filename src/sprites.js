@@ -144,12 +144,11 @@
     return set;
   }
 
-  // The Jade Breaker (kit 07): the 12 poses and a back walk; no front walk was drawn, so his front view steps on its own.
+  // The Jade Breaker (kit 07): the 12 poses and walk sheets for all three views.
   // His sweep is wind-up, mid-sweep, follow-through; Jade Tide is a crouched wind-up and the great sweep; a low lunge for his dash.
   function jade() {
-    const set = Object.assign(walking("jadeBreaker", [76, 91], [22, 92], [29, 93]), { path: "assets/sprites/jade-breaker/", keys: stages("jadeBreaker") });
+    const set = Object.assign(walking("jadeBreaker", [76, 91], [28, 92], [29, 93]), { path: "assets/sprites/jade-breaker/", keys: stages("jadeBreaker") });
     for (const dir in set.views) Object.assign(set.views[dir], { cast: ["side/castA", "side/castB", "side/castB"], dash: ["side/dash"] });
-    set.views.down.walk = stepped(["front", "front", "front", "front"]);
     return set;
   }
 

@@ -248,8 +248,11 @@
       // moving `full` s builds the next swing up to +bonus damage; standing still drains it twice as fast
       passive: { momentum: { full: 1, bonus: 0.3 } },
       // a fan of crystals bursting out row by row to `reach`, each row `step` px on; they stand `life` s, then shatter
+      // held (`charge`): after `hold` s it's charged; let go to rush forward `dash` s at `speed`, striking all you pass
+      // for the sweep's damage x`bonus`, and the tide bursts out where you stop, x`bonus` too. His own dash stays free.
       ability: { id: "tide", name: "Jade Tide", oil: 14, cd: 13, dmg: 30, kb: 300, reach: 210, step: 44, fan: 1.3, speed: 520, life: 0.7, wall: 4,
-        desc: "A huge sweep that sends a wave of jade crystals bursting from the ground in a fan ahead: every Drowned it reaches is struck and hurled back." },
+        charge: { hold: 0.35, max: 1.5, dash: 0.28, speed: 560, bonus: 1.3, kb: 260 },
+        desc: "A huge sweep that sends a wave of jade crystals bursting from the ground in a fan ahead: every Drowned it reaches is struck and hurled back. Hold it to charge, then let go to rush forward in a dash strike that hits 30% harder and ends in the tide." },
       special: { name: "Momentum", desc: "Moving builds up your next swing: up to 30% more damage after a second on the move." },
       milestones: [
         { name: "Crystal Edge", desc: "Your sweep reaches farther and hurls the Drowned harder." },
