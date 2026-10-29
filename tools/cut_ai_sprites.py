@@ -530,7 +530,8 @@ PROP_GRIDS = {
     'plants/plants-unlit.png': (3, 2, ['refugeOff', 'sentinelOff', 'rootOff', 'sproutOff', 'sproutBare', 'gardenOff']),
     'plants/reeds.png': (3, 2, ['reeds1', 'reeds2', 'reeds3', 'reeds4', 'reeds5', 'reeds6']),
     'plants/garden-beds.png': (3, 1, ['gardenBed1', 'gardenBed2', 'gardenBed3']),
-    'world/trees.png': (3, 1, ['swampTree1', 'swampTree2', 'swampTree3']),
+    # three trees, each whole -> lopped -> broken -> stump as it's chopped
+    'world/trees-stages.png': (4, 3, ['swampTree11', 'swampTree12', 'swampTree13', 'swampTree14', 'swampTree21', 'swampTree22', 'swampTree23', 'swampTree24', 'swampTree31', 'swampTree32', 'swampTree33', 'swampTree34']),
     # camp buildings, one picture per level (the Central Flame has one per camp tier)
     'camp/flame.png': (3, 1, ['flame1', 'flame2', 'flame3']),
     'camp/forge.png': (4, 1, ['forge1', 'forge2', 'forge3', 'forge4']),
@@ -609,7 +610,7 @@ PROP_GRIDS = {
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
 # width of their rocky base, since glow wisps change its height. Names not listed here use their own height.
-PROP_HEIGHT = {'refugeOff': 116, 'sentinelOff': 96, 'rootOff': 150, 'sproutOff': 60, 'gardenOff': 14, 'husk': 104, 'reeds2': 50, 'gardenBed2': 100, 'swampTree2': 140, 'boulder11': 60,
+PROP_HEIGHT = {'refugeOff': 116, 'sentinelOff': 96, 'rootOff': 150, 'sproutOff': 60, 'gardenOff': 14, 'husk': 104, 'reeds2': 50, 'gardenBed2': 100, 'swampTree21': 140, 'boulder11': 60,
                'flame3': 110, 'tower3': 160, 'pylon3': 120,
                'stake': 40, 'gatePost': 100, 'banner': 96,
                'torch': 58, 'fire3': 64}
@@ -629,7 +630,7 @@ PROP_TOL['resPearl'] = 60
 # side): padded so the footing is centred, since sprites are drawn centred on their spot.
 PROP_FOOT_CENTRE = {'stake', 'gatePost', 'gatePost2', 'fire1', 'fire2', 'fire3', 'fire4', 'fire5', 'fire6'}
 # Variants drawn on one sheet at one scale: name -> the variant whose scale it shares.
-PROP_SAME = {'caveSealed': 'caveOpen', 'swampTree1': 'swampTree2', 'swampTree3': 'swampTree2', 'gardenBed1': 'gardenBed2', 'gardenBed3': 'gardenBed2', 'reeds1': 'reeds2', 'reeds3': 'reeds2', 'reeds4': 'reeds2', 'reeds5': 'reeds2', 'reeds6': 'reeds2',
+PROP_SAME = {'caveSealed': 'caveOpen', 'gardenBed1': 'gardenBed2', 'gardenBed3': 'gardenBed2', 'reeds1': 'reeds2', 'reeds3': 'reeds2', 'reeds4': 'reeds2', 'reeds5': 'reeds2', 'reeds6': 'reeds2',
             'boulder12': 'boulder11', 'boulder13': 'boulder11', 'boulder21': 'boulder11', 'boulder22': 'boulder11', 'boulder23': 'boulder11', 'boulder31': 'boulder11', 'boulder32': 'boulder11', 'boulder33': 'boulder11', 'boulder41': 'boulder11', 'boulder42': 'boulder11', 'boulder43': 'boulder11',
             'forge1': 'forge4', 'forge2': 'forge4', 'forge3': 'forge4',
             'armory1': 'armory4', 'armory2': 'armory4', 'armory3': 'armory4',
@@ -679,7 +680,8 @@ PROP_SAME.update({'arbFlareBolt': 'arbBolt', 'arbFlare1': 'arbFlare2', 'arbFlare
 PROP_KEY = {'chain-reaper': (0, 255, 0)}
 PROP_OUT = 'props'
 # Renders where the magenta background tinted the art pink (the trees' moss): pull it back out (see despill).
-PROP_DESPILL = {'swampTree1', 'swampTree2', 'swampTree3'}
+PROP_DESPILL = set(['swampTree11', 'swampTree12', 'swampTree13', 'swampTree14', 'swampTree21', 'swampTree22', 'swampTree23', 'swampTree24', 'swampTree31', 'swampTree32', 'swampTree33', 'swampTree34'])
+PROP_SAME.update({n: 'swampTree21' for n in PROP_DESPILL if n != 'swampTree21'})
 
 # Sheets where two poses touch: magenta lines (x, y0, y1) painted down the gap before the sheet is split.
 SEAMS = {'wyvern-f3/poses-a.png': [(533, 0, 512)], 'wyvern-f3/fly-back.png': [(446, 0, 724)],
