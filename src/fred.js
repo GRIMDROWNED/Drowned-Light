@@ -646,7 +646,7 @@
   function drawFred(c, m, t) {
     const f = DL.Summons.form("fred"), { dir, flip } = unitDir(m.angle), anim = animOf(m, t), key = drawnKey(f);
     shadow(c, m.x, m.y, [7, 9, 13, 30][f], [2.5, 3, 4, 7][f]);
-    if (key) { const [a, fr, ang] = drawnFrame(m, t); return DL.Art.drawUnit(c, key, a, fr, ang, m.x, m.y, 1); }
+    if (key) { const [a, fr, ang] = drawnFrame(m, t); return DL.Art.drawUnit(c, key, a, fr, ang, m.x, m.y, 1, { body: m }); }
     figure(c, m.x, m.y, { f, dir, flip, anim, ph: m.animT * 11, t, id: m.id });
   }
   // Little Fred in his ring: asleep (the drawn breath pose, eyes shut), or awake and fighting for his life.

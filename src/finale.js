@@ -989,7 +989,7 @@
     c.beginPath(); c.ellipse(b.x, b.y, 12 * s, 4.4 * s, 0, 0, TAU); c.fill();
     if (b.hitT > 0) c.filter = "brightness(1.8)";
     if (DL.Art.sprites.fbFront) drawnBearer(c, b, t, s / 4.4);
-    else DL.Render.kindleUnit(c, { x: b.x, y: b.y, angle: b.angle, moving: b.moving, animT: b.animT }, t, s, b.down);
+    else DL.Render.kindleUnit(c, { x: b.x, y: b.y, angle: b.angle, moving: b.moving, animT: b.animT, body: b }, t, s, b.down);
     c.restore();
     // its health, while it's hurt
     if (b.hp < b.max && !b.down) {
