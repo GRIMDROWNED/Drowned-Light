@@ -97,6 +97,7 @@
     Object.assign(walking("relicBearer", [57, 105], [39, 101], [40, 101]), { path: "assets/sprites/relic-bearer/", keys: stages("relicBearer") }),
     Object.assign(walking("flameBastion", [58, 97], [39, 97], [33, 93]), { path: "assets/sprites/flame-bastion/", keys: stages("flameBastion") }),
     reaper(),
+    jade(),
     // the Bone Hound summon: the same 12 poses and walk sheets, its side walk a four-legged gallop
     Object.assign(walking("boneHound", [55, 55], [27, 64], [26, 66]), { path: "assets/sprites/bone-hound/", keys: { boneHound: [0, false] } }),
     // its first form, the Bone Pup (src/summons.js), cut at res 4: 22 px tall, about three quarters of the hound
@@ -140,6 +141,15 @@
   function arbalist() {
     const set = Object.assign(walking("ashenArbalist", [37, 83], [31, 84], [33, 84]), { path: "assets/sprites/ashen-arbalist/", keys: stages("ashenArbalist") });
     for (const dir in set.views) Object.assign(set.views[dir], { cast: ["side/castA", "side/castB", "side/castB"], dash: ["side/dash"] });
+    return set;
+  }
+
+  // The Jade Breaker (kit 07): the 12 poses and a back walk; no front walk was drawn, so his front view steps on its own.
+  // His sweep is wind-up, mid-sweep, follow-through; Jade Tide is a crouched wind-up and the great sweep; a low lunge for his dash.
+  function jade() {
+    const set = Object.assign(walking("jadeBreaker", [76, 91], [22, 92], [29, 93]), { path: "assets/sprites/jade-breaker/", keys: stages("jadeBreaker") });
+    for (const dir in set.views) Object.assign(set.views[dir], { cast: ["side/castA", "side/castB", "side/castB"], dash: ["side/dash"] });
+    set.views.down.walk = stepped(["front", "front", "front", "front"]);
     return set;
   }
 
@@ -253,6 +263,8 @@
     "blackPearl11", "blackPearl12", "blackPearl13", "blackPearl21", "blackPearl22", "blackPearl23", "blackPearl31", "blackPearl32", "blackPearl33", "resBlack",
     // the Chain Reaper's flying sickle, chain and its weight, Violet Snare's ring and the coil on a snared Drowned (src/render.js)
     "reaperSickle1", "reaperSickle2", "reaperSickle3", "reaperSickle4", "reaperChain", "reaperWeight", "reaperSnare", "reaperSnared",
+    // Jade Tide's crystals (src/kits.js, drawn in src/render.js)
+    "jadeCrystal1", "jadeCrystal2", "jadeCrystal3", "jadeCrystal4",
     // the Flame Bastion's drawn fire wall, four flickering frames (src/render.js)
     "wallFire1", "wallFire2", "wallFire3", "wallFire4",
     // the Ashen Arbalist's bolts and the burst where a flare lands (src/render.js)

@@ -223,6 +223,12 @@
     if (pl && pl.swing && pl.swing.kind === "chain") list.push({ y: pl.y + 1, f: () => drawThrow(c, pl.x, pl.y, pl.swing, t) });
     for (const a of G.allies) if (a.swing && a.swing.kind === "chain" && !a.down) list.push({ y: a.y + 1, f: () => drawThrow(c, a.x, a.y, a.swing, t) });
     if (Art.sprites.reaperSnared) for (const e of G.enemies) if (e.snareT > 0 && !e.removed) list.push({ y: e.y + 1, f: () => sprite(c, "reaperSnared", e.x, e.y + 5, false, Math.min(1, e.snareT * 3)) });
+    // Jade Tide's crystals: cracking up, grown (glinting now and then), shattering in their last moments
+    if (Art.sprites.jadeCrystal2) for (const cr of DL.Kits.crystals()) {
+      if (cr.at > 0) continue;
+      const left = cr.max - cr.t, f = cr.t < 0.08 ? 1 : left < 0.25 ? 4 : (Math.floor(G.t * 3 + cr.x) % 4 === 0 ? 3 : 2);
+      list.push({ y: cr.y, f: () => sprite(c, "jadeCrystal" + f, cr.x, cr.y + 8, cr.flip, f === 4 ? Math.max(0, left / 0.25) : 1) });
+    }
     list.sort((a, b) => a.y - b.y);
     for (const it of list) it.f();
 
