@@ -376,6 +376,10 @@ SHEETS = {
     'jade-breaker': [
         ('jade-breaker/walk-side-4.png', 4, 1, 88, 'side/walk'),
         ('jade-breaker/walk-front.png', 4, 1, 90, 'walkF'),
+        # his run (played at full speed): leaning forward, so shorter than he stands
+        ('jade-breaker/run-side.png', 4, 1, 86, 'side/run'),
+        ('jade-breaker/run-front.png', 4, 1, 92, 'runF'),
+        ('jade-breaker/run-back.png', 4, 1, 92, 'runB'),
         ('jade-breaker/walk-back.png', 4, 1, 90, 'walkB'),
     ],
     'ashen-arbalist': [

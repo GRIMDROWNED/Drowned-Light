@@ -149,6 +149,13 @@
   function jade() {
     const set = Object.assign(walking("jadeBreaker", [76, 91], [28, 92], [29, 93]), { path: "assets/sprites/jade-breaker/", keys: stages("jadeBreaker") });
     for (const dir in set.views) Object.assign(set.views[dir], { cast: ["side/castA", "side/castB", "side/castB"], dash: ["side/dash"] });
+    // his run at full speed (src/render.js), 4 frames a view
+    const RUN = { side: "side/run", down: "runF", up: "runB" }, feet = { side: [75, 90], down: [57, 94], up: [31, 94] };
+    for (const dir in RUN) {
+      const fr = [1, 2, 3, 4].map((i) => RUN[dir] + i);
+      set.views[dir].run = fr.map((f) => f + "@-");
+      Object.assign(set.feet, sheetFeet(fr, feet[dir]));
+    }
     return set;
   }
 
