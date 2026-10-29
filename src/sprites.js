@@ -149,19 +149,23 @@
   function jade() {
     const set = Object.assign(walking("jadeBreaker", [76, 91], [28, 92], [29, 93]), { path: "assets/sprites/jade-breaker/", keys: stages("jadeBreaker") });
     for (const dir in set.views) Object.assign(set.views[dir], { cast: ["side/castA", "side/castB", "side/castB"], dash: ["side/dash"] });
-    // his run at full speed (src/render.js), 4 frames a view
-    const RUN = { side: "side/run", down: "runF", up: "runB" }, feet = { side: [75, 90], down: [57, 94], up: [31, 94] };
-    for (const dir in RUN) {
-      const fr = [1, 2, 3, 4].map((i) => RUN[dir] + i);
-      set.views[dir].run = fr.map((f) => f + "@-");
-      Object.assign(set.feet, sheetFeet(fr, feet[dir]));
-    }
-    return set;
+    return running(set, [75, 90], [57, 94], [31, 94]);
   }
 
   function reaper() {
     const set = Object.assign(walking("chainReaper", [44, 80], [26, 86], [29, 86]), { path: "assets/sprites/chain-reaper/", keys: stages("chainReaper") });
     for (const dir in set.views) Object.assign(set.views[dir], { attack: ["attackA", "attackB", "attackB"], cast: ["attackC"], dash: ["side/dash"] });
+    return running(set, [55, 76], [42, 82], [33, 82]);
+  }
+
+  // A run played at full speed (src/render.js): 4 drawn frames a view (side/run1-4, runF1-4, runB1-4) and each sheet's foot point.
+  function running(set, side, front, back) {
+    const RUN = { side: ["side/run", side], down: ["runF", front], up: ["runB", back] };
+    for (const dir in RUN) {
+      const fr = [1, 2, 3, 4].map((i) => RUN[dir][0] + i);
+      set.views[dir].run = fr.map((f) => f + "@-");
+      Object.assign(set.feet, sheetFeet(fr, RUN[dir][1]));
+    }
     return set;
   }
 

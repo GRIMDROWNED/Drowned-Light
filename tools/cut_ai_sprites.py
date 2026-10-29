@@ -372,6 +372,10 @@ SHEETS = {
         ('chain-reaper/walk-side-4.png', 4, 1, 78, 'side/walk'),
         ('chain-reaper/walk-front-4.png', 4, 1, 84, 'walkF'),
         ('chain-reaper/walk-back-4.png', 4, 1, 84, 'walkB'),
+        # his run (played at full speed), on green like the rest of him
+        ('chain-reaper/run-side.png', 4, 1, 74, 'side/run'),
+        ('chain-reaper/run-front.png', 4, 1, 80, 'runF'),
+        ('chain-reaper/run-back.png', 4, 1, 80, 'runB'),
     ],
     'jade-breaker': [
         ('jade-breaker/walk-side-4.png', 4, 1, 88, 'side/walk'),
@@ -714,7 +718,7 @@ SEAMS = {'wyvern-f3/poses-a.png': [(533, 0, 512)], 'wyvern-f3/fly-back.png': [(4
          'wyvern-f2/fly-back.png': [(457, 0, 724), (1092, 0, 724), (1512, 0, 724)]}
 # Animation sheets whose wings reach over into the next cell: split by figure (as GRIDS are) and laid out
 # again in equal cells before cutting, so no frame picks up its neighbour's wingtip or loses its own.
-REGRID = {'wyvern-f%d/%s' % (f, n) for f in range(4) for n in ('fly-front.png', 'fly-back.png')} | {'mother/walk-front.png', 'mother/walk-back.png'}
+REGRID = {'wyvern-f%d/%s' % (f, n) for f in range(4) for n in ('fly-front.png', 'fly-back.png')} | {'mother/walk-front.png', 'mother/walk-back.png', 'chain-reaper/run-side.png'}
 
 def open_sheet(sheet):
     img = Image.open(os.path.join(SRC, sheet)).convert('RGB')
@@ -722,10 +726,10 @@ def open_sheet(sheet):
         img.paste((255, 0, 255), (x - 1, y0, x + 2, y1))
     return img
 
-def regrid(img, cols, rows):
-    cells = split_grid(img, cols, rows)
+def regrid(img, cols, rows, key=(255, 0, 255)):
+    cells = split_grid(img, cols, rows, key=key)
     cw, ch = max(c.width for c in cells), max(c.height for c in cells)
-    out = Image.new('RGB', (cw * cols, ch * rows), (255, 0, 255))
+    out = Image.new('RGB', (cw * cols, ch * rows), key)
     for i, c in enumerate(cells):
         out.paste(c, ((i % cols) * cw + (cw - c.width) // 2, (i // cols) * ch + ch - c.height))
     return out
@@ -784,7 +788,7 @@ for name, sheets in SHEETS.items():
         p = os.path.join(SRC, sheet)
         if not os.path.exists(p): continue
         img = open_sheet(sheet)
-        if sheet in REGRID: img = regrid(img, cols, rows)
+        if sheet in REGRID: img = regrid(img, cols, rows, KEY_OPTS.get(name, {}).get('key', (255, 0, 255)))
         if row:
             h = img.height // rows
             img, rows = img.crop((0, row[0] * h, img.width, (row[0] + 1) * h)), 1

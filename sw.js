@@ -2,7 +2,7 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.131";
+const VERSION = "0.15.132";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
@@ -36,8 +36,8 @@ const FILES = [
     "relic-bearer/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "flame-bastion/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "flame-bastion/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
-    "chain-reaper/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
-    "chain-reaper/side/": ["dash", "death", "hurt", "walk1", "walk2", "walk3", "walk4"],
+    "chain-reaper/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4", "runF1", "runF2", "runF3", "runF4", "runB1", "runB2", "runB3", "runB4"],
+    "chain-reaper/side/": ["dash", "death", "hurt", "walk1", "walk2", "walk3", "walk4", "run1", "run2", "run3", "run4"],
     "jade-breaker/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4", "runF1", "runF2", "runF3", "runF4", "runB1", "runB2", "runB3", "runB4"],
     "jade-breaker/side/": ["castA", "castB", "dash", "death", "hurt", "walk1", "walk2", "walk3", "walk4", "run1", "run2", "run3", "run4"],
     "bone-hound/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
