@@ -471,7 +471,7 @@
                    rain   from phase 2: black water rains on `n` spots round the knights, adding `corrupt` corruption. */
   DL.FINALE = {
     gate: { dist: 7400, clear: 800, foundR: 900, arenaR: 640, arenaY: 380, plantY: 560, view: 1850, viewW: 1350,
-      lake: { cy: -260, rx: 1400, ry: 1000 }, causeway: 210, taper: 0.55 },
+      lake: { cy: -260, rx: 1400, ry: 1000 }, causeway: 330, taper: 0.45 },
     speed: 24, wade: 0.6, leash: 340, hp: 1500, light: 260, restLight: 330, pulseEvery: 3, pulseR: 95, pulseDmg: 18,
     bandEvery: 15, bandN: 3, bandR: 440, braziers: 4, brazierR: 160, waveEvery: 11, waveN: 4, campR: 750, dawnHeal: 0.4,
     king: {

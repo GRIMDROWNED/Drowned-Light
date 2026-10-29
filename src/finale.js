@@ -621,8 +621,10 @@
   KG.heartX = 0;
   // Robert's drawn King (2026-10-28, cut by tools/cut_ai_sprites.py into props/fnKing*, fnHand*, fnGate*) stands farther
   // back: his body is cut off at the belly, drawn at `scale` × its file size, its bottom edge `water` px off the gate.
-  const DKG = { water: -205, heart: -358, heartX: 24, eyes: -560, eyeDx: 22, elbow: 360, elbowY: -230, rest: 450, restY: 40, drop: 620, lift: 0, scale: 2 };
+  const DKG = { water: -205, heart: -358, heartX: 24, eyes: -560, eyeDx: 22, elbow: 360, elbowY: -230, rest: 600, restY: 40, drop: 620, lift: 0, scale: 2 };
   const kingArt = () => !!DL.Art.sprites.fnKingStill;
+  // where each drawn pose has its eyes, px off the gate's middle and the waterline (his head turns between poses)
+  const DEYES = { fnKingStill: [[32, -362], [96, -354]], fnKingOpen: [[-50, -442], [-4, -446]], fnKingRoar: [[-18, -458], [32, -460]] };
   const gateArt = () => !!DL.Art.sprites.fnGate1;
   const GK = () => (kingArt() ? DKG : KG);
   const bowlX = () => (gateArt() ? 124 : KG.bowl); // the gate's fire bowls
@@ -948,9 +950,10 @@
     if (e) {
       const k = kingRise(e), dy = kingDrop(e) + bob(t), Q = GK(), top = g.y + Q.water, hx = g.x + Q.heartX;
       const ey = g.y + Q.eyes + dy, hy = g.y + Q.heart + dy;
-      if (ey < top) {
-        for (const sx of [-1, 1]) blob(g.x + sx * Q.eyeDx, ey, 26 + Math.sin(t * 3 + sx) * 3, `rgba(130,250,255,${0.9 * k})`, "rgba(60,220,230,0)");
-        blob(g.x, ey + 20, 90, `rgba(${CYAN},${0.22 * k})`, `rgba(${CYAN},0)`);
+      const eyes = kingArt() ? DEYES[kingPose(e)].map(([x, y]) => [g.x + x, top + y + dy]) : [-1, 1].map((sx) => [g.x + sx * Q.eyeDx, ey]);
+      if (eyes[0][1] < top) {
+        eyes.forEach(([x, y], i) => blob(x, y, (kingArt() ? 16 : 26) + Math.sin(t * 3 + i * 2) * 3, `rgba(130,250,255,${0.9 * k})`, "rgba(60,220,230,0)"));
+        blob((eyes[0][0] + eyes[1][0]) / 2, (eyes[0][1] + eyes[1][1]) / 2 + 20, 90, `rgba(${CYAN},${0.22 * k})`, `rgba(${CYAN},0)`);
       }
       if (hy < top) {
         if (Finale.isOpen(e)) blob(hx, hy, 64 + Math.sin(t * 9) * 6, "rgba(255,240,180,0.95)", "rgba(255,80,20,0)");
@@ -1259,8 +1262,8 @@
   }
   // Where each hand is: resting in the water beside the causeway, raised over a knight, or sweeping the arena.
   function handAt(e, side) {
-    const g = Finale.gate(), rest = { x: g.x + side * KG.rest, y: g.y + KG.restY, lift: 0, pose: "rest" }, k = kingRise(e);
-    if (k < 1) { const u = clamp((k - 0.6) / 0.4, 0, 1); return { x: g.x + side * (560 - 110 * u), y: g.y - 60 + 100 * u, lift: 140 * Math.sin(Math.PI * u), pose: u < 0.5 ? "raised" : "rest" }; } // up out of the water
+    const g = Finale.gate(), rest = { x: g.x + side * GK().rest, y: g.y + GK().restY, lift: 0, pose: "rest" }, k = kingRise(e);
+    if (k < 1) { const u = clamp((k - 0.6) / 0.4, 0, 1); return { x: g.x + side * (GK().rest + 110 - 110 * u), y: g.y - 60 + 100 * u, lift: 140 * Math.sin(Math.PI * u), pose: u < 0.5 ? "raised" : "rest" }; } // up out of the water
     const q = blows.find((o) => o.side === side && age(o) < o.delay + (o.kind === "sweep" ? 1.2 : 1));
     if (!q) return rest;
     const T = age(q);
