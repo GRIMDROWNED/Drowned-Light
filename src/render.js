@@ -59,9 +59,13 @@
   }
 
   R.treeSprite = (o) => treeSprite(o);
-  // Three drawn trees when their art is loaded, one picked per spot; else the two coded ones.
+  // Three drawn trees when their art is loaded, one picked per spot, chopped down in four stages
+  // (whole, lopped, broken, stump: every hit but the last shows); else the two coded ones.
   function treeSprite(o) {
-    return Art.sprites.swampTree1 ? "swampTree" + (o.art || (o.art = 1 + Math.floor(DL.hash(o.x | 0, o.y | 0, 11) * 3))) : "tree" + o.variant;
+    if (!Art.sprites.swampTree11) return "tree" + o.variant;
+    const v = o.art || (o.art = 1 + Math.floor(DL.hash(o.x | 0, o.y | 0, 11) * 3));
+    const k = o.mineHp == null ? 0 : 1 - o.mineHp / o.def.hits;
+    return "swampTree" + v + Math.min(4, 1 + Math.ceil(k * 3 - 1e-9));
   }
 
   R.rockSprite = (o) => rockSprite(o);
@@ -480,8 +484,8 @@
     sprite(c, name, x, o.y + 2, o.flip);
     c.restore();
     if (o.def.bloom && !o.dead && o.hp < o.maxHp) bar(c, o.x, o.y - Art.sprites[name].h * PS - 6, 34, o.hp / o.maxHp, "#5fe6ee");
-    // drawn boulders show their damage in their own stages
-    if (o.def.hits && o.mineHp != null && o.mineHp < o.def.hits && !/^(boulder|iron\d|amethyst)/.test(name)) drawCracks(c, o, name, 1 - o.mineHp / o.def.hits);
+    // drawn boulders and trees show their damage in their own stages
+    if (o.def.hits && o.mineHp != null && o.mineHp < o.def.hits && !/^(boulder|iron\d|amethyst|swampTree)/.test(name)) drawCracks(c, o, name, 1 - o.mineHp / o.def.hits);
   }
 
   // Damage on a supply node: dark cracks in stone and iron, pale splintered chips in wood and plants.
