@@ -4,8 +4,14 @@ window.DL = window.DL || {};
 (function (DL) {
   const TAU = Math.PI * 2;
 
+  // The game's version, read off this script's ?v= (index.html). Art files are fetched with it too, so an
+  // update's new art is fetched fresh instead of the old copy the previous version saved for offline play.
+  const ASSET_V = (document.currentScript && new URL(document.currentScript.src).searchParams.get("v")) || "";
+
   Object.assign(DL, {
     TAU,
+    ASSET_V,
+    asset: (url) => (ASSET_V ? url + "?v=" + ASSET_V : url),
     SEED: 1937,
     clamp: (v, a, b) => (v < a ? a : v > b ? b : v),
     lerp: (a, b, t) => a + (b - a) * t,

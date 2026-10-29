@@ -185,7 +185,7 @@
           this.tex[n] = { w: c.width, h: c.height, d: g.getImageData(0, 0, c.width, c.height).data };
           this.ground.clear();
         };
-        img.src = "assets/sprites/ground/" + n + ".png";
+        img.src = DL.asset("assets/sprites/ground/" + n + ".png");
       }
     },
     // The colour of texture n at world (x, y), darkened by k to sit under the art; null if not loaded.
