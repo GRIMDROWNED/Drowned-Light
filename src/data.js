@@ -237,8 +237,29 @@
         { name: "Violet Gyre", desc: "Violet Snare leaves a ring of whirling chains that cuts and roots whatever crosses it." },
       ],
     },
+    // Kit 07: the heaviest, widest swing in the game and the hardest knockback, on the fastest feet but one; slow to swing again.
+    jadeBreaker: {
+      name: "Jade Breaker", tag: "Kit 07", motto: "Stone remembers every blow.", roles: ["Heavy", "Crowd control", "Knockback"],
+      weapon: "Jade greatsword", color: "90,230,150",
+      desc: "A huge jade crystal greatsword. Slow, sweeping strikes that hurl the Drowned away, on fast feet: dart in, break them, dart out.",
+      attack: { type: "arc", name: "Jade Sweep", dmg: 26, range: 84, arc: 2.6, cd: 1.0, kb: 320 },
+      dash: { type: "plain" },
+      speedMult: 1.15,
+      // moving `full` s builds the next swing up to +bonus damage; standing still drains it twice as fast
+      passive: { momentum: { full: 1, bonus: 0.3 } },
+      // a fan of crystals bursting out row by row to `reach`, each row `step` px on; they stand `life` s, then shatter
+      ability: { id: "tide", name: "Jade Tide", oil: 14, cd: 13, dmg: 30, kb: 300, reach: 210, step: 44, fan: 1.3, speed: 520, life: 0.7, wall: 4,
+        desc: "A huge sweep that sends a wave of jade crystals bursting from the ground in a fan ahead: every Drowned it reaches is struck and hurled back." },
+      special: { name: "Momentum", desc: "Moving builds up your next swing: up to 30% more damage after a second on the move." },
+      milestones: [
+        { name: "Crystal Edge", desc: "Your sweep reaches farther and hurls the Drowned harder." },
+        { name: "Shatter", desc: "Drowned you knock back are stunned for a moment." },
+        { name: "Twin Tide", desc: "Jade Tide sends a second wave a moment after the first." },
+        { name: "Jade Bulwark", desc: "Jade Tide's crystals stand for 4 seconds as a wall the Drowned can't cross." },
+      ],
+    },
   };
-  DL.KIT_ORDER = ["lanternBlade", "pikeWarden", "ashenArbalist", "relicBearer", "flameBastion", "chainReaper"];
+  DL.KIT_ORDER = ["lanternBlade", "pikeWarden", "ashenArbalist", "relicBearer", "flameBastion", "chainReaper", "jadeBreaker"];
 
   /* ---------- pacing ----------
      Three levers slow everything down together:

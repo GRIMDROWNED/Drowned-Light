@@ -5,7 +5,7 @@ so poses keep their relative size."""
 import os, sys
 from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
-from cutlib import cool_violet, cut_keyed, cut_sheet, contact, match_colors, mirror_legs, recolor_frames, split_grid
+from cutlib import cool_violet, cut_keyed, cut_sheet, contact, match_colors, match_hist, mirror_legs, recolor_frames, split_grid
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files/art-prompts/returned'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites')
@@ -104,6 +104,10 @@ GRIDS = {
     'chain-reaper/dash.png': (2, 1, ['13_dash', '14_dashB']),
     # the Ashen Arbalist's ability poses: his dash, then Scatter Shot kneeling to aim and fired
     'ashen-arbalist/abilities.png': (3, 1, ['13_dash', '14_castA', '15_castB']),
+    # the Jade Breaker (kit 07): his dash, then Jade Tide's wind-up and the sweep that sends the crystals out
+    'jade-breaker/poses-a.png': (3, 2, POSES_A),
+    'jade-breaker/poses-b.png': (3, 2, POSES_B),
+    'jade-breaker/abilities.png': (3, 1, ['13_dash', '14_castA', '15_castB']),
     'colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '11_hurt']),
     'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
 }
@@ -134,7 +138,11 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
 KEY_OPTS = {'chain-reaper': {'key': (0, 255, 0)}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
 # Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
-RECOLOR = {'chain-reaper': cool_violet}
+def jade_match(x):
+    """The Jade Breaker's sheets each came out a little different in colour: match them all to his front view."""
+    if not hasattr(jade_match, 'f'): jade_match.f = match_hist(Image.open(os.path.join(SRC, 'jade-breaker/01_front.png')))
+    return jade_match.f(x)
+RECOLOR = {'chain-reaper': cool_violet, 'jade-breaker': jade_match}
 HOUND_H = 60
 EMBER_H = 136  # the Ember Hound (third form), cut at res 4: drawn 34 px tall with its flames, a little bigger than the hound
 WARG_H = 152  # the Grave Warg (last form), cut at res 4: drawn 38 px tall with its horns and mist, a quarter bigger than the hound
@@ -293,6 +301,10 @@ SETS = {
     'deadly-rose': ('deadly-rose', 'deadly-rose/01_front.png', ROSE_H, 1, twelve('deadly-rose', TWELVE_FILES)),
     # the Chain Reaper (kit 06): slimmer than the Lantern Knight, his hood about as high; the dash sheet came out
     # at a bigger scale, so its lunge gets its own height (about the throw's crouch)
+    'jade-breaker': ('jade-breaker', 'jade-breaker/01_front.png', 90, 1, dict(twelve('jade-breaker', TWELVE_FILES), **{
+        'jade-breaker/13_dash.png': ('side/dash', {'height': 70}),
+        'jade-breaker/14_castA.png': ('side/castA', {'height': 76}),
+        'jade-breaker/15_castB.png': ('side/castB', {'height': 72})})),
     'chain-reaper': ('chain-reaper', 'chain-reaper/01_front.png', 84, 1, dict(twelve('chain-reaper', TWELVE_FILES), **{
         'chain-reaper/13_dash.png': ('side/dash', {'height': 70})})),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
@@ -360,6 +372,11 @@ SHEETS = {
         ('chain-reaper/walk-side-4.png', 4, 1, 78, 'side/walk'),
         ('chain-reaper/walk-front-4.png', 4, 1, 84, 'walkF'),
         ('chain-reaper/walk-back-4.png', 4, 1, 84, 'walkB'),
+    ],
+    # no front walk was drawn: his front view steps on its own (src/sprites.js)
+    'jade-breaker': [
+        ('jade-breaker/walk-side-4.png', 4, 1, 88, 'side/walk'),
+        ('jade-breaker/walk-back.png', 4, 1, 90, 'walkB'),
     ],
     'ashen-arbalist': [
         ('ashen-arbalist/walk-side-4.png', 4, 1, 80, 'side/walk'),
@@ -606,6 +623,8 @@ PROP_GRIDS = {
     # the Ashen Arbalist's bolts in flight (plain, then the level 15 Flare Bolt) and the burst of light where a flare lands
     'ashen-arbalist/bolts.png': (2, 1, ['arbBolt', 'arbFlareBolt']),
     'ashen-arbalist/flare.png': (4, 1, ['arbFlare1', 'arbFlare2', 'arbFlare3', 'arbFlare4']),
+    # Jade Tide's crystals bursting from the ground: cracking up, grown, glinting, shattering
+    'jade-breaker/crystals.png': (4, 1, ['jadeCrystal1', 'jadeCrystal2', 'jadeCrystal3', 'jadeCrystal4']),
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
 # Height in file px of each unlit plant (twice the art px); the lit one is scaled to match its unlit twin by the
@@ -675,6 +694,8 @@ PROP_SAME.update({'reaperSickle2': 'reaperSickle1', 'reaperSickle3': 'reaperSick
 PROP_WIDTH['wallFire1'] = 84  # a section about half the wall's 170 px, so they overlap along it
 PROP_SAME.update({'wallFire2': 'wallFire1', 'wallFire3': 'wallFire1', 'wallFire4': 'wallFire1'})
 PROP_WIDTH.update({'arbBolt': 28, 'arbFlare2': 124})  # a bolt about a third of the knight; the burst as wide as a flare's reach (game.js flare(), 58 px)
+PROP_HEIGHT['jadeCrystal2'] = 60  # the grown crystals about two thirds of the knight
+PROP_SAME.update({'jadeCrystal1': 'jadeCrystal2', 'jadeCrystal3': 'jadeCrystal2', 'jadeCrystal4': 'jadeCrystal2'})
 PROP_SAME.update({'arbFlareBolt': 'arbBolt', 'arbFlare1': 'arbFlare2', 'arbFlare3': 'arbFlare2', 'arbFlare4': 'arbFlare2'})
 # Prop sheets drawn on another key colour than magenta, by folder.
 PROP_KEY = {'chain-reaper': (0, 255, 0)}

@@ -1,4 +1,4 @@
-/* Drowned Light — the six kits in play: attacks, dashes, abilities, passives,
+/* Drowned Light — the seven kits in play: attacks, dashes, abilities, passives,
    the 20-level progression and what changes at milestones 5, 10, 15 and 20. */
 "use strict";
 (function (DL) {
@@ -81,6 +81,12 @@
     const kit = G.kit(), rush = kit.passive && kit.passive.rush;
     return (kit.speedMult || 1) * (rush && p.rushT > 0 ? rush.speed : 1);
   };
+  // The Jade Breaker's Momentum: the bonus damage his next swing carries (0 to passive.momentum.bonus).
+  function momentum(p) {
+    const m = G.kit().passive && G.kit().passive.momentum;
+    return m ? m.bonus * Math.min(1, (p.momT || 0) / m.full) : 0;
+  }
+  K.momentum = momentum;
   K.dashCd = () => G.kit().dash.cd || 2.2;
   K.lanternMult = () => (G.kit().passive && G.kit().passive.lanternR) || 1;
   K.oilDrain = () => (G.kit().passive && G.kit().passive.oilDrain) || 1;
@@ -157,6 +163,7 @@
     if (id === "pikeWarden" && K.has(5)) range *= 1.2;
     if (id === "ashenArbalist" && K.has(5)) range *= 1.15;
     if (id === "lanternBlade" && K.has(20)) range *= 1.1;
+    if (id === "jadeBreaker" && K.has(5)) range *= 1.15;
     return range;
   };
   K.nearestEnemy = nearest;
@@ -180,12 +187,20 @@
       if (id === "lanternBlade" && K.has(20)) { arc *= 1.3; swing.col = "255,244,214"; }
       swing.arc = arc;
       const burn = id === "lanternBlade" && K.has(5) ? 3 * pw : 0;
+      // the Jade Breaker's Momentum goes into the swing and is spent; Crystal Edge hurls harder, Shatter stuns
+      const mom = momentum(p), jade = id === "jadeBreaker";
+      const dmg = a.dmg * pw * (1 + mom), kb = a.kb * (jade && K.has(5) ? 1.2 : 1);
+      if (jade) { p.momT = 0; swing.dur = 0.3; if (mom > 0.15) swing.col = "180,255,200"; }
       for (const e of G.enemies.slice()) {
         if (e.rise > 0) continue;
         const d = dist(p.x, p.y, e.x, e.y) - e.def.radius;
         const ad = Math.abs(angleDiff(ang, Math.atan2(e.y - p.y, e.x - p.x)));
-        if (d <= range && (ad <= arc / 2 || d < 8)) G.hitEnemy(e, a.dmg * pw, ang, a.kb, burn);
+        if (d <= range && (ad <= arc / 2 || d < 8)) {
+          G.hitEnemy(e, dmg, ang, kb, burn);
+          if (jade && K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
+        }
       }
+      if (jade) G.camera.shake = Math.max(G.camera.shake || 0, 3);
       if (id === "lanternBlade" && K.has(10) && p.attackN % 3 === 0) {
         shoot(p, ang, { kind: "wave", speed: 430, life: 0.42, dmg: a.dmg * pw * 0.7, pierce: 99, r: 20, col: swing.col });
       }
@@ -324,6 +339,14 @@
       if (K.has(20)) gyres.push({ x: p.x, y: p.y, r, t: 4, max: 4 });
       G.camera.shake = 4;
       sfx("swing");
+    } else if (ab.id === "tide") {
+      // Jade Tide: a fan of crystals bursting up row by row ahead of you (drawn in src/render.js); Twin Tide sends a second wave.
+      const ang = p.aim != null && G.save.attackMode === "manual" ? p.aim : p.angle;
+      tide(p.x, p.y, ang, 0, ab.dmg * pw);
+      if (K.has(15)) tide(p.x, p.y, ang, 0.4, ab.dmg * pw * 0.7);
+      G.effects.push({ type: "slash", x: p.x, y: p.y - 20, ang, arc: ab.fan + 0.6, r: 90, t: 0, max: 0.3, col, w: 12 });
+      G.camera.shake = 7;
+      sfx("swing");
     } else if (ab.id === "wall") {
       const dur = ab.dur * (K.has(10) ? 1.5 : 1), dps = ab.dps * pw * (K.has(10) ? 1.6 : 1);
       if (K.has(20)) {
@@ -360,6 +383,48 @@
     return { d: Math.hypot(px - qx, py - qy), qx, qy };
   }
 
+  /* Jade Tide's crystals: rows of clusters fanned out ahead of the knight, each bursting up when the wave reaches it
+     (`at` s from now) and striking every Drowned within `r`; a Drowned is struck once per wave. They stand `life` s,
+     or as a wall for `wall` s at Jade Bulwark, then shatter. */
+  let crystals = [], crystalLife = null;
+  K.crystals = () => crystals;
+  function tide(x, y, ang, delay, dmg) {
+    const ab = G.kit().ability, hit = new Set(), stand = K.has(20) ? ab.wall : ab.life;
+    for (let d = ab.step; d <= ab.reach; d += ab.step) {
+      const n = Math.max(1, Math.round((d * ab.fan) / 55)); // about one cluster every 55 px across the fan
+      for (let i = 0; i < n; i++) {
+        const a = ang + (n > 1 ? (i / (n - 1) - 0.5) * ab.fan : 0) + rand(-0.06, 0.06), dd = d + rand(-6, 6);
+        crystals.push({ x: x + Math.cos(a) * dd, y: y + Math.sin(a) * dd, at: delay + d / ab.speed, t: 0, max: stand, ang, dmg, hit, flip: Math.random() < 0.5, r: 30 });
+      }
+    }
+  }
+  function updateCrystals(dt) {
+    const ab = G.kit().ability;
+    for (const c of crystals) {
+      if (c.at > 0) {
+        c.at -= dt;
+        if (c.at > 0) continue;
+        for (let i = 0; i < 4; i++) G.spark(c.x + rand(-10, 10), c.y - rand(0, 30), "120,255,170", 90);
+        for (const e of G.enemies.slice()) {
+          if (e.rise > 0 || e.removed || c.hit.has(e) || dist(c.x, c.y, e.x, e.y) > c.r + e.def.radius) continue;
+          c.hit.add(e);
+          G.hitEnemy(e, c.dmg, c.ang, ab.kb * (K.has(5) ? 1.2 : 1));
+          if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
+        }
+        continue;
+      }
+      c.t += dt;
+      if (!K.has(20) || c.t > c.max - 0.3) continue;
+      // Jade Bulwark: the standing crystals are a wall the Drowned are pushed back out of
+      for (const e of G.enemies) {
+        if (e.rise > 0 || e.removed || e.def.king || e.def.boss) continue;
+        const d = dist(c.x, c.y, e.x, e.y), min = 16 + e.def.radius;
+        if (d < min) { const k = min / (d || 1); e.x = c.x + (e.x - c.x) * k; e.y = c.y + (e.y - c.y) * k; }
+      }
+    }
+    crystals = crystals.filter((c) => c.at > 0 || c.t < c.max);
+  }
+
   // Violet Gyre: the rings of whirling chain Violet Snare leaves behind at level 20.
   let gyres = [], gyreLife = null;
   K.gyres = () => gyres;
@@ -368,6 +433,10 @@
     const p = G.player, kit = G.kit(), st = G.stats();
     p.guardT = Math.max(0, (p.guardT || 0) - dt);
     p.rushT = Math.max(0, (p.rushT || 0) - dt);
+    // Momentum builds while moving and drains twice as fast standing still
+    if (kit.passive && kit.passive.momentum) p.momT = Math.max(0, Math.min(kit.passive.momentum.full, (p.momT || 0) + (p.moving ? dt : -2 * dt)));
+    if (crystalLife !== p) { crystals = []; crystalLife = p; } // a new life clears them
+    updateCrystals(dt);
 
     // The Chain Reaper: the sickle torn back along its line halfway through the throw.
     const sw = p.swing;
@@ -474,6 +543,7 @@
         L.push({ x: w.x1 + (w.x2 - w.x1) * u, y: w.y1 + (w.y2 - w.y1) * u - 14, r: 80 * f * D.light, s: f, col: "255,120,40", a: f, flick: 1, kind: "human" });
       }
     }
+    crystals.forEach((c, i) => { if (i % 3 === 0 && c.at <= 0 && c.t < c.max - 0.2) L.push({ x: c.x, y: c.y - 20, r: 60 * D.light, s: 0.4, col: "90,230,150", a: 0.5 }); });
     if (p && G.save.kit === "relicBearer" && K.has(20)) {
       L.push({ x: p.x, y: p.y - 24, r: 92 * D.light, s: 0.55, col: "255,232,170", a: 0.25, kind: "bloom" });
     }
