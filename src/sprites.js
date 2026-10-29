@@ -277,7 +277,7 @@
       const img = new Image();
       img.onload = () => resolve(img);
       img.onerror = () => resolve(null);
-      img.src = url;
+      img.src = DL.asset(url);
     });
   }
   // Run the loads a few at a time rather than all ~300 at once.
