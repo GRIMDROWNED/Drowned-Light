@@ -721,7 +721,7 @@
   const NODE_SPRITE = { stone: "rock", iron: "ironpile", pearl: "pearl" };
   function shatter(o) {
     o.harvested = true;
-    const name = o.type === "tree" ? DL.Render.treeSprite(o) : o.type === "stone" ? DL.Render.rockSprite(o) : o.type === "iron" ? DL.Render.ironSprite(o) : o.type === "pearl" ? DL.Render.amethystSprite(o) : NODE_SPRITE[o.type] || (o.active ? "sproutOn" : "sproutOff");
+    const name = o.type === "tree" ? DL.Render.treeSprite(o) : o.type === "stone" ? DL.Render.rockSprite(o) : o.type === "iron" ? DL.Render.ironSprite(o) : o.type === "pearl" ? DL.Render.amethystSprite(o) : NODE_SPRITE[o.type] || DL.Render.sproutSprite(o);
     const s = DL.Art.sprites[name], PS = 2, w = s.w * PS, h = s.h * PS, pieces = [];
     const cols = 3, rows = 2, pw = Math.ceil(s.w / cols), ph = Math.ceil(s.h / rows);
     for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) {

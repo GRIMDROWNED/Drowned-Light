@@ -551,8 +551,10 @@ SHEET_MATCH = {'tide-archer': 'tide-archer/01_front.png'}
 # World props (plants for now): sheet -> (columns, rows, a sprite name per cell in reading order, None to skip).
 # They're cut at res 2 like the units; PROPS in src/sprites.js lists the files.
 PROP_GRIDS = {
-    'plants/plants-lit.png': (5, 2, ['refugeOn', 'sentinelOn', 'rootOn', 'sproutOn', 'husk', None, None, None, 'gardenOn', None]),
-    'plants/plants-unlit.png': (3, 2, ['refugeOff', 'sentinelOff', 'rootOff', 'sproutOff', 'sproutBare', 'gardenOff']),
+    'plants/plants-lit.png': (5, 2, ['refugeOn', 'sentinelOn', 'rootOn', None, 'husk', None, None, None, 'gardenOn', None]),
+    'plants/plants-unlit.png': (3, 2, ['refugeOff', 'sentinelOff', 'rootOff', None, None, 'gardenOff']),
+    # the Bloom Sprout by day then glowing by night: whole, hacked once, harvested stump (the two stumps match)
+    'plants/sprout-stages.png': (3, 2, ['sproutOff', 'sproutOff2', 'sproutBare', 'sproutOn', 'sproutOn2', None]),
     'plants/reeds.png': (3, 2, ['reeds1', 'reeds2', 'reeds3', 'reeds4', 'reeds5', 'reeds6']),
     'plants/garden-beds.png': (3, 1, ['gardenBed1', 'gardenBed2', 'gardenBed3']),
     # three trees, each whole -> lopped -> broken -> stump as it's chopped
@@ -694,8 +696,9 @@ PROP_WIDTH.update({'roost3': 116, 'wyvNest': 170})  # the eyrie with its hung wi
 PROP_HEIGHT['wyvEgg'] = 22  # about a quarter of the knight
 PROP_SAME.update({'roost1': 'roost3', 'roost2': 'roost3', 'wyvNestEmpty': 'wyvNest', 'wyvEggHatch': 'wyvEgg', 'wyvEggShell': 'wyvEgg'})
 PROP_SAME.update({'kennel1': 'kennel3', 'kennel2': 'kennel3', 'workshop1': 'workshop3', 'workshop2': 'workshop3', 'shrine1': 'shrine3', 'shrine2': 'shrine3', 'toadstool1': 'toadstool3', 'toadstool2': 'toadstool3', 'fairyRingWilt': 'fairyRing', 'glowcap1': 'glowcap2', 'glowcap3': 'glowcap2'})
-PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff', 'sproutOn': 'sproutOff',
-             'gardenOn': 'gardenOff', 'sproutBare': 'sproutOff'}
+PROP_SAME.update({n: 'sproutOff' for n in ['sproutOff2', 'sproutBare', 'sproutOn', 'sproutOn2']})
+PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff',
+             'gardenOn': 'gardenOff'}
 PROP_HEIGHT.update({'reaperSickle1': 30, 'reaperChain': 6, 'reaperWeight': 14})  # the sickle as big as in his hand; the chain's links 3 px across
 PROP_WIDTH.update({'reaperSnare': 230, 'reaperSnared': 36})  # the ring as wide as the snare reaches (DL.KITS.chainReaper.ability.radius); the coil a Drowned's ankles
 PROP_SAME.update({'reaperSickle2': 'reaperSickle1', 'reaperSickle3': 'reaperSickle1', 'reaperSickle4': 'reaperSickle1'})

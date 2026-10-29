@@ -85,12 +85,19 @@
     return base + v + (k >= 2 / 3 ? 3 : k >= 1 / 3 ? 2 : 1);
   }
 
+  // The Bloom Sprout, glowing by night, hacked open after its first hit when that art is loaded.
+  R.sproutSprite = (o) => sproutSprite(o);
+  function sproutSprite(o) {
+    const name = o.active ? "sproutOn" : "sproutOff";
+    return Art.sprites.sproutOn2 && o.mineHp != null && o.mineHp < o.def.hits ? name + "2" : name;
+  }
+
   function objSprite(o) {
     switch (o.type) {
       case "tree": return o.harvested ? null : treeSprite(o);
       case "stone": return o.harvested ? null : rockSprite(o);
       case "iron": return o.harvested ? null : ironSprite(o);
-      case "sprout": return o.harvested ? "sproutBare" : o.active ? "sproutOn" : "sproutOff";
+      case "sprout": return o.harvested ? "sproutBare" : sproutSprite(o);
       case "refuge": return o.dead ? "husk" : o.active ? "refugeOn" : "refugeOff";
       case "sentinel": return o.dead ? "husk" : o.active ? "sentinelOn" : "sentinelOff";
       case "root": return o.dead ? "husk" : o.active ? "rootOn" : "rootOff";
@@ -490,8 +497,8 @@
     sprite(c, name, x, o.y + 2, o.flip);
     c.restore();
     if (o.def.bloom && !o.dead && o.hp < o.maxHp) bar(c, o.x, o.y - Art.sprites[name].h * PS - 6, 34, o.hp / o.maxHp, "#5fe6ee");
-    // drawn boulders and trees show their damage in their own stages
-    if (o.def.hits && o.mineHp != null && o.mineHp < o.def.hits && !/^(boulder|iron\d|amethyst|swampTree)/.test(name)) drawCracks(c, o, name, 1 - o.mineHp / o.def.hits);
+    // drawn boulders, trees and sprouts show their damage in their own stages
+    if (o.def.hits && o.mineHp != null && o.mineHp < o.def.hits && !/^(boulder|iron\d|amethyst|swampTree|sprout)/.test(name)) drawCracks(c, o, name, 1 - o.mineHp / o.def.hits);
   }
 
   // Damage on a supply node: dark cracks in stone and iron, pale splintered chips in wood and plants.
