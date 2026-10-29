@@ -794,17 +794,22 @@
   // Walk frames per second: `rate` is for a 4-frame walk, and longer walks play faster so a stride takes as long.
   const walkRate = (key, rate) => (rate * Art.animLength(key, "walk")) / 4;
 
+  // At full speed a kit with drawn run frames (views[dir].run) runs, a third quicker; the rest walk.
+  const moveAnim = (key, running) => (running && Art.sheet(key) && Art.sheet(key).side.run ? "run" : "walk");
+  const stepRate = (key, running) => (moveAnim(key, running) === "run" ? (8 * Art.animLength(key, "run")) / 4 : walkRate(key, 6));
+
   // A kit with its own casting pose (the Chain Reaper whirling his chain) shows it for its ability; the rest swing.
   const castAnim = (key) => (Art.sheet(key).down.cast ? "cast" : "attack");
 
   // Which animation the player shows this frame: [anim, frame, facing angle].
   function playerAnim(G, p, t) {
     if (G.state === "dying") return ["death", Math.min(2, Math.floor(G.dying / 0.45)), p.angle];
-    if (p.dashT > 0) return ["dash", 0, p.angle];
+    if (p.dashT > 0 || p.tideDash) return ["dash", 0, p.angle];
+    if (p.tideCharge && p.tideCharge.t > 0.12) return [castAnim(G.save.kit + p.stage), 0, p.aim ?? p.angle]; // winding up Jade Tide
     if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
     if (p.swing) return ["attack", Math.min(2, Math.floor((p.swing.t / p.swing.dur) * 3)), p.swing.ang];
     if (p.cast) return [castAnim(G.save.kit + p.stage), Math.min(2, Math.floor((p.cast.t / p.cast.dur) * 3)), p.cast.ang];
-    if (p.moving) return ["walk", Math.floor(p.animT * walkRate(G.save.kit + p.stage, 6)), p.angle];
+    if (p.moving) return [moveAnim(G.save.kit + p.stage, p.running), Math.floor(p.animT * stepRate(G.save.kit + p.stage, p.running)), p.angle];
     return ["idle", Math.floor(t * 1.6), p.angle];
   }
 
@@ -832,7 +837,7 @@
       if (a.dashT > 0) anim = "dash";
       else if (a.swing) { anim = "attack"; fr = Math.min(2, Math.floor((a.swing.t / a.swing.dur) * 3)); ang = a.swing.ang; }
       else if (a.cast) { anim = castAnim(key); fr = Math.min(2, Math.floor(a.cast * 3)); }
-      else if (a.moving) { anim = "walk"; fr = Math.floor(a.animT * walkRate(key, 6)); }
+      else if (a.moving) { anim = moveAnim(key, a.running); fr = Math.floor(a.animT * stepRate(key, a.running)); }
       Art.drawUnit(c, key, anim, fr, ang, a.x, a.y, 1);
     }
     // name tag + health

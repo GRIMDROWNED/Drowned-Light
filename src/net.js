@@ -19,12 +19,15 @@
   // How far through its special move a knight is (0..1, 0 when not casting), for its attack pose on the other screen.
   const castK = (p) => (p.cast ? Math.max(0.1, r1(p.cast.t / p.cast.dur)) : 0);
   const wispK = () => (G.wisp ? [r1(G.wisp.x), r1(G.wisp.y)] : 0);
+  // Moving as sent: 0 still, 1 walking, 2 running; and the dash shown (the Jade Breaker's charged rush counts).
+  const moveK = (p) => (p.moving ? (p.running ? 2 : 1) : 0);
+  const dashK = (p) => Math.max(p.dashT || 0, p.tideDash ? p.tideDash.t : 0);
   const TYPES = Object.keys(DL.ENEMIES);
   const MAX_GUESTS = 3; // four knights in all
   const swingRow = (sw) => (sw ? [r1(sw.ang), r1(sw.t), sw.kind, Math.round(sw.range), r1(sw.arc || 1), sw.col, sw.flip ? 1 : 0] : 0);
   // One knight as sent over the link: [x, y, angle, moving, dash, stage, hp, maxHp, down, swing, cast, wisp, kit, kitLevel].
   function applyKnight(a, s) {
-    a.tx = s[0]; a.ty = s[1]; a.angle = s[2]; a.moving = !!s[3]; a.dashT = s[4]; a.stage = s[5]; a.hp = s[6]; a.maxHp = s[7]; a.down = !!s[8];
+    a.tx = s[0]; a.ty = s[1]; a.angle = s[2]; a.moving = !!s[3]; a.running = s[3] === 2; a.dashT = s[4]; a.stage = s[5]; a.hp = s[6]; a.maxHp = s[7]; a.down = !!s[8];
     a.swing = s[9] ? { ang: s[9][0], t: s[9][1], dur: s[9][2] === "chain" ? 0.32 : 0.2, kind: s[9][2], range: s[9][3], arc: s[9][4], col: s[9][5], flip: !!s[9][6] } : null;
     a.cast = s[10] || 0;
     a.wisp = s[11] ? { x: s[11][0], y: s[11][1] } : null;
@@ -295,10 +298,10 @@
 
   function hostKnight() {
     const p = G.player;
-    return [r1(p.x), r1(p.y), r1(p.angle), p.moving ? 1 : 0, r1(p.dashT), p.stage, Math.round(p.hp), G.stats().maxHp, G.state === "dying" || G.state === "dead" || p.downT > 0 ? 1 : 0,
+    return [r1(p.x), r1(p.y), r1(p.angle), moveK(p), r1(dashK(p)), p.stage, Math.round(p.hp), G.stats().maxHp, G.state === "dying" || G.state === "dead" || p.downT > 0 ? 1 : 0,
       swingRow(p.swing), castK(p), wispK(), G.save.kit, G.save.kitLevel];
   }
-  const allyKnight = (a) => [r1(a.x), r1(a.y), r1(a.angle), a.moving ? 1 : 0, r1(a.dashT), a.stage, Math.round(a.hp), a.maxHp, a.down ? 1 : 0,
+  const allyKnight = (a) => [r1(a.x), r1(a.y), r1(a.angle), moveK(a), r1(a.dashT), a.stage, Math.round(a.hp), a.maxHp, a.down ? 1 : 0,
     swingRow(a.swing), a.cast || 0, a.wisp ? [r1(a.wisp.x), r1(a.wisp.y)] : 0, a.kit, a.kitLevel];
 
   function snapshot(g, dirty) {
@@ -634,7 +637,7 @@
     const p = G.player, sw = p.swing;
     return {
       t: "state",
-      p: [r1(p.x), r1(p.y), r1(sw ? sw.ang : p.angle), p.moving ? 1 : 0, r1(p.dashT), p.stage, Math.round(Math.max(0, p.hp)), G.stats().maxHp, p.downT > 0 ? 1 : 0,
+      p: [r1(p.x), r1(p.y), r1(sw ? sw.ang : p.angle), moveK(p), r1(dashK(p)), p.stage, Math.round(Math.max(0, p.hp)), G.stats().maxHp, p.downT > 0 ? 1 : 0,
         swingRow(sw), castK(p), wispK(), G.save.kit, G.save.kitLevel],
       pr: G.projectiles.slice(0, 24).map((b) => [r1(b.x), r1(b.y), Math.round(b.vx), Math.round(b.vy), b.kind, b.col]),
       ev: Net.events.splice(0),

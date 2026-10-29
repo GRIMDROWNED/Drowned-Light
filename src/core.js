@@ -77,6 +77,10 @@ window.DL = window.DL || {};
     attackBtn: false,
     attackAim: null, // angle set by dragging on the Attack button (an aiming stick); null = not aiming
     mineBtn: false,
+    // Held ability (the Jade Breaker charges Jade Tide): its bound key, the on-screen button or the pad button.
+    abilityBtn: false,
+    padAbility: false,
+    abilityHeld() { return DL.Binds.held("ability", this.keys) || this.abilityBtn || this.padAbility; },
     attacking() { return DL.Binds.held("attack", this.keys) || this.mouse.down || this.attackBtn || this.padAttack; },
     mining() { return DL.Binds.held("mine", this.keys) || this.mouse.mine || this.mineBtn || this.padMine; },
 
@@ -92,7 +96,7 @@ window.DL = window.DL || {};
         if (PRESS.includes(a)) this.actions.add(a);
       });
       addEventListener("keyup", (e) => this.keys.delete(e.key.toLowerCase()));
-      addEventListener("blur", () => { this.keys.clear(); this.mouse.down = this.mouse.mine = false; this.attackBtn = this.mineBtn = false; this.attackAim = null; });
+      addEventListener("blur", () => { this.keys.clear(); this.mouse.down = this.mouse.mine = false; this.attackBtn = this.mineBtn = this.abilityBtn = false; this.attackAim = null; });
 
       // Mouse: aim follows the cursor; the left button attacks (when playing on the field, not on menus).
       const onField = (e) => e.target && (e.target.id === "game" || e.target.id === "touchzone");

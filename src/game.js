@@ -558,7 +558,9 @@
     if (DL.Input.take("torch")) placeTorch();
     if (DL.Input.take("boost")) DL.Wyvern.boost(); // David's Tailwind or War Fury (src/wyvern.js)
 
-    if (p.dashT > 0) {
+    if (DL.Kits.tideTick(p, st, dt)) {
+      // the Jade Breaker's charged rush (src/kits.js) moves him
+    } else if (p.dashT > 0) {
       p.dashT -= dt;
       p.x += p.dashDir.x * 440 * dt;
       p.y += p.dashDir.y * 440 * dt;
@@ -568,6 +570,7 @@
       const wet = W.isWater(p.x, p.y) ? 0.82 : 1;
       const spd = 150 * DL.Kits.speedMult(p) * wet * (p.corrupt >= 75 ? 0.9 : 1) * (DL.Den.carrying() ? DL.DEN.haulSpeed : 1) * (DL.Wyvern.carrying() ? DL.WYVERN.haulSpeed : 1) * DL.Abigail.mult() * DL.Wyvern.speedMult();
       p.moving = inp.m > 0.15;
+      p.running = inp.m > 0.9; // full speed: a kit with drawn run frames runs (src/render.js)
       p.stillT = p.moving ? 0 : (p.stillT || 0) + dt;
       if (p.moving) {
         p.x += inp.x * spd * dt;
@@ -593,7 +596,7 @@
     if (p.cast) { p.cast.t += dt; if (p.cast.t >= p.cast.dur) p.cast = null; }
     p.aim = aimAngle(p);
     G.mineTarget = G.save.attackMode === "manual" ? nodeNear(p, 34) : null;
-    if (p.atkCd <= 0 && p.dashT <= 0 && !inMenu) {
+    if (p.atkCd <= 0 && p.dashT <= 0 && !p.tideDash && !p.tideCharge && !inMenu) {
       if (G.save.attackMode === "manual") {
         if (DL.Input.attacking()) DL.Kits.attack(p, st, p.aim);
         else if (DL.Input.mining() && G.mineTarget) mineStrike(p, G.mineTarget);
@@ -655,6 +658,8 @@
     const p = G.player, ab = G.kit().ability;
     if (p.abiCd > 0) { sfx("deny"); return; }
     if (p.oil < ab.oil) { say("Not enough lantern oil. Refill it in firelight.", "warn"); sfx("deny"); return; }
+    // the Jade Breaker charges Jade Tide while it's held, and it goes off (paid then) when let go (src/kits.js)
+    if (ab.charge) { DL.Kits.tideStart(p); return; }
     p.oil -= ab.oil;
     p.abiCd = DL.Kits.abilityCd();
     sfx("ability");

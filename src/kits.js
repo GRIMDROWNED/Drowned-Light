@@ -79,7 +79,7 @@
   // The Chain Reaper's pace: a fifth faster always, faster still in Reaper's Rush after a kill.
   K.speedMult = function (p) {
     const kit = G.kit(), rush = kit.passive && kit.passive.rush;
-    return (kit.speedMult || 1) * (rush && p.rushT > 0 ? rush.speed : 1);
+    return (kit.speedMult || 1) * (rush && p.rushT > 0 ? rush.speed : 1) * (p.tideCharge ? 0.5 : 1); // charging Jade Tide slows him
   };
   // The Jade Breaker's Momentum: the bonus damage his next swing carries (0 to passive.momentum.bonus).
   function momentum(p) {
@@ -398,6 +398,68 @@
       }
     }
   }
+  /* Jade Tide held: the button starts a charge (K.tideStart). Let go before `hold` s and the tide goes off where he
+     stands; held longer, he rushes forward in a dash strike and the tide bursts out where he stops. The oil and the
+     cooldown are paid on letting go. The rush is his own, so his dash stays free. Returns true while it moves him. */
+  K.tideStart = function (p) { if (!p.tideCharge && !p.tideDash) p.tideCharge = { t: 0, full: false }; };
+  K.tideTick = function (p, st, dt) {
+    const kit = G.kit(), ab = kit.ability, ch = ab.charge;
+    if (!ch) { p.tideCharge = p.tideDash = null; return false; }
+    const pw = K.power() * st.dmgMult;
+    const aim = () => (p.aim != null && G.save.attackMode === "manual" ? p.aim : p.angle);
+    if (p.tideCharge) {
+      const c = p.tideCharge;
+      c.t += dt;
+      if (DL.Input.abilityHeld() && c.t < ch.max && G.state === "play") {
+        if (!c.full && c.t >= ch.hold) {
+          c.full = true;
+          G.effects.push({ type: "ring", x: p.x, y: p.y - 6, r0: 6, r1: 46, t: 0, max: 0.3, col: kit.color, w: 4 });
+          sfx("build");
+        }
+        if (Math.random() < dt * (c.full ? 30 : 12)) G.spark(p.x + rand(-16, 16), p.y - rand(0, 50), c.full ? "180,255,200" : kit.color, 50);
+        return false;
+      }
+      p.tideCharge = null;
+      if (p.oil < ab.oil) { sfx("deny"); return false; } // spent while charging (a torch, the fire going out)
+      p.oil -= ab.oil;
+      p.abiCd = K.abilityCd();
+      sfx("ability");
+      if (!c.full) {
+        p.cast = { t: 0, dur: 0.4, ang: aim() };
+        K.ability(p, st);
+        return false;
+      }
+      const ang = aim();
+      p.angle = ang;
+      p.tideDash = { t: ch.dash, ang, hit: new Set() };
+      p.inv = Math.max(p.inv, ch.dash + 0.1);
+      G.camera.shake = 4;
+    }
+    const d = p.tideDash;
+    if (!d) return false;
+    d.t -= dt;
+    p.x += Math.cos(d.ang) * ch.speed * dt;
+    p.y += Math.sin(d.ang) * ch.speed * dt;
+    p.moving = false;
+    p.trail.push({ x: p.x, y: p.y, life: 0.25, ang: d.ang });
+    for (const e of G.enemies.slice()) {
+      if (e.rise > 0 || e.removed || d.hit.has(e) || dist(p.x, p.y, e.x, e.y) > e.def.radius + 28) continue;
+      d.hit.add(e);
+      G.hitEnemy(e, kit.attack.dmg * pw * G.corruptBonus() * ch.bonus, d.ang, ch.kb);
+      if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
+    }
+    if (d.t <= 0) {
+      p.tideDash = null;
+      p.cast = { t: 0.14, dur: 0.4, ang: d.ang }; // straight into the great sweep
+      tide(p.x, p.y, d.ang, 0, ab.dmg * pw * ch.bonus);
+      if (K.has(15)) tide(p.x, p.y, d.ang, 0.4, ab.dmg * pw * ch.bonus * 0.7);
+      G.effects.push({ type: "slash", x: p.x, y: p.y - 20, ang: d.ang, arc: ab.fan + 0.6, r: 90, t: 0, max: 0.3, col: kit.color, w: 12 });
+      G.camera.shake = 8;
+      sfx("swing");
+    }
+    return true;
+  };
+
   function updateCrystals(dt) {
     const ab = G.kit().ability;
     for (const c of crystals) {
