@@ -807,18 +807,48 @@
   const tmp = document.createElement("canvas");
   const tg = tmp.getContext("2d");
 
-  /* Draw a unit with its feet at (x, y). opt: alpha, flash (0..1), flashColor, clip (0..1 visible from top). */
+  /* Draw a unit with its feet at (x, y). opt: alpha, flash (0..1), flashColor, clip (0..1 visible from top),
+     body (the unit's own object: it then turns, leans, squashes and blends its frames, src/motion.js). */
   Art.drawUnit = function (ctx, key, anim, frame, angle, x, y, scale, opt = {}) {
     const sheet = Art.sheet(key);
     if (!sheet) return;
-    const { dir, flip } = Art.unitDir(angle);
-    const frames = sheet[dir][anim] || sheet[dir].idle;
-    const f = frames[((frame % frames.length) + frames.length) % frames.length];
+    const pick = (dir) => {
+      const frames = sheet[dir][anim] || sheet[dir].idle;
+      return frames[((frame % frames.length) + frames.length) % frames.length];
+    };
+    const clip = opt.clip != null ? Math.max(0, Math.min(1, opt.clip)) : 1;
+    ctx.save();
+    if (opt.alpha != null) ctx.globalAlpha *= opt.alpha;
+    ctx.translate(Math.round(x), Math.round(y));
+    if (!opt.body) {
+      const { dir, flip } = Art.unitDir(angle);
+      if (flip) ctx.scale(-1, 1);
+      blit(ctx, pick(dir), scale, opt, clip);
+      ctx.restore();
+      return;
+    }
+    const n = (sheet.down[anim] || sheet.down.idle).length;
+    const m = DL.Motion.pose(opt.body, angle, x, y, anim, ((frame % n) + n) % n, scale, opt.flash, pick);
+    if (m.shear) ctx.transform(1, 0, -m.shear, 1, 0, 0); // leaning about the feet
+    ctx.translate(m.ox, m.oy);
+    const a = ctx.globalAlpha;
+    if (m.prev) {
+      ctx.save();
+      ctx.globalAlpha = a * m.prev.a;
+      ctx.scale(m.prev.xs * m.sx, m.sy);
+      blit(ctx, m.prev.f, scale, opt, clip);
+      ctx.restore();
+    }
+    ctx.scale(m.xs * m.sx, m.sy);
+    blit(ctx, m.f, scale, opt, clip);
+    ctx.restore();
+  };
+  // One frame at the origin (the feet), tinted by opt.flash.
+  function blit(ctx, f, scale, opt, clip) {
     // Coded frames share one size and foot anchor; loaded PNG frames carry their own, and may be drawn
-    // at `res` file pixels per art pixel for finer detail.
+    // at `res` file pixels per art pixel for finer detail (smoothed as they're shrunk, so they stay clean).
     const fr = f.c, w = f.w, h = f.h, ax = f.ax != null ? f.ax : CX, ay = f.ay != null ? f.ay : GY;
     const s = (PS * scale) / (f.res || 1);
-    const clip = opt.clip != null ? Math.max(0, Math.min(1, opt.clip)) : 1;
     let img = fr;
     if (opt.flash) {
       if (tmp.width !== w || tmp.height !== h) { tmp.width = w; tmp.height = h; }
@@ -833,12 +863,10 @@
       tg.globalCompositeOperation = "source-over";
       img = tmp;
     }
-    ctx.save();
-    if (opt.alpha != null) ctx.globalAlpha *= opt.alpha;
-    ctx.translate(Math.round(x), Math.round(y));
-    if (flip) ctx.scale(-1, 1);
+    const sm = ctx.imageSmoothingEnabled;
+    if (f.res > 1) ctx.imageSmoothingEnabled = true;
     ctx.drawImage(img, 0, 0, w, h * clip, -ax * s, -ay * s, w * s, h * clip * s);
-    ctx.restore();
-  };
+    ctx.imageSmoothingEnabled = sm;
+  }
   Art.animLength = (key, anim) => Art.sheet(key).down[anim].length;
 })(window.DL);

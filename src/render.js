@@ -808,7 +808,7 @@
     let alpha = 1;
     if (p.inv > 0 && p.dashT <= 0 && Math.floor(t * 20) % 2) alpha = 0.65;
     if (p.downT > 0) { Art.drawUnit(c, key, "death", 2, ang, p.x, p.y, 1, { alpha: 0.5 }); return; }
-    Art.drawUnit(c, key, anim, fr, ang, p.x, p.y, 1, { alpha, flash: p.flash > 0 ? 0.7 : 0, flashColor: "#ff9a9a" });
+    Art.drawUnit(c, key, anim, fr, ang, p.x, p.y, 1, { alpha, flash: p.flash > 0 ? 0.7 : 0, flashColor: "#ff9a9a", body: p });
   }
 
   // The co-op friend: their own kit and corruption, animated from what their device reports.
@@ -823,7 +823,7 @@
       else if (a.swing) { anim = "attack"; fr = Math.min(2, Math.floor((a.swing.t / a.swing.dur) * 3)); ang = a.swing.ang; }
       else if (a.cast) { anim = castAnim(key); fr = Math.min(2, Math.floor(a.cast * 3)); }
       else if (a.moving) { anim = "walk"; fr = Math.floor(a.animT * walkRate(key, 6)); }
-      Art.drawUnit(c, key, anim, fr, ang, a.x, a.y, 1);
+      Art.drawUnit(c, key, anim, fr, ang, a.x, a.y, 1, { body: a });
     }
     // name tag + health
     const label = a.label || "Friend";
@@ -994,7 +994,7 @@
     const flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : d.beast ? WOLF_TINT : 0;
     const flashColor = e.flash > 0 ? "#ffffff" : d.beast && e.state !== "windup" ? WOLF_CAST : d.rose ? "#ff7a8a" : "#7ff6ff";
     const [anim, fr, ang] = enemyAnim(e, t);
-    Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y, s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1 });
+    Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y, s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1, body: e });
     if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.barY || (d.crawl ? 36 : d.beast ? 66 : 84) * s) - 4, Math.round((d.barW || 26) * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
     if (e.burn > 0) Art.drawFire(c, e.x + Math.sin(t * 7) * 4, e.y - 10, 0.5, t);
     if (e.bleed > 0) {
@@ -1037,7 +1037,7 @@
     const lk = DL.Summons.look("hound"), s = lk.scale;
     shadow(c, h.x, h.y, 18 * s, 5 * s);
     const [anim, fr] = houndAnim(h, t);
-    Art.drawUnit(c, lk.key, anim, fr, h.angle, h.x, h.y, s, h.flash > 0 ? { flash: 0.8, flashColor: "#ffb0a0" } : lk);
+    Art.drawUnit(c, lk.key, anim, fr, h.angle, h.x, h.y, s, h.flash > 0 ? { flash: 0.8, flashColor: "#ffb0a0", body: h } : { ...lk, body: h });
     // knocked out: the bar fills as it pulls itself back together
     if (h.down > 0) bar(c, h.x, h.y - 34, 22, 1 - h.down / (h.downMax || DL.HOUND.downTime), "#8f846b");
     else if (h.hp < h.maxHp) bar(c, h.x, h.y - 70 * s, 22, Math.max(0, h.hp) / h.maxHp, "#d9cdae");
@@ -1058,7 +1058,7 @@
     const lk = DL.Summons.look("golem");
     shadow(c, m.x, m.y, 12 * lk.scale, 4 * lk.scale);
     const [anim, fr] = golemAnim(m, t);
-    Art.drawUnit(c, lk.key, anim, fr, m.angle, m.x, m.y, lk.scale, lk);
+    Art.drawUnit(c, lk.key, anim, fr, m.angle, m.x, m.y, lk.scale, { ...lk, body: m });
   }
   // Companions in their higher forms (src/summons.js) shed motes of their colour: embers, crystal glints, soul-light.
   function drawFormEmbers(c, G, t) {
@@ -1161,7 +1161,7 @@
     shadow(c, k.x, k.y, 11, 4);
     if (kindleDrawn()) {
       const [anim, fr, ang] = kindleAnim(k);
-      return Art.drawUnit(c, "kindle", anim, fr, ang, k.x, k.y, 1);
+      return Art.drawUnit(c, "kindle", anim, fr, ang, k.x, k.y, 1, { body: k });
     }
     c.save();
     c.translate(Math.round(k.x), Math.round(k.y));
@@ -1175,7 +1175,7 @@
   R.kindleUnit = function (c, k, t, sc, down) {
     if (kindleDrawn()) {
       const [anim, fr, ang] = down ? ["death", 0, k.angle] : kindleAnim(k);
-      return Art.drawUnit(c, "kindle", anim, fr, ang, k.x, k.y, sc);
+      return Art.drawUnit(c, "kindle", anim, fr, ang, k.x, k.y, sc, { body: k.body || k });
     }
     c.save();
     c.translate(Math.round(k.x), Math.round(k.y));
@@ -1324,7 +1324,7 @@
     if (wraithDrawn() || lk.drawn) {
       shadow(c, w.x, w.y, 10 * lk.scale, 3, 0.22);
       const [anim, fr, ang] = wraithAnim(w, t);
-      return Art.drawUnit(c, lk.key, anim, fr, ang, w.x, w.y - 10 + Math.sin(t * 2.2 + w.id) * 3, lk.scale, lk);
+      return Art.drawUnit(c, lk.key, anim, fr, ang, w.x, w.y - 10 + Math.sin(t * 2.2 + w.id) * 3, lk.scale, { ...lk, body: w });
     }
     const P = wraithPose(w, t), sway = Math.sin(t * 3 + w.id) * 3, side = P.dir === "side", back = P.dir === "up";
     shadow(c, w.x, w.y, 10, 3, 0.22);

@@ -657,7 +657,7 @@
     shadow(c, m.x, m.y, 10 * o.k, 3.5 * o.k, 0.22);
     if (!key) return figure(c, m.x, m.y, o);
     const cast = m.state === "cast";
-    DL.Art.drawUnit(c, key, cast ? "attack" : "walk", cast ? Math.min(2, Math.floor((1 - m.stT / CAST) * 3)) : Math.floor(m.animT * 10), m.angle, m.x, m.y - o.alt * DRAWN_LIFT[form()], 1);
+    DL.Art.drawUnit(c, key, cast ? "attack" : "walk", cast ? Math.min(2, Math.floor((1 - m.stT / CAST) * 3)) : Math.floor(m.animT * 10), m.angle, m.x, m.y - o.alt * DRAWN_LIFT[form()], 1, { body: m });
   }
   // The mother: the mature form, twice as big again, landing and rearing and diving.
   const MOM_K = 2.3;
@@ -707,7 +707,7 @@
     }
     if (momDrawn()) {
       const [a, fr, ang] = momFrame(e, m);
-      DL.Art.drawUnit(c, "wyvern", a, fr, ang, e.x, e.y - o.alt * MOM_LIFT, 1, e.flash > 0 ? { flash: 0.6, flashColor: "#ffffff" } : {});
+      DL.Art.drawUnit(c, "wyvern", a, fr, ang, e.x, e.y - o.alt * MOM_LIFT, 1, e.flash > 0 ? { flash: 0.6, flashColor: "#ffffff", body: e } : { body: e });
     } else {
       c.save();
       if (e.flash > 0) c.filter = "brightness(2.2)";
