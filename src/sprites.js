@@ -159,7 +159,10 @@
   }
 
   // A run played at full speed (src/render.js): 4 drawn frames a view (side/run1-4, runF1-4, runB1-4) and each sheet's foot point.
+  // Switched off 2026-10-29: Robert didn't like how the drawn runs look; the frames stay in assets for a redraw later.
+  const RUNS = false;
   function running(set, side, front, back) {
+    if (!RUNS) return set;
     const RUN = { side: ["side/run", side], down: ["runF", front], up: ["runB", back] };
     for (const dir in RUN) {
       const fr = [1, 2, 3, 4].map((i) => RUN[dir][0] + i);
