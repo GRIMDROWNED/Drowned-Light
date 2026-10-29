@@ -55,7 +55,7 @@
       // and the wyvern's nest one for its rocks (src/wyvern.js)
       const wn = DL.Wyvern.nestSpot(), wnHere = Math.hypot(mx - wn.x, my - wn.y) < CH + DL.WYVERN.clear;
       // and the Drowned Gate's arena and black water bare ground (src/finale.js)
-      const fg = DL.Finale.gate(), fnHere = Math.hypot(mx - fg.x, my - fg.y - DL.FINALE.gate.arenaY) < CH + DL.FINALE.gate.clear + 900;
+      const fg = DL.Finale.gate(), fnHere = Math.hypot(mx - fg.x, my - fg.y - DL.FINALE.gate.arenaY) < CH + DL.FINALE.gate.clear + 1500;
       const n = Math.round(DL.ZONES[zi].density * D.density * (0.7 + DL.hash(cx, cy, 5) * 0.6));
       for (let i = 0; i < n; i++) {
         const x = (cx + DL.hash(cx, cy, i * 3 + 1)) * CH, y = (cy + DL.hash(cx, cy, i * 3 + 2)) * CH;
@@ -81,7 +81,7 @@
       }
       // The blooms of this chunk's grove that stand inside it.
       if (grove) for (const g of grove.items) {
-        if (Math.floor(g.x / CH) === cx && Math.floor(g.y / CH) === cy && !DL.Cave.clears(g.x, g.y)) objs.push(this.makeObj(g.type, g.x, g.y, g.id, grove.zi, g.h));
+        if (Math.floor(g.x / CH) === cx && Math.floor(g.y / CH) === cy && !DL.Cave.clears(g.x, g.y) && !(fnHere && DL.Finale.clears(g.x, g.y))) objs.push(this.makeObj(g.type, g.x, g.y, g.id, grove.zi, g.h));
       }
       if (Math.floor(den.x / CH) === cx && Math.floor(den.y / CH) === cy) objs.push(this.makeObj("den", den.x, den.y, `${cx},${cy},den`, zi, 0.3));
       if (gsHere) for (const g of DL.Abigail.graves()) {
