@@ -16,6 +16,8 @@
   const ENABLED = true;
 
   // Kit knights: [how far toward the drowned palette, lantern turns cyan] per corruption stage, as in src/units.js.
+  // Drawn runs (running() below) switched off 2026-10-29: Robert didn't like how they look; the frames stay in assets for a redraw later.
+  const RUNS = false;
   const stages = (kit) => ({ [kit + 1]: [0, false], [kit + 2]: [0.22, false], [kit + 3]: [0.5, false], [kit + 4]: [0.8, true], ["self_" + kit]: [0.9, true] });
 
   // A unit from its motion sheet: a pose per view (front, back, right) and three attack frames shared by every view.
@@ -160,6 +162,7 @@
 
   // A run played at full speed (src/render.js): 4 drawn frames a view (side/run1-4, runF1-4, runB1-4) and each sheet's foot point.
   function running(set, side, front, back) {
+    if (!RUNS) return set;
     const RUN = { side: ["side/run", side], down: ["runF", front], up: ["runB", back] };
     for (const dir in RUN) {
       const fr = [1, 2, 3, 4].map((i) => RUN[dir][0] + i);
