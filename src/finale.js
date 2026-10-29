@@ -84,6 +84,8 @@
   const LK = GT.lake, CW = GT.causeway;
   // the causeway's half-width `dy` px south of the gate: narrow at the gate, spreading wide towards the shore like a pyramid
   const cwAt = (dy) => CW + Math.max(0, dy) * GT.taper;
+  // the ground painted round the gate: the lake and the causeway out past its shore
+  const GB = { x: -LK.rx - 80, y: LK.cy - LK.ry - 80, w: (LK.rx + 80) * 2, h: LK.ry * 2 + 520 };
   const lakeD = (dx, dy) => Math.pow(Math.pow(Math.abs(dx / LK.rx), 4) + Math.pow(Math.abs((dy - LK.cy) / LK.ry), 4), 0.25);
   // No rocks or trees in the lake, on the causeway or in the arena.
   Finale.clears = function (x, y) {
@@ -638,7 +640,7 @@
     c.restore();
     return true;
   }
-  const TORCHES = [190, 540]; // the causeway's torch posts, px south of the gate
+  const TORCHES = [220, 620, 1020]; // the causeway's torch posts, px south of the gate
   const CYAN = "90,235,245";
   const C = { ink: "#05080a", s0: "#111719", s1: "#1b2326", s2: "#283337", s3: "#3a484d", s4: "#566a70",
     gold0: "#5a4318", gold1: "#9a7530", gold2: "#d6ad55", gold3: "#f3dc93", weed0: "#1d3a22", weed1: "#2f5a2e", weed2: "#4f8a3a",
@@ -647,33 +649,34 @@
   const H = (a, b, c2) => DL.hash(97, a, b * 31 + (c2 || 0));
   const HOLLOWS = [[-103, -237, "90,235,245"], [0, -285, "220,40,60"], [103, -237, "130,190,90"]]; // the Bell, the Rose, the Colossus
   // ruins in the lake: [x, y, scale, how deep it's sunk] and broken arches: [x, y, span, broken]
-  const RUINS = [[-720, -560, 1, 0], [-540, -650, 0.8, 0.3], [-780, -330, 0.9, 0.4], [-690, -120, 1.05, 0], [-760, 160, 0.9, 0.3],
-    [680, -590, 0.85, 0.2], [520, -660, 0.75, 0], [780, -360, 1, 0], [700, -110, 0.95, 0.4], [760, 190, 0.85, 0], [-330, -700, 0.7, 0.45], [330, -680, 0.7, 0.2]];
-  const ARCHES = [[-640, -430, 150, 0], [600, -470, 140, 1]];
+  const RUINS = [[-1224, -965, 1, 0], [-918, -1120, 0.8, 0.3], [-1326, -570, 0.9, 0.4], [-1173, -208, 1.05, 0], [-1292, 273, 0.9, 0.3],
+    [1156, -1017, 0.85, 0.2], [884, -1137, 0.75, 0], [1326, -621, 1, 0], [1190, -191, 0.95, 0.4], [1292, 325, 0.85, 0], [-561, -1206, 0.7, 0.45], [561, -1172, 0.7, 0.2]];
+  const ARCHES = [[-1088, -742, 150, 0], [1020, -810, 140, 1]];
   // the same out of Robert's drawn ruins (props/fnRuinA1-4, B1-4: arch, broken arch, tall pillar, stump): [x, y, name, mirrored]
-  const DRUINS = [[-640, -430, "fnRuinA1", 0], [600, -470, "fnRuinB2", 1], [-330, -700, "fnRuinB1", 0], [330, -690, "fnRuinA2", 0],
-    [-720, -600, "fnRuinB3", 0], [-520, -660, "fnRuinA4", 1], [-780, -290, "fnRuinA3", 0], [-690, -90, "fnRuinB4", 0], [-760, 170, "fnRuinB3", 1],
-    [700, -620, "fnRuinA3", 1], [520, -680, "fnRuinB4", 1], [780, -290, "fnRuinB3", 1], [700, -90, "fnRuinA4", 0], [760, 190, "fnRuinA4", 1]];
+  const DRUINS = [[-1088, -742, "fnRuinA1", 0], [1020, -810, "fnRuinB2", 1], [-561, -1206, "fnRuinB1", 0], [561, -1189, "fnRuinA2", 0],
+    [-1224, -1034, "fnRuinB3", 0], [-884, -1137, "fnRuinA4", 1], [-1326, -501, "fnRuinA3", 0], [-1173, -157, "fnRuinB4", 0], [-1292, 290, "fnRuinB3", 1],
+    [1190, -1068, "fnRuinA3", 1], [884, -1172, "fnRuinB4", 1], [1326, -501, "fnRuinB3", 1], [1190, -157, "fnRuinA4", 0], [1292, 325, "fnRuinA4", 1],
+    [-800, 450, "fnRuinB4", 0], [820, 480, "fnRuinA3", 1], [-650, -900, "fnRuinA4", 0], [700, -880, "fnRuinB3", 1], [-1000, 620, "fnRuinA2", 0], [1000, 600, "fnRuinB1", 1]];
   // the causeway's low broken walls, their posts and torches
   const WALLS = [];
   for (const sx of [-1, 1]) {
-    for (let i = 0, y = 24; y < 720; i++) {
+    for (let i = 0, y = 24; y < 1100; i++) {
       const len = 40 + Math.floor(H(i, sx > 0 ? 5 : 6) * 30);
       if (H(i, sx > 0 ? 7 : 8) > 0.2) WALLS.push({ x: sx * (cwAt(y + len) + 16), y: y + len, len, h: 16 + Math.floor(H(i, 10 + sx) * 3) * 4 });
       y += len + 4;
     }
-    for (const py of [24, 370, 720]) WALLS.push({ x: sx * (cwAt(py) + 16), y: py, post: true });
+    for (const py of [24, 420, 820, 1100]) WALLS.push({ x: sx * (cwAt(py) + 16), y: py, post: true });
     for (const ty of TORCHES) WALLS.push({ x: sx * (cwAt(ty) + 16), y: ty, torch: true });
   }
   // the same out of Robert's drawn wall and fire-bowl post (props/fnWall, fnPost): a stretch of wall every 46 px, gaps where
   // it's tumbled down, a post with its fire at each torch and at the far end
   const DWALLS = [];
   for (const sx of [-1, 1]) {
-    for (let i = 0, y = 40; y < 700; i++, y += 46) {
+    for (let i = 0, y = 40; y < 1080; i++, y += 46) {
       if (H(i, sx > 0 ? 17 : 18) < 0.14 && !TORCHES.some((ty) => Math.abs(ty - y) < 70)) continue;
       DWALLS.push({ x: sx * (cwAt(y) + 18), y, drawn: "fnWall" });
     }
-    for (const ty of [...TORCHES, 720]) DWALLS.push({ x: sx * (cwAt(ty + 6) + 18), y: ty + 6, drawn: "fnPost" });
+    for (const ty of [...TORCHES, 1100]) DWALLS.push({ x: sx * (cwAt(ty + 6) + 18), y: ty + 6, drawn: "fnPost" });
   }
 
   // Coarse buffers: paint in world (or gate-local) coordinates at 1/P scale, then stamp them back up unsmoothed.
@@ -850,8 +853,8 @@
     const W = DL.World.canvases, deep = W.deep, flags = W.campFlags;
     if (!deep || !flags) return null;
     const cv = document.createElement("canvas"), g = cv.getContext("2d");
-    cv.width = 1720; cv.height = 1560;
-    g.translate(860, 760);
+    cv.width = Math.ceil(GB.w / 2); cv.height = Math.ceil(GB.h / 2); // at half size: a texel is 2 px anyway
+    g.scale(0.5, 0.5); g.translate(-GB.x, -GB.y);
     const pat = (img) => { const q = g.createPattern(img, "repeat"); q.setTransform(new DOMMatrix().scale(2)); return q; };
     // the lake: deep water, darker still
     lakePath(g, 1, 0, 0); g.fillStyle = pat(deep); g.fill();
@@ -879,13 +882,13 @@
   }
   Finale.drawGround = function (c, view, t) {
     const g = Finale.gate(), p = plant();
-    if (g.x + 880 < view.left || g.x - 880 > view.right || g.y - 780 > view.bottom || g.y + 820 < view.top) return;
+    if (g.x + GB.x + GB.w < view.left || g.x + GB.x > view.right || g.y + GB.y > view.bottom || g.y + GB.y + GB.h < view.top) return;
     const tg = texturedGround();
-    if (tg) c.drawImage(tg, g.x - 860, g.y - 760);
-    else stamp(c, cached("ground", -860, -760, 1720, 1560, paintGround), g.x - 860, g.y - 760);
+    if (tg) { const sm = c.imageSmoothingEnabled; c.imageSmoothingEnabled = false; c.drawImage(tg, g.x + GB.x, g.y + GB.y, GB.w, GB.h); c.imageSmoothingEnabled = sm; }
+    else stamp(c, cached("ground", GB.x, GB.y, GB.w, GB.h, paintGround), g.x + GB.x, g.y + GB.y);
     c.save();
     // glints on the black water
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 120; i++) {
       const lx = (H(i, 31) - 0.5) * 1.9 * LK.rx, ly = LK.cy + (H(i, 32) - 0.5) * 1.9 * LK.ry, a = Math.sin(t * 1.3 + i * 2.1);
       if (a < 0.2 || lakeD(lx, ly) > 0.95 || (Math.abs(lx) < cwAt(ly) + 30 && ly > -10)) continue;
       c.fillStyle = `rgba(${CYAN},${0.2 * a})`;
@@ -905,7 +908,7 @@
   // Into the y-sorted scene: the ruins, the causeway's walls, the King behind the gate, the gate, his hands, and the Bearer.
   Finale.push = function (list, c, t, view) {
     const g = Finale.gate(), b = Finale.b, e = Finale.king();
-    if (g.x + 900 > view.left && g.x - 900 < view.right && g.y - 820 < view.bottom && g.y + 820 > view.top) {
+    if (g.x + GB.x + GB.w > view.left && g.x + GB.x < view.right && g.y + GB.y - 200 < view.bottom && g.y + GB.y + GB.h > view.top) {
       if (DL.Art.sprites.fnRuinA1) for (const r of DRUINS) list.push({ y: g.y + r[1], f: () => drawnRuin(c, g.x + r[0], g.y + r[1], r[2], r[3], t) });
       else {
         for (const r of RUINS) list.push({ y: g.y + r[1], f: () => drawRuin(c, g.x + r[0], g.y + r[1], r[2], r[3], t) });
