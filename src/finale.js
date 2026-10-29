@@ -82,20 +82,23 @@
   Finale.where = function () { const g = Finale.gate(); return { dir: compass(g.x, g.y), m: Math.round(Math.hypot(g.x, g.y) / 10) }; };
   // The black lake round the gate: a rounded box (1 at its shore), and the causeway that crosses it to the gate.
   const LK = GT.lake, CW = GT.causeway;
+  // the causeway's half-width `dy` px south of the gate: narrow at the gate, spreading wide towards the shore like a pyramid
+  const cwAt = (dy) => CW + Math.max(0, dy) * GT.taper;
   const lakeD = (dx, dy) => Math.pow(Math.pow(Math.abs(dx / LK.rx), 4) + Math.pow(Math.abs((dy - LK.cy) / LK.ry), 4), 0.25);
   // No rocks or trees in the lake, on the causeway or in the arena.
   Finale.clears = function (x, y) {
     const g = Finale.gate(), a = arena(), dx = x - g.x, dy = y - g.y;
-    return lakeD(dx, dy) < 1.1 || Math.hypot(x - a.x, y - a.y) < GT.clear || (Math.abs(dx) < CW + 90 && dy > 0 && dy < LK.cy + LK.ry + 420);
+    return lakeD(dx, dy) < 1.1 || Math.hypot(x - a.x, y - a.y) < GT.clear || (Math.abs(dx) < cwAt(dy) + 90 && dy > 0 && dy < LK.cy + LK.ry + 420);
   };
   // Nobody wades the black water: out onto the causeway or back to the shore, whichever is nearer.
   Finale.collide = function (ent) {
     const g = Finale.gate(), dx = ent.x - g.x, dy = ent.y - g.y, ax = Math.abs(dx);
     if (ax >= LK.rx || Math.abs(dy - LK.cy) >= LK.ry) return;
     const d = lakeD(dx, dy);
-    if (d >= 1 || (ax < CW && dy > 4)) return;
+    const cw = cwAt(dy);
+    if (d >= 1 || (ax < cw && dy > 4)) return;
     let nx = g.x + dx / d, ny = g.y + LK.cy + (dy - LK.cy) / d, best = Math.hypot(nx - ent.x, ny - ent.y);
-    if (dy > 4 && ax - CW < best) { nx = g.x + Math.sign(dx) * (CW - 0.5); ny = ent.y; }
+    if (dy > 4 && ax - cw < best) { nx = g.x + Math.sign(dx) * (cw - 0.5); ny = ent.y; }
     else if (dy <= 4 && ax < CW && 4 - dy < best) { nx = ent.x; ny = g.y + 4.5; }
     ent.x = nx; ent.y = ny;
   };
@@ -555,7 +558,7 @@
     if (cam && Math.abs(cam.x - g.x) < 2200 && Math.abs(cam.y - g.y) < 2200) {
       for (const sx of [-1, 1]) {
         L.push({ x: g.x + sx * bowlX(), y: g.y - 255, r: 210, s: 0.7, col: "255,160,70", a: 0.75, flick: 1 });
-        for (const ty of TORCHES) L.push({ x: g.x + sx * (CW + 16), y: g.y + ty - (DL.Art.sprites.fnPost ? 95 : 70), r: 150, s: 0.6, col: "255,160,70", a: 0.7, flick: 1 });
+        for (const ty of TORCHES) L.push({ x: g.x + sx * (cwAt(ty) + 16), y: g.y + ty - (DL.Art.sprites.fnPost ? 95 : 70), r: 150, s: 0.6, col: "255,160,70", a: 0.7, flick: 1 });
       }
     }
     const e = Finale.king();
@@ -656,11 +659,11 @@
   for (const sx of [-1, 1]) {
     for (let i = 0, y = 24; y < 720; i++) {
       const len = 40 + Math.floor(H(i, sx > 0 ? 5 : 6) * 30);
-      if (H(i, sx > 0 ? 7 : 8) > 0.2) WALLS.push({ x: sx * (CW + 16), y: y + len, len, h: 16 + Math.floor(H(i, 10 + sx) * 3) * 4 });
+      if (H(i, sx > 0 ? 7 : 8) > 0.2) WALLS.push({ x: sx * (cwAt(y + len) + 16), y: y + len, len, h: 16 + Math.floor(H(i, 10 + sx) * 3) * 4 });
       y += len + 4;
     }
-    for (const py of [24, 370, 720]) WALLS.push({ x: sx * (CW + 16), y: py, post: true });
-    for (const ty of TORCHES) WALLS.push({ x: sx * (CW + 16), y: ty, torch: true });
+    for (const py of [24, 370, 720]) WALLS.push({ x: sx * (cwAt(py) + 16), y: py, post: true });
+    for (const ty of TORCHES) WALLS.push({ x: sx * (cwAt(ty) + 16), y: ty, torch: true });
   }
   // the same out of Robert's drawn wall and fire-bowl post (props/fnWall, fnPost): a stretch of wall every 46 px, gaps where
   // it's tumbled down, a post with its fire at each torch and at the far end
@@ -668,9 +671,9 @@
   for (const sx of [-1, 1]) {
     for (let i = 0, y = 40; y < 700; i++, y += 46) {
       if (H(i, sx > 0 ? 17 : 18) < 0.14 && !TORCHES.some((ty) => Math.abs(ty - y) < 70)) continue;
-      DWALLS.push({ x: sx * (CW + 18), y, drawn: "fnWall" });
+      DWALLS.push({ x: sx * (cwAt(y) + 18), y, drawn: "fnWall" });
     }
-    for (const ty of [...TORCHES, 720]) DWALLS.push({ x: sx * (CW + 18), y: ty + 6, drawn: "fnPost" });
+    for (const ty of [...TORCHES, 720]) DWALLS.push({ x: sx * (cwAt(ty + 6) + 18), y: ty + 6, drawn: "fnPost" });
   }
 
   // Coarse buffers: paint in world (or gate-local) coordinates at 1/P scale, then stamp them back up unsmoothed.
@@ -808,10 +811,12 @@
     }
     // the causeway, from the gate's step out past the shore
     const y1 = LK.cy + LK.ry + 360;
-    g.fillStyle = C.ink; g.fillRect(-CW - 10, -12, (CW + 10) * 2, y1 + 12);
+    causeway(g, 10, -12, y1); g.fillStyle = C.ink; g.fill();
     for (let row = 0, y = -10; y < y1; row++, y += 34) {
-      for (let j = 0, x = -CW - 8 - (row % 2) * 30; x < CW + 8; j++) {
-        const w = 50 + Math.round(H(row, 40, j) * 40), x0 = Math.max(x, -CW - 8), x1 = Math.min(x + w, CW + 8), v = H(row, 41, j);
+      const cw = cwAt(y + 17);
+      for (let j = 0, x = -cw - 8 - (row % 2) * 30; x < cw + 8; j++) {
+        const w = 50 + Math.round(H(row, 40, j) * 40), x0 = Math.max(x, -cw - 8), x1 = Math.min(x + w, cw + 8), v = H(row, 41, j);
+        if (x1 - x0 < 10) { x += w; continue; }
         g.fillStyle = v < 0.33 ? C.s1 : v < 0.75 ? "#20292c" : C.s2;
         g.fillRect(x0 + 2, y + 2, x1 - x0 - 4, 30);
         g.fillStyle = "#2f3a3e"; g.fillRect(x0 + 2, y + 2, x1 - x0 - 4, 3);
@@ -827,8 +832,15 @@
     g.globalCompositeOperation = "destination-out";
     const gr = g.createLinearGradient(0, y1 - 300, 0, y1);
     gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,1)");
-    g.fillStyle = gr; g.fillRect(-CW - 20, y1 - 300, (CW + 20) * 2, 320);
+    g.fillStyle = gr; g.fillRect(-cwAt(y1) - 20, y1 - 300, (cwAt(y1) + 20) * 2, 320);
     g.globalCompositeOperation = "source-over";
+  }
+  // the causeway's outline, `pad` px out past its edges, from y0 to y1 south of the gate
+  function causeway(g, pad, y0, y1) {
+    g.beginPath();
+    g.moveTo(-CW - pad, y0); g.lineTo(CW + pad, y0);
+    g.lineTo(cwAt(y1) + pad, y1); g.lineTo(-cwAt(y1) - pad, y1);
+    g.closePath();
   }
   // Robert asked (2026-10-28) for the game's own drawn ground here: the deep-water texture for the lake and the camp's
   // flagstones for the causeway, darkened. Painted once at full size when both have loaded; the coded ground until then.
@@ -855,14 +867,14 @@
     }
     // the causeway: flagstones, as dark as the ground round them, with a dark kerb
     const y1 = LK.cy + LK.ry + 360;
-    g.fillStyle = C.ink; g.fillRect(-CW - 10, -12, (CW + 10) * 2, y1 + 12);
-    g.fillStyle = pat(flags); g.fillRect(-CW - 6, -10, (CW + 6) * 2, y1 + 10);
-    g.fillStyle = "rgba(0,0,0,0.4)"; g.fillRect(-CW - 6, -10, (CW + 6) * 2, y1 + 10);
+    causeway(g, 10, -12, y1); g.fillStyle = C.ink; g.fill();
+    causeway(g, 6, -10, y1); g.fillStyle = pat(flags); g.fill();
+    g.fillStyle = "rgba(0,0,0,0.4)"; g.fill();
     // its far end sinks into the mud
     g.globalCompositeOperation = "destination-out";
     const gr = g.createLinearGradient(0, y1 - 300, 0, y1);
     gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,1)");
-    g.fillStyle = gr; g.fillRect(-CW - 20, y1 - 300, (CW + 20) * 2, 320);
+    g.fillStyle = gr; g.fillRect(-cwAt(y1) - 20, y1 - 300, (cwAt(y1) + 20) * 2, 320);
     return (tgCanvas = cv);
   }
   Finale.drawGround = function (c, view, t) {
@@ -875,7 +887,7 @@
     // glints on the black water
     for (let i = 0; i < 50; i++) {
       const lx = (H(i, 31) - 0.5) * 1.9 * LK.rx, ly = LK.cy + (H(i, 32) - 0.5) * 1.9 * LK.ry, a = Math.sin(t * 1.3 + i * 2.1);
-      if (a < 0.2 || lakeD(lx, ly) > 0.95 || (Math.abs(lx) < CW + 30 && ly > -10)) continue;
+      if (a < 0.2 || lakeD(lx, ly) > 0.95 || (Math.abs(lx) < cwAt(ly) + 30 && ly > -10)) continue;
       c.fillStyle = `rgba(${CYAN},${0.2 * a})`;
       c.fillRect(Math.round(g.x + lx + Math.sin(t * 0.5 + i) * 6), Math.round(g.y + ly), 12 + Math.round(H(i, 33) * 22), 3);
     }
@@ -1295,7 +1307,7 @@
   function drawHand(c, e, h, side, t) {
     const g = Finale.gate(), k = kingRise(e), dy = kingDrop(e) + bob(t);
     const ex = g.x + side * GK().elbow, ey = g.y + GK().elbowY + dy, hx = Math.round(h.x), hy = Math.round(h.y - h.lift);
-    const wet = lakeD(h.x - g.x, h.y - g.y) < 1 && !(Math.abs(h.x - g.x) < CW && h.y > g.y + 4);
+    const wet = lakeD(h.x - g.x, h.y - g.y) < 1 && !(Math.abs(h.x - g.x) < cwAt(h.y - g.y) && h.y > g.y + 4);
     c.save();
     c.globalAlpha = clamp((k - 0.4) / 0.6, 0, 1);
     if (wet) ripple(c, h.x, h.y + 10, 260, t, side > 0 ? 0.3 : 0.7);

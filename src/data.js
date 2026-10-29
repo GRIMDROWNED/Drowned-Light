@@ -448,7 +448,8 @@
                  heart lies `arenaY` px south of the gate; the Bearer stops `plantY` px south of the gate. In the arena the
                  camera pulls back to show at least `view` px top to bottom (and `viewW` across), and leans toward the King.
                  The gate stands in a lake of black water (`lake`: a rounded box centred `cy` px off the gate, `rx` by `ry`
-                 px); a stone causeway `causeway` px either side of the middle runs out of it to the gate. Nobody wades it.
+                 px); a stone causeway `causeway` px either side of the middle at the gate, widening by `taper` px for every px
+                 south (a pyramid, like the concept), runs out of it to the gate. Nobody wades it.
        march     begun from the camp by day. The Bearer walks `speed` px/s (`wade` × in water), only while a knight is within
                  `leash` px. It has `hp` health (× the party), firelight `light` px round it, and every `pulseEvery` s burns
                  the Drowned within `pulseR` px for `pulseDmg` (and sets them alight). By day, every `bandEvery` s while it
@@ -470,7 +471,7 @@
                    rain   from phase 2: black water rains on `n` spots round the knights, adding `corrupt` corruption. */
   DL.FINALE = {
     gate: { dist: 4900, clear: 560, foundR: 650, arenaR: 420, arenaY: 250, plantY: 380, view: 1450, viewW: 1000,
-      lake: { cy: -150, rx: 820, ry: 580 }, causeway: 170 },
+      lake: { cy: -150, rx: 820, ry: 580 }, causeway: 170, taper: 0.3 },
     speed: 24, wade: 0.6, leash: 340, hp: 1500, light: 260, restLight: 330, pulseEvery: 3, pulseR: 95, pulseDmg: 18,
     bandEvery: 15, bandN: 3, bandR: 440, braziers: 4, brazierR: 160, waveEvery: 11, waveN: 4, campR: 750, dawnHeal: 0.4,
     king: {
