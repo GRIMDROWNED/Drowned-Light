@@ -14,7 +14,7 @@
 
   const G = (DL.Game = { state: "title", t: 0, time: 0, nightAmt: 0, night: false, allies: [], eid: 0, pid: 0, dirty: new Set() });
   // Co-op: the guest's device plays inside the host's world and never saves it.
-  G.SLOTS = 3;
+  G.SLOTS = 5;
   G.isGuest = () => !!(DL.Net && DL.Net.role === "guest");
 
   /* ---------------- save ---------------- */
