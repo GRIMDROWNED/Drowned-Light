@@ -182,10 +182,10 @@
         { name: "Volley", desc: "Each shot looses three bolts at once." },
       ],
     },
-    // Kit 04, the Ice Mage (replaced the Relic Bearer 2026-10-30; the key stays "relicBearer" so old saves keep their kit).
+    // Kit 04, the Frostweaver (replaced the Relic Bearer 2026-10-30; the key stays "relicBearer" so old saves keep their kit).
     // Freezing slows a Drowned to 60% speed for `frost` s; brittle ones take `brittle` more damage for `brittleT` s (DL.ICE).
     relicBearer: {
-      name: "Ice Mage", tag: "Kit 04", motto: "Even the dark can freeze.", roles: ["Ranged", "Area damage", "Crowd control"],
+      name: "Frostweaver", tag: "Kit 04", motto: "Even the dark can freeze.", roles: ["Ranged", "Area damage", "Crowd control"],
       weapon: "Crystal staff", color: "150,215,255",
       desc: "A masked mage in a white witch's hat. Frost bolts from a crystal staff, and an Ice Bomb that bursts over a wide area and freezes the Drowned.",
       attack: { type: "frost", name: "Frost Bolt", dmg: 11, range: 240, cd: 0.6, speed: 460 },
@@ -265,7 +265,7 @@
       ],
     },
   };
-  // The Ice Mage's frost (src/kits.js): how long freezing and brittle last, brittle's extra damage taken, and the shatter
+  // The Frostweaver's frost (src/kits.js): how long freezing and brittle last, brittle's extra damage taken, and the shatter
   // of a frozen Drowned dying (it freezes up to `shatterN` others within `shatterR` px). The owl familiar from level 5.
   DL.ICE = { frost: 2.5, brittle: 0.2, brittleT: 4, shatterN: 3, shatterR: 150, owl: { range: 260, cd: 1.1, dmg: 6 } };
   DL.KIT_ORDER = ["lanternBlade", "pikeWarden", "ashenArbalist", "relicBearer", "flameBastion", "chainReaper", "jadeBreaker"];
