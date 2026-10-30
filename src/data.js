@@ -182,21 +182,24 @@
         { name: "Volley", desc: "Each shot looses three bolts at once." },
       ],
     },
+    // Kit 04, the Ice Mage (replaced the Relic Bearer 2026-10-30; the key stays "relicBearer" so old saves keep their kit).
+    // Freezing slows a Drowned to 60% speed for `frost` s; brittle ones take `brittle` more damage for `brittleT` s (DL.ICE).
     relicBearer: {
-      name: "Relic Bearer", tag: "Kit 04", motto: "Lost things still shine.", roles: ["Utility", "Area control", "Exploration"],
-      weapon: "Relic staff", color: "255,232,170",
-      desc: "An ancient staff that guides the way and bends light. Seeking orbs, a wider lantern and a slower-burning oil.",
-      attack: { type: "orb", name: "Relic Orb", dmg: 10, range: 230, cd: 0.6, speed: 300 },
+      name: "Ice Mage", tag: "Kit 04", motto: "Even the dark can freeze.", roles: ["Ranged", "Area damage", "Crowd control"],
+      weapon: "Crystal staff", color: "150,215,255",
+      desc: "A masked mage in a white witch's hat. Frost bolts from a crystal staff, and an Ice Bomb that bursts over a wide area and freezes the Drowned.",
+      attack: { type: "frost", name: "Frost Bolt", dmg: 11, range: 240, cd: 0.6, speed: 460 },
       dash: { type: "plain" },
-      ability: { id: "pulse", name: "Beacon Pulse", oil: 14, cd: 13, radius: 170, dmg: 14, purify: 20,
-        desc: "Reveal, purify, dispel: a pulse that lights the area, burns away corruption and scatters arrows." },
+      // lobbed `throw` px (or at the nearest Drowned in reach), it lands after `flight` s and bursts over `radius` px
+      ability: { id: "icebomb", name: "Ice Bomb", oil: 14, cd: 12, radius: 150, dmg: 30, kb: 140, throw: 200, reach: 300, flight: 0.55,
+        desc: "Hurl a bomb of ice that bursts over a wide area: it strikes every Drowned in the blast and freezes them." },
       passive: { lanternR: 1.4, oilDrain: 0.7 },
-      special: { name: "Wide Lantern", desc: "Your lantern reaches 40% farther and burns its oil 30% slower." },
+      special: { name: "Frost Lantern", desc: "Your blue lantern reaches 40% farther and burns its oil 30% slower." },
       milestones: [
-        { name: "Lost Things Shine", desc: "A wisp familiar hovers by you and flicks motes of light at nearby Drowned." },
-        { name: "Twin Relics", desc: "The staff looses two orbs at a time." },
-        { name: "Purifying Pulse", desc: "Beacon Pulse also heals you and cleanses twice as much." },
-        { name: "Guiding Light", desc: "A halo of bloomlight travels with you and holds corruption at bay." },
+        { name: "Ice Owl", desc: "An owl of ice flies with you and hurls ice shards at nearby Drowned." },
+        { name: "Deep Freeze", desc: "All your attacks freeze the Drowned, slowing them." },
+        { name: "Brittle", desc: "Your attacks make the Drowned brittle: they take 20% more damage." },
+        { name: "Shatter", desc: "A frozen Drowned that dies shatters, freezing up to 3 more nearby." },
       ],
     },
     flameBastion: {
@@ -262,6 +265,9 @@
       ],
     },
   };
+  // The Ice Mage's frost (src/kits.js): how long freezing and brittle last, brittle's extra damage taken, and the shatter
+  // of a frozen Drowned dying (it freezes up to `shatterN` others within `shatterR` px). The owl familiar from level 5.
+  DL.ICE = { frost: 2.5, brittle: 0.2, brittleT: 4, shatterN: 3, shatterR: 150, owl: { range: 260, cd: 1.1, dmg: 6 } };
   DL.KIT_ORDER = ["lanternBlade", "pikeWarden", "ashenArbalist", "relicBearer", "flameBastion", "chainReaper", "jadeBreaker"];
 
   /* ---------- pacing ----------

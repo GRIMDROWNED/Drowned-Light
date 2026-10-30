@@ -995,6 +995,8 @@
 
       e.cd -= dt;
       e.slow = Math.max(0, e.slow - dt);
+      if (e.frost > 0 && (e.frost -= dt) <= 0) e.shatter = false; // the Ice Mage's freezing (its slow is e.slow)
+      if (e.brittle > 0) e.brittle -= dt;
       if (e.spore > 0) e.spore -= dt; // Fred's spores
       if (e.mind > 0) e.mind -= dt;
       e.rallied = Math.max(0, (e.rallied || 0) - dt);
@@ -1331,7 +1333,7 @@
       DL.Net.event({ t: "hit", id: e.id, dmg: d, ang, kb, burn: burn || 0 });
       e.flash = 0.12;
       sfx("hit");
-      text(e.x + rand(-8, 8), e.y - 40 * e.def.scale - 20, Math.round(d * (1 - (e.def.armor || 0)) * (e.cursed ? 1 + (e.curseK || DL.ABIGAIL.curse) : 1)) + (crit ? "!" : ""), crit ? "#ffe08a" : "#f3e6cf", crit ? 1.3 : 1);
+      text(e.x + rand(-8, 8), e.y - 40 * e.def.scale - 20, Math.round(d * (1 - (e.def.armor || 0)) * (e.cursed ? 1 + (e.curseK || DL.ABIGAIL.curse) : 1) * (e.fx & 32 ? 1 + DL.ICE.brittle : 1)) + (crit ? "!" : ""), crit ? "#ffe08a" : "#f3e6cf", crit ? 1.3 : 1);
       for (let i = 0; i < 4; i++) puff(e.x, e.y - 24 * e.def.scale, "rgba(70,210,220,0.7)", 90, 0.35);
       return;
     }
@@ -1343,6 +1345,7 @@
     } else if (!e.def.shield && G.enemies.some((b) => b.def.guard && !b.removed && dist(b.x, b.y, e.x, e.y) < b.def.guard)) d *= 0.75; // guarded by a Bulwark
     d *= 1 - (e.def.armor || 0);
     if (e.cursed) d *= 1 + (e.curseK || DL.ABIGAIL.curse); // weakened by one of Abigail's orbs
+    if (e.brittle > 0) d *= 1 + DL.ICE.brittle; // made brittle by the Ice Mage
     if (e.def.king) d = DL.Finale.cap(e, d);
     e.hp -= d;
     e.flash = 0.12;
@@ -1365,6 +1368,7 @@
   function kill(e, drops) {
     if (e.removed || G.isGuest()) return;
     e.removed = true;
+    DL.Kits.shatter(e); // frozen by an Ice Mage at Shatter: it bursts and freezes the Drowned near it
     if (e.def.den) { DL.Den.slain(e); return; } // a Bone Wolf leaves its carcass
     if (e.def.bell) DL.Bell.slain(e);
     if (e.def.rose) DL.Rose.slain(e);
@@ -1454,7 +1458,7 @@
     const p = G.player;
     for (const b of G.projectiles) {
       if (b.homing) {
-        // Relic orbs bend toward the nearest Drowned they haven't hit yet.
+        // Homing shots (the Ice Owl's shards) bend toward the nearest Drowned they haven't hit yet.
         let tgt = null, bd = 280;
         for (const e of G.enemies) {
           if (e.rise > 0 || e.removed || b.hit.has(e)) continue;
@@ -1491,6 +1495,7 @@
             if (b.soul) DL.Abigail.curse(e); // first, so this orb already bites harder
             if (b.spore) DL.Fred.sporeHit(e, b);
             if (b.wyv) DL.Wyvern.boltHit(e, b); // David's bolt: burning, stunning, or leaping on as lightning
+            if (b.ice) DL.Kits.chill(e, false); // the Ice Mage's frost bolt or his owl's shard: freezing, brittle
             hitEnemy(e, b.dmg * DL.Kits.farShotMult(b), Math.atan2(b.vy, b.vx), b.soul ? 20 : 60);
             if (b.flare) flare(b.x, b.y, b.dmg);
             if (b.hit) b.hit.add(e);

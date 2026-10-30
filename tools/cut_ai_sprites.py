@@ -42,8 +42,8 @@ GRIDS = {
     'pike-warden/poses-b.png': (3, 2, POSES_B),
     'ashen-arbalist/poses-a.png': (3, 2, POSES_A),
     'ashen-arbalist/poses-b.png': (3, 2, POSES_B),
-    'relic-bearer/poses-a.png': (3, 2, POSES_A),
-    'relic-bearer/poses-b.png': (3, 2, POSES_B),
+    'ice-mage/poses-a.png': (3, 2, POSES_A),
+    'ice-mage/poses-b.png': (3, 2, POSES_B),
     'flame-bastion/poses-a.png': (3, 2, POSES_A),
     'flame-bastion/poses-b.png': (3, 2, POSES_B),
     'bone-hound/poses-a.png': (3, 2, POSES_A),
@@ -112,7 +112,7 @@ GRIDS = {
     'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
 }
 # Cells the AI drew at another scale than the rest of their sheet: cell -> factor to resize it by.
-CELL_SCALE = {'pike-warden/07_walk': 1.16, 'relic-bearer/07_walk': 1.05,
+CELL_SCALE = {'pike-warden/07_walk': 1.16, 
               # the hound's attack row came out smaller than its standing row
               'bone-hound/08_attackA': 1.25, 'bone-hound/09_attackB': 1.25, 'bone-hound/10_attackC': 1.25}
 # the Ember Hound's and the Grave Warg's attack rows and whole second sheets came out smaller than their standing rows
@@ -167,6 +167,7 @@ WYV3_H = 210  # David the Bloodwing (his last form), res 4: 52 art px from wing 
 MOTHER_H = 380  # the Mother Wyvern boss, res 4: 95 art px standing with her wings half spread, about two and a half knights
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
 ROSE_H = 368  # the Deadly Rose, cut at res 4: drawn 92 art px tall standing (x0.8 in game), about twice the knight
+ICE_MAGE_H = 104  # the Ice Mage, hat and staff tip included: the body about the other knights' height (res 2)
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
 SETS = {
     'lantern-knight': ('lantern-knight', 'knight-front.png', 80, 3, {
@@ -227,7 +228,12 @@ SETS = {
         'ashen-arbalist/13_dash.png': ('side/dash', {'height': 61}),
         'ashen-arbalist/14_castA.png': ('side/castA', {'height': 58}),
         'ashen-arbalist/15_castB.png': ('side/castB', {'height': 65})})),
-    'relic-bearer': ('relic-bearer', 'relic-bearer/01_front.png', 98, 1, twelve('relic-bearer', TWELVE_FILES)),
+    # the Ice Mage (kit 04): his side view is a standalone picture facing left (the sheet's kept swapping the staff's hand),
+    # so it's flipped to face right ('flip'); his hat and staff tip make up the height
+    'ice-mage': ('ice-mage', 'ice-mage/01_front.png', ICE_MAGE_H, 1, {
+        'ice-mage/01_front.png': 'front', 'ice-mage/02_back.png': 'back', 'ice-mage/side.png': ('right', {'height': ICE_MAGE_H, 'flip': True}),
+        'ice-mage/08_attackA.png': 'attackA', 'ice-mage/09_attackB.png': 'attackB', 'ice-mage/10_attackC.png': 'attackC',
+        'ice-mage/11_hurt.png': 'side/hurt', 'ice-mage/12_death.png': 'side/death'}),
     # the heaviest kit (bulk 1 in src/units.js): broader than the others, his horns and big sword make up the height
     'flame-bastion': ('flame-bastion', 'flame-bastion/01_front.png', 94, 1, twelve('flame-bastion', TWELVE_FILES)),
     # the Bone Hound summon: a dog, so shorter than a knight (its spines and raised tail make up the height)
@@ -318,6 +324,9 @@ SETS = {
 # Frames come out on one shared canvas (numbered prefix1, prefix2, ...); put the printed foot point
 # in that unit's `feet` in src/sprites.js.
 SHEETS = {
+    # the Ice Mage's side walk (the four walk cells of his poses-b sheet, strung into a strip by the GRIDS step), front and back walks
+    'ice-mage': [('ice-mage/walk-side-4.png', 4, 1, 102, 'side/walk'), ('ice-mage/walk-front.png', 4, 1, 104, 'walkF'),
+                 ('ice-mage/walk-back.png', 4, 1, 103, 'walkB')],
     'lantern-knight': [
         ('knight-walk-side-4.png', 4, 1, 78, 'side/walk'),
         ('knight-walk-front-4b.png', 4, 1, 80, 'walkF'),
@@ -390,11 +399,6 @@ SHEETS = {
         ('ashen-arbalist/walk-side-4.png', 4, 1, 80, 'side/walk'),
         ('ashen-arbalist/walk-front-4.png', 4, 1, 82, 'walkF'),
         ('ashen-arbalist/walk-back-4.png', 4, 1, 82, 'walkB'),
-    ],
-    'relic-bearer': [
-        ('relic-bearer/walk-side-4.png', 4, 1, 103, 'side/walk'),
-        ('relic-bearer/walk-front-4.png', 4, 1, 99, 'walkF'),
-        ('relic-bearer/walk-back-4.png', 4, 1, 99, 'walkB'),
     ],
     'flame-bastion': [
         ('flame-bastion/walk-side-4.png', 4, 1, 92, 'side/walk'),
@@ -537,13 +541,11 @@ FRAME_ORDER = {('lantern-knight', 'walkB'): [2, 1, 4, -1], ('mire-stalker', 'wal
                # the lantern is missing from frames 1 and 3
                ('drowned-wretch', 'walkB'): [2, 2, 4, 4],
                # every frame steps with the same foot
-               ('pike-warden', 'walkF'): [1, 3, -1, 3],
-               # frames 2 and 4 both lift the same foot
-               ('relic-bearer', 'walkF'): [1, 2, 3, -2]}
+               ('pike-warden', 'walkF'): [1, 3, -1, 3]}
 
 # Where to mirror legs when the feet can't be found from the bottom rows (one foot lifted, a staff butt
 # beside them): character -> (legs share, half width, centre x) for mirror_legs.
-MIRROR_AT = {'relic-bearer': (0.32, 10, 39)}
+MIRROR_AT = {}  # (the Relic Bearer's, retired with him in v0.15.135, was (0.32, 10, 39))
 
 # Walk sheets rendered in other colours than the character's first batch: recolour to this image.
 SHEET_MATCH = {'tide-archer': 'tide-archer/01_front.png'}
@@ -777,6 +779,7 @@ for name, (folder, ref, target, fringe, files) in SETS.items():
         kk = opt['height'] / (cut_keyed(img, 1, fringe=fr, **ko).height - 2) if 'height' in opt else k
         rc = match_colors(Image.open(os.path.join(SRC, opt['match']))) if 'match' in opt else RECOLOR.get(name)
         im = cut_keyed(img, kk, fringe=fr, colors=64 if rc else 32, recolor=rc, **ko)
+        if opt.get('flip'): im = im.transpose(Image.FLIP_LEFT_RIGHT)
         dst = os.path.join(OUT, folder, out + '.png')
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         im.save(dst)
@@ -942,3 +945,57 @@ if not only or 'ground' in only:
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         out.save(dst)
         print(dst, out.size)
+
+# The Ice Mage (kit 04, src/kits.js): one concept picture and one sheet of his ice owl, both on magenta.
+# His own poses are a SETS entry ('ice-mage'); here are the owl and his ice.
+# The owl sheet isn't on a grid and its cells overlap, so each piece is a box on it, keeping only the shapes whose
+# middle is inside the box. Items: (prop name, box, shrink). The owl is cut about 52 px tall standing, half the mage.
+ICE_SRC = 'ice-mage/owl-sheet.png'
+ICE_K = 0.13
+ICE_CELLS = [
+    ('owlFront', (10, 20, 310, 432), ICE_K), ('owlBack', (355, 10, 592, 444), ICE_K), ('owlSide', (558, 22, 958, 428), ICE_K),
+    ('owlRise', (974, 10, 1526, 444), ICE_K),
+    # the flight, wings from high to low (facing right)
+    ('owlFly1', (6, 444, 316, 682), ICE_K), ('owlFly2', (316, 444, 644, 682), ICE_K), ('owlFly3', (638, 486, 966, 676), ICE_K),
+    ('owlFly4', (944, 482, 1268, 654), ICE_K), ('owlFly5', (1228, 496, 1536, 660), ICE_K),
+    # casting: wings spread over a burst of ice
+    ('owlCast', (6, 686, 386, 1006), ICE_K),
+    # its shard (the owl's shot), the staff's frost bolt and its bigger, trailing one, and a gem (the Ice Bomb in flight)
+    ('iceShard', (440, 798, 610, 866), 0.12), ('iceBolt', (636, 764, 858, 870), 0.15), ('iceBoltBig', (880, 764, 1242, 914), 0.15),
+    ('iceGem', (362, 774, 444, 894), 0.2),
+    # two crystals from the ring round the owl: the Ice Bomb's burst raises a ring of them
+    ('iceSpike1', (1466, 752, 1508, 868), 0.5), ('iceSpike2', (1344, 683, 1388, 772), 0.5),
+]
+
+def ice_pieces(img, box, key=(255, 0, 255)):
+    """The part of a sheet inside `box`, with every shape whose middle lies outside it keyed out."""
+    import numpy as np
+    from scipy import ndimage
+    a = np.asarray(img).astype(int)
+    fg = np.sqrt(((a - np.array(key)) ** 2).sum(-1)) > 120
+    lab, n = ndimage.label(ndimage.binary_dilation(fg, iterations=4))
+    x0, y0, x1, y1 = box
+    keep = np.zeros(n + 1, bool)
+    for i, s in enumerate(ndimage.find_objects(lab)):
+        cy, cx = (s[0].start + s[0].stop) / 2, (s[1].start + s[1].stop) / 2
+        keep[i + 1] = x0 <= cx < x1 and y0 <= cy < y1
+    out = a.copy()
+    out[~keep[lab]] = key
+    return Image.fromarray(out[y0:y1, x0:x1].astype('uint8'))
+
+if not only or 'ice-mage' in only:
+    done = []
+    p = os.path.join(SRC, ICE_SRC)
+    if os.path.exists(p):
+        img = Image.open(p).convert('RGB')
+        for n, box, kk in ICE_CELLS:
+            cell = ice_pieces(img, box) if not n.startswith('iceSpike') else img.crop(box)
+            im = cut_keyed(cell, kk, fringe=1, colors=48)
+            w, h = im.width + im.width % 2, im.height + im.height % 2
+            if (w, h) != im.size:
+                pad = Image.new('RGBA', (w, h)); pad.paste(im, (w - im.width, h - im.height)); im = pad
+            dst = os.path.join(OUT, PROP_OUT, n + '.png')
+            im.save(dst)
+            done.append(im)
+            print(dst, im.size)
+    if done: contact(done, os.path.join(SRC, 'ice-owl-preview.png'))

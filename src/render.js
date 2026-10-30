@@ -225,6 +225,10 @@
     for (const b of den.bodies) list.push({ y: b[1], f: () => drawCarcass(c, b) });
     if (G.player && G.state !== "dead") list.push({ y: G.player.y, f: () => drawPlayer(c, G, t) });
     for (const a of G.allies) list.push({ y: a.y, f: () => drawAlly(c, a, t) });
+    // the Ice Mage's owl: in front of its knight while it flies, at its own feet once it has landed
+    for (const [w, o] of [[G.wisp, G.player], ...G.allies.map((a) => [a.wisp, a])]) {
+      if (w && o && Art.sprites.owlFly1) list.push({ y: w.y > o.y - 12 ? w.y : o.y + 2, f: () => drawOwl(c, w, o, t) });
+    }
     // the Chain Reaper's sickle flying out on its chain, and the coil round a snared Drowned's ankles
     const pl = G.player;
     if (pl && pl.swing && pl.swing.kind === "chain") list.push({ y: pl.y + 1, f: () => drawThrow(c, pl.x, pl.y, pl.swing, t) });
@@ -258,6 +262,7 @@
     c.globalCompositeOperation = "lighter";
     for (const b of G.projectiles) drawProjectile(c, b);
     for (const b of G.netProjectiles || []) drawProjectile(c, b);
+    for (const b of DL.Kits.bombs()) drawBomb(c, b, t);
     for (const a of G.allies) {
       for (const q of a.proj || []) drawProjectile(c, { x: q[0], y: q[1], vx: q[2], vy: q[3], kind: q[4], col: q[5], hostile: false, life: 1 });
       const s = a.swing;
@@ -279,6 +284,14 @@
         // the Ashen Arbalist's drawn burst of light, spark -> star and ring -> fading ring
         const s = Art.sprites["arbFlare" + Math.min(4, 1 + Math.floor((f.t / f.max) * 4))], w = s.w * PS * f.s, h = s.h * PS * f.s;
         c.drawImage(s.c, Math.round(f.x - w / 2), Math.round(f.y + 12 * f.s - h), w, h); // the ring's front edge on the ground
+      } else if (f.type === "iceBurst") {
+        drawIceBurst(c, f);
+      } else if (f.type === "iceLink") {
+        // a shattering Drowned's frost leaping to the next one
+        const k = f.t / f.max;
+        c.strokeStyle = `rgba(190,235,255,${0.9 * (1 - k)})`;
+        c.lineWidth = 3 * (1 - k) + 1;
+        c.beginPath(); c.moveTo(f.x1, f.y1); c.lineTo(f.x1 + (f.x2 - f.x1) * Math.min(1, k * 3), f.y1 + (f.y2 - f.y1) * Math.min(1, k * 3)); c.stroke();
       } else if (f.type === "ring") {
         const k = f.t / f.max, r = f.r0 + (f.r1 - f.r0) * Math.sqrt(k);
         c.strokeStyle = `rgba(${f.col},${(1 - k) * 0.9})`;
@@ -1013,12 +1026,28 @@
       c.restore();
     }
     // Bone Wolves wear the hound's bones with a drowned, cyan cast
-    const flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : d.beast ? WOLF_TINT : 0;
-    const flashColor = e.flash > 0 ? "#ffffff" : d.beast && e.state !== "windup" ? WOLF_CAST : d.rose ? "#ff7a8a" : "#7ff6ff";
+    const frozen = DL.Kits.frozen(e), icy = frozen && e.flash <= 0 && e.state !== "windup"; // frozen by the Ice Mage: frosted over
+    const flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : icy ? 0.45 : d.beast ? WOLF_TINT : 0;
+    const flashColor = e.flash > 0 ? "#ffffff" : icy ? "#bfe6ff" : d.beast && e.state !== "windup" ? WOLF_CAST : d.rose ? "#ff7a8a" : "#7ff6ff";
     const [anim, fr, ang] = enemyAnim(e, t);
     Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y, s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1 });
     if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.barY || (d.crawl ? 36 : d.beast ? 66 : 84) * s) - 4, Math.round((d.barW || 26) * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
     if (e.burn > 0) Art.drawFire(c, e.x + Math.sin(t * 7) * 4, e.y - 10, 0.5, t);
+    if (frozen && Art.sprites.iceSpike2) {
+      // ice grown up round its feet
+      for (let i = 0; i < 3; i++) {
+        const sp = Art.sprites[i === 1 ? "iceSpike1" : "iceSpike2"], k = (i === 1 ? 0.4 : 0.3) * s, w = sp.w * PS * k, h = sp.h * PS * k;
+        c.drawImage(sp.c, Math.round(e.x + (i - 1) * 9 * s - w / 2), Math.round(e.y + 3 - h), w, h);
+      }
+    }
+    if (DL.Kits.brittle(e)) {
+      // brittle: white glints flickering over it
+      c.fillStyle = "rgba(235,250,255,0.9)";
+      for (let i = 0; i < 2; i++) {
+        const k = (t * 2 + i * 0.5 + e.id * 0.31) % 1;
+        if (k < 0.5) c.fillRect(Math.round(e.x + Math.sin(e.id * 3 + i * 2 + Math.floor(t * 2)) * 9), Math.round(e.y - (14 + ((e.id * 7 + i * 13) % 30)) * s), 2, 2);
+      }
+    }
     if (e.bleed > 0) {
       // Bone Hound bleed: drops running down to the ground
       c.fillStyle = "#a3170f";
@@ -1546,6 +1575,20 @@
       c.beginPath(); c.moveTo(b.x + ux * 8, b.y + uy * 8); c.lineTo(b.x - uy * 4, b.y + ux * 4); c.lineTo(b.x + uy * 4, b.y - ux * 4); c.fill();
       return;
     }
+    const ice = (b.kind === "ice" || b.kind === "iceShard") && Art.sprites[b.kind === "iceShard" ? "iceShard" : b.big ? "iceBoltBig" : "iceBolt"];
+    if (ice) {
+      // the Ice Mage's frost bolt and his owl's shard, point first, with a cold glow
+      const w = ice.w * PS, h = ice.h * PS, g = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, 14);
+      g.addColorStop(0, "rgba(150,215,255,0.5)"); g.addColorStop(1, "rgba(150,215,255,0)");
+      c.fillStyle = g; c.fillRect(b.x - 14, b.y - 14, 28, 28);
+      c.save();
+      c.globalCompositeOperation = "source-over";
+      c.translate(b.x, b.y); c.rotate(a);
+      if (Math.cos(a) < 0) c.scale(1, -1);
+      c.drawImage(ice.c, -w + 4, -h / 2, w, h);
+      c.restore();
+      return;
+    }
     const bolt = b.kind === "bolt" && !b.hostile && Art.sprites[b.flare ? "arbFlareBolt" : "arbBolt"];
     if (bolt) {
       // the Ashen Arbalist's drawn bolt, its head at the front, turned the way it flies
@@ -1565,6 +1608,64 @@
     c.fillRect(b.x - 1, b.y - 1, 2, 2);
   }
 
+  /* The Ice Mage's owl (G.wisp, or a friend's): flapping while it flies, wings spread over a burst of ice as it throws a
+     shard, standing beside its knight once it has landed. A friend's owl only comes with its place, so it faces the
+     way its knight does and doesn't show its throws. */
+  const OWL_FLAP = [1, 2, 3, 4, 5, 4, 3, 2];
+  function drawOwl(c, w, o, t) {
+    const landed = w.y > o.y - 12, face = w.face || (Math.cos(o.angle) < 0 ? -1 : 1);
+    if (landed) {
+      shadow(c, w.x, w.y, 9, 3);
+      sprite(c, "owlSide", w.x, w.y + 1, face < 0);
+      return;
+    }
+    shadow(c, w.x, o.y + 2, 10, 3, 0.25);
+    const name = w.castT > 0 ? "owlCast" : "owlFly" + OWL_FLAP[Math.floor(t * 14) % 8], s = Art.sprites[name];
+    sprite(c, name, w.x, w.y + (s.h * PS) / 2, face < 0);
+  }
+  // An Ice Bomb in the air: the spinning gem on its arc, and a ring on the ground where it will burst.
+  function drawBomb(c, b, t) {
+    const u = Math.min(1, b.t / b.max), x = b.x0 + (b.x - b.x0) * u, y = b.y0 + (b.y - b.y0) * u - Math.sin(Math.PI * u) * 70;
+    c.strokeStyle = `rgba(150,215,255,${0.25 + 0.35 * u})`;
+    c.lineWidth = 2;
+    const r = DL.Game.kit().ability.radius || 150;
+    c.beginPath(); c.ellipse(b.x, b.y, r * u, r * u * 0.7, 0, 0, Math.PI * 2); c.stroke();
+    const g = c.createRadialGradient(x, y, 0, x, y, 18);
+    g.addColorStop(0, "rgba(200,240,255,0.8)"); g.addColorStop(1, "rgba(150,215,255,0)");
+    c.fillStyle = g; c.fillRect(x - 18, y - 18, 36, 36);
+    const gem = Art.sprites.iceGem;
+    if (!gem) return;
+    const w = gem.w * PS, h = gem.h * PS;
+    c.save();
+    c.globalCompositeOperation = "source-over";
+    c.translate(x, y); c.rotate(t * 9);
+    c.drawImage(gem.c, -w / 2, -h / 2, w, h);
+    c.restore();
+  }
+  // An Ice Bomb's burst (or a frozen Drowned shattering): a flash, then a ring of ice spikes bursting up and melting away.
+  function drawIceBurst(c, f) {
+    const k = f.t / f.max;
+    const g = c.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r);
+    g.addColorStop(0, `rgba(220,245,255,${0.6 * (1 - k)})`); g.addColorStop(1, "rgba(150,215,255,0)");
+    c.fillStyle = g; c.fillRect(f.x - f.r, f.y - f.r, f.r * 2, f.r * 2);
+    if (!Art.sprites.iceSpike1) return;
+    c.save();
+    c.globalCompositeOperation = "source-over";
+    const grow = Math.min(1, k / 0.2), fade = k > 0.65 ? 1 - (k - 0.65) / 0.35 : 1;
+    c.globalAlpha = fade;
+    const spikes = [];
+    for (let i = 0; i < f.n; i++) {
+      const a = (i / f.n) * Math.PI * 2 + ((f.seed * 7 + i * 13) % 10) * 0.03, rr = f.r * (0.55 + ((f.seed + i * 5) % 7) * 0.06);
+      spikes.push({ x: f.x + Math.cos(a) * rr, y: f.y + Math.sin(a) * rr * 0.7, s: i % 2 ? "iceSpike1" : "iceSpike2", sc: (0.45 + ((i * 3 + f.seed) % 5) * 0.08) * (f.r < 80 ? 0.55 : 1) });
+    }
+    spikes.sort((a, b) => a.y - b.y);
+    for (const p of spikes) {
+      const s = Art.sprites[p.s], w = s.w * PS * p.sc, h = s.h * PS * p.sc * grow;
+      c.drawImage(s.c, Math.round(p.x - w / 2), Math.round(p.y - h), w, h);
+    }
+    c.restore();
+  }
+
   /* Milestone looks: a glowing weapon (5), drifting embers (10, spawned in kits.js),
      a ring of light at the feet (15), and a crest of light above the hood (20). */
   function drawKitGlow(c, G, p, t) {
@@ -1572,7 +1673,7 @@
     for (const w of [G.wisp, ...G.allies.map((a) => a.wisp)]) {
       if (!w) continue;
       const g = c.createRadialGradient(w.x, w.y, 0, w.x, w.y, 14);
-      g.addColorStop(0, "rgba(255,255,240,1)"); g.addColorStop(0.3, "rgba(255,232,170,0.8)"); g.addColorStop(1, "rgba(255,232,170,0)");
+      g.addColorStop(0, "rgba(220,245,255,0.5)"); g.addColorStop(0.3, "rgba(150,215,255,0.35)"); g.addColorStop(1, "rgba(150,215,255,0)");
       c.fillStyle = g; c.fillRect(w.x - 14, w.y - 14, 28, 28);
     }
     if (DL.Kits.steady(p)) {
