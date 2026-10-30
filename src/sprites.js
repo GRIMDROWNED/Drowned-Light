@@ -139,11 +139,15 @@
   ];
 
   /* The Frostweaver (kit 04, still "relicBearer" inside so old saves keep their kit): the 12 poses and walk sheets like the
-     other kits, except that his side view is a standalone picture, flipped (tools/cut_ai_sprites.py). The standing and
-     casting feet are the middle between his boots, since the staff's butt reaches the ground too. */
+     other kits, except that his side view is a standalone picture, flipped (tools/cut_ai_sprites.py), and his side walk is
+     8 frames from Robert's strip (2026-10-30). The standing and casting feet are the middle between his boots, since the
+     staff's butt reaches the ground too. */
   function iceMage() {
     const set = Object.assign(walking("relicBearer", [53, 106], [25, 106], [35, 105]), { path: "assets/sprites/ice-mage/", keys: stages("relicBearer") });
     Object.assign(set.feet, { front: [35, 104], back: [22, 103], right: [48, 105], attackA: [48, 103], attackB: [40, 94], attackC: [41, 102] });
+    const walk8 = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => "side/walk" + i);
+    set.views.side.walk = walk8.map((f) => f + "@-");
+    Object.assign(set.feet, sheetFeet(walk8, [53, 116]));
     return set;
   }
 
