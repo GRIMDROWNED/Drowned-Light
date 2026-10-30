@@ -167,7 +167,7 @@ WYV3_H = 210  # David the Bloodwing (his last form), res 4: 52 art px from wing 
 MOTHER_H = 380  # the Mother Wyvern boss, res 4: 95 art px standing with her wings half spread, about two and a half knights
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
 ROSE_H = 368  # the Deadly Rose, cut at res 4: drawn 92 art px tall standing (x0.8 in game), about twice the knight
-ICE_MAGE_H = 104  # the Ice Mage, hat and staff tip included: the body about the other knights' height (res 2)
+ICE_MAGE_H = 104  # the Frostweaver, hat and staff tip included: the body about the other knights' height (res 2)
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
 SETS = {
     'lantern-knight': ('lantern-knight', 'knight-front.png', 80, 3, {
@@ -228,7 +228,7 @@ SETS = {
         'ashen-arbalist/13_dash.png': ('side/dash', {'height': 61}),
         'ashen-arbalist/14_castA.png': ('side/castA', {'height': 58}),
         'ashen-arbalist/15_castB.png': ('side/castB', {'height': 65})})),
-    # the Ice Mage (kit 04): his side view is a standalone picture facing left (the sheet's kept swapping the staff's hand),
+    # the Frostweaver (kit 04): his side view is a standalone picture facing left (the sheet's kept swapping the staff's hand),
     # so it's flipped to face right ('flip'); his hat and staff tip make up the height
     'ice-mage': ('ice-mage', 'ice-mage/01_front.png', ICE_MAGE_H, 1, {
         'ice-mage/01_front.png': 'front', 'ice-mage/02_back.png': 'back', 'ice-mage/side.png': ('right', {'height': ICE_MAGE_H, 'flip': True}),
@@ -324,7 +324,7 @@ SETS = {
 # Frames come out on one shared canvas (numbered prefix1, prefix2, ...); put the printed foot point
 # in that unit's `feet` in src/sprites.js.
 SHEETS = {
-    # the Ice Mage's side walk (the four walk cells of his poses-b sheet, strung into a strip by the GRIDS step), front and back walks
+    # the Frostweaver's side walk (the four walk cells of his poses-b sheet, strung into a strip by the GRIDS step), front and back walks
     'ice-mage': [('ice-mage/walk-side-4.png', 4, 1, 102, 'side/walk'), ('ice-mage/walk-front.png', 4, 1, 104, 'walkF'),
                  ('ice-mage/walk-back.png', 4, 1, 103, 'walkB')],
     'lantern-knight': [
@@ -946,7 +946,7 @@ if not only or 'ground' in only:
         out.save(dst)
         print(dst, out.size)
 
-# The Ice Mage (kit 04, src/kits.js): one concept picture and one sheet of his ice owl, both on magenta.
+# The Frostweaver (kit 04, src/kits.js): one concept picture and one sheet of his ice owl, both on magenta.
 # His own poses are a SETS entry ('ice-mage'); here are the owl and his ice.
 # The owl sheet isn't on a grid and its cells overlap, so each piece is a box on it, keeping only the shapes whose
 # middle is inside the box. Items: (prop name, box, shrink). The owl is cut about 52 px tall standing, half the mage.

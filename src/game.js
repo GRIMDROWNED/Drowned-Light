@@ -995,7 +995,7 @@
 
       e.cd -= dt;
       e.slow = Math.max(0, e.slow - dt);
-      if (e.frost > 0 && (e.frost -= dt) <= 0) e.shatter = false; // the Ice Mage's freezing (its slow is e.slow)
+      if (e.frost > 0 && (e.frost -= dt) <= 0) e.shatter = false; // the Frostweaver's freezing (its slow is e.slow)
       if (e.brittle > 0) e.brittle -= dt;
       if (e.spore > 0) e.spore -= dt; // Fred's spores
       if (e.mind > 0) e.mind -= dt;
@@ -1345,7 +1345,7 @@
     } else if (!e.def.shield && G.enemies.some((b) => b.def.guard && !b.removed && dist(b.x, b.y, e.x, e.y) < b.def.guard)) d *= 0.75; // guarded by a Bulwark
     d *= 1 - (e.def.armor || 0);
     if (e.cursed) d *= 1 + (e.curseK || DL.ABIGAIL.curse); // weakened by one of Abigail's orbs
-    if (e.brittle > 0) d *= 1 + DL.ICE.brittle; // made brittle by the Ice Mage
+    if (e.brittle > 0) d *= 1 + DL.ICE.brittle; // made brittle by the Frostweaver
     if (e.def.king) d = DL.Finale.cap(e, d);
     e.hp -= d;
     e.flash = 0.12;
@@ -1368,7 +1368,7 @@
   function kill(e, drops) {
     if (e.removed || G.isGuest()) return;
     e.removed = true;
-    DL.Kits.shatter(e); // frozen by an Ice Mage at Shatter: it bursts and freezes the Drowned near it
+    DL.Kits.shatter(e); // frozen by a Frostweaver at Shatter: it bursts and freezes the Drowned near it
     if (e.def.den) { DL.Den.slain(e); return; } // a Bone Wolf leaves its carcass
     if (e.def.bell) DL.Bell.slain(e);
     if (e.def.rose) DL.Rose.slain(e);
@@ -1495,7 +1495,7 @@
             if (b.soul) DL.Abigail.curse(e); // first, so this orb already bites harder
             if (b.spore) DL.Fred.sporeHit(e, b);
             if (b.wyv) DL.Wyvern.boltHit(e, b); // David's bolt: burning, stunning, or leaping on as lightning
-            if (b.ice) DL.Kits.chill(e, false); // the Ice Mage's frost bolt or his owl's shard: freezing, brittle
+            if (b.ice) DL.Kits.chill(e, false); // the Frostweaver's frost bolt or his owl's shard: freezing, brittle
             hitEnemy(e, b.dmg * DL.Kits.farShotMult(b), Math.atan2(b.vy, b.vx), b.soul ? 20 : 60);
             if (b.flare) flare(b.x, b.y, b.dmg);
             if (b.hit) b.hit.add(e);

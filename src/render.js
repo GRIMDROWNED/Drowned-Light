@@ -225,7 +225,7 @@
     for (const b of den.bodies) list.push({ y: b[1], f: () => drawCarcass(c, b) });
     if (G.player && G.state !== "dead") list.push({ y: G.player.y, f: () => drawPlayer(c, G, t) });
     for (const a of G.allies) list.push({ y: a.y, f: () => drawAlly(c, a, t) });
-    // the Ice Mage's owl: in front of its knight while it flies, at its own feet once it has landed
+    // the Frostweaver's owl: in front of its knight while it flies, at its own feet once it has landed
     for (const [w, o] of [[G.wisp, G.player], ...G.allies.map((a) => [a.wisp, a])]) {
       if (w && o && Art.sprites.owlFly1) list.push({ y: w.y > o.y - 12 ? w.y : o.y + 2, f: () => drawOwl(c, w, o, t) });
     }
@@ -1026,7 +1026,7 @@
       c.restore();
     }
     // Bone Wolves wear the hound's bones with a drowned, cyan cast
-    const frozen = DL.Kits.frozen(e), icy = frozen && e.flash <= 0 && e.state !== "windup"; // frozen by the Ice Mage: frosted over
+    const frozen = DL.Kits.frozen(e), icy = frozen && e.flash <= 0 && e.state !== "windup"; // frozen by the Frostweaver: frosted over
     const flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : icy ? 0.45 : d.beast ? WOLF_TINT : 0;
     const flashColor = e.flash > 0 ? "#ffffff" : icy ? "#bfe6ff" : d.beast && e.state !== "windup" ? WOLF_CAST : d.rose ? "#ff7a8a" : "#7ff6ff";
     const [anim, fr, ang] = enemyAnim(e, t);
@@ -1577,7 +1577,7 @@
     }
     const ice = (b.kind === "ice" || b.kind === "iceShard") && Art.sprites[b.kind === "iceShard" ? "iceShard" : b.big ? "iceBoltBig" : "iceBolt"];
     if (ice) {
-      // the Ice Mage's frost bolt and his owl's shard, point first, with a cold glow
+      // the Frostweaver's frost bolt and his owl's shard, point first, with a cold glow
       const w = ice.w * PS, h = ice.h * PS, g = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, 14);
       g.addColorStop(0, "rgba(150,215,255,0.5)"); g.addColorStop(1, "rgba(150,215,255,0)");
       c.fillStyle = g; c.fillRect(b.x - 14, b.y - 14, 28, 28);
@@ -1608,7 +1608,7 @@
     c.fillRect(b.x - 1, b.y - 1, 2, 2);
   }
 
-  /* The Ice Mage's owl (G.wisp, or a friend's): flapping while it flies, wings spread over a burst of ice as it throws a
+  /* The Frostweaver's owl (G.wisp, or a friend's): flapping while it flies, wings spread over a burst of ice as it throws a
      shard, standing beside its knight once it has landed. A friend's owl only comes with its place, so it faces the
      way its knight does and doesn't show its throws. */
   const OWL_FLAP = [1, 2, 3, 4, 5, 4, 3, 2];

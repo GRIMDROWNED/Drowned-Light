@@ -234,7 +234,7 @@
       Object.assign(swing, { dur: 0.32, angs, back: false, dmg: a.dmg * a.back * pw, width: a.width });
       sfx("swing");
     } else if (a.type === "frost") {
-      // the Ice Mage's frost bolt, straight and quick; from Deep Freeze on it's the bigger bolt and it freezes (K.chill)
+      // the Frostweaver's frost bolt, straight and quick; from Deep Freeze on it's the bigger bolt and it freezes (K.chill)
       const aim = target ? Math.atan2(target.y - 20 * target.def.scale - (p.y - 26), target.x - p.x) : ang;
       shoot(p, aim, { kind: "ice", big: K.has(10), speed: a.speed, life: (range * 1.15) / a.speed, dmg: a.dmg * pw, ice: 1, r: 10 });
       sfx("arrow");
@@ -364,7 +364,7 @@
     }
   };
 
-  /* ---------- the Ice Mage's frost ---------- */
+  /* ---------- the Frostweaver's frost ---------- */
   /* A blow of his: the Ice Bomb always freezes, everything else from Deep Freeze (10) on; from Brittle (15) it makes
      them brittle too, and from Shatter (20) a frozen one that dies shatters (K.shatter). Call it before the blow lands,
      so that blow already counts. On a co-op guest the host owns the Drowned, so it's sent there (and shown here). */
@@ -605,7 +605,7 @@
     for (const b of bombs) if ((b.t += dt) >= b.max) burst(b);
     bombs = bombs.filter((b) => b.t < b.max);
 
-    /* The Ice Mage's owl (Ice Owl, level 5): flies at your shoulder and hurls ice shards at the nearest Drowned; when
+    /* The Frostweaver's owl (Ice Owl, level 5): flies at your shoulder and hurls ice shards at the nearest Drowned; when
        you've stood still a while with nothing to fight it lands beside you. G.wisp is sent to the other knights. */
     if (G.save.kit === "relicBearer" && K.has(5)) {
       const O = ICE.owl;
