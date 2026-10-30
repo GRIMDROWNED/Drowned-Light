@@ -138,11 +138,14 @@
   ];
 
   /* The Ice Mage (kit 04, still "relicBearer" inside so old saves keep their kit): front, back and side poses (the side
-     one his standalone picture, flipped) and three casting frames; no walk sheets yet, so each pose steps to walk.
-     Feet: the middle between his boots, since the staff's butt reaches the ground too. */
+     one his standalone picture, flipped), three casting frames, a side walk, hurt and death. No front or back walk
+     sheets yet, so those views step their standing pose. Feet: the middle between his boots, since the staff's butt
+     reaches the ground too. */
   function iceMage() {
-    return { path: "assets/sprites/ice-mage/", keys: stages("relicBearer"), res: 2, views: motion(),
-      feet: { front: [35, 104], back: [22, 103], right: [48, 105], attackA: [48, 103], attackB: [40, 94], attackC: [41, 102] } };
+    const views = motion({ side: Object.assign({ walk: WALK4 }, POSES_SIDE), down: POSES_SIDE, up: POSES_SIDE });
+    return { path: "assets/sprites/ice-mage/", keys: stages("relicBearer"), res: 2, views,
+      feet: Object.assign({ front: [35, 104], back: [22, 103], right: [48, 105], attackA: [48, 103], attackB: [40, 94], attackC: [41, 102] },
+        sheetFeet([1, 2, 3, 4].map((i) => "side/walk" + i), [53, 106])) };
   }
 
   // The Chain Reaper (kit 06): the 12 poses and walk sheets, plus a lunge for his dash. His throw is the wind-up and

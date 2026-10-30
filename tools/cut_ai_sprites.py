@@ -43,6 +43,7 @@ GRIDS = {
     'ashen-arbalist/poses-a.png': (3, 2, POSES_A),
     'ashen-arbalist/poses-b.png': (3, 2, POSES_B),
     'ice-mage/poses-a.png': (3, 2, POSES_A),
+    'ice-mage/poses-b.png': (3, 2, POSES_B),
     'flame-bastion/poses-a.png': (3, 2, POSES_A),
     'flame-bastion/poses-b.png': (3, 2, POSES_B),
     'bone-hound/poses-a.png': (3, 2, POSES_A),
@@ -231,7 +232,8 @@ SETS = {
     # so it's flipped to face right ('flip'); his hat and staff tip make up the height
     'ice-mage': ('ice-mage', 'ice-mage/01_front.png', ICE_MAGE_H, 1, {
         'ice-mage/01_front.png': 'front', 'ice-mage/02_back.png': 'back', 'ice-mage/side.png': ('right', {'height': ICE_MAGE_H, 'flip': True}),
-        'ice-mage/08_attackA.png': 'attackA', 'ice-mage/09_attackB.png': 'attackB', 'ice-mage/10_attackC.png': 'attackC'}),
+        'ice-mage/08_attackA.png': 'attackA', 'ice-mage/09_attackB.png': 'attackB', 'ice-mage/10_attackC.png': 'attackC',
+        'ice-mage/11_hurt.png': 'side/hurt', 'ice-mage/12_death.png': 'side/death'}),
     # the heaviest kit (bulk 1 in src/units.js): broader than the others, his horns and big sword make up the height
     'flame-bastion': ('flame-bastion', 'flame-bastion/01_front.png', 94, 1, twelve('flame-bastion', TWELVE_FILES)),
     # the Bone Hound summon: a dog, so shorter than a knight (its spines and raised tail make up the height)
@@ -322,6 +324,8 @@ SETS = {
 # Frames come out on one shared canvas (numbered prefix1, prefix2, ...); put the printed foot point
 # in that unit's `feet` in src/sprites.js.
 SHEETS = {
+    # the Ice Mage's side walk: the four walk cells of his poses-b sheet, strung into a strip by the GRIDS step
+    'ice-mage': [('ice-mage/walk-side-4.png', 4, 1, 102, 'side/walk')],
     'lantern-knight': [
         ('knight-walk-side-4.png', 4, 1, 78, 'side/walk'),
         ('knight-walk-front-4b.png', 4, 1, 80, 'walkF'),
