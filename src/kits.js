@@ -354,10 +354,9 @@
       G.camera.shake = 4;
       sfx("swing");
     } else if (ab.id === "tide") {
-      // Jade Tide: a fan of crystals bursting up row by row ahead of you (drawn in src/render.js); Twin Tide sends a second wave.
+      // Jade Tide: a fan of crystals bursting up row by row ahead of you (drawn in src/render.js); Twin Tide makes it twice as big.
       const ang = p.aim != null && G.save.attackMode === "manual" ? p.aim : p.angle;
       tide(p.x, p.y, ang, 0, ab.dmg * pw);
-      if (K.has(15)) tide(p.x, p.y, ang, 0.4, ab.dmg * pw * 0.7);
       G.effects.push({ type: "slash", x: p.x, y: p.y - 20, ang, arc: ab.fan + 0.6, r: 90, t: 0, max: 0.3, col, w: 12 });
       G.camera.shake = 7;
       sfx("swing");
@@ -458,12 +457,14 @@
 
   /* Jade Tide's crystals: rows of clusters fanned out ahead of the knight, each bursting up when the wave reaches it
      (`at` s from now) and striking every Drowned within `r`; a Drowned is struck once per wave. They stand `life` s,
-     or as a wall for `wall` s at Jade Bulwark, then shatter. */
+     or as a wall for `wall` s at Jade Bulwark, then shatter. Twin Tide (15) sends the wave `twin` times as far, and the
+     tide racing beside his rush `twin` times as wide. */
+  const twin = () => (K.has(15) ? G.kit().ability.twin : 1);
   let crystals = [], crystalLife = null;
   K.crystals = () => crystals;
   function tide(x, y, ang, delay, dmg, hit = new Set()) {
     const ab = G.kit().ability, stand = K.has(20) ? ab.wall : ab.life;
-    for (let d = ab.step; d <= ab.reach; d += ab.step) {
+    for (let d = ab.step, reach = ab.reach * twin(); d <= reach; d += ab.step) {
       const n = Math.max(1, Math.round((d * ab.fan) / 55)); // about one cluster every 55 px across the fan
       for (let i = 0; i < n; i++) {
         const a = ang + (n > 1 ? (i / (n - 1) - 0.5) * ab.fan : 0) + rand(-0.06, 0.06), dd = d + rand(-6, 6);
@@ -475,9 +476,9 @@
   // up every `charge.row` px he travels, just ahead of him, so what he dashes past is struck too.
   function tideRow(x, y, ang, dmg, hit) {
     const ch = G.kit().ability.charge, stand = K.has(20) ? G.kit().ability.wall : G.kit().ability.life;
-    const nx = -Math.sin(ang), ny = Math.cos(ang), n = 3;
+    const lane = ch.lane * twin(), nx = -Math.sin(ang), ny = Math.cos(ang), n = Math.max(3, Math.round(lane / 27) + 1);
     for (let i = 0; i < n; i++) {
-      const o = (i / (n - 1) - 0.5) * 2 * ch.lane + rand(-6, 6), f = 14 + rand(-4, 4);
+      const o = (i / (n - 1) - 0.5) * 2 * lane + rand(-6, 6), f = 14 + rand(-4, 4);
       crystals.push({ x: x + nx * o + Math.cos(ang) * f, y: y + ny * o + Math.sin(ang) * f, at: 0, t: 0, max: stand, ang, dmg, hit, flip: Math.random() < 0.5, r: 30 });
     }
   }
@@ -536,7 +537,6 @@
       p.tideDash = null;
       p.cast = { t: 0.14, dur: 0.4, ang: d.ang }; // straight into the great sweep
       tide(p.x, p.y, d.ang, 0, ab.dmg * pw * ch.bonus, d.tideHit); // what the racing tide struck isn't struck again
-      if (K.has(15)) tide(p.x, p.y, d.ang, 0.4, ab.dmg * pw * ch.bonus * 0.7);
       G.effects.push({ type: "slash", x: p.x, y: p.y - 20, ang: d.ang, arc: ab.fan + 0.6, r: 90, t: 0, max: 0.3, col: kit.color, w: 12 });
       G.camera.shake = 8;
       sfx("swing");
