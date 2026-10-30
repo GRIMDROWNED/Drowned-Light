@@ -461,8 +461,8 @@
      or as a wall for `wall` s at Jade Bulwark, then shatter. */
   let crystals = [], crystalLife = null;
   K.crystals = () => crystals;
-  function tide(x, y, ang, delay, dmg) {
-    const ab = G.kit().ability, hit = new Set(), stand = K.has(20) ? ab.wall : ab.life;
+  function tide(x, y, ang, delay, dmg, hit = new Set()) {
+    const ab = G.kit().ability, stand = K.has(20) ? ab.wall : ab.life;
     for (let d = ab.step; d <= ab.reach; d += ab.step) {
       const n = Math.max(1, Math.round((d * ab.fan) / 55)); // about one cluster every 55 px across the fan
       for (let i = 0; i < n; i++) {
@@ -471,8 +471,18 @@
       }
     }
   }
+  // During the rush the tide keeps pace with him: a row of crystals across his path (`charge.lane` px either side) bursts
+  // up every `charge.row` px he travels, just ahead of him, so what he dashes past is struck too.
+  function tideRow(x, y, ang, dmg, hit) {
+    const ch = G.kit().ability.charge, stand = K.has(20) ? G.kit().ability.wall : G.kit().ability.life;
+    const nx = -Math.sin(ang), ny = Math.cos(ang), n = 3;
+    for (let i = 0; i < n; i++) {
+      const o = (i / (n - 1) - 0.5) * 2 * ch.lane + rand(-6, 6), f = 14 + rand(-4, 4);
+      crystals.push({ x: x + nx * o + Math.cos(ang) * f, y: y + ny * o + Math.sin(ang) * f, at: 0, t: 0, max: stand, ang, dmg, hit, flip: Math.random() < 0.5, r: 30 });
+    }
+  }
   /* Jade Tide held: the button starts a charge (K.tideStart). Let go before `hold` s and the tide goes off where he
-     stands; held longer, he rushes forward in a dash strike and the tide bursts out where he stops. The oil and the
+     stands; held longer, he rushes forward in a dash strike, the tide racing along beside him, and bursts out where he stops. The oil and the
      cooldown are paid on letting go. The rush is his own, so his dash stays free. Returns true while it moves him. */
   K.tideStart = function (p) { if (!p.tideCharge && !p.tideDash) p.tideCharge = { t: 0, full: false }; };
   K.tideTick = function (p, st, dt) {
@@ -504,7 +514,7 @@
       }
       const ang = aim();
       p.angle = ang;
-      p.tideDash = { t: ch.dash, ang, hit: new Set() };
+      p.tideDash = { t: ch.dash, ang, hit: new Set(), tideHit: new Set(), run: ch.row };
       p.inv = Math.max(p.inv, ch.dash + 0.1);
       G.camera.shake = 4;
     }
@@ -514,6 +524,7 @@
     p.x += Math.cos(d.ang) * ch.speed * dt;
     p.y += Math.sin(d.ang) * ch.speed * dt;
     p.moving = false;
+    for (d.run += ch.speed * dt; d.run >= ch.row; d.run -= ch.row) tideRow(p.x, p.y, d.ang, ab.dmg * pw * ch.bonus, d.tideHit);
     p.trail.push({ x: p.x, y: p.y, life: 0.25, ang: d.ang });
     for (const e of G.enemies.slice()) {
       if (e.rise > 0 || e.removed || d.hit.has(e) || dist(p.x, p.y, e.x, e.y) > e.def.radius + 28) continue;
@@ -524,7 +535,7 @@
     if (d.t <= 0) {
       p.tideDash = null;
       p.cast = { t: 0.14, dur: 0.4, ang: d.ang }; // straight into the great sweep
-      tide(p.x, p.y, d.ang, 0, ab.dmg * pw * ch.bonus);
+      tide(p.x, p.y, d.ang, 0, ab.dmg * pw * ch.bonus, d.tideHit); // what the racing tide struck isn't struck again
       if (K.has(15)) tide(p.x, p.y, d.ang, 0.4, ab.dmg * pw * ch.bonus * 0.7);
       G.effects.push({ type: "slash", x: p.x, y: p.y - 20, ang: d.ang, arc: ab.fan + 0.6, r: 90, t: 0, max: 0.3, col: kit.color, w: 12 });
       G.camera.shake = 8;
