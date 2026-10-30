@@ -159,16 +159,17 @@
 
   // The Jade Breaker (kit 07): the 12 poses and walk sheets for all three views.
   // His sweep is wind-up, mid-sweep, follow-through; Jade Tide is a crouched wind-up and the great sweep; a low lunge for his dash.
-  // At full speed he runs from the side with 8 frames (side/sprint1-8, made with SpriteCook and recoloured to his palette);
-  // facing you or away he keeps his walk, played a third quicker.
+  // At full speed he runs with 8 frames from the side (side/sprint1-8) and facing you (sprintF1-8), made with SpriteCook and
+  // recoloured to his palette; running away from you he keeps his walk, played a third quicker.
   function jade() {
     const set = Object.assign(walking("jadeBreaker", [76, 91], [28, 92], [29, 93]), { path: "assets/sprites/jade-breaker/", keys: stages("jadeBreaker") });
     for (const dir in set.views) Object.assign(set.views[dir], { cast: ["side/castA", "side/castB", "side/castB"], dash: ["side/dash"] });
     const sprint = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => "side/sprint" + i);
     set.views.side.run = sprint.map((f) => f + "@-");
-    set.views.down.run = WALK_FRONT;
+    const sprintF = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => "sprintF" + i);
+    set.views.down.run = sprintF.map((f) => f + "@-");
     set.views.up.run = WALK_BACK;
-    Object.assign(set.feet, sheetFeet(sprint, [41, 98]));
+    Object.assign(set.feet, sheetFeet(sprint, [41, 98]), sheetFeet(sprintF, [30, 98]));
     return set;
   }
 

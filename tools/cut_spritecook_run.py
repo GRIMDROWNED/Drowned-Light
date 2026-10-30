@@ -2,7 +2,7 @@
 First its colours are moved onto the kit's drawn side walk, class by class (the jade greens, the warm trims,
 and the dark/neutral rest) since SpriteCook renders come out darker and muddier; then every frame is cut with
 one shared box so the feet stay put, shrunk to the knight's height with one palette, and outlined.
-  python3 tools/cut_spritecook_run.py SHEET OUT_DIR PREFIX [--kit jade-breaker] [--frame 224] [--body 200] [--height 89]
+  python3 tools/cut_spritecook_run.py SHEET OUT_DIR PREFIX [--kit jade-breaker] [--frame 224] [--body 200] [--height 89] [--keep-colors]
 `--body` is the knight's height in the sheet's pixels (head to feet), `--height` his height in game (file px)."""
 import argparse, os, numpy as np
 from PIL import Image
@@ -12,6 +12,7 @@ ap.add_argument('sheet'); ap.add_argument('out'); ap.add_argument('prefix')
 ap.add_argument('--kit', default='jade-breaker'); ap.add_argument('--frame', type=int, default=224)
 ap.add_argument('--body', type=float, default=200); ap.add_argument('--height', type=float, default=89)
 ap.add_argument('--colors', type=int, default=40)
+ap.add_argument('--keep-colors', action='store_true', help='skip the recolour (for sheets animated from his own drawn art)')
 o = ap.parse_args()
 KIT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites', o.kit)
 
@@ -42,7 +43,7 @@ for k in (1, 2):
     t[:, 0] = (s[:, 0] + np.median(r[:, 0]) - np.median(s[:, 0])) % 256
     t[:, 1:] = hist_match(s, r)[:, 1:]; out[cs == k] = t
 s = hs[cs == 0]; t = s.copy(); t[:, 2] = s[:, 2] + (hist_match(s, hr[cr == 0])[:, 2] - s[:, 2]) * 0.6; out[cs == 0] = t
-A[..., :3][m] = np.clip(rgb(out), 0, 255)
+if not o.keep_colors: A[..., :3][m] = np.clip(rgb(out), 0, 255)
 S = A.astype(np.uint8)
 
 # 2. Cut with one box, shrink, one palette, outline.
