@@ -233,13 +233,11 @@
       for (const g of angs) for (const e of onLine(p, g, range, a.width)) reap(e, a.dmg * pw, g, a.kb);
       Object.assign(swing, { dur: 0.32, angs, back: false, dmg: a.dmg * a.back * pw, width: a.width });
       sfx("swing");
-    } else if (a.type === "orb") {
-      const count = K.has(10) ? 2 : 1;
-      for (let i = 0; i < count; i++) {
-        const off = count > 1 ? (i ? 0.5 : -0.5) : 0;
-        shoot(p, ang + off, { kind: "orb", speed: a.speed, life: 1.4, dmg: a.dmg * pw, homing: true, r: 12 });
-      }
-      sfx("ability");
+    } else if (a.type === "frost") {
+      // the Ice Mage's frost bolt, straight and quick; from Deep Freeze on it's the bigger bolt and it freezes (K.chill)
+      const aim = target ? Math.atan2(target.y - 20 * target.def.scale - (p.y - 26), target.x - p.x) : ang;
+      shoot(p, aim, { kind: "ice", big: K.has(10), speed: a.speed, life: (range * 1.15) / a.speed, dmg: a.dmg * pw, ice: 1, r: 10 });
+      sfx("arrow");
     }
     p.swing = swing;
     p.atkCd = a.cd;
@@ -312,20 +310,14 @@
         shoot(p, aim + off, { kind: "bolt", speed: 560, life: 0.5, dmg: ab.dmg * pw, pierce: K.has(10) ? 2 : 0, lightOnEnd: true, r: 10 });
       }
       sfx("arrow");
-    } else if (ab.id === "pulse") {
-      const r = ab.radius;
-      G.effects.push({ type: "ring", x: p.x, y: p.y - 20, r0: 10, r1: r, t: 0, max: 0.6, col, w: 8 });
-      G.effects.push({ type: "ring", x: p.x, y: p.y - 20, r0: 10, r1: r * 0.6, t: 0, max: 0.45, col: "255,255,240", w: 4 });
-      for (const e of G.enemies.slice()) {
-        if (dist(p.x, p.y, e.x, e.y) < r + e.def.radius) {
-          G.hitEnemy(e, ab.dmg * pw, Math.atan2(e.y - p.y, e.x - p.x), 160);
-          e.slow = Math.max(e.slow, 2);
-        }
-      }
-      clearArrows(p.x, p.y - 20, r);
-      p.corrupt = Math.max(0, p.corrupt - ab.purify * (K.has(15) ? 2 : 1));
-      if (K.has(15)) p.hp = Math.min(st.maxHp, p.hp + 25);
-      lightZone(p.x, p.y - 10, r * 0.7, 4);
+    } else if (ab.id === "icebomb") {
+      // Ice Bomb: lobbed at the nearest Drowned in reach (or `throw` px the way you aim); it bursts where it lands (K.update)
+      const manual = p.aim != null && G.save.attackMode === "manual";
+      const t = manual ? null : nearest(p.x, p.y, ab.reach);
+      const ang = t ? Math.atan2(t.y - p.y, t.x - p.x) : manual ? p.aim : p.angle;
+      const d = t ? Math.min(ab.reach, dist(p.x, p.y, t.x, t.y)) : ab.throw;
+      bombs.push({ x0: p.x, y0: p.y - 34, x: p.x + Math.cos(ang) * d, y: p.y + Math.sin(ang) * d, t: 0, max: ab.flight, dmg: ab.dmg * pw });
+      sfx("swing");
     } else if (ab.id === "snare") {
       // Violet Snare: the chain whirled round, cutting and rooting all in reach (the ring is drawn in src/render.js).
       const r = ab.radius;
@@ -372,9 +364,62 @@
     }
   };
 
+  /* ---------- the Ice Mage's frost ---------- */
+  /* A blow of his: the Ice Bomb always freezes, everything else from Deep Freeze (10) on; from Brittle (15) it makes
+     them brittle too, and from Shatter (20) a frozen one that dies shatters (K.shatter). Call it before the blow lands,
+     so that blow already counts. On a co-op guest the host owns the Drowned, so it's sent there (and shown here). */
+  const ICE = DL.ICE;
+  K.chill = function (e, bomb) {
+    if (e.removed || e.rise > 0 || G.save.kit !== "relicBearer") return;
+    const freeze = bomb || K.has(10), brittle = K.has(15), shatter = K.has(20);
+    if (!freeze && !brittle) return;
+    if (G.isGuest()) DL.Net.event({ t: "ice", id: e.id, f: freeze ? 1 : 0, b: brittle ? 1 : 0, s: shatter ? 1 : 0 });
+    K.ice(e, freeze, brittle, shatter);
+  };
+  K.ice = function (e, freeze, brittle, shatter) {
+    if (freeze) {
+      e.frost = Math.max(e.frost || 0, ICE.frost);
+      e.slow = Math.max(e.slow || 0, ICE.frost);
+      if (shatter) e.shatter = true;
+    }
+    if (brittle) e.brittle = Math.max(e.brittle || 0, ICE.brittleT);
+  };
+  // Frozen or brittle as this device sees it (a guest only has the host's word, in e.fx).
+  K.frozen = (e) => (G.isGuest() ? (e.fx & 16) > 0 : e.frost > 0);
+  K.brittle = (e) => (G.isGuest() ? (e.fx & 32) > 0 : e.brittle > 0);
+  // Host: a Drowned frozen by a Shatter-level mage has died. It bursts and freezes up to ICE.shatterN others near.
+  K.shatter = function (e) {
+    if (!(e.frost > 0) || !e.shatter) return;
+    e.shatter = false;
+    G.effects.push({ type: "iceBurst", x: e.x, y: e.y, r: 46, t: 0, max: 0.55, n: 6, seed: e.id });
+    for (let i = 0; i < 10; i++) G.spark(e.x + rand(-10, 10), e.y - rand(0, 40), "190,235,255", 140);
+    const near = G.enemies.filter((o) => o !== e && !o.removed && !(o.rise > 0) && dist(e.x, e.y, o.x, o.y) < ICE.shatterR)
+      .sort((a, b) => dist(e.x, e.y, a.x, a.y) - dist(e.x, e.y, b.x, b.y)).slice(0, ICE.shatterN);
+    for (const o of near) {
+      K.ice(o, true, false, true);
+      G.effects.push({ type: "iceLink", x1: e.x, y1: e.y - 20, x2: o.x, y2: o.y - 20 * o.def.scale, t: 0, max: 0.35 });
+    }
+  };
+
+  // Ice Bombs in the air: each lands `max` s after it's thrown and bursts over the ability's radius.
+  let bombs = [], bombLife = null;
+  K.bombs = () => bombs;
+  function burst(b) {
+    const ab = G.kit().ability, r = ab.radius;
+    G.effects.push({ type: "iceBurst", x: b.x, y: b.y, r, t: 0, max: 0.9, n: 14, seed: Math.round(b.x) });
+    G.effects.push({ type: "ring", x: b.x, y: b.y, r0: 10, r1: r, t: 0, max: 0.45, col: "190,235,255", w: 8 });
+    for (let i = 0; i < 26; i++) G.spark(b.x + rand(-20, 20), b.y - rand(0, 30), i % 2 ? "190,235,255" : "255,255,255", 260);
+    for (const e of G.enemies.slice()) {
+      if (e.rise > 0 || e.removed || dist(b.x, b.y, e.x, e.y) > r + e.def.radius) continue;
+      K.chill(e, true);
+      G.hitEnemy(e, b.dmg, Math.atan2(e.y - b.y, e.x - b.x), ab.kb);
+    }
+    lightZone(b.x, b.y, r * 0.6, 1.2);
+    G.camera.shake = Math.max(G.camera.shake || 0, 6);
+    sfx("hit");
+  }
+
   /* ---------- per-frame upkeep: walls, fire, healing, milestone flourishes ---------- */
-  // Wisp familiar: chip damage only, about a fifth of the staff's own output.
-  const WISP = { range: 240, cd: 1.1, dmg: 4 };
 
   function segDist(px, py, w) {
     const dx = w.x2 - w.x1, dy = w.y2 - w.y1, l2 = dx * dx + dy * dy || 1;
@@ -556,37 +601,49 @@
       if (z.heal && dist(p.x, p.y, z.x, z.y) < z.r * 0.82) p.hp = Math.min(st.maxHp, p.hp + 5 * dt);
     }
 
-    // Relic Bearer's wisp familiar: hovers by you and flicks small motes of light at the nearest Drowned.
+    if (bombLife !== p) { bombs = []; bombLife = p; } // a new life clears them
+    for (const b of bombs) if ((b.t += dt) >= b.max) burst(b);
+    bombs = bombs.filter((b) => b.t < b.max);
+
+    /* The Ice Mage's owl (Ice Owl, level 5): flies at your shoulder and hurls ice shards at the nearest Drowned; when
+       you've stood still a while with nothing to fight it lands beside you. G.wisp is sent to the other knights. */
     if (G.save.kit === "relicBearer" && K.has(5)) {
-      if (!G.wisp) G.wisp = { x: p.x, y: p.y - 40 };
-      const w = G.wisp, tg = G.wispTarget, live = tg && !tg.removed && !(tg.rise > 0) && dist(p.x, p.y, tg.x, tg.y) < WISP.range + 40;
+      const O = ICE.owl;
+      if (!G.wisp) G.wisp = { x: p.x, y: p.y - 40, face: 1, castT: 0, idle: 0 };
+      const w = G.wisp, tg = G.wispTarget, live = tg && !tg.removed && !(tg.rise > 0) && dist(p.x, p.y, tg.x, tg.y) < O.range + 40;
       if (!live) G.wispTarget = null;
       G.wispT = (G.wispT || 0) - dt;
       if (G.wispT <= 0 && G.state === "play" && !(p.downT > 0)) {
-        let best = null, bd = WISP.range;
+        let best = null, bd = O.range;
         for (const e of G.enemies) {
-          if (e.rise > 0 || e.removed) continue;
+          if (e.rise > 0 || e.removed || e.dormant) continue;
           const d = dist(p.x, p.y, e.x, e.y);
           if (d < bd) { bd = d; best = e; }
         }
         G.wispTarget = best;
         if (best) {
-          G.wispT = WISP.cd;
+          G.wispT = O.cd;
           const ang = Math.atan2(best.y - 20 * best.def.scale - w.y, best.x - w.x);
-          shoot({ x: w.x, y: w.y + 26 }, ang, { kind: "shard", speed: 420, life: 0.9, dmg: WISP.dmg * K.power() * st.dmgMult * G.corruptBonus(), homing: true, r: 8 });
+          shoot({ x: w.x, y: w.y + 26 }, ang, { kind: "iceShard", speed: 420, life: 0.9, dmg: O.dmg * K.power() * st.dmgMult * G.corruptBonus(), homing: true, ice: 1, r: 8 });
+          w.castT = 0.3;
+          w.face = Math.cos(ang) < 0 ? -1 : 1;
           G.spark(w.x, w.y, kit.color, 40);
         } else G.wispT = 0.3;
       }
-      // Lean a little toward whatever it's harrying, otherwise bob above your shoulder.
-      const t = G.wispTarget;
-      let tx = p.x, ty = p.y - 46;
+      w.castT = Math.max(0, w.castT - dt);
+      w.idle = p.moving || G.wispTarget ? 0 : w.idle + dt;
+      // Lean a little toward whatever it's harrying, otherwise bob above your shoulder (or stand at your heel).
+      const t = G.wispTarget, back = Math.cos(p.angle) < 0 ? 1 : -1;
+      let tx = p.x + 24 * back, ty = p.y - 66;
       if (t) {
         const d = dist(p.x, p.y, t.x, t.y), k = Math.min(50, d * 0.4) / (d || 1);
         tx = p.x + (t.x - p.x) * k; ty = p.y - 40 + (t.y - p.y) * k;
-      }
-      const f = 1 - Math.pow(0.05, dt);
+      } else if (w.idle > 1.5) { tx = p.x + 26 * back; ty = p.y + 2; }
+      const f = 1 - Math.pow(0.05, dt), ox = w.x;
       w.x += (tx - w.x) * f;
-      w.y += (ty + Math.sin(G.t * 3) * 6 - w.y) * f;
+      w.y += (ty + (w.idle > 1.5 ? 0 : Math.sin(G.t * 3) * 6) - w.y) * f;
+      if (!t && w.idle > 1.5) w.face = -back; // landed: looking the way you do
+      else if (!t && w.castT <= 0 && Math.abs(w.x - ox) > 20 * dt) w.face = w.x > ox ? 1 : -1;
     } else { G.wisp = null; G.wispTarget = null; }
 
     // Embers that drift off a kit from its second milestone on.
@@ -596,7 +653,7 @@
     }
   };
 
-  // Extra lights from the kit: walls, fire trails, the Relic Bearer's halo.
+  // Extra lights from the kit: walls, fire trails, Ice Bombs, the Ice Owl.
   K.lights = function (L) {
     const p = G.player, D = G.diff();
     for (const w of G.walls) {
@@ -606,9 +663,7 @@
       }
     }
     crystals.forEach((c, i) => { if (i % 3 === 0 && c.at <= 0 && c.t < c.max - 0.2) L.push({ x: c.x, y: c.y - 20, r: 60 * D.light, s: 0.4, col: "90,230,150", a: 0.5 }); });
-    if (p && G.save.kit === "relicBearer" && K.has(20)) {
-      L.push({ x: p.x, y: p.y - 24, r: 92 * D.light, s: 0.55, col: "255,232,170", a: 0.25, kind: "bloom" });
-    }
-    for (const w of [G.wisp, ...G.allies.map((a) => a.wisp)]) if (w) L.push({ x: w.x, y: w.y, r: 40, s: 0.4, col: "255,232,170", a: 0.9 });
+    for (const b of bombs) L.push({ x: b.x, y: b.y, r: 50 * D.light, s: 0.35, col: "150,215,255", a: 0.7 });
+    for (const w of [G.wisp, ...G.allies.map((a) => a.wisp)]) if (w) L.push({ x: w.x, y: w.y, r: 40, s: 0.4, col: "150,215,255", a: 0.9 });
   };
 })(window.DL);

@@ -96,7 +96,7 @@
     // the other kits' knights: the 12 poses and walk sheets like an enemy's, at every corruption stage
     Object.assign(walking("pikeWarden", [48, 103], [33, 103], [31, 103]), { path: "assets/sprites/pike-warden/", keys: stages("pikeWarden") }),
     arbalist(),
-    Object.assign(walking("relicBearer", [57, 105], [39, 101], [40, 101]), { path: "assets/sprites/relic-bearer/", keys: stages("relicBearer") }),
+    iceMage(),
     Object.assign(walking("flameBastion", [58, 97], [39, 97], [33, 93]), { path: "assets/sprites/flame-bastion/", keys: stages("flameBastion") }),
     reaper(),
     jade(),
@@ -136,6 +136,16 @@
     rose(),
     colossus(),
   ];
+
+  /* The Ice Mage (kit 04, still "relicBearer" inside so old saves keep their kit): until sheets of his own poses come
+     back he has one drawn pose, the concept picture, for every view, stepping to walk and falling over to die. */
+  function iceMage() {
+    const one = (n) => Array(n).fill("right"), views = {};
+    for (const dir of ["down", "up", "side"]) {
+      views[dir] = { idle: one(1), walk: stepped(one(4)), attack: one(3), dash: one(1), hurt: one(1), death: ["right", "right", "right@fall"] };
+    }
+    return { path: "assets/sprites/ice-mage/", keys: stages("relicBearer"), res: 2, views, feet: { right: [33, 104] } };
+  }
 
   // The Chain Reaper (kit 06): the 12 poses and walk sheets, plus a lunge for his dash. His throw is the wind-up and
   // the empty hand flung out (the game draws the flying sickle and chain); the chain whirled overhead is his cast.
@@ -278,6 +288,8 @@
     "reaperSickle1", "reaperSickle2", "reaperSickle3", "reaperSickle4", "reaperChain", "reaperWeight", "reaperSnare", "reaperSnared",
     // Jade Tide's crystals (src/kits.js, drawn in src/render.js)
     "jadeCrystal1", "jadeCrystal2", "jadeCrystal3", "jadeCrystal4",
+    // the Ice Mage's owl (standing, flying, casting), its shard, the staff's frost bolts, the Ice Bomb and its spikes (src/kits.js, src/render.js)
+    "owlFront", "owlBack", "owlSide", "owlRise", "owlFly1", "owlFly2", "owlFly3", "owlFly4", "owlFly5", "owlCast", "iceShard", "iceBolt", "iceBoltBig", "iceGem", "iceSpike1", "iceSpike2",
     // the Flame Bastion's drawn fire wall, four flickering frames (src/render.js)
     "wallFire1", "wallFire2", "wallFire3", "wallFire4",
     // the Ashen Arbalist's bolts and the burst where a flare lands (src/render.js)

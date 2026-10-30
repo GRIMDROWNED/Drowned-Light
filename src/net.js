@@ -210,6 +210,9 @@
     if (ev.t === "hit") {
       const e = G.enemies.find((x) => x.id === ev.id);
       if (e) G.hitEnemy(e, ev.dmg, ev.ang, ev.kb, ev.burn, true);
+    } else if (ev.t === "ice") {
+      const e = G.enemies.find((x) => x.id === ev.id);
+      if (e) DL.Kits.ice(e, !!ev.f, !!ev.b, !!ev.s);
     } else if (ev.t === "stun" || ev.t === "slow") {
       const e = G.enemies.find((x) => x.id === ev.id);
       if (e) e[ev.t] = Math.max(e[ev.t] || 0, ev.v);
@@ -316,8 +319,8 @@
       kn: [[0, "Host", hostKnight(), []], ...G.allies.filter((o) => o !== a).map((o) => [o.id, o.label, allyKnight(o), o.proj || []])],
       en: G.enemies.filter((e) => near(e.x, e.y, 1100)).map((e) => [e.id, TYPES.indexOf(e.type), r1(e.x), r1(e.y), r1(e.angle), e.state === "windup" ? 1 : e.state === "recover" ? 2 : 0,
         r1(e.stT), r1(e.aim || 0), Math.round(e.hp), Math.round(e.maxHp), r1(e.rise), e.moving ? 1 : 0, e.dormant ? 1 : 0, r1(e.burn || 0), r1(e.bleed || 0), e.cursed ? 1 : 0,
-        // Fred's marks: 1 befuddled, 2 turned, 4 asleep, 8 spored
-        (e.conf > 0 ? 1 : 0) | (e.mind > 0 ? 2 : 0) | (e.sleep && e.stun > 0 ? 4 : 0) | (e.spore > 0 ? 8 : 0)]),
+        // Fred's marks: 1 befuddled, 2 turned, 4 asleep, 8 spored; the Ice Mage's: 16 frozen, 32 brittle
+        (e.conf > 0 ? 1 : 0) | (e.mind > 0 ? 2 : 0) | (e.sleep && e.stun > 0 ? 4 : 0) | (e.spore > 0 ? 8 : 0) | (e.frost > 0 ? 16 : 0) | (e.brittle > 0 ? 32 : 0)]),
       pr: G.projectiles.filter((b) => near(b.x, b.y, 900)).map((b) => [r1(b.x), r1(b.y), Math.round(b.vx), Math.round(b.vy), b.kind, b.col, b.hostile ? 1 : 0]),
       to: G.torches.map((o) => [r1(o.x), r1(o.y), r1(o.t), o.max, Math.round(o.r), o.type, Math.round(o.hp)]),
       lz: G.lightZones.map((z) => [r1(z.x), r1(z.y), Math.round(z.r), r1(z.t), z.heal ? 1 : 0, z.fire ? 1 : 0]),
