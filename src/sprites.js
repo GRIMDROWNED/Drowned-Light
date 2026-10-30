@@ -16,7 +16,8 @@
   const ENABLED = true;
 
   // Kit knights: [how far toward the drowned palette, lantern turns cyan] per corruption stage, as in src/units.js.
-  // Drawn runs (running() below) switched off 2026-10-29: Robert didn't like how they look; the frames stay in assets for a redraw later.
+  // Drawn 4-frame runs (running() below) switched off 2026-10-29: Robert didn't like how they look; the frames stay in assets for a redraw later.
+  // The Jade Breaker runs again since 2026-10-30 with an 8-frame side run from SpriteCook (jade() below).
   const RUNS = false;
   const stages = (kit) => ({ [kit + 1]: [0, false], [kit + 2]: [0.22, false], [kit + 3]: [0.5, false], [kit + 4]: [0.8, true], ["self_" + kit]: [0.9, true] });
 
@@ -157,10 +158,17 @@
 
   // The Jade Breaker (kit 07): the 12 poses and walk sheets for all three views.
   // His sweep is wind-up, mid-sweep, follow-through; Jade Tide is a crouched wind-up and the great sweep; a low lunge for his dash.
+  // At full speed he runs from the side with 8 frames (side/sprint1-8, made with SpriteCook and recoloured to his palette);
+  // facing you or away he keeps his walk, played a third quicker.
   function jade() {
     const set = Object.assign(walking("jadeBreaker", [76, 91], [28, 92], [29, 93]), { path: "assets/sprites/jade-breaker/", keys: stages("jadeBreaker") });
     for (const dir in set.views) Object.assign(set.views[dir], { cast: ["side/castA", "side/castB", "side/castB"], dash: ["side/dash"] });
-    return running(set, [75, 90], [57, 94], [31, 94]);
+    const sprint = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => "side/sprint" + i);
+    set.views.side.run = sprint.map((f) => f + "@-");
+    set.views.down.run = WALK_FRONT;
+    set.views.up.run = WALK_BACK;
+    Object.assign(set.feet, sheetFeet(sprint, [41, 98]));
+    return set;
   }
 
   function reaper() {

@@ -2,7 +2,7 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.139";
+const VERSION = "0.15.140";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
@@ -39,7 +39,7 @@ const FILES = [
     "chain-reaper/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "chain-reaper/side/": ["dash", "death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "jade-breaker/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
-    "jade-breaker/side/": ["castA", "castB", "dash", "death", "hurt", "walk1", "walk2", "walk3", "walk4"],
+    "jade-breaker/side/": ["castA", "castB", "dash", "death", "hurt", "sprint1", "sprint2", "sprint3", "sprint4", "sprint5", "sprint6", "sprint7", "sprint8", "walk1", "walk2", "walk3", "walk4"],
     "bone-hound/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "bone-hound/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "bone-hound-f0/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
