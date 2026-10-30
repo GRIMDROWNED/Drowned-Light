@@ -324,8 +324,9 @@ SETS = {
 # Frames come out on one shared canvas (numbered prefix1, prefix2, ...); put the printed foot point
 # in that unit's `feet` in src/sprites.js.
 SHEETS = {
-    # the Ice Mage's side walk: the four walk cells of his poses-b sheet, strung into a strip by the GRIDS step
-    'ice-mage': [('ice-mage/walk-side-4.png', 4, 1, 102, 'side/walk')],
+    # the Ice Mage's side walk (the four walk cells of his poses-b sheet, strung into a strip by the GRIDS step), front and back walks
+    'ice-mage': [('ice-mage/walk-side-4.png', 4, 1, 102, 'side/walk'), ('ice-mage/walk-front.png', 4, 1, 104, 'walkF'),
+                 ('ice-mage/walk-back.png', 4, 1, 103, 'walkB')],
     'lantern-knight': [
         ('knight-walk-side-4.png', 4, 1, 78, 'side/walk'),
         ('knight-walk-front-4b.png', 4, 1, 80, 'walkF'),
