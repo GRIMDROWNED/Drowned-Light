@@ -324,8 +324,10 @@ SETS = {
 # Frames come out on one shared canvas (numbered prefix1, prefix2, ...); put the printed foot point
 # in that unit's `feet` in src/sprites.js.
 SHEETS = {
-    # the Frostweaver's side walk (the four walk cells of his poses-b sheet, strung into a strip by the GRIDS step), front and back walks
-    'ice-mage': [('ice-mage/walk-side-4.png', 4, 1, 102, 'side/walk'), ('ice-mage/walk-front.png', 4, 1, 104, 'walkF'),
+    # the Frostweaver's side walk: 8 frames from Robert's strip (walk-side-8-raw.png, on black: its backdrop keyed to magenta and
+    # each figure lined up on his belt pouch into walk-side-8.png; cut so his hat is as high as in his standing pose), then his
+    # front and back walks. It replaced a 4-frame side walk cut from the walk cells of his poses-b sheet (walk-side-4.png).
+    'ice-mage': [('ice-mage/walk-side-8.png', 8, 1, 114, 'side/walk'), ('ice-mage/walk-front.png', 4, 1, 104, 'walkF'),
                  ('ice-mage/walk-back.png', 4, 1, 103, 'walkB')],
     'lantern-knight': [
         ('knight-walk-side-4.png', 4, 1, 78, 'side/walk'),
