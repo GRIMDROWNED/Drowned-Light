@@ -42,6 +42,7 @@ GRIDS = {
     'pike-warden/poses-b.png': (3, 2, POSES_B),
     'ashen-arbalist/poses-a.png': (3, 2, POSES_A),
     'ashen-arbalist/poses-b.png': (3, 2, POSES_B),
+    'ice-mage/poses-a.png': (3, 2, POSES_A),
     'flame-bastion/poses-a.png': (3, 2, POSES_A),
     'flame-bastion/poses-b.png': (3, 2, POSES_B),
     'bone-hound/poses-a.png': (3, 2, POSES_A),
@@ -165,6 +166,7 @@ WYV3_H = 210  # David the Bloodwing (his last form), res 4: 52 art px from wing 
 MOTHER_H = 380  # the Mother Wyvern boss, res 4: 95 art px standing with her wings half spread, about two and a half knights
 BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25 in game), almost twice the knight  # cut at res 4 like Derek: drawn 32 px tall, ring included, about 40% of the knight
 ROSE_H = 368  # the Deadly Rose, cut at res 4: drawn 92 art px tall standing (x0.8 in game), about twice the knight
+ICE_MAGE_H = 104  # the Ice Mage, hat and staff tip included: the body about the other knights' height (res 2)
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
 SETS = {
     'lantern-knight': ('lantern-knight', 'knight-front.png', 80, 3, {
@@ -225,6 +227,11 @@ SETS = {
         'ashen-arbalist/13_dash.png': ('side/dash', {'height': 61}),
         'ashen-arbalist/14_castA.png': ('side/castA', {'height': 58}),
         'ashen-arbalist/15_castB.png': ('side/castB', {'height': 65})})),
+    # the Ice Mage (kit 04): his side view is a standalone picture facing left (the sheet's kept swapping the staff's hand),
+    # so it's flipped to face right ('flip'); his hat and staff tip make up the height
+    'ice-mage': ('ice-mage', 'ice-mage/01_front.png', ICE_MAGE_H, 1, {
+        'ice-mage/01_front.png': 'front', 'ice-mage/02_back.png': 'back', 'ice-mage/side.png': ('right', {'height': ICE_MAGE_H, 'flip': True}),
+        'ice-mage/08_attackA.png': 'attackA', 'ice-mage/09_attackB.png': 'attackB', 'ice-mage/10_attackC.png': 'attackC'}),
     # the heaviest kit (bulk 1 in src/units.js): broader than the others, his horns and big sword make up the height
     'flame-bastion': ('flame-bastion', 'flame-bastion/01_front.png', 94, 1, twelve('flame-bastion', TWELVE_FILES)),
     # the Bone Hound summon: a dog, so shorter than a knight (its spines and raised tail make up the height)
@@ -767,6 +774,7 @@ for name, (folder, ref, target, fringe, files) in SETS.items():
         kk = opt['height'] / (cut_keyed(img, 1, fringe=fr, **ko).height - 2) if 'height' in opt else k
         rc = match_colors(Image.open(os.path.join(SRC, opt['match']))) if 'match' in opt else RECOLOR.get(name)
         im = cut_keyed(img, kk, fringe=fr, colors=64 if rc else 32, recolor=rc, **ko)
+        if opt.get('flip'): im = im.transpose(Image.FLIP_LEFT_RIGHT)
         dst = os.path.join(OUT, folder, out + '.png')
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         im.save(dst)
@@ -934,7 +942,7 @@ if not only or 'ground' in only:
         print(dst, out.size)
 
 # The Ice Mage (kit 04, src/kits.js): one concept picture and one sheet of his ice owl, both on magenta.
-# Until sheets of his own poses come back, the concept is his one pose for every view (iceMage() in src/sprites.js).
+# His own poses are a SETS entry ('ice-mage'); here are the owl and his ice.
 # The owl sheet isn't on a grid and its cells overlap, so each piece is a box on it, keeping only the shapes whose
 # middle is inside the box. Items: (prop name, box, shrink). The owl is cut about 52 px tall standing, half the mage.
 ICE_SRC = 'ice-mage/owl-sheet.png'
@@ -953,7 +961,6 @@ ICE_CELLS = [
     # two crystals from the ring round the owl: the Ice Bomb's burst raises a ring of them
     ('iceSpike1', (1466, 752, 1508, 868), 0.5), ('iceSpike2', (1344, 683, 1388, 772), 0.5),
 ]
-ICE_MAGE_H = 104  # the mage, hat and staff tip included: the body about the other knights' height (res 2)
 
 def ice_pieces(img, box, key=(255, 0, 255)):
     """The part of a sheet inside `box`, with every shape whose middle lies outside it keyed out."""
@@ -986,13 +993,4 @@ if not only or 'ice-mage' in only:
             im.save(dst)
             done.append(im)
             print(dst, im.size)
-    p = os.path.join(SRC, 'ice-mage/concept.jpg')
-    if os.path.exists(p):
-        img = Image.open(p).convert('RGB')
-        im = cut_keyed(img, ICE_MAGE_H / (cut_keyed(img, 1, fringe=2).height - 2), fringe=2, colors=48)
-        dst = os.path.join(OUT, 'ice-mage', 'right.png')
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
-        im.save(dst)
-        done.append(im)
-        print(dst, im.size)
-    if done: contact(done, os.path.join(SRC, 'ice-mage-preview.png'))
+    if done: contact(done, os.path.join(SRC, 'ice-owl-preview.png'))
