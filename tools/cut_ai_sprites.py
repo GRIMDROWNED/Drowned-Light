@@ -108,6 +108,9 @@ GRIDS = {
     'jade-breaker/poses-a.png': (3, 2, POSES_A),
     'jade-breaker/poses-b.png': (3, 2, POSES_B),
     'jade-breaker/abilities.png': (3, 1, ['13_dash', '14_castA', '15_castB']),
+    # the Rose Paladin (kit 08): front, back, side and his three swing poses; his side walk, hurt and death
+    'rose-paladin/poses-a.png': (3, 2, POSES_A),
+    'rose-paladin/poses-b.png': (3, 2, POSES_B),
     'colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '11_hurt']),
     'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
 }
@@ -311,6 +314,8 @@ SETS = {
         'jade-breaker/13_dash.png': ('side/dash', {'height': 70}),
         'jade-breaker/14_castA.png': ('side/castA', {'height': 76}),
         'jade-breaker/15_castB.png': ('side/castB', {'height': 72})})),
+    # the Rose Paladin (kit 08): crown spikes and all, a little taller than the Flame Bastion
+    'rose-paladin': ('rose-paladin', 'rose-paladin/01_front.png', 98, 1, twelve('rose-paladin', TWELVE_FILES)),
     'chain-reaper': ('chain-reaper', 'chain-reaper/01_front.png', 84, 1, dict(twelve('chain-reaper', TWELVE_FILES), **{
         'chain-reaper/13_dash.png': ('side/dash', {'height': 70})})),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
@@ -394,6 +399,11 @@ SHEETS = {
         ('jade-breaker/run-front.png', 4, 1, 92, 'runF'),
         ('jade-breaker/run-back.png', 4, 1, 92, 'runB'),
         ('jade-breaker/walk-back.png', 4, 1, 90, 'walkB'),
+    ],
+    'rose-paladin': [
+        ('rose-paladin/walk-side-4.png', 4, 1, 96, 'side/walk'),
+        ('rose-paladin/walk-front-4.png', 4, 1, 98, 'walkF'),
+        ('rose-paladin/walk-back-4.png', 4, 1, 98, 'walkB'),
     ],
     'ashen-arbalist': [
         ('ashen-arbalist/walk-side-4.png', 4, 1, 80, 'side/walk'),

@@ -447,5 +447,7 @@ body.menu-open #toasts, body.menu-open #objective { visibility: hidden; }
 .save-card footer button.go { background: linear-gradient(#41301c, #24180c); border-color: var(--warm); color: #ffe6c2; }
 .save-card footer button.danger { margin-left: auto; color: #ffb4b4; border-color: rgba(255, 106, 106, 0.4); }
 /* a familiar or a building not yet won: kept a secret */
+.locked-pick { cursor: default; opacity: 0.8; }
+.locked-pick .pick-name { letter-spacing: 0.2em; color: #8a98a0; }
 .locked-card h3 { letter-spacing: 0.2em; color: #8a98a0; }
 .locked-card .portrait { box-shadow: inset 0 0 12px rgba(150, 190, 200, 0.18); }

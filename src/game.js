@@ -146,6 +146,22 @@
     };
   };
   G.kit = () => DL.KITS[G.save.kit] || DL.KITS.lanternBlade;
+  /* Secret kits (DL.KITS[id].secret): hidden behind "???" until earned in any world on this device, then open to every
+     new game. Earned so far: the Rose Paladin, for the Deadly Rose slain and her Rose Heart grown to its last level. */
+  const UNLOCKS = "drowned-light-unlocks";
+  let unlocks = null;
+  const readUnlocks = () => { try { return JSON.parse(localStorage.getItem(UNLOCKS)) || {}; } catch (e) { return {}; } };
+  G.kitOpen = (id) => !DL.KITS[id].secret || !!(unlocks || (unlocks = readUnlocks()))[id];
+  G.unlockKit = function (id, quiet) {
+    if (G.kitOpen(id)) return;
+    unlocks[id] = 1;
+    try { localStorage.setItem(UNLOCKS, JSON.stringify(unlocks)); } catch (e) { /* ignore */ }
+    if (!quiet) setTimeout(() => say(id === "rosePaladin"
+      ? "The Rose Heart opens wide, and a knight in thorned bronze kneels before it. The Rose Paladin answers you now: choose him when you begin a new game."
+      : `The ${DL.KITS[id].name} can now be chosen when you begin a new game.`, "good"), 900);
+  };
+  // A world already holding a full-grown Rose Heart (built before this check) earns him too.
+  const checkUnlocks = (quiet) => { if (G.save.up.roseheart >= 3) G.unlockKit("rosePaladin", quiet); };
   G.diff = () => DL.DIFFICULTIES[G.save.difficulty] || DL.DIFFICULTIES.dark;
   G.siegeRadius = () => G.stats().flameR + 90;
   G.stage = (c) => (c < 25 ? 1 : c < 50 ? 2 : c < 75 ? 3 : 4);
@@ -171,6 +187,7 @@
   /* ---------------- lifecycle ---------------- */
   G.init = function () {
     G.save = G.load();
+    checkUnlocks(true);
     DL.Sound.muted = G.save.muted;
     G.startLife();
     G.state = "title";
@@ -1255,6 +1272,8 @@
     if (d <= e.def.range + 16 && ad < 1.25) {
       const hp = p.hp;
       hurtKnight(p, dmg, e.aim);
+      // the Rose Paladin's shield pricks whatever strikes him (src/kits.js)
+      if (p === G.player ? p.hp < hp : p.kit) DL.Kits.thorns(e, p === G.player ? G.save.kit : p.kit, dmg, p);
       // Drowned Wretch: its touch seeps corruption into you
       if (e.def.corruptHit && p === G.player && p.hp < hp) p.corrupt = clamp(p.corrupt + e.def.corruptHit, 0, 100);
     }
@@ -1713,6 +1732,7 @@
     if (id === "armory") G.player.hp += 25;
     if (id === "workbench") G.player.oil = st.maxOil;
     if (id === "pylon" || id === "stakes") G.resetPylons();
+    if (id === "roseheart") checkUnlocks(false);
     if (id === "stakes" && lvl + 1 >= 4) setTimeout(() => say("The walls go up farther out. Your camp grows.", "good"), 300);
     if (id === "flame" && DL.Camp.tier(G.save.up) !== DL.Camp.tier({ ...G.save.up, flame: lvl })) {
       setTimeout(() => say(`Your camp grows: ${DL.TIER_NAMES[DL.Camp.tier(G.save.up)]}.`, "good"), 300);

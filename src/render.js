@@ -234,6 +234,17 @@
     if (pl && pl.swing && pl.swing.kind === "chain") list.push({ y: pl.y + 1, f: () => drawThrow(c, pl.x, pl.y, pl.swing, t) });
     for (const a of G.allies) if (a.swing && a.swing.kind === "chain" && !a.down) list.push({ y: a.y + 1, f: () => drawThrow(c, a.x, a.y, a.swing, t) });
     if (Art.sprites.reaperSnared) for (const e of G.enemies) if (e.snareT > 0 && !e.removed) list.push({ y: e.y + 1, f: () => sprite(c, "reaperSnared", e.x, e.y + 5, false, Math.min(1, e.snareT * 3)) });
+    // the Rose Paladin: the Deadly Rose's whip cracking round his Thorn Lash, and her ring of thorns whirling round him in
+    // Rose's Waltz, its far half behind him and its near half in front, below his feet, so it never covers him
+    for (const k of [pl, ...G.allies]) {
+      if (!k || k.down || (k === pl && G.state === "dead")) continue;
+      if (k.swing && k.swing.kind === "lash" && Art.sprites.roseLash2) list.push({ y: k.y + 2, f: () => drawThornLash(c, k.x, k.y, k.swing) });
+      const wr = k === pl ? pl.waltz && pl.waltz.r : k.cast && k.kit === "rosePaladin" && DL.KITS.rosePaladin.ability[k.kitLevel >= 20 ? "bigR" : "r"];
+      if (wr && Art.sprites.roseWaltz1) {
+        list.push({ y: k.y - 3, f: () => drawPaladinWaltz(c, k.x, k.y, wr, t, false) });
+        list.push({ y: k.y + 3, f: () => drawPaladinWaltz(c, k.x, k.y, wr, t, true) });
+      }
+    }
     // Jade Tide's crystals: cracking up, grown (glinting now and then), shattering in their last moments
     if (Art.sprites.jadeCrystal2) for (const cr of DL.Kits.crystals()) {
       if (cr.at > 0) continue;
@@ -266,7 +277,7 @@
     for (const a of G.allies) {
       for (const q of a.proj || []) drawProjectile(c, { x: q[0], y: q[1], vx: q[2], vy: q[3], kind: q[4], col: q[5], hostile: false, life: 1 });
       const s = a.swing;
-      if (s && !a.down && s.kind === "arc") drawSlash(c, a.x, a.y - 24, s.ang, s.arc, s.range, Math.min(1, s.t / s.dur), s.col, 9, s.flip);
+      if (s && !a.down && (s.kind === "arc" || s.kind === "lash")) drawSlash(c, a.x, a.y - 24, s.ang, s.arc, s.range, Math.min(1, s.t / s.dur), s.col, 9, s.flip);
     }
     for (const f of G.effects) {
       if (f.type === "spark") {
@@ -384,6 +395,7 @@
     if (p && p.swing) {
       const s = p.swing, k = s.t / s.dur;
       if (s.kind === "arc") drawSlash(c, p.x, p.y - 24, s.ang, s.arc, s.range, k, s.col, 9, s.flip);
+      else if (s.kind === "lash") drawSlash(c, p.x, p.y - 24, s.ang, s.arc, s.range, k, s.col, Art.sprites.roseLash2 ? 4 : 9, s.flip); // a faint trail under the drawn whip
       else if (s.kind === "thrust") {
         // a lance of light along the pike's line
         const ux = Math.cos(s.ang), uy = Math.sin(s.ang), x0 = p.x + ux * 14, y0 = p.y - 26 + uy * 8;
@@ -825,6 +837,7 @@
   function playerAnim(G, p, t) {
     if (G.state === "dying") return ["death", Math.min(2, Math.floor(G.dying / 0.45)), p.angle];
     if (p.dashT > 0 || p.tideDash) return ["dash", 0, p.angle];
+    if (p.waltz) return [p.moving ? "walk" : "idle", p.moving ? Math.floor(p.animT * stepRate(G.save.kit + p.stage, false)) : 0, t * 13]; // turning on the spot in Rose's Waltz
     if (p.tideCharge && p.tideCharge.t > 0.12) return [castAnim(G.save.kit + p.stage), 0, p.aim ?? p.angle]; // winding up Jade Tide
     if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
     if (p.swing) return ["attack", Math.min(2, Math.floor((p.swing.t / p.swing.dur) * 3)), p.swing.ang];
@@ -856,6 +869,7 @@
       let anim = "idle", fr = Math.floor(t * 1.6), ang = a.angle;
       if (a.dashT > 0) anim = "dash";
       else if (a.swing) { anim = "attack"; fr = Math.min(2, Math.floor((a.swing.t / a.swing.dur) * 3)); ang = a.swing.ang; }
+      else if (a.cast && a.kit === "rosePaladin") ang = t * 13; // waltzing
       else if (a.cast) { anim = castAnim(key); fr = Math.min(2, Math.floor(a.cast * 3)); }
       else if (a.moving) { anim = moveAnim(key, a.running); fr = Math.floor(a.animT * stepRate(key, a.running)); }
       Art.drawUnit(c, key, anim, fr, ang, a.x, a.y, 1);
@@ -1329,6 +1343,37 @@
   function drawDissolve(c, f) {
     const e = f.e, k = f.t / f.max;
     Art.drawUnit(c, unitKey(e), "death", Math.min(2, Math.floor(k * 3)), e.angle, e.x, e.y, e.def.scale, { alpha: 1 - k * k, flash: 0.3 + k * 0.5, flashColor: "#5fe6ee" });
+  }
+
+  /* The Rose Paladin's Thorn Lash: the Deadly Rose's drawn whip (coiled, cracked out, fading in petals) swung from his
+     shoulder round the arc, as long as his reach; turned over rather than upside down on his left. */
+  function drawThornLash(c, x, y, s) {
+    const k = Math.min(1, s.t / s.dur), f = k < 0.25 ? 1 : k < 0.75 ? 2 : 3;
+    const sp = Art.sprites["roseLash" + f], sc = s.range / (Art.sprites.roseLash2.w * PS);
+    const w = sp.w * PS * sc, h = sp.h * PS * sc;
+    const u = Math.min(1, k * 1.4), a0 = s.ang - s.arc / 2, a1 = s.ang + s.arc / 2;
+    let a = s.flip ? a1 - (a1 - a0) * u : a0 + (a1 - a0) * u;
+    c.save();
+    c.translate(Math.round(x), Math.round(y - 40));
+    c.scale(1, 0.85); // lying a little in the 3/4 view, like the slash
+    if (Math.cos(a) < 0) { c.scale(-1, 1); a = Math.PI - a; }
+    c.rotate(a);
+    if (f === 3) c.globalAlpha *= Math.max(0, (1 - k) / 0.25);
+    c.drawImage(sp.c, f === 3 ? 30 * sc : 6, -Math.round(h / 2), w, h);
+    c.restore();
+  }
+  /* Rose's Waltz round the Rose Paladin: the Deadly Rose's ring of whirling thorn whips (src/rose.js), smaller (`r` px
+     out) and flatter, round his waist, a quarter turn a frame. Drawn in two parts split just above his feet: the far
+     (upper) part goes behind him and the near (lower) part in front, so it runs round him without crossing him. */
+  function drawPaladinWaltz(c, x, y, r, t, near) {
+    const sp = Art.sprites["roseWaltz" + (1 + (Math.floor(t * 16) % 4))], w = r * 2.05, h = w * 0.42;
+    const x0 = Math.round(x - w / 2), y0 = Math.round(y - 22 - h / 2), mid = Math.round(y - 2);
+    c.save();
+    c.beginPath();
+    if (near) c.rect(x0 - 2, mid, w + 4, h); else c.rect(x0 - 2, y0 - 2, w + 4, mid - y0 + 2);
+    c.clip();
+    c.drawImage(sp.c, x0, y0, w, h);
+    c.restore();
   }
 
   function drawSlash(c, x, y, ang, arc, r, k, rgb, w, flip) {

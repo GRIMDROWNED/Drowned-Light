@@ -101,6 +101,7 @@
     Object.assign(walking("flameBastion", [58, 97], [39, 97], [33, 93]), { path: "assets/sprites/flame-bastion/", keys: stages("flameBastion") }),
     reaper(),
     jade(),
+    rosePaladin(),
     // the Bone Hound summon: the same 12 poses and walk sheets, its side walk a four-legged gallop
     Object.assign(walking("boneHound", [55, 55], [27, 64], [26, 66]), { path: "assets/sprites/bone-hound/", keys: { boneHound: [0, false] } }),
     // its first form, the Bone Pup (src/summons.js), cut at res 4: 22 px tall, about three quarters of the hound
@@ -168,6 +169,15 @@
     set.views.down.run = WALK_FRONT;
     set.views.up.run = WALK_BACK;
     Object.assign(set.feet, sheetFeet(sprint, [41, 98]));
+    return set;
+  }
+
+  /* The Rose Paladin (kit 08): the 12 poses and walk sheets. His Thorn Lash is the raised sword, the cut and the
+     follow-through (the Deadly Rose's whip is drawn cracking round the arc, src/render.js); in Rose's Waltz he turns on
+     the spot inside her ring of thorns. Feet of the single poses set by hand: his sword tip and cape reach the ground. */
+  function rosePaladin() {
+    const set = Object.assign(walking("rosePaladin", [66, 98], [62, 100], [55, 100]), { path: "assets/sprites/rose-paladin/", keys: stages("rosePaladin") });
+    Object.assign(set.feet, { front: [49, 98], back: [34, 98], right: [56, 97], attackA: [54, 88], attackB: [48, 78], attackC: [52, 77], "side/hurt": [58, 85] });
     return set;
   }
 

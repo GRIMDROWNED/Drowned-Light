@@ -791,6 +791,7 @@
     flameBastion: { weapon: "sword", offhand: "bastion", bulk: 1 },
     chainReaper: { weapon: "shortsword", offhand: "lantern" }, // stand-in until the drawn sickle and chain load
     jadeBreaker: { weapon: "greatsword", offhand: "none", bulk: 1 },
+    rosePaladin: { weapon: "greatsword", offhand: "bastion", bulk: 1 },
   };
   Art.specs = {};
   Art.sheet = function (key) {
