@@ -265,7 +265,7 @@
   // Join card: pick the kit you bring into your friend's world.
   UI.renderJoinKits = function () {
     const k = UI.coopKit, lvl = DL.Net.joinLevel(k);
-    $("coopKits").innerHTML = DL.KIT_ORDER.map((id) =>
+    $("coopKits").innerHTML = DL.KIT_ORDER.filter((id) => DL.Game.kitOpen(id)).map((id) =>
       `<button class="kit-chip ${id === k ? "on" : ""}" data-coopkit="${id}" aria-pressed="${id === k}" title="${DL.KITS[id].name}">
         <canvas class="portrait" data-kit="${id}" data-still="1" width="44" height="54"></canvas><span>${DL.KITS[id].name.split(" ")[1]}</span></button>`).join("");
     $("coopJoinInfo").textContent = `You'll join as the ${DL.KITS[k].name}, level ${lvl}. Levels you train in co-op are kept for your next co-op game; your own saves don't change.`;
@@ -480,6 +480,17 @@
     if (st.step === 1) {
       for (const id of DL.KIT_ORDER) {
         const k = DL.KITS[id];
+        if (!DL.Game.kitOpen(id)) {
+          // a secret kit not yet earned: a dark shape, no name, and a hint that something is out there
+          html += `<button class="pick kit-pick locked-pick" disabled aria-disabled="true">
+          <canvas class="portrait" data-kit="${id}" data-still="1" data-locked="1" width="88" height="108"></canvas>
+          <span class="pick-text">
+            <span class="tag">${k.tag} · Undiscovered</span>
+            <span class="pick-name">???</span>
+            <span class="motto">A knight sleeps somewhere deep in the dark. Something must be slain, and something grown, before he answers.</span>
+          </span></button>`;
+          continue;
+        }
         html += `<button class="pick kit-pick ${st.kit === id ? "on" : ""}" data-pick="${id}" aria-pressed="${st.kit === id}">
           <canvas class="portrait" data-kit="${id}" width="88" height="108"></canvas>
           <span class="pick-text">

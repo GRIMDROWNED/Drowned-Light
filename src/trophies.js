@@ -44,7 +44,8 @@
       e.bound -= dt;
       e.stun = Math.max(e.stun || 0, Math.min(e.bound, 0.2));
       e.stingT = (e.stingT || 0) - dt;
-      if (e.stingT <= 0 && h) { e.stingT = 0.5; G.hitEnemy(e, h.sting, 0, 0); }
+      const sting = e.boundSting || (h && h.sting);
+      if (e.stingT <= 0 && sting) { e.stingT = 0.5; G.hitEnemy(e, sting, 0, 0); }
     }
     if (!h || !awake()) return;
     bindT -= dt;
@@ -56,9 +57,22 @@
     sfx("swing");
     for (const e of prey) bind(e, h);
   };
+  /* The Rose Paladin's briar (src/kits.js): the same binding, from his waltz and his lash, stung `sting` every half second. */
+  Trophies.bind = function (e, hold, sting) {
+    if (e.removed || G.isGuest()) return;
+    hold = e.def.boss ? hold / 2 : hold;
+    e.bound = Math.max(e.bound || 0, hold);
+    e.boundSting = sting;
+    e.stingT = 0.3;
+    e.kx = e.ky = 0;
+    vines.push({ x: e.x, y: e.y + 2, v: Math.random() < 0.5 ? 0 : 1, t: 0, life: hold + 0.5 });
+    while (vines.length > 40) vines.shift();
+    for (let i = 0; i < 6; i++) G.spark(e.x + rand(-10, 10), e.y - rand(0, 30), RED, 70);
+  };
   function bind(e, h) {
     const hold = e.def.boss ? h.hold / 2 : h.hold;
     e.bound = hold;
+    e.boundSting = 0;
     e.stingT = 0.3;
     e.kx = e.ky = 0;
     vines.push({ x: e.x, y: e.y + 2, v: Math.random() < 0.5 ? 0 : 1, t: 0, life: hold + 0.5 });

@@ -74,12 +74,14 @@
     if (kit.passive && kit.passive.guard) m *= 1 - (K.has(5) ? 0.35 : kit.passive.guard);
     if (K.steady(p)) m *= 1 - kit.passive.stance.guard;
     if (p.guardT > 0) m *= 0.5;
+    if (kit.passive && kit.passive.aegis) m *= 1 - kit.passive.aegis; // the Rose Paladin's rose shield
     return m;
   };
   // The Chain Reaper's pace: a fifth faster always, faster still in Reaper's Rush after a kill.
   K.speedMult = function (p) {
     const kit = G.kit(), rush = kit.passive && kit.passive.rush;
-    return (kit.speedMult || 1) * (rush && p.rushT > 0 ? rush.speed : 1) * (p.tideCharge ? 0.5 : 1); // charging Jade Tide slows him
+    return (kit.speedMult || 1) * (rush && p.rushT > 0 ? rush.speed : 1) * (p.tideCharge ? 0.5 : 1) // charging Jade Tide slows him
+      * (p.waltz ? kit.ability.move : 1); // and the Rose Paladin walks slower while he waltzes
   };
   // The Jade Breaker's Momentum: the bonus damage his next swing carries (0 to passive.momentum.bonus).
   function momentum(p) {
@@ -87,6 +89,21 @@
     return m ? m.bonus * Math.min(1, (p.momT || 0) / m.full) : 0;
   }
   K.momentum = momentum;
+  /* The Rose Paladin's Thorned Aegis (host): a Drowned whose blow lands on a Rose Paladin (`kit`: the struck knight's
+     kit) is pricked by his shield's thorns for a share of the blow. */
+  K.thorns = function (e, kit, dmg, k) {
+    const ps = DL.KITS[kit] && DL.KITS[kit].passive;
+    if (!ps || !ps.thorns || e.removed || e.def.king) return;
+    G.hitEnemy(e, dmg * ps.thorns, Math.atan2(e.y - k.y, e.x - k.x), 60);
+    for (let i = 0; i < 5; i++) G.spark(e.x + rand(-8, 8), e.y - rand(10, 40), "220,40,60", 80);
+  };
+  /* Bind a Drowned in the Deadly Rose's briar for `hold` s, stung for `sting` every half second (src/trophies.js runs it
+     on the host, so a co-op guest sends it there). */
+  K.bind = function (e, hold, sting) {
+    if (e.removed || e.rise > 0 || e.def.king) return;
+    if (G.isGuest()) DL.Net.event({ t: "bind", id: e.id, hold, sting });
+    else DL.Trophies.bind(e, hold, sting);
+  };
   K.dashCd = () => G.kit().dash.cd || 2.2;
   K.lanternMult = () => (G.kit().passive && G.kit().passive.lanternR) || 1;
   K.oilDrain = () => (G.kit().passive && G.kit().passive.oilDrain) || 1;
@@ -190,6 +207,8 @@
       // the Jade Breaker's Momentum goes into the swing and is spent; Crystal Edge hurls harder, Shatter stuns
       const mom = momentum(p), jade = id === "jadeBreaker";
       const dmg = a.dmg * pw * (1 + mom), kb = a.kb * (jade && K.has(5) ? 1.2 : 1);
+      // the Rose Paladin's Thorn Lash: Crown of Thorns (10) makes them bleed; Rosebriar Lash (15) binds what every third lash strikes
+      const binds = a.lash && K.has(15) && (p.lashN = (p.lashN || 0) + 1) % 3 === 0;
       if (jade) { p.momT = 0; swing.dur = 0.3; if (mom > 0.15) swing.col = "180,255,200"; }
       for (const e of G.enemies.slice()) {
         if (e.rise > 0) continue;
@@ -198,9 +217,12 @@
         if (d <= range && (ad <= arc / 2 || d < 8)) {
           G.hitEnemy(e, dmg, ang, kb, burn);
           if (jade && K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
+          if (a.lash && K.has(10) && !e.removed) { e.bleedN = Math.min(3, (e.bleed > 0 ? e.bleedN || 0 : 0) + 1); e.bleed = 3; }
+          if (binds) K.bind(e, 1.2, kit.ability.sting * pw);
         }
       }
       if (jade) G.camera.shake = Math.max(G.camera.shake || 0, 3);
+      if (a.lash) { Object.assign(swing, { kind: "lash", dur: 0.34 }); G.camera.shake = Math.max(G.camera.shake || 0, 2); }
       if (id === "lanternBlade" && K.has(10) && p.attackN % 3 === 0) {
         shoot(p, ang, { kind: "wave", speed: 430, life: 0.42, dmg: a.dmg * pw * 0.7, pierce: 99, r: 20, col: swing.col });
       }
@@ -339,6 +361,12 @@
       G.effects.push({ type: "slash", x: p.x, y: p.y - 20, ang, arc: ab.fan + 0.6, r: 90, t: 0, max: 0.3, col, w: 12 });
       G.camera.shake = 7;
       sfx("swing");
+    } else if (ab.id === "waltz") {
+      // Rose's Waltz: he whirls inside her ring of thorn whips (src/render.js), cutting all round him `hits` times (K.update)
+      const big = K.has(20);
+      p.waltz = { t: ab.spin * (big ? 1.4 : 1), tick: 0, hits: 0, n: big ? ab.bigHits : ab.hits, r: big ? ab.bigR : ab.r, dmg: ab.dmg * pw };
+      p.cast = { t: 0, dur: p.waltz.t, ang: p.angle }; // so a co-op friend sees him waltzing
+      sfx("dash");
     } else if (ab.id === "wall") {
       const dur = ab.dur * (K.has(10) ? 1.5 : 1), dps = ab.dps * pw * (K.has(10) ? 1.6 : 1);
       if (K.has(20)) {
@@ -544,6 +572,27 @@
     if (kit.passive && kit.passive.momentum) p.momT = Math.max(0, Math.min(kit.passive.momentum.full, (p.momT || 0) + (p.moving ? dt : -2 * dt)));
     if (crystalLife !== p) { crystals = []; crystalLife = p; } // a new life clears them
     updateCrystals(dt);
+
+    // Rose's Waltz: a cut all round him every spin/hits s; Briar Bind (5) holds what it cuts.
+    const wz = p.waltz;
+    if (wz) {
+      const ab = kit.ability;
+      wz.t -= dt;
+      wz.tick -= dt;
+      if (wz.tick <= 0 && wz.hits < wz.n) {
+        wz.tick = (ab.spin * (K.has(20) ? 1.4 : 1)) / wz.n;
+        wz.hits++;
+        G.effects.push({ type: "ring", x: p.x, y: p.y - 26, r0: 24, r1: wz.r, t: 0, max: 0.3, col: kit.color, w: 4 });
+        sfx("swing");
+        for (const e of G.enemies.slice()) {
+          if (e.rise > 0 || e.removed || dist(p.x, p.y, e.x, e.y) > wz.r + e.def.radius) continue;
+          G.hitEnemy(e, wz.dmg * G.corruptBonus(), Math.atan2(e.y - p.y, e.x - p.x), ab.kb);
+          if (K.has(5) && !(e.bound > 0)) K.bind(e, ab.bind, ab.sting * K.power() * st.dmgMult);
+        }
+      }
+      if (Math.random() < dt * 30) { const a = rand(0, TAU); G.spark(p.x + Math.cos(a) * wz.r * 0.8, p.y - 26 + Math.sin(a) * wz.r * 0.4, kit.color, 70); }
+      if (wz.t <= 0 || p.downT > 0 || G.state !== "play") p.waltz = null;
+    }
 
     // The Chain Reaper: the sickle torn back along its line halfway through the throw.
     const sw = p.swing;

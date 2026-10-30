@@ -264,11 +264,36 @@
         { name: "Jade Bulwark", desc: "Jade Tide's crystals stand for 4 seconds as a wall the Drowned can't cross." },
       ],
     },
+    /* Kit 08, a secret: the Deadly Rose's knight. Nothing of him shows until he's earned (DL.secretKit in src/game.js):
+       slay the Deadly Rose and grow her heart in your camp to its last level (DL.UPGRADES "roseheart"). From then on he
+       can be chosen in every new game on this device. Her thorn whip is his sword's reach: the widest, longest swing in
+       the game, slow to come round again. */
+    rosePaladin: {
+      name: "Rose Paladin", tag: "Kit 08", motto: "Every rose keeps its thorns.", roles: ["Heavy", "Reach", "Binding"],
+      weapon: "Thorn greatsword and rose shield", color: "220,40,60", secret: true,
+      desc: "The Deadly Rose's last knight, in thorned bronze and rose-red. His thorn sword lashes like her whip across a huge arc in front of him, and he whirls into her waltz.",
+      // `lash`: drawn as her whip cracking round the arc (src/render.js)
+      attack: { type: "arc", lash: true, name: "Thorn Lash", dmg: 22, range: 128, arc: 3.4, cd: 1.1, kb: 230 },
+      dash: { type: "plain" },
+      // his rose shield takes `aegis` off every blow, and a Drowned that strikes him is pricked for `thorns` x its blow
+      passive: { aegis: 0.15, thorns: 0.5 },
+      // the waltz: he whirls `spin` s, cutting all within `r` px `hits` times; he walks at `move` x his pace meanwhile.
+      // Briar Bind (5) holds what it cuts `bind` s; The Last Dance (20) grows it to `bigR` and `bigHits`.
+      ability: { id: "waltz", name: "Rose's Waltz", oil: 14, cd: 12, r: 120, spin: 1.2, hits: 3, dmg: 16, kb: 200, move: 0.6, bind: 1.6, sting: 3, bigR: 165, bigHits: 5,
+        desc: "Whirl as the Deadly Rose did: a ring of thorn whips spins round you, cutting and hurling back every Drowned near, three times over. You can walk while you waltz." },
+      special: { name: "Thorned Aegis", desc: "Your rose shield takes 15% off every blow, and the Drowned that strike you are pricked by its thorns." },
+      milestones: [
+        { name: "Briar Bind", desc: "Rose's Waltz binds every Drowned it cuts in briar for a moment, stung while they're held." },
+        { name: "Crown of Thorns", desc: "Thorn Lash tears the flesh: the Drowned it strikes bleed." },
+        { name: "Rosebriar Lash", desc: "Every third Thorn Lash binds whatever it strikes in briar." },
+        { name: "The Last Dance", desc: "Rose's Waltz grows as wide as the Rose's own and spins five times." },
+      ],
+    },
   };
   // The Frostweaver's frost (src/kits.js): how long freezing and brittle last, brittle's extra damage taken, and the shatter
   // of a frozen Drowned dying (it freezes up to `shatterN` others within `shatterR` px). The owl familiar from level 5.
   DL.ICE = { frost: 2.5, brittle: 0.2, brittleT: 4, shatterN: 3, shatterR: 150, owl: { range: 260, cd: 1.1, dmg: 6 } };
-  DL.KIT_ORDER = ["lanternBlade", "pikeWarden", "ashenArbalist", "relicBearer", "flameBastion", "chainReaper", "jadeBreaker"];
+  DL.KIT_ORDER = ["lanternBlade", "pikeWarden", "ashenArbalist", "relicBearer", "flameBastion", "chainReaper", "jadeBreaker", "rosePaladin"];
 
   /* ---------- pacing ----------
      Three levers slow everything down together:
