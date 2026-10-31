@@ -458,18 +458,19 @@
   /* Jade Tide's crystals: rows of clusters fanned out ahead of the knight, each bursting up when the wave reaches it
      (`at` s from now) and striking every Drowned within `r`; a Drowned is struck once per wave. They stand `life` s,
      then shatter. Twin Tide (15) sends the wave `twin` times as far, and the tide racing beside his rush `twin` times as
-     wide. At Jade Cascade (20) a Drowned the crystals kill sets off a tide of its own where it fell, on along the same
-     line (`cascade`: `delay` s later, up to `gens` tides deep, and no more while `cap` crystals are out). */
+     wide. At Jade Cascade (20) a Drowned the crystals kill sets off a tide of its own where it fell: a ring spreading out
+     all around it to `cascade.radius` (`delay` s later, up to `gens` tides deep, and no more while `cap` crystals are out). */
   const twin = () => (K.has(15) ? G.kit().ability.twin : 1);
   let crystals = [], crystalLife = null;
   K.crystals = () => crystals;
-  function tide(x, y, ang, delay, dmg, hit = new Set(), gen = 0) {
-    const ab = G.kit().ability, stand = ab.life;
-    for (let d = ab.step, reach = ab.reach * twin(); d <= reach; d += ab.step) {
-      const n = Math.max(1, Math.round((d * ab.fan) / 55)); // about one cluster every 55 px across the fan
+  // A fan ahead (`ring` false) or a ring all around (x, y) out to `reach` (a cascade).
+  function tide(x, y, ang, delay, dmg, hit = new Set(), gen = 0, ring = false) {
+    const ab = G.kit().ability, stand = ab.life, fan = ring ? Math.PI * 2 : ab.fan;
+    for (let d = ab.step, reach = ring ? ab.cascade.radius : ab.reach * twin(); d <= reach; d += ab.step) {
+      const n = Math.max(ring ? 3 : 1, Math.round((d * fan) / 55)); // about one cluster every 55 px across the fan
       for (let i = 0; i < n; i++) {
-        const a = ang + (n > 1 ? (i / (n - 1) - 0.5) * ab.fan : 0) + rand(-0.06, 0.06), dd = d + rand(-6, 6);
-        crystals.push({ x: x + Math.cos(a) * dd, y: y + Math.sin(a) * dd, at: delay + d / ab.speed, t: 0, max: stand, ang, dmg, hit, gen, flip: Math.random() < 0.5, r: 30 });
+        const a = (ring ? ang + (i / n) * fan : ang + (n > 1 ? (i / (n - 1) - 0.5) * fan : 0)) + rand(-0.06, 0.06), dd = d + rand(-6, 6);
+        crystals.push({ x: x + Math.cos(a) * dd, y: y + Math.sin(a) * dd, at: delay + d / ab.speed, t: 0, max: stand, ang: ring ? a : ang, dmg, hit, gen, flip: Math.random() < 0.5, r: 30 });
       }
     }
   }
@@ -568,7 +569,7 @@
     for (const f of falls) {
       if (crystals.length >= cas.cap) break;
       G.effects.push({ type: "ring", x: f.x, y: f.y - 6, r0: 6, r1: 40, t: 0, max: 0.3, col: G.kit().color, w: 3 });
-      tide(f.x, f.y, f.c.ang, cas.delay, f.c.dmg, new Set(), f.c.gen + 1);
+      tide(f.x, f.y, Math.random() * Math.PI * 2, cas.delay, f.c.dmg, new Set(), f.c.gen + 1, true);
     }
   }
 
