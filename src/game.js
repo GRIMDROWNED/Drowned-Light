@@ -946,12 +946,12 @@
     // little Fred in his fairy ring comes first, and a turned Drowned close by is fought back
     return DL.Fred.decoy(e, DL.Hounds.nearest(e.x, e.y, bd) || best);
   }
-  function hurtKnight(k, dmg, ang) {
+  function hurtKnight(k, dmg, ang, by) {
     if (k.def) hitEnemy(k, dmg, ang, 80, 0, true); // one Drowned striking another (Fred's Mindrot)
     else if (k.fredTrial) DL.Fred.hurtTrial(dmg);
     else if (k.hound) DL.Hounds.hurt(k, dmg, ang);
     else if (k !== G.player) DL.Net.hurtAlly(k, dmg, ang);
-    else hurtPlayer(dmg, ang);
+    else hurtPlayer(dmg, ang, by);
   }
   // More knights, more Drowned: siege waves grow by a third per friend (and each Drowned has 15% more health per friend, in makeEnemy).
   G.partyScale = () => 1 + 0.35 * G.allies.length;
@@ -1054,7 +1054,7 @@
           e.x += Math.cos(e.chargeAng) * e.speed * 3.4 * dt;
           e.y += Math.sin(e.chargeAng) * e.speed * 3.4 * dt;
           if (Math.random() < 0.5) puff(e.x, e.y, "rgba(60,200,210,0.5)", 40, 0.4);
-          if (dp < e.def.radius + 18) { hurtKnight(p, e.dmg * 0.8, e.chargeAng); e.chargeT = 0; e.cd = e.def.cd; }
+          if (dp < e.def.radius + 18) { hurtKnight(p, e.dmg * 0.8, e.chargeAng, e.def.name); e.chargeT = 0; e.cd = e.def.cd; }
         }
       } else {
         let want = 1;
@@ -1198,7 +1198,7 @@
       e.phase2 = true;
       e.speed *= 1.25;
       e.summonT = 1.5;
-      G.telegraphs.push({ x: e.x, y: e.y, r: 130, t: 0, delay: 0.9, dmg: e.dmg });
+      G.telegraphs.push({ by: e.def.name, x: e.x, y: e.y, r: 130, t: 0, delay: 0.9, dmg: e.dmg });
       say("The Sovereign unleashes the deep!", "danger");
     }
     e.summonT -= dt;
@@ -1216,12 +1216,12 @@
       if ((e.spikeN = (e.spikeN || 0) + 1) % 2 === 0) {
         // a shockwave lane rolling out toward the knight
         const a = Math.atan2(p.y - e.y, p.x - e.x);
-        for (let i = 1; i <= 7; i++) G.telegraphs.push({ x: e.x + Math.cos(a) * 42 * i, y: e.y + Math.sin(a) * 42 * i, r: 26, t: 0, delay: 0.6 + 0.1 * i, dmg: e.dmg * 0.7 });
+        for (let i = 1; i <= 7; i++) G.telegraphs.push({ by: e.def.name, x: e.x + Math.cos(a) * 42 * i, y: e.y + Math.sin(a) * 42 * i, r: 26, t: 0, delay: 0.6 + 0.1 * i, dmg: e.dmg * 0.7 });
         return;
       }
       for (let i = 0; i < 3; i++) {
         const a = rand(0, TAU), r = i ? rand(30, 70) : 0;
-        G.telegraphs.push({ x: p.x + Math.cos(a) * r, y: p.y + Math.sin(a) * r, r: 34, t: 0, delay: 0.9, dmg: e.dmg * 0.8 });
+        G.telegraphs.push({ by: e.def.name, x: p.x + Math.cos(a) * r, y: p.y + Math.sin(a) * r, r: 34, t: 0, delay: 0.9, dmg: e.dmg * 0.8 });
       }
     }
   }
@@ -1242,7 +1242,7 @@
       if ((e.casts = (e.casts || 0) + 1) % 3 === 0) G.hexPools.push({ x: p.x, y: p.y, r: 46, t: 0, life: 6 });
       else {
         const a = Math.atan2(p.y - e.y, p.x - e.x);
-        G.projectiles.push({ x: e.x, y: e.y - 30, vx: Math.cos(a) * 170, vy: Math.sin(a) * 170, life: 2.6, dmg, hostile: true, corrupt: 6, kind: "orb", col: "90,235,245", r: 10 });
+        G.projectiles.push({ x: e.x, y: e.y - 30, vx: Math.cos(a) * 170, vy: Math.sin(a) * 170, life: 2.6, dmg, by: e.def.name, hostile: true, corrupt: 6, kind: "orb", col: "90,235,245", r: 10 });
       }
       sfx("whisper");
       return;
@@ -1252,7 +1252,7 @@
       const n = e.def.spread && (e.shots = (e.shots || 0) + 1) % 2 === 0 ? e.def.spread : 1; // every other shot fans out
       for (let i = 0; i < n; i++) {
         const a = base + (i - (n - 1) / 2) * 0.22;
-        G.projectiles.push({ x: e.x, y: e.y - 22, vx: Math.cos(a) * 330, vy: Math.sin(a) * 330, life: 1.4, dmg, hostile: true, kind: "arrow", col: "90,235,245" });
+        G.projectiles.push({ x: e.x, y: e.y - 22, vx: Math.cos(a) * 330, vy: Math.sin(a) * 330, life: 1.4, dmg, by: e.def.name, hostile: true, kind: "arrow", col: "90,235,245" });
       }
       sfx("arrow");
       return;
@@ -1271,7 +1271,7 @@
     const ad = Math.abs(angleDiff(e.aim, Math.atan2(p.y - e.y, p.x - e.x)));
     if (d <= e.def.range + 16 && ad < 1.25) {
       const hp = p.hp;
-      hurtKnight(p, dmg, e.aim);
+      hurtKnight(p, dmg, e.aim, e.def.name);
       // the Rose Paladin's shield pricks whatever strikes him (src/kits.js)
       if (p === G.player ? p.hp < hp : p.kit) DL.Kits.thorns(e, p === G.player ? G.save.kit : p.kit, dmg, p);
       // Drowned Wretch: its touch seeps corruption into you
@@ -1324,13 +1324,23 @@
     for (let i = 0; i < 10; i++) puff(t.x, t.y - 16, "rgba(50,45,40,0.7)", 40, 0.9);
   }
 
-  function hurtPlayer(dmg, ang) {
+  // `by`: what struck you (a Drowned's name), shown on the death screen if the blow kills you.
+  function hurtPlayer(dmg, ang, by) {
     const p = G.player;
     if (p.inv > 0 || p.dashT > 0 || p.downT > 0 || G.state !== "play") return;
     dmg *= DL.Kits.damageTaken(p);
     if (DL.Abigail.buffed()) dmg *= 1 - DL.Summons.wraith().buff; // Abigail's blessing
+    const before = p.hp, LS = DL.LAST_STAND;
+    G.lastHit = { by: by || "the Drowned", dmg, hp: before };
     p.hp -= dmg;
     p.inv = 0.5;
+    // Last stand: a blow that would kill you while you're above a quarter of your health leaves you hanging on instead
+    if (p.hp <= 0 && before > G.stats().maxHp * LS.above) {
+      p.hp = 1;
+      p.inv = LS.inv;
+      text(p.x, p.y - 96, "Last stand!", "#ffe08a", 1.3);
+      say("Last stand! One more blow will finish you. Get to the light.", "danger");
+    }
     p.hurtFlash = 0.3;
     p.flash = 0.15;
     if (!DL.Kits.steady(p)) { p.kx += Math.cos(ang) * 160; p.ky += Math.sin(ang) * 160; }
@@ -1496,7 +1506,7 @@
       else if (b.hostile) {
         if (!(p.downT > 0) && dist(b.x, b.y, p.x, p.y - 22) < 16) {
           const hp = p.hp;
-          hurtPlayer(b.dmg, Math.atan2(b.vy, b.vx));
+          hurtPlayer(b.dmg, Math.atan2(b.vy, b.vx), b.by);
           if (b.corrupt && p.hp < hp) p.corrupt = clamp(p.corrupt + b.corrupt, 0, 100);
           b.life = 0;
         }
@@ -1550,7 +1560,7 @@
         t.done = true;
         if (!t.dmg) continue; // only a warning (the lane the Starved Bell is about to lunge down)
         if (dist(t.x, t.y, p.x, p.y) < t.r + 6) {
-          hurtPlayer(t.dmg, Math.atan2(p.y - t.y, p.x - t.x));
+          hurtPlayer(t.dmg, Math.atan2(p.y - t.y, p.x - t.x), t.by);
           if (t.corrupt && G.state === "play") p.corrupt = clamp(p.corrupt + t.corrupt, 0, 100); // the Starved Bell's toll
         }
         for (const a of G.allies) if (!a.down && dist(t.x, t.y, a.x, a.y) < t.r + 6) DL.Net.hurtAlly(a, t.dmg, Math.atan2(a.y - t.y, a.x - t.x));
@@ -1572,6 +1582,8 @@
       if (q.t < 0.6) continue; // forming
       if (G.state === "play" && !(p.downT > 0) && inside(p, q)) {
         p.corrupt = clamp(p.corrupt + 4 * dt, 0, 100);
+        if (!(G.lastHit && G.lastHit.pool)) G.lastHit = { by: "a Marsh Hexbearer's pool", dmg: 0, hp: p.hp, pool: true };
+        G.lastHit.dmg += 3 * dt;
         p.hp -= 3 * dt;
         if (p.hp <= 0) { die("wounds"); return; }
       }
@@ -1694,7 +1706,7 @@
       G.enemies = G.enemies.filter((e) => !e.isSelf);
     }
     G.persist();
-    G.deathInfo = { cause, lost, any, hadSelf, zone: DL.ZONES[p.zi].name, day: G.save.day, nights: G.save.nights };
+    G.deathInfo = { cause, hit: cause === "wounds" ? G.lastHit : null, lost, any, hadSelf, zone: DL.ZONES[p.zi].name, day: G.save.day, nights: G.save.nights };
     for (let i = 0; i < 40; i++) puff(p.x + rand(-12, 12), p.y - rand(0, 60), "rgba(60,220,230,0.7)", 50, 1.6, -30);
   }
 

@@ -501,6 +501,9 @@
     waltz: { first: 5, every: 9, windup: 0.9, spin: 1.3, r: 170, drift: 0.6, hits: 3, dmg: 0.45, kb: 240 },
     briar: { first: 3, every: 11, windup: 0.6, delay: 0.5, reach: 480, n: 5, step: 58, r: 34, dmg: 0.7, life: 4, sting: 0.12 },
   };
+  /* Last stand (src/game.js hurtPlayer): a blow that would kill you while your health is above `above` of its maximum
+     leaves you at 1 health instead, safe from harm for `inv` s. A blow taken at or below that line kills as usual. */
+  DL.LAST_STAND = { above: 0.25, inv: 1 };
   /* The finale (src/finale.js): Kindle becomes the Fire Bearer and carries the last light of the marsh to the Drowned Gate.
      Nothing of it shows until it's earned: Central Flame 5, the Starved Bell and the Deadly Rose slain, Derek won from the
      Colossus, and your Kindle lit. At the next dawn Kindle drinks from the Central Flame and rises as the Bearer.

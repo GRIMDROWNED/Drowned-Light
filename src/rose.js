@@ -137,7 +137,7 @@
     if (k.hound) return DL.Hounds.hurt(k, dmg, ang);
     if (k !== G.player) return DL.Net.hurtAlly(k, dmg, ang);
     const was = k.hp;
-    G.hurtPlayer(dmg, ang);
+    G.hurtPlayer(dmg, ang, DL.ENEMIES.rose.name);
     if (k.hp < was && kb && !DL.Kits.steady(k)) { k.kx += Math.cos(ang) * kb; k.ky += Math.sin(ang) * kb; }
   }
   const targets = () => [...G.knights(), ...G.hounds.filter((h) => !(h.down > 0))];
@@ -200,7 +200,7 @@
     e.tgt = p;
     e.moving = false;
     if (kind === "waltz") {
-      G.telegraphs.push({ x: e.x, y: e.y, r: k.r, t: 0, delay: k.windup, dmg: 0, rose: true });
+      G.telegraphs.push({ by: e.def.name, x: e.x, y: e.y, r: k.r, t: 0, delay: k.windup, dmg: 0, rose: true });
       sfx("whisper");
       return;
     }
@@ -220,7 +220,7 @@
     if (e.phase2) for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU + 0.3; spots.push({ x: e.x + Math.cos(a) * 110, y: e.y + Math.sin(a) * 75, i: 2 }); }
     for (const s of spots) {
       const delay = k.windup + k.delay + s.i * 0.08;
-      G.telegraphs.push({ x: s.x, y: s.y, r: k.r, t: 0, delay, dmg: e.dmg * k.dmg, rose: true });
+      G.telegraphs.push({ by: e.def.name, x: s.x, y: s.y, r: k.r, t: 0, delay, dmg: e.dmg * k.dmg, rose: true });
       vines.push({ x: s.x, y: s.y, t: -delay, life: k.life, dmg: e.dmg * k.sting, v: (Math.random() * 3) | 0 });
     }
     while (vines.length > K.maxVines) vines.shift();

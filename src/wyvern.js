@@ -169,7 +169,7 @@
 
   /* ---------------- the mother (host; called from the Drowned's update in src/game.js) ---------------- */
   function hurt(k, dmg, ang) {
-    if (k === G.player) G.hurtPlayer(dmg, ang);
+    if (k === G.player) G.hurtPlayer(dmg, ang, DL.ENEMIES.wyvern.name);
     else DL.Net.hurtAlly(k, dmg, ang);
   }
   // Her timers, and which move she picks next (between her claws).
@@ -191,7 +191,7 @@
       e.swoopT = S.every * (e.phase2 ? 0.75 : 1);
       const ang = Math.atan2(p.y - e.y, p.x - e.x), len = S.speed * S.dur;
       e.move = { kind: "rise", t: S.windup, ang, hit: [] };
-      for (let i = 1; i <= 6; i++) G.telegraphs.push({ x: e.x + Math.cos(ang) * (len * i) / 6, y: e.y + Math.sin(ang) * (len * i) / 6, r: 30, t: 0, delay: S.windup, dmg: 0, wyv: true });
+      for (let i = 1; i <= 6; i++) G.telegraphs.push({ by: e.def.name, x: e.x + Math.cos(ang) * (len * i) / 6, y: e.y + Math.sin(ang) * (len * i) / 6, r: 30, t: 0, delay: S.windup, dmg: 0, wyv: true });
       sfx("growl");
     } else if (e.breathT <= 0 && dp < B.range) {
       e.breathT = B.every * (e.phase2 ? 0.8 : 1);
@@ -203,10 +203,10 @@
     const S = W.storm;
     for (const k of G.knights()) {
       if (dist(k.x, k.y, e.x, e.y) > 700) continue;
-      G.telegraphs.push({ x: k.x, y: k.y, r: S.r, t: 0, delay: S.delay, dmg: e.dmg * S.dmg, wyv: true, bolt: true });
+      G.telegraphs.push({ by: e.def.name, x: k.x, y: k.y, r: S.r, t: 0, delay: S.delay, dmg: e.dmg * S.dmg, wyv: true, bolt: true });
       for (let i = 0; i < S.extra; i++) {
         const a = rand(0, TAU), r = rand(50, 130);
-        G.telegraphs.push({ x: k.x + Math.cos(a) * r, y: k.y + Math.sin(a) * r, r: S.r, t: 0, delay: S.delay + rand(0, 0.5), dmg: e.dmg * S.dmg, wyv: true, bolt: true });
+        G.telegraphs.push({ by: e.def.name, x: k.x + Math.cos(a) * r, y: k.y + Math.sin(a) * r, r: S.r, t: 0, delay: S.delay + rand(0, 0.5), dmg: e.dmg * S.dmg, wyv: true, bolt: true });
       }
     }
     sfx("toll");
