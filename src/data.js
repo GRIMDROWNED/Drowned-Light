@@ -255,7 +255,9 @@
       // for the sweep's damage x`bonus`, and the tide bursts out where you stop, x`bonus` too. While you rush, the tide keeps
       // pace: a row of crystals `lane` px either side of your path every `row` px. His own dash stays free.
       // Twin Tide (15) multiplies the tide's reach and that lane by `twin`.
-      ability: { id: "tide", name: "Jade Tide", oil: 14, cd: 13, dmg: 30, kb: 300, reach: 210, step: 44, fan: 1.3, speed: 520, life: 0.7, wall: 4, twin: 2,
+      // Jade Cascade (20): a Drowned the crystals kill sets off a tide where it fell, `cascade.gens` tides deep at most.
+      ability: { id: "tide", name: "Jade Tide", oil: 14, cd: 13, dmg: 30, kb: 300, reach: 210, step: 44, fan: 1.3, speed: 520, life: 0.7, twin: 2,
+        cascade: { gens: 3, delay: 0.12, cap: 500 },
         charge: { hold: 0.35, max: 1.5, dash: 0.28, speed: 560, bonus: 1.3, kb: 260, row: 40, lane: 55 },
         desc: "A huge sweep that sends a wave of jade crystals bursting from the ground in a fan ahead: every Drowned it reaches is struck and hurled back. Hold it to charge, then let go to rush forward in a dash strike that hits 30% harder, the tide racing along beside you, and ends in the tide." },
       special: { name: "Momentum", desc: "Moving builds up your next swing: up to 30% more damage after a second on the move." },
@@ -263,7 +265,7 @@
         { name: "Crystal Edge", desc: "Your sweep reaches farther and hurls the Drowned harder." },
         { name: "Shatter", desc: "Drowned you knock back are stunned for a moment." },
         { name: "Twin Tide", desc: "Jade Tide surges twice as far, and races twice as wide beside your rush." },
-        { name: "Jade Bulwark", desc: "Jade Tide's crystals stand for 4 seconds as a wall the Drowned can't cross." },
+        { name: "Jade Cascade", desc: "A Drowned killed by Jade Tide's crystals sets off a jade tide of its own where it fell." },
       ],
     },
     /* Kit 08, a secret: the Deadly Rose's knight. Nothing of him shows until he's earned (DL.secretKit in src/game.js):

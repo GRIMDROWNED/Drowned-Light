@@ -457,29 +457,30 @@
 
   /* Jade Tide's crystals: rows of clusters fanned out ahead of the knight, each bursting up when the wave reaches it
      (`at` s from now) and striking every Drowned within `r`; a Drowned is struck once per wave. They stand `life` s,
-     or as a wall for `wall` s at Jade Bulwark, then shatter. Twin Tide (15) sends the wave `twin` times as far, and the
-     tide racing beside his rush `twin` times as wide. */
+     then shatter. Twin Tide (15) sends the wave `twin` times as far, and the tide racing beside his rush `twin` times as
+     wide. At Jade Cascade (20) a Drowned the crystals kill sets off a tide of its own where it fell, on along the same
+     line (`cascade`: `delay` s later, up to `gens` tides deep, and no more while `cap` crystals are out). */
   const twin = () => (K.has(15) ? G.kit().ability.twin : 1);
   let crystals = [], crystalLife = null;
   K.crystals = () => crystals;
-  function tide(x, y, ang, delay, dmg, hit = new Set()) {
-    const ab = G.kit().ability, stand = K.has(20) ? ab.wall : ab.life;
+  function tide(x, y, ang, delay, dmg, hit = new Set(), gen = 0) {
+    const ab = G.kit().ability, stand = ab.life;
     for (let d = ab.step, reach = ab.reach * twin(); d <= reach; d += ab.step) {
       const n = Math.max(1, Math.round((d * ab.fan) / 55)); // about one cluster every 55 px across the fan
       for (let i = 0; i < n; i++) {
         const a = ang + (n > 1 ? (i / (n - 1) - 0.5) * ab.fan : 0) + rand(-0.06, 0.06), dd = d + rand(-6, 6);
-        crystals.push({ x: x + Math.cos(a) * dd, y: y + Math.sin(a) * dd, at: delay + d / ab.speed, t: 0, max: stand, ang, dmg, hit, flip: Math.random() < 0.5, r: 30 });
+        crystals.push({ x: x + Math.cos(a) * dd, y: y + Math.sin(a) * dd, at: delay + d / ab.speed, t: 0, max: stand, ang, dmg, hit, gen, flip: Math.random() < 0.5, r: 30 });
       }
     }
   }
   // During the rush the tide keeps pace with him: a row of crystals across his path (`charge.lane` px either side) bursts
   // up every `charge.row` px he travels, just ahead of him, so what he dashes past is struck too.
   function tideRow(x, y, ang, dmg, hit) {
-    const ch = G.kit().ability.charge, stand = K.has(20) ? G.kit().ability.wall : G.kit().ability.life;
+    const ch = G.kit().ability.charge, stand = G.kit().ability.life;
     const lane = ch.lane * twin(), nx = -Math.sin(ang), ny = Math.cos(ang), n = Math.max(3, Math.round(lane / 27) + 1);
     for (let i = 0; i < n; i++) {
       const o = (i / (n - 1) - 0.5) * 2 * lane + rand(-6, 6), f = 14 + rand(-4, 4);
-      crystals.push({ x: x + nx * o + Math.cos(ang) * f, y: y + ny * o + Math.sin(ang) * f, at: 0, t: 0, max: stand, ang, dmg, hit, flip: Math.random() < 0.5, r: 30 });
+      crystals.push({ x: x + nx * o + Math.cos(ang) * f, y: y + ny * o + Math.sin(ang) * f, at: 0, t: 0, max: stand, ang, dmg, hit, gen: 0, flip: Math.random() < 0.5, r: 30 });
     }
   }
   /* Jade Tide held: the button starts a charge (K.tideStart). Let go before `hold` s and the tide goes off where he
@@ -545,7 +546,7 @@
   };
 
   function updateCrystals(dt) {
-    const ab = G.kit().ability;
+    const ab = G.kit().ability, cas = ab.cascade, falls = [];
     for (const c of crystals) {
       if (c.at > 0) {
         c.at -= dt;
@@ -556,19 +557,19 @@
           c.hit.add(e);
           G.hitEnemy(e, c.dmg, c.ang, ab.kb * (K.has(5) ? 1.2 : 1));
           if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
+          // Jade Cascade: the host (or solo) knows when a blow kills, so the guest's crystals don't cascade
+          if (K.has(20) && cas && c.gen < cas.gens && (e.removed || e.hp <= 0) && !G.isGuest()) falls.push({ x: e.x, y: e.y, c });
         }
         continue;
       }
       c.t += dt;
-      if (!K.has(20) || c.t > c.max - 0.3) continue;
-      // Jade Bulwark: the standing crystals are a wall the Drowned are pushed back out of
-      for (const e of G.enemies) {
-        if (e.rise > 0 || e.removed || e.def.king || e.def.boss) continue;
-        const d = dist(c.x, c.y, e.x, e.y), min = 16 + e.def.radius;
-        if (d < min) { const k = min / (d || 1); e.x = c.x + (e.x - c.x) * k; e.y = c.y + (e.y - c.y) * k; }
-      }
     }
     crystals = crystals.filter((c) => c.at > 0 || c.t < c.max);
+    for (const f of falls) {
+      if (crystals.length >= cas.cap) break;
+      G.effects.push({ type: "ring", x: f.x, y: f.y - 6, r0: 6, r1: 40, t: 0, max: 0.3, col: G.kit().color, w: 3 });
+      tide(f.x, f.y, f.c.ang, cas.delay, f.c.dmg, new Set(), f.c.gen + 1);
+    }
   }
 
   // Violet Gyre: the rings of whirling chain Violet Snare leaves behind at level 20.
