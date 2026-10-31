@@ -14,6 +14,8 @@
   K.has = (lvl) => G.save.kitLevel >= lvl;
   K.power = () => 1 + 0.05 * (G.save.kitLevel - 1); // +5% damage per level
   K.cdMult = () => 1 - 0.012 * (G.save.kitLevel - 1);
+  // The Jade Breaker's knockback: Shatter (10) hurls everything harder, his sweep, the rush and the tide.
+  const jadeKb = () => (G.save.kit === "jadeBreaker" && K.has(10) ? G.kit().attack.shatterKb || 1 : 1);
   K.color = () => G.kit().color;
   K.abilityCd = () => G.kit().ability.cd * K.cdMult();
 
@@ -206,7 +208,8 @@
       const burn = id === "lanternBlade" && K.has(5) ? 3 * pw : 0;
       // the Jade Breaker's Momentum goes into the swing and is spent; Crystal Edge hurls harder, Shatter stuns
       const mom = momentum(p), jade = id === "jadeBreaker";
-      const dmg = a.dmg * pw * (1 + mom), kb = a.kb * (jade && K.has(5) ? 1.2 : 1);
+      // his sweep also grows `grow` a level on top of K.power (Robert's ask: it's his one-target blow)
+      const dmg = a.dmg * pw * (1 + mom) * (jade ? 1 + (a.grow || 0) * (K.level() - 1) : 1), kb = a.kb * (jade && K.has(5) ? 1.2 : 1) * jadeKb();
       // the Rose Paladin's Thorn Lash: Crown of Thorns (10) makes them bleed; Rosebriar Lash (15) binds what every third lash strikes
       const binds = a.lash && K.has(15) && (p.lashN = (p.lashN || 0) + 1) % 3 === 0;
       if (jade) { p.momT = 0; swing.dur = 0.3; if (mom > 0.15) swing.col = "180,255,200"; }
@@ -532,7 +535,7 @@
     for (const e of G.enemies.slice()) {
       if (e.rise > 0 || e.removed || d.hit.has(e) || dist(p.x, p.y, e.x, e.y) > e.def.radius + 28) continue;
       d.hit.add(e);
-      G.hitEnemy(e, kit.attack.dmg * pw * G.corruptBonus() * ch.bonus, d.ang, ch.kb);
+      G.hitEnemy(e, kit.attack.dmg * pw * G.corruptBonus() * ch.bonus, d.ang, ch.kb * jadeKb());
       if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
     }
     if (d.t <= 0) {
@@ -556,7 +559,7 @@
         for (const e of G.enemies.slice()) {
           if (e.rise > 0 || e.removed || c.hit.has(e) || dist(c.x, c.y, e.x, e.y) > c.r + e.def.radius) continue;
           c.hit.add(e);
-          G.hitEnemy(e, c.dmg, c.ang, ab.kb * (K.has(5) ? 1.2 : 1));
+          G.hitEnemy(e, c.dmg, c.ang, ab.kb * (K.has(5) ? 1.2 : 1) * jadeKb());
           if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
           // Jade Cascade: the host (or solo) knows when a blow kills, so the guest's crystals don't cascade
           if (K.has(20) && cas && c.gen < cas.gens && (e.removed || e.hp <= 0) && !G.isGuest()) falls.push({ x: e.x, y: e.y, c });

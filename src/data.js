@@ -245,7 +245,8 @@
       name: "Jade Breaker", tag: "Kit 07", motto: "Stone remembers every blow.", roles: ["Heavy", "Crowd control", "Knockback"],
       weapon: "Jade greatsword", color: "90,230,150",
       desc: "A huge jade crystal greatsword. Slow, sweeping strikes that hurl the Drowned away, on fast feet: dart in, break them, dart out.",
-      attack: { type: "arc", name: "Jade Sweep", dmg: 26, range: 84, arc: 2.6, cd: 1.0, kb: 320 },
+      // `grow`: the sweep's own extra damage per kit level, on top of every kit's +5% (K.power); `shatterKb`: all his knockback from Shatter (10)
+      attack: { type: "arc", name: "Jade Sweep", dmg: 26, range: 84, arc: 2.6, cd: 1.0, kb: 320, grow: 0.05, shatterKb: 1.5 },
       dash: { type: "plain" },
       speedMult: 1.15,
       // moving `full` s builds the next swing up to +bonus damage; standing still drains it twice as fast
@@ -264,7 +265,7 @@
       special: { name: "Momentum", desc: "Moving builds up your next swing: up to 30% more damage after a second on the move." },
       milestones: [
         { name: "Crystal Edge", desc: "Your sweep reaches farther and hurls the Drowned harder." },
-        { name: "Shatter", desc: "Drowned you knock back are stunned for a moment." },
+        { name: "Shatter", desc: "Everything you do hurls the Drowned 50% harder, and they're stunned for a moment." },
         { name: "Twin Tide", desc: "Jade Tide surges twice as far, and races twice as wide beside your rush." },
         { name: "Jade Cascade", desc: "A Drowned killed by Jade Tide's crystals sets off a ring of jade tide all around where it fell." },
       ],
