@@ -278,7 +278,7 @@
   };
 
   // Host side: a blow or a pickup that lands on a friend's knight is sent to that friend's device.
-  Net.hurtAlly = function (a, dmg, ang) { if (Net.role === "host") sendTo(a.g, { t: "hurt", dmg, ang }); };
+  Net.hurtAlly = function (a, dmg, ang, by) { if (Net.role === "host") sendTo(a.g, { t: "hurt", dmg, ang, by }); };
   // Host: show a notice on every friend's screen too.
   // Host: the Starved Bell swallowed a friend's knight (dur > 0) or spat them out along `ang` (src/bell.js).
   Net.holdAlly = function (a, x, y, dur, ang) { if (Net.role === "host") sendTo(a.g, { t: "held", x, y, dur, ang }); };
@@ -471,7 +471,7 @@
       G.save = G.load(); DL.World.chunks.clear();
       DL.UI.toTitle();
     } else if (m.t === "say") say(m.m, m.k);
-    else if (m.t === "hurt") G.hurtPlayer(m.dmg, m.ang);
+    else if (m.t === "hurt") G.hurtPlayer(m.dmg, m.ang, typeof m.by === "string" ? m.by.slice(0, 40) : undefined);
     else if (m.t === "held") G.hold(m.x, m.y, m.dur, m.ang);
     else if (m.t === "gain") {
       const p = G.player;

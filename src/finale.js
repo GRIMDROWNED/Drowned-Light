@@ -386,7 +386,7 @@
     if (!handFree(side)) return;
     const x = tgt.x + (second ? rand(-60, 60) : 0), y = Math.max(g.y + 40, tgt.y + (second ? rand(-40, 40) : 0)), S2 = K.slam;
     blows.push({ kind: "slam", side, x, y, t: 0, delay: S2.windup, r: S2.r, bearer: S2.bearer });
-    G.telegraphs.push({ x, y, r: S2.r, t: 0, delay: S2.windup, dmg: e.dmg * S2.dmg, king: true });
+    G.telegraphs.push({ by: e.def.name, x, y, r: S2.r, t: 0, delay: S2.windup, dmg: e.dmg * S2.dmg, king: true });
     sfx("rise");
   }
   function sweep(e, ks) {
@@ -396,7 +396,7 @@
     const y = clamp(tgt.y, g.y + 60, a.y + GT.arenaR * 0.8);
     const x0 = a.x - side * ((W.n - 1) / 2) * W.step;
     blows.push({ kind: "sweep", side, x: x0, y, x2: a.x + side * ((W.n - 1) / 2) * W.step, t: 0, delay: W.windup, r: W.r, bearer: W.bearer });
-    for (let i = 0; i < W.n; i++) G.telegraphs.push({ x: x0 + side * i * W.step, y, r: W.r, t: 0, delay: W.windup + i * 0.04, dmg: e.dmg * W.dmg, king: true });
+    for (let i = 0; i < W.n; i++) G.telegraphs.push({ by: e.def.name, x: x0 + side * i * W.step, y, r: W.r, t: 0, delay: W.windup + i * 0.04, dmg: e.dmg * W.dmg, king: true });
     sfx("growl");
   }
   function call(e) {
@@ -413,7 +413,7 @@
     for (let i = 0; i < R.n; i++) {
       const on = ks[i % ks.length], a = rand(0, TAU), off = i < ks.length ? 0 : rand(40, 150);
       const x = on.x + Math.cos(a) * off, y = on.y + Math.sin(a) * off * 0.8;
-      G.telegraphs.push({ x, y, r: R.r, t: 0, delay: R.windup + i * 0.08, dmg: e.dmg * R.dmg, corrupt: R.corrupt, king: true });
+      G.telegraphs.push({ by: e.def.name, x, y, r: R.r, t: 0, delay: R.windup + i * 0.08, dmg: e.dmg * R.dmg, corrupt: R.corrupt, king: true });
       blows.push({ kind: "rain", side: 0, x, y, t: 0, delay: R.windup + i * 0.08, r: R.r, bearer: 0 });
     }
   }

@@ -28,7 +28,7 @@
     if (k.hound) return DL.Hounds.hurt(k, dmg, ang);
     if (k !== G.player) return DL.Net.hurtAlly(k, dmg, ang);
     const was = k.hp;
-    G.hurtPlayer(dmg, ang);
+    G.hurtPlayer(dmg, ang, DL.ENEMIES.colossus.name);
     if (k.hp < was && kb && !DL.Kits.steady(k)) { k.kx += Math.cos(ang) * kb; k.ky += Math.sin(ang) * kb; }
   }
   const targets = () => [...G.knights(), ...G.hounds.filter((h) => !(h.down > 0))];
@@ -79,7 +79,7 @@
         const a = e.aim + (i - (k.ruins - 1) / 2) * 1.1 + rand(-0.2, 0.2), r = rand(95, 170);
         const s = inArena(e.x + Math.cos(a) * r, e.y + Math.sin(a) * r * 0.8);
         e.spots.push(s);
-        G.telegraphs.push({ x: s.x, y: s.y, r: k.r + 8, t: 0, delay: k.windup, dmg: e.dmg * k.dmg });
+        G.telegraphs.push({ by: e.def.name, x: s.x, y: s.y, r: k.r + 8, t: 0, delay: k.windup, dmg: e.dmg * k.dmg });
       }
     }
   }
@@ -133,7 +133,7 @@
       const on = ks.length ? ks[i % ks.length] : e, off = i < ks.length ? 0 : rand(40, 130), a = rand(0, TAU);
       const s = inArena(on.x + Math.cos(a) * off, on.y + Math.sin(a) * off * 0.8);
       const delay = k.delay + i * 0.12;
-      G.telegraphs.push({ x: s.x, y: s.y, r: k.r, t: 0, delay, dmg: e.dmg * k.dmg });
+      G.telegraphs.push({ by: e.def.name, x: s.x, y: s.y, r: k.r, t: 0, delay, dmg: e.dmg * k.dmg });
       rocks.push({ x: s.x, y: s.y, t: 0, delay, v: (Math.random() * 4) | 0, leave: Math.random() < k.leave });
     }
     for (let i = 0; i < 20; i++) G.puff(e.x + rand(-40, 40), e.y - rand(40, 110), "rgba(120,125,110,0.6)", 60, 1, 30);

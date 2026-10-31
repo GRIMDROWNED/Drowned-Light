@@ -396,6 +396,11 @@
       ? "The darkness filled your armour, and you became one of the Drowned."
       : info.cause === "camp" ? "The Drowned put out the Central Flame, and the dark poured in."
       : "You fell to the Drowned, and the deep claimed what was left.";
+    // what dealt the killing blow (src/game.js G.lastHit)
+    const h = info.hit;
+    if (h) $("deathCause").textContent += h.pool
+      ? ` You bled out in ${h.by}.`
+      : ` Slain by ${/^(the|an?) /i.test(h.by) ? h.by : "a " + h.by}: a blow of ${Math.round(h.dmg)} when you had ${Math.max(1, Math.round(h.hp))} health left.`;
     const lost = DL.RES_KEYS.filter((k) => info.lost[k] > 0).map((k) => chip(k, info.lost[k])).join("");
     $("deathLost").innerHTML = info.any
       ? `<p>Your drowned self now wanders <b>${info.zone}</b>, carrying:</p><div class="chips">${lost}</div><p class="muted">Slay it to reclaim your supplies.${info.hadSelf ? " Your previous drowned self has sunk into the deep — its supplies are gone." : ""}</p>`

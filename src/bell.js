@@ -95,7 +95,7 @@
   function erupt(e) {
     e.erupted = true;
     e.stun = 0.5; // a beat to see what rose before it strikes
-    G.telegraphs.push({ x: e.x, y: e.y, r: D.erupt, t: 0, delay: 0.25, dmg: e.dmg * 0.6 });
+    G.telegraphs.push({ by: e.def.name, x: e.x, y: e.y, r: D.erupt, t: 0, delay: 0.25, dmg: e.dmg * 0.6 });
     for (let i = 0; i < 24; i++) G.puff(e.x + rand(-60, 60), e.y + rand(-14, 14), "rgba(60,200,210,0.6)", 120, 0.9, -40);
     G.camera.shake = 10;
     sfx("rise");
@@ -107,7 +107,7 @@
   // The toll: a ring of sound that wounds, seeps corruption into you and makes torches gutter.
   function toll(e) {
     e.tollT = D.tollEvery * (e.hp < e.maxHp / 2 ? 0.7 : 1);
-    G.telegraphs.push({ x: e.x, y: e.y, r: D.tollR, t: 0, delay: 1, dmg: e.dmg * 0.55, corrupt: D.tollCorrupt });
+    G.telegraphs.push({ by: e.def.name, x: e.x, y: e.y, r: D.tollR, t: 0, delay: 1, dmg: e.dmg * 0.55, corrupt: D.tollCorrupt });
     for (const max of [0.9, 1.2, 1.5]) G.effects.push({ type: "ring", x: e.x, y: e.y - 50, r0: 24, r1: D.tollR, col: "150,230,240", w: 6, t: 0, max });
     G.text(e.x, e.y - 150, "TOLL", "#9fdfe6", 1.2);
     for (const t of G.torches) if (dist(e.x, e.y, t.x, t.y) < D.tollR) t.t = Math.max(0, t.t - 15);
@@ -142,7 +142,7 @@
       const ang = Math.atan2(p.y - e.y, p.x - e.x);
       e.gulp = { t: D.gulpWindup, ang };
       e.gulpT = D.gulpEvery * (e.hp < e.maxHp / 2 ? 0.75 : 1);
-      for (let i = 1; i <= 3; i++) G.telegraphs.push({ x: e.x + Math.cos(ang) * 46 * i, y: e.y + Math.sin(ang) * 46 * i, r: 30, t: 0, delay: D.gulpWindup, dmg: 0 });
+      for (let i = 1; i <= 3; i++) G.telegraphs.push({ by: e.def.name, x: e.x + Math.cos(ang) * 46 * i, y: e.y + Math.sin(ang) * 46 * i, r: 30, t: 0, delay: D.gulpWindup, dmg: 0 });
       return true;
     }
     return false;
@@ -176,7 +176,7 @@
     if (m.tick <= 0) {
       m.tick = 0.6;
       const dmg = e.dmg * D.bite;
-      if (k === G.player) G.hurtPlayer(dmg, 0); else DL.Net.hurtAlly(k, dmg, 0);
+      if (k === G.player) G.hurtPlayer(dmg, 0, DL.ENEMIES.bell.name); else DL.Net.hurtAlly(k, dmg, 0);
       if (Math.random() < 0.8) sfx("bite");
     }
     if (m.t <= 0) spit(e, false);
