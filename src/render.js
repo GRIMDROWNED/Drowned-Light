@@ -856,7 +856,9 @@
   function drawPlayer(c, G, t) {
     const p = G.player;
     if (p.held) return; // inside the Starved Bell
-    const key = G.save.kit + (G.state === "dying" ? 4 : p.stage);
+    // the Bloodsworn changes his look with his Blood Tithe: his second look from form 1 (10 stacks)
+    const kit = G.save.kit === "bloodsworn" && DL.Kits.form(p) >= 1 ? "bloodswornB" : G.save.kit;
+    const key = kit + (G.state === "dying" ? 4 : p.stage);
     for (const tr of p.trail) Art.drawUnit(c, key, "dash", 0, tr.ang, tr.x, tr.y, 1, { alpha: tr.life * 1.4, flash: 0.5, flashColor: "#ffd59a" });
     shadow(c, p.x, p.y, 15, 5);
     const [anim, fr, ang] = playerAnim(G, p, t);

@@ -2,7 +2,7 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.158";
+const VERSION = "0.15.159";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
@@ -44,6 +44,8 @@ const FILES = [
     "rose-paladin/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "bloodsworn/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "bloodsworn/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
+    "bloodsworn-f2/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
+    "bloodsworn-f2/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "bone-hound/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "bone-hound/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "bone-hound-f0/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],

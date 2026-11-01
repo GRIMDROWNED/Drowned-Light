@@ -103,6 +103,7 @@
     jade(),
     rosePaladin(),
     bloodsworn(),
+    bloodswornB(),
     // the Bone Hound summon: the same 12 poses and walk sheets, its side walk a four-legged gallop
     Object.assign(walking("boneHound", [55, 55], [27, 64], [26, 66]), { path: "assets/sprites/bone-hound/", keys: { boneHound: [0, false] } }),
     // its first form, the Bone Pup (src/summons.js), cut at res 4: 22 px tall, about three quarters of the hound
@@ -187,6 +188,10 @@
      and the low follow-through. His forms (src/render.js) lay a blood aura and his drawn thorn halo over this one look. */
   function bloodsworn() {
     return Object.assign(walking("bloodsworn", [42, 88], [31, 88], [26, 88]), { path: "assets/sprites/bloodsworn/", keys: stages("bloodsworn") });
+  }
+  // his second look, from 10 stacks (forms 1 and 2, src/render.js): spikier, a crimson tabard and a jagged blood blade
+  function bloodswornB() {
+    return Object.assign(walking("bloodswornB", [45, 88], [34, 92], [41, 92]), { path: "assets/sprites/bloodsworn-f2/", keys: stages("bloodswornB") });
   }
 
   function reaper() {
