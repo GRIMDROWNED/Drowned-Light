@@ -351,7 +351,7 @@
     // Crowned in Thorns (20): at the full crown each swing throws a red crescent (its kills feed the tithe: b.tithe)
     const T = tithe();
     if (T && K.has(20) && K.form(p) >= 3) {
-      shoot(p, ang, { kind: "wave", speed: 450, life: 0.45, dmg: a.dmg * pw * T.crescent, pierce: 99, r: 20, col: "255,60,100", tithe: true });
+      shoot(p, ang, { kind: "crescent", speed: 450, life: 0.45, dmg: a.dmg * pw * T.crescent, pierce: 99, r: 20, col: "255,60,100", tithe: true });
     }
     p.swing = swing;
     p.atkCd = a.cd / titheAtk(p);

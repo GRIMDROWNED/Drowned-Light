@@ -1611,7 +1611,17 @@
       c.beginPath(); c.moveTo(b.x, b.y); c.lineTo(b.x - ux * 18, b.y - uy * 18); c.stroke();
       return;
     }
-    if (b.kind === "wave") {
+    const bc = b.kind === "crescent" && Art.sprites.bloodCrescent;
+    if (bc) {
+      // the Bloodsworn's crescent (Crowned in Thorns), its curve leading
+      c.save();
+      c.globalAlpha = Math.min(1, b.life * 4);
+      c.translate(Math.round(b.x), Math.round(b.y)); c.rotate(a);
+      c.drawImage(bc.c, -bc.w * PS * 0.6, (-bc.h * PS) / 2, bc.w * PS, bc.h * PS);
+      c.restore();
+      return;
+    }
+    if (b.kind === "wave" || b.kind === "crescent") {
       c.strokeStyle = `rgba(${b.col},${Math.min(1, b.life * 4)})`;
       c.lineWidth = 5;
       c.beginPath(); c.arc(b.x - ux * 14, b.y - uy * 14, 22, a - 1.1, a + 1.1); c.stroke();
@@ -1775,6 +1785,23 @@
     const f = K.form(p), cap = K.titheCap();
     if (!(p.titheHold <= 0 && Math.floor(t * 8) % 2)) bar(c, p.x, p.y + 8, 30, n / cap, f >= 3 ? "#ff5a86" : "#c8284e");
     if (f < 2) return;
+    // his drawn halo (props haloF/B/S, lit from form 3), seen the way he faces, round the top of his hood
+    const { dir, flip } = Art.unitDir(p.swing ? p.swing.ang : p.angle);
+    const hs = Art.sprites[(f >= 3 ? "haloLit" : "halo") + (dir === "side" ? "S" : dir === "up" ? "B" : "F")];
+    if (hs) {
+      const hw = hs.w * PS, hh = hs.h * PS, hy = p.y - 102 + Math.sin(t * 2) * 1.5, hx = p.x + (dir === "side" ? (flip ? 5 : -5) : 0);
+      if (f >= 3) {
+        const g = c.createRadialGradient(hx, hy + hh / 2, 0, hx, hy + hh / 2, hw * 0.7);
+        g.addColorStop(0, "rgba(255,70,110,0.3)"); g.addColorStop(1, "rgba(255,70,110,0)");
+        c.fillStyle = g; c.fillRect(hx - hw, hy - hw * 0.2, hw * 2, hw * 1.4);
+      }
+      c.save();
+      c.translate(Math.round(hx), Math.round(hy));
+      if (flip) c.scale(-1, 1);
+      c.drawImage(hs.c, -hw / 2, 0, hw, hh);
+      c.restore();
+      return;
+    }
     // the halo of thorns: a ring tilted over his hood, thorns pointing out; at form 2 only its back half
     const cx = p.x, cy = p.y - 80 + Math.sin(t * 2) * 1.5, R = 15 + f * 2, N = 10;
     if (f >= 3) {
@@ -1815,6 +1842,17 @@
       spikes.push({ x: f.x + Math.cos(a) * rr, y: f.y + Math.sin(a) * rr * 0.7, h: (18 + ((i * 7 + f.seed) % 5) * 7) * u * fade, w: 4 + (i % 3) });
     }
     spikes.sort((a, b) => a.y - b.y);
+    const one = Art.sprites.bloodThorn, many = Art.sprites.bloodThorns;
+    if (one && many) {
+      // his drawn thorns, rising out of the ground (clipped at it) and sinking back
+      spikes.forEach((s, i) => {
+        if (s.h < 1) return;
+        const sp = i % 3 === 0 ? many : one, k = s.h / 46, w = sp.w * PS * (0.45 + k * 0.4), h = sp.h * PS * (0.45 + k * 0.4);
+        const up = Math.min(1, s.h / 18);
+        c.drawImage(sp.c, 0, 0, sp.c.width, sp.c.height * up, Math.round(s.x - w / 2), Math.round(s.y - h * up), w, h * up);
+      });
+      return;
+    }
     for (const s of spikes) {
       if (s.h < 1) continue;
       c.fillStyle = "#7a1430";
@@ -1859,7 +1897,7 @@
       g.addColorStop(0, `rgba(${col},0.25)`); g.addColorStop(1, `rgba(${col},0)`);
       c.fillStyle = g; c.fillRect(p.x - 30, p.y - 12, 60, 24);
     }
-    if (tier >= 4) {
+    if (tier >= 4 && DL.Kits.form(p) < 2) { // (the Bloodsworn's halo takes the crest's place)
       const cy = p.y - 84 + Math.sin(t * 2) * 1.5;
       c.fillStyle = `rgba(${col},${0.7 * pulse})`;
       for (let i = -2; i <= 2; i++) c.fillRect(p.x + i * 5 - 1, cy - (6 - Math.abs(i) * 2), 2, 6 - Math.abs(i) * 2);

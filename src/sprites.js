@@ -102,6 +102,7 @@
     reaper(),
     jade(),
     rosePaladin(),
+    bloodsworn(),
     // the Bone Hound summon: the same 12 poses and walk sheets, its side walk a four-legged gallop
     Object.assign(walking("boneHound", [55, 55], [27, 64], [26, 66]), { path: "assets/sprites/bone-hound/", keys: { boneHound: [0, false] } }),
     // its first form, the Bone Pup (src/summons.js), cut at res 4: 22 px tall, about three quarters of the hound
@@ -180,6 +181,12 @@
     const set = Object.assign(walking("rosePaladin", [66, 98], [62, 100], [55, 100]), { path: "assets/sprites/rose-paladin/", keys: stages("rosePaladin") });
     Object.assign(set.feet, { front: [49, 98], back: [34, 98], right: [56, 97], attackA: [54, 88], attackB: [48, 78], attackC: [52, 77], "side/hurt": [58, 85] });
     return set;
+  }
+
+  /* The Bloodsworn (kit 09): the 12 poses and walk sheets, drawn on green. His Red Edge is the raised sword, the thrust
+     and the low follow-through. His forms (src/render.js) lay a blood aura and his drawn thorn halo over this one look. */
+  function bloodsworn() {
+    return Object.assign(walking("bloodsworn", [42, 88], [31, 88], [26, 88]), { path: "assets/sprites/bloodsworn/", keys: stages("bloodsworn") });
   }
 
   function reaper() {
@@ -306,6 +313,8 @@
     "reaperSickle1", "reaperSickle2", "reaperSickle3", "reaperSickle4", "reaperChain", "reaperWeight", "reaperSnare", "reaperSnared",
     // Jade Tide's crystals (src/kits.js, drawn in src/render.js)
     "jadeCrystal1", "jadeCrystal2", "jadeCrystal3", "jadeCrystal4",
+    // the Bloodsworn's blood thorns (Reap the Tithe), his crescent, blood mist and his thorn halo seen three ways, dull and lit
+    "bloodThorn", "bloodThorns", "bloodCrescent", "bloodMist", "haloF", "haloB", "haloS", "haloLitF", "haloLitB", "haloLitS",
     // the Dragon Spear's spirit dragon: from the side, the front and behind (src/kits.js, drawn in src/render.js)
     "dragon1", "dragon2", "dragon3", "dragon4", "dragon5", "dragon6", "dragonF1", "dragonF2", "dragonF3", "dragonF4", "dragonF5", "dragonF6", "dragonB1", "dragonB2", "dragonB3", "dragonB4", "dragonB5", "dragonB6",
     // the Frostweaver's owl (standing, flying, casting), its shard, the staff's frost bolts, the Ice Bomb and its spikes (src/kits.js, src/render.js)
