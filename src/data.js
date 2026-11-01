@@ -229,13 +229,14 @@
       attack: { type: "chain", name: "Sickle Throw", dmg: 18, back: 0.5, range: 110, width: 30, cd: 0.45, kb: 90 },
       dash: { type: "strike", dmg: 10, cd: 1.1 },
       hpMult: 0.7, speedMult: 1.2,
-      ability: { id: "snare", name: "Violet Snare", oil: 12, cd: 12, radius: 115, dmg: 16, root: 2,
-        desc: "Whirl the chain around you: it cuts every Drowned in reach and roots them in place for 2 seconds." },
+      // `wide`: Twin Sickles (10) whirls the snare that many times wider. A rooted Drowned can't move or attack (src/game.js).
+      ability: { id: "snare", name: "Violet Snare", oil: 12, cd: 12, radius: 230, wide: 1.5, dmg: 16, root: 2,
+        desc: "Whirl the chain far around you: it cuts every Drowned in reach and roots them in place for 2 seconds. Rooted, they can't attack." },
       passive: { rush: { speed: 1.25, dur: 1.5 } },
       special: { name: "Reaper's Rush", desc: "Every kill resets your dash and gives you a burst of speed." },
       milestones: [
         { name: "Barbed Chain", desc: "Sickle Throw tears the flesh: the Drowned it hits bleed." },
-        { name: "Twin Sickles", desc: "The throw splits in two." },
+        { name: "Twin Sickles", desc: "The throw splits in two, and Violet Snare whirls 50% wider." },
         { name: "Executioner", desc: "50% more damage to Drowned below 30% health." },
         { name: "Violet Gyre", desc: "Violet Snare leaves a ring of whirling chains that cuts and roots whatever crosses it." },
       ],

@@ -344,8 +344,8 @@
       bombs.push({ x0: p.x, y0: p.y - 34, x: p.x + Math.cos(ang) * d, y: p.y + Math.sin(ang) * d, t: 0, max: ab.flight, dmg: ab.dmg * pw });
       sfx("swing");
     } else if (ab.id === "snare") {
-      // Violet Snare: the chain whirled round, cutting and rooting all in reach (the ring is drawn in src/render.js).
-      const r = ab.radius;
+      // Violet Snare: the chain whirled round, cutting and rooting all in reach (the ring is drawn in src/render.js); wider from Twin Sickles (10).
+      const r = ab.radius * (K.has(10) ? ab.wide || 1 : 1);
       G.effects.push({ type: "snare", x: p.x, y: p.y, r, t: 0, max: 0.5 });
       for (const e of G.enemies.slice()) {
         if (e.rise > 0 || e.removed || dist(p.x, p.y, e.x, e.y) > r + e.def.radius) continue;
