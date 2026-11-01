@@ -316,16 +316,11 @@
       }
       lightZone(p.x, p.y - 10, r * 0.85, ab.dur * (K.has(15) ? 2 : 1), { heal: K.has(15) });
       for (let i = 0; i < 24; i++) G.spark(p.x, p.y - 20, "255,210,130", 220);
-    } else if (ab.id === "sweep") {
-      const r = ab.radius;
-      G.effects.push({ type: "slash", x: p.x, y: p.y - 20, ang: p.angle, arc: TAU, r, t: 0, max: 0.28, col, w: 10 });
-      G.effects.push({ type: "ring", x: p.x, y: p.y - 10, r0: 20, r1: r, t: 0, max: 0.35, col, w: 5 });
-      for (const e of G.enemies.slice()) {
-        if (dist(p.x, p.y, e.x, e.y) < r + e.def.radius) G.hitEnemy(e, ab.dmg * pw, Math.atan2(e.y - p.y, e.x - p.x), 360);
-      }
-      clearArrows(p.x, p.y - 20, r + 20);
-      p.guardT = 1.5;
-      if (K.has(15)) lightZone(p.x, p.y - 10, 125, 5);
+    } else if (ab.id === "lunge") {
+      // Dragon Lunge: the spirit dragon coils, then lunges (K.update moves it and strikes; src/render.js draws it)
+      const ang = p.aim != null && G.save.attackMode === "manual" ? p.aim : p.angle;
+      dragons.push({ x: p.x, y: p.y, ang, t: 0, hit: new Set(), dmg: ab.dmg * pw, trailD: 0 });
+      sfx("swing");
     } else if (ab.id === "scatter") {
       const t = nearest(p.x, p.y, 320);
       const aim = t ? Math.atan2(t.y - p.y, t.x - p.x) : p.angle;
@@ -576,6 +571,33 @@
     }
   }
 
+  /* Dragon Lunge's spirit dragons: each coils `coil` s where it rose, then its jaws race `reach` px along `ang`,
+     striking every Drowned they pass once and tearing arrows from the air; Dragonfire Trail burns along the way. */
+  let dragons = [], dragonLife = null;
+  K.dragons = () => dragons;
+  K.dragonJaws = function (d) {
+    const ab = DL.KITS.pikeWarden.ability, u = Math.max(0, Math.min(ab.reach, (d.t - ab.coil) * ab.speed)) + 20;
+    return { x: d.x + Math.cos(d.ang) * u, y: d.y + Math.sin(d.ang) * u, u };
+  };
+  function updateDragons(dt) {
+    const ab = DL.KITS.pikeWarden.ability;
+    for (const d of dragons) {
+      d.t += dt;
+      if (d.t < ab.coil) continue;
+      const j = K.dragonJaws(d);
+      for (const e of G.enemies.slice()) {
+        if (e.rise > 0 || e.removed || d.hit.has(e) || dist(j.x, j.y, e.x, e.y) > ab.r + e.def.radius) continue;
+        d.hit.add(e);
+        G.hitEnemy(e, d.dmg, d.ang, ab.kb);
+        if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
+      }
+      clearArrows(j.x, j.y - 20, ab.r + 10);
+      if (K.has(15) && j.u - d.trailD > 34 && j.u < ab.reach) { d.trailD = j.u; lightZone(j.x, j.y, 44, 3, { fire: true, dps: 8 * K.power() }); }
+      if (Math.random() < dt * 30) G.spark(j.x + rand(-12, 12), j.y - rand(10, 40), "255,90,110", 80);
+    }
+    dragons = dragons.filter((d) => d.t < ab.coil + ab.reach / ab.speed + 0.2);
+  }
+
   // Violet Gyre: the rings of whirling chain Violet Snare leaves behind at level 20.
   let gyres = [], gyreLife = null;
   K.gyres = () => gyres;
@@ -587,6 +609,8 @@
     // Momentum builds while moving and drains twice as fast standing still
     if (kit.passive && kit.passive.momentum) p.momT = Math.max(0, Math.min(kit.passive.momentum.full, (p.momT || 0) + (p.moving ? dt : -2 * dt)));
     if (crystalLife !== p) { crystals = []; crystalLife = p; } // a new life clears them
+    if (dragonLife !== p) { dragons = []; dragonLife = p; }
+    updateDragons(dt);
     updateCrystals(dt);
 
     // Rose's Waltz: a cut all round him every spin/hits s; Briar Bind (5) holds what it cuts.
@@ -727,6 +751,7 @@
         L.push({ x: w.x1 + (w.x2 - w.x1) * u, y: w.y1 + (w.y2 - w.y1) * u - 14, r: 80 * f * D.light, s: f, col: "255,120,40", a: f, flick: 1, kind: "human" });
       }
     }
+    for (const d of dragons) { const j = K.dragonJaws(d); L.push({ x: j.x, y: j.y - 30, r: 90 * D.light, s: 0.5, col: "255,70,100", a: 0.7 }); }
     crystals.forEach((c, i) => { if (i % 3 === 0 && c.at <= 0 && c.t < c.max - 0.2) L.push({ x: c.x, y: c.y - 20, r: 60 * D.light, s: 0.4, col: "90,230,150", a: 0.5 }); });
     for (const b of bombs) L.push({ x: b.x, y: b.y, r: 50 * D.light, s: 0.35, col: "150,215,255", a: 0.7 });
     for (const w of [G.wisp, ...G.allies.map((a) => a.wisp)]) if (w) L.push({ x: w.x, y: w.y, r: 40, s: 0.4, col: "150,215,255", a: 0.9 });

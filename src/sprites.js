@@ -306,6 +306,8 @@
     "reaperSickle1", "reaperSickle2", "reaperSickle3", "reaperSickle4", "reaperChain", "reaperWeight", "reaperSnare", "reaperSnared",
     // Jade Tide's crystals (src/kits.js, drawn in src/render.js)
     "jadeCrystal1", "jadeCrystal2", "jadeCrystal3", "jadeCrystal4",
+    // the Dragon Spear's spirit dragon: from the side, the front and behind (src/kits.js, drawn in src/render.js)
+    "dragon1", "dragon2", "dragon3", "dragon4", "dragon5", "dragon6", "dragonF1", "dragonF2", "dragonF3", "dragonF4", "dragonF5", "dragonF6", "dragonB1", "dragonB2", "dragonB3", "dragonB4", "dragonB5", "dragonB6",
     // the Frostweaver's owl (standing, flying, casting), its shard, the staff's frost bolts, the Ice Bomb and its spikes (src/kits.js, src/render.js)
     "owlFront", "owlBack", "owlSide", "owlRise", "owlFly1", "owlFly2", "owlFly3", "owlFly4", "owlFly5", "owlCast", "iceShard", "iceBolt", "iceBoltBig", "iceGem", "iceSpike1", "iceSpike2",
     // the Flame Bastion's drawn fire wall, four flickering frames (src/render.js)

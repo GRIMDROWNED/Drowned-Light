@@ -187,6 +187,27 @@ def match_hist(ref_img, key=(255, 0, 255), tol=120):
     return recolor
 
 
+def cut_glow(img, k, key=(255, 0, 255), lo=40, hi=200):
+    """Cut a glowing, see-through effect (a spirit, a flame) off a magenta key: how magenta a pixel is
+    (min(r, b) - g) sets how see-through it is, the key's share is taken back out of its colour, and the
+    result is shrunk by k with smooth alpha (no palette), so the glow fades into the scene."""
+    a = np.asarray(img.convert('RGB')).astype(float)
+    m = np.minimum(a[..., 0], a[..., 2]) - a[..., 1]
+    alpha = 1 - np.clip((m - lo) / (hi - lo), 0, 1)
+    kk = np.array(key, float)
+    rgb = (a - (1 - alpha[..., None]) * kk) / np.maximum(alpha[..., None], 1e-3)
+    rgba = np.dstack([np.clip(rgb, 0, 255) * alpha[..., None], alpha * 255]).astype('uint8')  # premultiplied for the shrink
+    ys, xs = np.where(alpha > 0.04)
+    rgba = rgba[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+    im = Image.fromarray(rgba, 'RGBA')
+    im = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.LANCZOS)
+    o = np.asarray(im).astype(float)
+    al = np.maximum(o[..., 3:4], 1)
+    o[..., :3] = np.clip(o[..., :3] * 255 / al, 0, 255)
+    o[..., 3][o[..., 3] < 8] = 0
+    return Image.fromarray(o.astype('uint8'), 'RGBA')
+
+
 def mirror_legs(im, legs=0.32, half=9, cx=None):
     """Make the other foot's step from a front or back walk frame: flip the lowest `legs` share of the
     figure left to right inside a strip `half` px either side of the feet's centre. Runs of feet columns
