@@ -245,6 +245,8 @@
         list.push({ y: k.y + 3, f: () => drawPaladinWaltz(c, k.x, k.y, wr, t, true) });
       }
     }
+    // Dragon Lunge's spirit dragons (src/kits.js)
+    if (Art.sprites.dragon1) for (const d of DL.Kits.dragons()) { const j = DL.Kits.dragonJaws(d); list.push({ y: j.y, f: () => drawDragon(c, d, j) }); }
     // Jade Tide's crystals: cracking up, grown (glinting now and then), shattering in their last moments
     if (Art.sprites.jadeCrystal2) for (const cr of DL.Kits.crystals()) {
       if (cr.at > 0) continue;
@@ -1612,6 +1614,18 @@
       c.beginPath(); c.arc(b.x - ux * 14, b.y - uy * 14, 22, a - 0.8, a + 0.8); c.stroke();
       return;
     }
+    const sd = b.kind === "spear" && Art.sprites.dragon6;
+    if (sd) {
+      // Dragon's Line: a small spirit dragon streaking down the line, jaws first
+      const w = sd.w * PS * 0.4, h = sd.h * PS * 0.4;
+      c.save();
+      c.globalAlpha = Math.min(1, b.life * 5);
+      c.translate(b.x, b.y); c.rotate(a);
+      if (Math.cos(a) < 0) c.scale(1, -1);
+      c.drawImage(sd.c, -w * 0.9, -h / 2, w, h);
+      c.restore();
+      return;
+    }
     if (b.kind === "spear") {
       c.strokeStyle = `rgba(${b.col},${Math.min(1, b.life * 4)})`;
       c.lineWidth = 4;
@@ -1687,6 +1701,28 @@
     c.drawImage(gem.c, -w / 2, -h / 2, w, h);
     c.restore();
   }
+  /* A Dragon Lunge spirit dragon: coiling (frames 1-3), then lunging (4-6) with its jaws at j. Lunging down the
+     screen it's drawn from the front, up the screen from behind, otherwise from the side, turned to its line. */
+  function drawDragon(c, d, j) {
+    const ab = DL.KITS.pikeWarden.ability, life = ab.coil + ab.reach / ab.speed + 0.2;
+    const fr = d.t < ab.coil ? 1 + Math.min(2, Math.floor((d.t / ab.coil) * 3)) : 4 + Math.min(2, Math.floor(((d.t - ab.coil) / (life - 0.2 - ab.coil)) * 3));
+    const sn = Math.sin(d.ang), view = sn > 0.6 ? "F" : sn < -0.6 ? "B" : "";
+    const s = Art.sprites["dragon" + view + fr];
+    if (!s) return;
+    c.save();
+    c.globalAlpha = Math.min(1, d.t / 0.1, (life - d.t) / 0.2);
+    if (view) {
+      const w = s.w * PS * 0.7, h = s.h * PS * 0.7;
+      c.drawImage(s.c, j.x - w / 2, j.y + 30 - h, w, h);
+    } else {
+      const w = s.w * PS * 0.8, h = s.h * PS * 0.8, a = d.ang;
+      c.translate(j.x, j.y - 35); c.rotate(a);
+      if (Math.cos(a) < 0) c.scale(1, -1);
+      c.drawImage(s.c, -w * 0.92, -h / 2, w, h);
+    }
+    c.restore();
+  }
+
   // An Ice Bomb's burst (or a frozen Drowned shattering): a flash, then a ring of ice spikes bursting up and melting away.
   function drawIceBurst(c, f) {
     const k = f.t / f.max;

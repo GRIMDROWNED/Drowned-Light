@@ -157,13 +157,14 @@
       dash: { type: "plain" },
       special: { name: "Stable Form", desc: "Plant your feet: after a moment standing still you take 25% less damage, can't be knocked back, and thrusts hit 15% harder." },
       passive: { stance: { after: 0.35, guard: 0.25, dmg: 1.15 } },
-      ability: { id: "sweep", name: "Warding Sweep", oil: 12, cd: 11, radius: 115, dmg: 18,
-        desc: "A full circle of the spear: hurls the Drowned back, knocks arrows from the air and steadies you." },
+      // a spirit dragon coils `coil` s before you, then lunges `reach` px at `speed`, striking all within `r` of its jaws
+      ability: { id: "lunge", name: "Dragon Lunge", oil: 12, cd: 11, dmg: 24, kb: 360, reach: 260, speed: 620, coil: 0.3, r: 36,
+        desc: "A crimson spirit dragon coils before you, then lunges far ahead: it strikes and hurls back every Drowned in its path and tears arrows from the air." },
       milestones: [
         { name: "Long Reach", desc: "Your spear reaches a fifth farther, its head glowing." },
         { name: "Skewer", desc: "Thrusts pin the Drowned in place for a moment." },
-        { name: "Warding Ring", desc: "Warding Sweep leaves a ring of firelight behind." },
-        { name: "Dragon's Line", desc: "Every thrust launches a spectral spear down the line." },
+        { name: "Dragonfire Trail", desc: "Dragon Lunge leaves a trail of crimson fire that burns the Drowned." },
+        { name: "Dragon's Line", desc: "Every thrust sends a small spirit dragon streaking down the line." },
       ],
     },
     ashenArbalist: {

@@ -5,7 +5,7 @@ so poses keep their relative size."""
 import os, sys
 from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
-from cutlib import cool_violet, cut_keyed, cut_sheet, contact, match_colors, match_hist, mirror_legs, recolor_frames, split_grid
+from cutlib import cool_violet, cut_glow, cut_keyed, cut_sheet, contact, match_colors, match_hist, mirror_legs, recolor_frames, split_grid
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files/art-prompts/returned'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites')
@@ -643,6 +643,12 @@ PROP_GRIDS = {
     'flame-bastion/fire-wall.png': (4, 1, ['wallFire1', 'wallFire2', 'wallFire3', 'wallFire4']),
     # the Ashen Arbalist's bolts in flight (plain, then the level 15 Flare Bolt) and the burst of light where a flare lands
     'ashen-arbalist/bolts.png': (2, 1, ['arbBolt', 'arbFlareBolt']),
+    # the Dragon Spear's Dragon Lunge (src/kits.js): a crimson spirit dragon coiling (1-3), then lunging and streaking ahead (4-6)
+    'pike-warden/dragon.png': (6, 1, ['dragon1', 'dragon2', 'dragon3', 'dragon4', 'dragon5', 'dragon6']),
+    # and from the front, for lunges down the screen: coiled, rearing, roaring, then bursting at you
+    'pike-warden/dragon-front.png': (6, 1, ['dragonF1', 'dragonF2', 'dragonF3', 'dragonF4', 'dragonF5', 'dragonF6']),
+    # and from behind, for lunges up the screen
+    'pike-warden/dragon-back.png': (6, 1, ['dragonB1', 'dragonB2', 'dragonB3', 'dragonB4', 'dragonB5', 'dragonB6']),
     'ashen-arbalist/flare.png': (4, 1, ['arbFlare1', 'arbFlare2', 'arbFlare3', 'arbFlare4']),
     # Jade Tide's crystals bursting from the ground: cracking up, grown, glinting, shattering
     'jade-breaker/crystals.png': (4, 1, ['jadeCrystal1', 'jadeCrystal2', 'jadeCrystal3', 'jadeCrystal4']),
@@ -708,6 +714,9 @@ PROP_HEIGHT['wyvEgg'] = 22  # about a quarter of the knight
 PROP_SAME.update({'roost1': 'roost3', 'roost2': 'roost3', 'wyvNestEmpty': 'wyvNest', 'wyvEggHatch': 'wyvEgg', 'wyvEggShell': 'wyvEgg'})
 PROP_SAME.update({'kennel1': 'kennel3', 'kennel2': 'kennel3', 'workshop1': 'workshop3', 'workshop2': 'workshop3', 'shrine1': 'shrine3', 'shrine2': 'shrine3', 'toadstool1': 'toadstool3', 'toadstool2': 'toadstool3', 'fairyRingWilt': 'fairyRing', 'glowcap1': 'glowcap2', 'glowcap3': 'glowcap2'})
 PROP_SAME.update({n: 'sproutOff' for n in ['sproutOff2', 'sproutBare', 'sproutOn', 'sproutOn2']})
+# See-through glowing props (the spirit dragon): cut with soft alpha by cut_glow at this shrink of the returned image.
+PROP_GLOW = {'dragon%s%d' % (v, i): 0.5 for v in ('', 'F', 'B') for i in range(1, 7)}
+PROP_TOL.update({'dragon1': 40, 'dragonF1': 40, 'dragonB1': 40})  # its faint tail is close to the key
 PROP_TWIN = {'refugeOn': 'refugeOff', 'sentinelOn': 'sentinelOff', 'rootOn': 'rootOff',
              'gardenOn': 'gardenOff'}
 PROP_HEIGHT.update({'reaperSickle1': 30, 'reaperChain': 6, 'reaperWeight': 14})  # the sickle as big as in his hand; the chain's links 3 px across
@@ -867,7 +876,7 @@ if not only or 'props' in only or any(os.path.dirname(sh) in only for sh in PROP
             k[n] = k[twin] * base_width(cut_keyed(cells[twin], 1, fringe=1)) / base_width(cut_keyed(cells[n], 1, fringe=1))
     done = []
     for n, cell in cells.items():
-        im = cut_keyed(cell, k[n], key=keys[n], fringe=1, tol=PROP_TOL.get(n, 120), tint=n not in PROP_TOL)
+        im = cut_glow(cell, PROP_GLOW[n]) if n in PROP_GLOW else cut_keyed(cell, k[n], key=keys[n], fringe=1, tol=PROP_TOL.get(n, 120), tint=n not in PROP_TOL)
         if n in PROP_DESPILL: im = despill(im)
         if n in PROP_FOOT_CENTRE: im = centre_foot(im)
         # even sizes, so the art-pixel size (half) is whole; the padding goes on the top and the left
