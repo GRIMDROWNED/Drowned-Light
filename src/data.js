@@ -157,9 +157,9 @@
       dash: { type: "plain" },
       special: { name: "Stable Form", desc: "Plant your feet: after a moment standing still you take 25% less damage, can't be knocked back, and thrusts hit 15% harder." },
       passive: { stance: { after: 0.35, guard: 0.25, dmg: 1.15 } },
-      // a spirit dragon coils `coil` s before you, then lunges `reach` px at `speed`, striking all within `r` of its jaws
-      ability: { id: "lunge", name: "Dragon Lunge", oil: 12, cd: 11, dmg: 24, kb: 360, reach: 260, speed: 620, coil: 0.3, r: 36,
-        desc: "A crimson spirit dragon coils before you, then lunges far ahead: it strikes and hurls back every Drowned in its path and tears arrows from the air." },
+      // a spirit dragon coils `coil` s before you, then lunges `reach` px (up to `reachMax` at level 20) at `speed`, striking all within `r` of its jaws
+      ability: { id: "lunge", name: "Dragon Lunge", oil: 12, cd: 11, dmg: 24, kb: 360, reach: 260, reachMax: 540, speed: 620, coil: 0.3, r: 36,
+        desc: "A crimson spirit dragon coils before you, then lunges far ahead, farther with every level: it strikes and hurls back every Drowned in its path and tears arrows from the air." },
       milestones: [
         { name: "Long Reach", desc: "Your spear reaches a fifth farther, its head glowing." },
         { name: "Skewer", desc: "Thrusts pin the Drowned in place for a moment." },

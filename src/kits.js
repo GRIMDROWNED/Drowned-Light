@@ -319,7 +319,8 @@
     } else if (ab.id === "lunge") {
       // Dragon Lunge: the spirit dragon coils, then lunges (K.update moves it and strikes; src/render.js draws it)
       const ang = p.aim != null && G.save.attackMode === "manual" ? p.aim : p.angle;
-      dragons.push({ x: p.x, y: p.y, ang, t: 0, hit: new Set(), dmg: ab.dmg * pw, trailD: 0 });
+      const reach = K.dragonReach();
+      dragons.push({ x: p.x, y: p.y, ang, t: 0, hit: new Set(), dmg: ab.dmg * pw, trailD: 0, reach, speed: ab.speed * (1 + 0.5 * (reach / ab.reach - 1)) });
       sfx("swing");
     } else if (ab.id === "scatter") {
       const t = nearest(p.x, p.y, 320);
@@ -575,8 +576,14 @@
      striking every Drowned they pass once and tearing arrows from the air; Dragonfire Trail burns along the way. */
   let dragons = [], dragonLife = null;
   K.dragons = () => dragons;
+  // Each level adds reach, from `reach` at level 1 to `reachMax` at the top: past the screen's edge in any direction.
+  K.dragonReach = function () {
+    const ab = DL.KITS.pikeWarden.ability;
+    return ab.reach + (ab.reachMax - ab.reach) * (K.level() - 1) / (DL.KIT_MAX_LEVEL - 1);
+  };
+  K.dragonLife = (d) => DL.KITS.pikeWarden.ability.coil + d.reach / d.speed + 0.2;
   K.dragonJaws = function (d) {
-    const ab = DL.KITS.pikeWarden.ability, u = Math.max(0, Math.min(ab.reach, (d.t - ab.coil) * ab.speed)) + 20;
+    const ab = DL.KITS.pikeWarden.ability, u = Math.max(0, Math.min(d.reach, (d.t - ab.coil) * d.speed)) + 20;
     return { x: d.x + Math.cos(d.ang) * u, y: d.y + Math.sin(d.ang) * u, u };
   };
   function updateDragons(dt) {
@@ -592,10 +599,10 @@
         if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
       }
       clearArrows(j.x, j.y - 20, ab.r + 10);
-      if (K.has(15) && j.u - d.trailD > 34 && j.u < ab.reach) { d.trailD = j.u; lightZone(j.x, j.y, 44, 3, { fire: true, dps: 8 * K.power() }); }
+      if (K.has(15) && j.u - d.trailD > 34 && j.u < d.reach) { d.trailD = j.u; lightZone(j.x, j.y, 44, 3, { fire: true, dps: 8 * K.power() }); }
       if (Math.random() < dt * 30) G.spark(j.x + rand(-12, 12), j.y - rand(10, 40), "255,90,110", 80);
     }
-    dragons = dragons.filter((d) => d.t < ab.coil + ab.reach / ab.speed + 0.2);
+    dragons = dragons.filter((d) => d.t < K.dragonLife(d));
   }
 
   // Violet Gyre: the rings of whirling chain Violet Snare leaves behind at level 20.
