@@ -223,6 +223,8 @@
     }
     const den = DL.Den.state();
     for (const b of den.bodies) list.push({ y: b[1], f: () => drawCarcass(c, b) });
+    // the Bloodsworn's blood aura behind him, deeper with every form of his Blood Tithe
+    if (G.player && G.state !== "dead" && DL.Kits.form(G.player) > 0) list.push({ y: G.player.y - 0.5, f: () => drawTitheAura(c, G.player, t) });
     if (G.player && G.state !== "dead") list.push({ y: G.player.y, f: () => drawPlayer(c, G, t) });
     for (const a of G.allies) list.push({ y: a.y, f: () => drawAlly(c, a, t) });
     // the Frostweaver's owl: in front of its knight while it flies, at its own feet once it has landed
@@ -299,6 +301,8 @@
         c.drawImage(s.c, Math.round(f.x - w / 2), Math.round(f.y + 12 * f.s - h), w, h); // the ring's front edge on the ground
       } else if (f.type === "iceBurst") {
         drawIceBurst(c, f);
+      } else if (f.type === "thornBurst") {
+        drawThornBurst(c, f);
       } else if (f.type === "iceLink") {
         // a shattering Drowned's frost leaping to the next one
         const k = f.t / f.max;
@@ -415,6 +419,7 @@
       }
     }
     if (p && G.state !== "title") drawKitGlow(c, G, p, t);
+    if (p && G.state !== "title" && G.state !== "dead") drawTithe(c, G, p, t);
     if (p && G.state === "play" && G.save.attackMode === "manual") {
       // where a manual strike will go
       const a = p.aim != null ? p.aim : p.angle, r0 = 30, r1 = 40;
@@ -1745,6 +1750,78 @@
       c.drawImage(s.c, Math.round(p.x - w / 2), Math.round(p.y - h), w, h);
     }
     c.restore();
+  }
+
+  /* The Bloodsworn (kit 09). His forms follow his Blood Tithe stacks (DL.Kits.form, 0 to 3): until his drawn sheets are in
+     they're shown as a blood aura at his feet (behind him), and a halo of thorns over his hood, half a crown at form 2 and
+     the whole crown, glowing, at form 3. A bar under him shows the stacks against his cap; it flickers once they bleed away. */
+  function drawTitheAura(c, p, t) {
+    const f = DL.Kits.form(p), r = 22 + f * 10, a = (0.12 + f * 0.1) * (0.85 + 0.15 * Math.sin(t * 5));
+    const g = c.createRadialGradient(p.x, p.y - 4, 0, p.x, p.y - 4, r);
+    g.addColorStop(0, `rgba(235,50,90,${a})`); g.addColorStop(1, "rgba(235,50,90,0)");
+    c.save(); c.translate(p.x, p.y - 4); c.scale(1, 0.45); c.translate(-p.x, -(p.y - 4));
+    c.fillStyle = g; c.fillRect(p.x - r, p.y - 4 - r, r * 2, r * 2);
+    c.restore();
+    if (f >= 2) {
+      // a crimson haze rising round him
+      const h = c.createRadialGradient(p.x, p.y - 34, 0, p.x, p.y - 34, 40 + f * 6);
+      h.addColorStop(0, `rgba(235,50,90,${0.1 * f})`); h.addColorStop(1, "rgba(235,50,90,0)");
+      c.fillStyle = h; c.fillRect(p.x - 52, p.y - 86, 104, 104);
+    }
+  }
+  function drawTithe(c, G, p, t) {
+    const K = DL.Kits, n = K.stacks(p);
+    if (!n || p.held) return;
+    const f = K.form(p), cap = K.titheCap();
+    if (!(p.titheHold <= 0 && Math.floor(t * 8) % 2)) bar(c, p.x, p.y + 8, 30, n / cap, f >= 3 ? "#ff5a86" : "#c8284e");
+    if (f < 2) return;
+    // the halo of thorns: a ring tilted over his hood, thorns pointing out; at form 2 only its back half
+    const cx = p.x, cy = p.y - 80 + Math.sin(t * 2) * 1.5, R = 15 + f * 2, N = 10;
+    if (f >= 3) {
+      const g = c.createRadialGradient(cx, cy, 0, cx, cy, R + 14);
+      g.addColorStop(0, "rgba(255,70,110,0.35)"); g.addColorStop(1, "rgba(255,70,110,0)");
+      c.fillStyle = g; c.fillRect(cx - R - 14, cy - R - 14, (R + 14) * 2, (R + 14) * 2);
+    }
+    c.strokeStyle = f >= 3 ? "#e8c9b8" : "#8a6f6a";
+    c.lineWidth = 2;
+    c.beginPath();
+    if (f >= 3) c.ellipse(cx, cy, R, R * 0.35, 0, 0, Math.PI * 2);
+    else c.ellipse(cx, cy, R, R * 0.35, 0, Math.PI, Math.PI * 2);
+    c.stroke();
+    c.fillStyle = f >= 3 ? "#f0d8c8" : "#a08880";
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * Math.PI * 2 + t * 0.7, ca = Math.cos(a), sa = Math.sin(a);
+      if (f < 3 && sa > 0) continue; // the front half isn't grown yet
+      const x = cx + ca * R, y = cy + sa * R * 0.35, len = 5 + (i % 3) * 2;
+      c.beginPath();
+      c.moveTo(x - 2, y); c.lineTo(x + 2, y); c.lineTo(x + ca * len * 0.6, y - len);
+      c.closePath(); c.fill();
+    }
+  }
+  // Reap the Tithe: blood thorns bursting up all round the knight out to f.r, then sinking away.
+  function drawThornBurst(c, f) {
+    const k = f.t / f.max, grow = Math.min(1, k / 0.15), fade = k > 0.6 ? 1 - (k - 0.6) / 0.4 : 1;
+    const g = c.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r);
+    g.addColorStop(0, `rgba(255,60,100,${0.35 * (1 - k)})`); g.addColorStop(1, "rgba(255,60,100,0)");
+    c.save(); c.translate(f.x, f.y); c.scale(1, 0.7); c.translate(-f.x, -f.y);
+    c.fillStyle = g; c.fillRect(f.x - f.r, f.y - f.r, f.r * 2, f.r * 2);
+    c.restore();
+    const spikes = [];
+    for (let i = 0; i < f.n; i++) {
+      const a = (i / f.n) * Math.PI * 2 + ((f.seed * 7 + i * 13) % 10) * 0.05;
+      const rr = f.r * (0.3 + (((f.seed + i * 37) % 11) / 11) * 0.65);
+      // the inner thorns rise first, the outer ones a little after
+      const u = Math.max(0, Math.min(1, grow * 1.6 - rr / f.r * 0.6));
+      spikes.push({ x: f.x + Math.cos(a) * rr, y: f.y + Math.sin(a) * rr * 0.7, h: (18 + ((i * 7 + f.seed) % 5) * 7) * u * fade, w: 4 + (i % 3) });
+    }
+    spikes.sort((a, b) => a.y - b.y);
+    for (const s of spikes) {
+      if (s.h < 1) continue;
+      c.fillStyle = "#7a1430";
+      c.beginPath(); c.moveTo(s.x - s.w, s.y); c.lineTo(s.x + s.w, s.y); c.lineTo(s.x, s.y - s.h); c.closePath(); c.fill();
+      c.fillStyle = "#ff4f7f";
+      c.beginPath(); c.moveTo(s.x - s.w * 0.3, s.y); c.lineTo(s.x + s.w * 0.5, s.y); c.lineTo(s.x, s.y - s.h); c.closePath(); c.fill();
+    }
   }
 
   /* Milestone looks: a glowing weapon (5), drifting embers (10, spawned in kits.js),

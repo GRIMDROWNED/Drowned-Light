@@ -138,7 +138,7 @@
       maxHp: Math.round((100 + 25 * u.armory) * (G.kit().hpMult || 1)), // the Chain Reaper is frailer
       maxOil: 60 + 25 * u.workbench,
       lanternR: (70 + 14 * u.workbench) * DL.Kits.lanternMult() * G.diff().light,
-      dmgMult: (1 + 0.2 * u.forge) * DL.Abigail.mult() * DL.Wyvern.dmgMult(), // Abigail's blessing, David's War Fury
+      dmgMult: (1 + 0.2 * u.forge) * DL.Abigail.mult() * DL.Wyvern.dmgMult() * DL.Kits.titheDmg(), // Abigail's blessing, David's War Fury, the Bloodsworn's Blood Tithe
       flameR: (180 + 40 * u.flame) * G.diff().light,
       flameHp: 150 + 100 * u.flame,
       torchMax: 3 + u.workbench,
@@ -1526,7 +1526,9 @@
             if (b.spore) DL.Fred.sporeHit(e, b);
             if (b.wyv) DL.Wyvern.boltHit(e, b); // David's bolt: burning, stunning, or leaping on as lightning
             if (b.ice) DL.Kits.chill(e, false); // the Frostweaver's frost bolt or his owl's shard: freezing, brittle
+            const hp = e.hp;
             hitEnemy(e, b.dmg * DL.Kits.farShotMult(b), Math.atan2(b.vy, b.vx), b.soul ? 20 : 60);
+            if (b.tithe) DL.Kits.blow(e, hp, b.dmg); // the Bloodsworn's crescent: its kills feed his Blood Tithe
             if (b.flare) flare(b.x, b.y, b.dmg);
             if (b.hit) b.hit.add(e);
             if (!b.pierce || b.pierce-- <= 0) { b.life = 0; break; }
