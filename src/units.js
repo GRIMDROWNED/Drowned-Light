@@ -792,6 +792,9 @@
     chainReaper: { weapon: "shortsword", offhand: "lantern" }, // stand-in until the drawn sickle and chain load
     jadeBreaker: { weapon: "greatsword", offhand: "none", bulk: 1 },
     rosePaladin: { weapon: "greatsword", offhand: "bastion", bulk: 1 },
+    bloodsworn: { weapon: "sword", offhand: "none" }, // stand-ins until his drawn sheets load
+    bloodswornB: { weapon: "sword", offhand: "none" }, // (his second and last looks, src/render.js)
+    bloodswornC: { weapon: "sword", offhand: "none" },
   };
   Art.specs = {};
   Art.sheet = function (key) {

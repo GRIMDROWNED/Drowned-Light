@@ -1,4 +1,4 @@
-/* Drowned Light — the seven kits in play: attacks, dashes, abilities, passives,
+/* Drowned Light — the nine kits in play: attacks, dashes, abilities, passives,
    the 20-level progression and what changes at milestones 5, 10, 15 and 20. */
 "use strict";
 (function (DL) {
@@ -83,7 +83,8 @@
   K.speedMult = function (p) {
     const kit = G.kit(), rush = kit.passive && kit.passive.rush;
     return (kit.speedMult || 1) * (rush && p.rushT > 0 ? rush.speed : 1) * (p.tideCharge ? 0.5 : 1) // charging Jade Tide slows him
-      * (p.waltz ? kit.ability.move : 1); // and the Rose Paladin walks slower while he waltzes
+      * (p.waltz ? kit.ability.move : 1) // and the Rose Paladin walks slower while he waltzes
+      * titheSpeed(p); // and the Bloodsworn runs faster on his Blood Tithe
   };
   // The Jade Breaker's Momentum: the bonus damage his next swing carries (0 to passive.momentum.bonus).
   function momentum(p) {
@@ -96,7 +97,7 @@
   K.thorns = function (e, kit, dmg, k) {
     const ps = DL.KITS[kit] && DL.KITS[kit].passive;
     if (!ps || !ps.thorns || e.removed || e.def.king) return;
-    G.hitEnemy(e, dmg * ps.thorns, Math.atan2(e.y - k.y, e.x - k.x), 60);
+    G.hitEnemy(e, dmg * ps.thorns, Math.atan2(e.y - k.y, e.x - k.x), 60); // not hit(): the thorns may be a friend's
     for (let i = 0; i < 5; i++) G.spark(e.x + rand(-8, 8), e.y - rand(10, 40), "220,40,60", 80);
   };
   /* Bind a Drowned in the Deadly Rose's briar for `hold` s, stung for `sting` every half second (src/trophies.js runs it
@@ -109,6 +110,89 @@
   K.dashCd = () => G.kit().dash.cd || 2.2;
   K.lanternMult = () => (G.kit().passive && G.kit().passive.lanternR) || 1;
   K.oilDrain = () => (G.kit().passive && G.kit().passive.oilDrain) || 1;
+
+  /* ---------- the Bloodsworn's Blood Tithe ---------- */
+  /* Every blow of a kit lands through hit() (and the kit's fire through slay()), so the Bloodsworn knows which kills are
+     his own: not the towers', the hound's or a friend's. On a co-op guest the host owns the Drowned, so a kill is judged
+     from the blow, once (e.tithed). */
+  const tithe = () => G.save.kit === "bloodsworn" && G.kit().passive && G.kit().passive.tithe;
+  function hit(e, dmg, ang, kb, burn) {
+    const was = e.removed, hp = e.hp;
+    G.hitEnemy(e, dmg, ang, kb, burn);
+    if (!was) K.blow(e, hp, dmg);
+  }
+  function slay(e) {
+    const was = e.removed;
+    G.kill(e);
+    if (!was && tithe()) K.titheKill(e);
+  }
+  // A blow of his has landed on `e` (it had `hp` before): a kill feeds the tithe, and so does every `bossHits`th blow on a boss.
+  K.blow = function (e, hp, dmg) {
+    const T = tithe();
+    if (!T) return;
+    const dead = e.removed || (G.isGuest() && hp - dmg * (1 - (e.def.armor || 0)) <= 0);
+    if (dead) { K.titheKill(e); return; }
+    const p = G.player;
+    if (e.def.boss && (p.bossHits = (p.bossHits || 0) + 1) % T.bossHits === 0) K.titheAdd(1);
+  };
+  K.titheKill = function (e) {
+    const T = tithe(), p = G.player;
+    if (!T || e.tithed) return;
+    e.tithed = true;
+    K.titheAdd(e.def.boss ? T.boss : 1);
+    // Bloodthirst (10): a kill while the tithe runs high heals him
+    if (K.has(10) && p.tithe >= T.healAt && !(p.downT > 0)) {
+      const max = G.stats().maxHp;
+      if (p.hp < max) { p.hp = Math.min(max, p.hp + T.heal); G.spark(p.x, p.y - 30, "255,90,120", 60); }
+    }
+  };
+  K.titheCap = () => { const T = tithe(); return T ? (K.has(15) ? T.longCap : T.cap) : 0; };
+  K.titheAdd = function (n) {
+    const T = tithe(), p = G.player;
+    if (!T) return;
+    const before = K.form(p);
+    p.tithe = Math.min(K.titheCap(), (p.tithe || 0) + n);
+    p.titheHold = K.has(15) ? T.long : T.hold;
+    p.titheDrain = T.drain;
+    const f = K.form(p);
+    if (f > before) {
+      // a new form: a burst of blood and a word over his head
+      G.effects.push({ type: "ring", x: p.x, y: p.y - 10, r0: 8, r1: 60 + f * 20, t: 0, max: 0.5, col: G.kit().color, w: 4 + f * 2 });
+      for (let i = 0; i < 10 + f * 6; i++) G.spark(p.x + rand(-12, 12), p.y - rand(0, 60), i % 2 ? "255,70,110" : "250,225,210", 140);
+      if (f === 3) { G.camera.shake = Math.max(G.camera.shake || 0, 4); say("Crowned in blood.", "good"); }
+      sfx("build");
+    }
+  };
+  // His stacks (0 for every other kit) and his form: 0 to 3, one for each of `forms` reached.
+  K.stacks = (p = G.player) => (tithe() && p ? p.tithe || 0 : 0);
+  K.form = function (p = G.player) {
+    const T = tithe(), n = K.stacks(p);
+    return T ? T.forms.filter((f) => n >= f).length : 0;
+  };
+  // What the stacks give: more damage (in G.stats), more pace (K.speedMult) and faster swings (K.attack).
+  K.titheDmg = () => { const T = tithe(); return T ? 1 + T.dmg * K.stacks() : 1; };
+  const titheSpeed = (p) => { const T = tithe(); return T ? 1 + T.speed * K.stacks(p) : 1; };
+  const titheAtk = (p) => { const T = tithe(); return T ? 1 + T.atk * K.stacks(p) : 1; };
+  // Held `hold` s after the last kill, then bled away one every `drain` s; and Thorn Halo (5) cutting all close round him.
+  function titheTick(p, st, dt) {
+    const T = tithe();
+    if (!T) { p.tithe = 0; return; }
+    if (p.tithe > 0) {
+      if (p.titheHold > 0) p.titheHold -= dt;
+      else for (p.titheDrain -= dt; p.titheDrain <= 0 && p.tithe > 0; p.titheDrain += T.drain) p.tithe--;
+    }
+    if (K.has(5) && p.tithe >= T.haloAt && !(p.downT > 0) && G.state === "play") {
+      p.haloT = (p.haloT || 0) - dt;
+      if (p.haloT <= 0) {
+        p.haloT = T.haloCd;
+        for (const e of G.enemies.slice()) {
+          if (e.rise > 0 || e.removed || dist(p.x, p.y, e.x, e.y) > T.haloR + e.def.radius) continue;
+          hit(e, T.haloDmg * K.power() * st.dmgMult * G.corruptBonus(), Math.atan2(e.y - p.y, e.x - p.x), 40);
+          G.spark(e.x, e.y - 24 * e.def.scale, "255,70,110", 50);
+        }
+      }
+    }
+  }
 
   /* ---------- helpers ---------- */
   function nearest(x, y, R, skip) {
@@ -147,7 +231,7 @@
     const p = G.player, rush = G.kit().passive && G.kit().passive.rush;
     if (K.has(15) && e.hp < e.maxHp * 0.3) dmg *= 1.5;
     const hp = e.hp;
-    G.hitEnemy(e, dmg, ang, kb);
+    hit(e, dmg, ang, kb);
     if (K.has(5) && !e.removed) { e.bleedN = Math.min(3, (e.bleed > 0 ? e.bleedN || 0 : 0) + 1); e.bleed = 3; }
     if (rush && (e.removed || (G.isGuest() && hp - dmg * (1 - (e.def.armor || 0)) <= 0))) {
       p.dashCd = 0;
@@ -218,7 +302,7 @@
         const d = dist(p.x, p.y, e.x, e.y) - e.def.radius;
         const ad = Math.abs(angleDiff(ang, Math.atan2(e.y - p.y, e.x - p.x)));
         if (d <= range && (ad <= arc / 2 || d < 8)) {
-          G.hitEnemy(e, dmg, ang, kb, burn);
+          hit(e, dmg, ang, kb, burn);
           if (jade && K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
           if (a.lash && K.has(10) && !e.removed) { e.bleedN = Math.min(3, (e.bleed > 0 ? e.bleedN || 0 : 0) + 1); e.bleed = 3; }
           if (binds) K.bind(e, 1.2, kit.ability.sting * pw);
@@ -236,7 +320,7 @@
         if (e.rise > 0) continue;
         const rx = e.x - p.x, ry = e.y - p.y, along = rx * ux + ry * uy, perp = Math.abs(rx * uy - ry * ux);
         if (along > -6 && along < range + e.def.radius && perp < a.width / 2 + e.def.radius) {
-          G.hitEnemy(e, a.dmg * pw * (K.steady(p) ? kit.passive.stance.dmg : 1), ang, a.kb);
+          hit(e, a.dmg * pw * (K.steady(p) ? kit.passive.stance.dmg : 1), ang, a.kb);
           if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
         }
       }
@@ -264,8 +348,13 @@
       shoot(p, aim, { kind: "ice", big: K.has(10), speed: a.speed, life: (range * 1.15) / a.speed, dmg: a.dmg * pw, ice: 1, r: 10 });
       sfx("arrow");
     }
+    // Crowned in Thorns (20): at the full crown each swing throws a red crescent (its kills feed the tithe: b.tithe)
+    const T = tithe();
+    if (T && K.has(20) && K.form(p) >= 3) {
+      shoot(p, ang, { kind: "crescent", speed: 450, life: 0.45, dmg: a.dmg * pw * T.crescent, pierce: 99, r: 20, col: "255,60,100", tithe: true });
+    }
     p.swing = swing;
-    p.atkCd = a.cd;
+    p.atkCd = a.cd / titheAtk(p);
     return true;
   };
 
@@ -283,7 +372,7 @@
         if (dist(p.x, p.y, e.x, e.y) < e.def.radius + 22) {
           p.dashHit.add(e);
           if (G.kit().passive && G.kit().passive.rush) reap(e, d.dmg * pw, ang, 120);
-          else G.hitEnemy(e, d.dmg * pw, ang, d.type === "slam" ? 260 : 120);
+          else hit(e, d.dmg * pw, ang, d.type === "slam" ? 260 : 120);
           if (d.stun) e.stun = Math.max(e.stun || 0, d.stun);
         }
       }
@@ -298,7 +387,7 @@
       G.camera.shake = 6;
       for (const e of G.enemies.slice()) {
         if (e.rise > 0 || dist(p.x, p.y, e.x, e.y) > 110 + e.def.radius) continue;
-        G.hitEnemy(e, d.dmg * pw * 0.6, Math.atan2(e.y - p.y, e.x - p.x), 220);
+        hit(e, d.dmg * pw * 0.6, Math.atan2(e.y - p.y, e.x - p.x), 220);
         e.stun = Math.max(e.stun || 0, 0.8);
       }
     }
@@ -312,7 +401,7 @@
       const r = ab.radius * (1 + 0.01 * (K.level() - 1));
       G.effects.push({ type: "ring", x: p.x, y: p.y - 20, r0: 10, r1: r, t: 0, max: 0.45, col: "255,220,150", w: 8 });
       for (const e of G.enemies.slice()) {
-        if (dist(p.x, p.y, e.x, e.y) < r + e.def.radius) G.hitEnemy(e, ab.dmg * pw, Math.atan2(e.y - p.y, e.x - p.x), 300);
+        if (dist(p.x, p.y, e.x, e.y) < r + e.def.radius) hit(e, ab.dmg * pw, Math.atan2(e.y - p.y, e.x - p.x), 300);
       }
       lightZone(p.x, p.y - 10, r * 0.85, ab.dur * (K.has(15) ? 2 : 1), { heal: K.has(15) });
       for (let i = 0; i < 24; i++) G.spark(p.x, p.y - 20, "255,210,130", 220);
@@ -339,6 +428,20 @@
       const d = t ? Math.min(ab.reach, dist(p.x, p.y, t.x, t.y)) : ab.throw;
       bombs.push({ x0: p.x, y0: p.y - 34, x: p.x + Math.cos(ang) * d, y: p.y + Math.sin(ang) * d, t: 0, max: ab.flight, dmg: ab.dmg * pw });
       sfx("swing");
+    } else if (ab.id === "reap") {
+      // Reap the Tithe: blood thorns burst all round him, wider and harder for every stack spent (all, or half when Crowned, 20)
+      const n = K.stacks(p), r = Math.min(ab.rMax, ab.r + ab.perR * n), dmg = ab.dmg * pw * (1 + ab.perDmg * n);
+      p.tithe = K.has(20) ? Math.floor(n / 2) : 0;
+      p.cast = { t: 0, dur: 0.4, ang: p.angle };
+      G.effects.push({ type: "thornBurst", x: p.x, y: p.y, r, t: 0, max: 0.8, n: Math.round(10 + r / 9), seed: Math.round(p.x + p.y) });
+      G.effects.push({ type: "ring", x: p.x, y: p.y, r0: 10, r1: r, t: 0, max: 0.4, col: kit.color, w: 6 + n / 4 });
+      for (let i = 0; i < 16 + n; i++) G.spark(p.x + rand(-r, r) * 0.6, p.y - rand(0, 40), i % 3 ? "255,60,100" : "250,225,210", 200);
+      for (const e of G.enemies.slice()) {
+        if (e.rise > 0 || e.removed || dist(p.x, p.y, e.x, e.y) > r + e.def.radius) continue;
+        hit(e, dmg, Math.atan2(e.y - p.y, e.x - p.x), ab.kb);
+      }
+      G.camera.shake = Math.min(12, 5 + n / 5);
+      sfx("hit");
     } else if (ab.id === "snare") {
       // Violet Snare: the chain whirled round, cutting and rooting all in reach (the ring is drawn in src/render.js); wider from Twin Sickles (10).
       const r = ab.radius * (K.has(10) ? ab.wide || 1 : 1);
@@ -380,7 +483,7 @@
         for (const e of G.enemies.slice()) {
           if (e.rise > 0 || e.removed) continue;
           const rx = e.x - p.x, ry = e.y - p.y, along = rx * ux + ry * uy, perp = Math.abs(rx * uy - ry * ux);
-          if (along > -10 && along < ab.reach + 24 + e.def.radius && perp < h + e.def.radius) G.hitEnemy(e, ab.dmg * pw, ang, 280, ab.burn * pw);
+          if (along > -10 && along < ab.reach + 24 + e.def.radius && perp < h + e.def.radius) hit(e, ab.dmg * pw, ang, 280, ab.burn * pw);
         }
         G.effects.push({ type: "erupt", x: p.x, y: p.y, ux, uy, reach: ab.reach, h, t: 0, max: 0.3 });
         G.walls.push({ x1: cx - uy * h, y1: cy + ux * h, x2: cx + uy * h, y2: cy - ux * h, t: dur, max: dur, dps });
@@ -438,7 +541,7 @@
     for (const e of G.enemies.slice()) {
       if (e.rise > 0 || e.removed || dist(b.x, b.y, e.x, e.y) > r + e.def.radius) continue;
       K.chill(e, true);
-      G.hitEnemy(e, b.dmg, Math.atan2(e.y - b.y, e.x - b.x), ab.kb);
+      hit(e, b.dmg, Math.atan2(e.y - b.y, e.x - b.x), ab.kb);
     }
     lightZone(b.x, b.y, r * 0.6, 1.2);
     G.camera.shake = Math.max(G.camera.shake || 0, 6);
@@ -531,7 +634,7 @@
     for (const e of G.enemies.slice()) {
       if (e.rise > 0 || e.removed || d.hit.has(e) || dist(p.x, p.y, e.x, e.y) > e.def.radius + 28) continue;
       d.hit.add(e);
-      G.hitEnemy(e, kit.attack.dmg * pw * G.corruptBonus() * ch.bonus, d.ang, ch.kb * jadeKb());
+      hit(e, kit.attack.dmg * pw * G.corruptBonus() * ch.bonus, d.ang, ch.kb * jadeKb());
       if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
     }
     if (d.t <= 0) {
@@ -555,7 +658,7 @@
         for (const e of G.enemies.slice()) {
           if (e.rise > 0 || e.removed || c.hit.has(e) || dist(c.x, c.y, e.x, e.y) > c.r + e.def.radius) continue;
           c.hit.add(e);
-          G.hitEnemy(e, c.dmg, c.ang, ab.kb * (K.has(5) ? 1.2 : 1) * jadeKb());
+          hit(e, c.dmg, c.ang, ab.kb * (K.has(5) ? 1.2 : 1) * jadeKb());
           if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
           // Jade Cascade: the host (or solo) knows when a blow kills, so the guest's crystals don't cascade
           if (K.has(20) && cas && c.gen < cas.gens && (e.removed || e.hp <= 0) && !G.isGuest()) falls.push({ x: e.x, y: e.y, c });
@@ -595,7 +698,7 @@
       for (const e of G.enemies.slice()) {
         if (e.rise > 0 || e.removed || d.hit.has(e) || dist(j.x, j.y, e.x, e.y) > ab.r + e.def.radius) continue;
         d.hit.add(e);
-        G.hitEnemy(e, d.dmg, d.ang, ab.kb);
+        hit(e, d.dmg, d.ang, ab.kb);
         if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
       }
       clearArrows(j.x, j.y - 20, ab.r + 10);
@@ -613,6 +716,7 @@
     const p = G.player, kit = G.kit(), st = G.stats();
     p.guardT = Math.max(0, (p.guardT || 0) - dt);
     p.rushT = Math.max(0, (p.rushT || 0) - dt);
+    titheTick(p, st, dt);
     // Momentum builds while moving and drains twice as fast standing still
     if (kit.passive && kit.passive.momentum) p.momT = Math.max(0, Math.min(kit.passive.momentum.full, (p.momT || 0) + (p.moving ? dt : -2 * dt)));
     if (crystalLife !== p) { crystals = []; crystalLife = p; } // a new life clears them
@@ -633,7 +737,7 @@
         sfx("swing");
         for (const e of G.enemies.slice()) {
           if (e.rise > 0 || e.removed || dist(p.x, p.y, e.x, e.y) > wz.r + e.def.radius) continue;
-          G.hitEnemy(e, wz.dmg * G.corruptBonus(), Math.atan2(e.y - p.y, e.x - p.x), ab.kb);
+          hit(e, wz.dmg * G.corruptBonus(), Math.atan2(e.y - p.y, e.x - p.x), ab.kb);
           if (K.has(5) && !(e.bound > 0)) K.bind(e, ab.bind, ab.sting * K.power() * st.dmgMult);
         }
       }
@@ -674,7 +778,7 @@
           e.slow = Math.max(e.slow, 0.3);
           if (!(e.burn > 0)) { e.burn = 2; e.burnDps = w.dps * 0.4; } // whatever touches it catches fire
           if (Math.random() < 0.05) G.spark(e.x, e.y - 20, "255,130,50", 40);
-          if (e.hp <= 0) G.kill(e);
+          if (e.hp <= 0) slay(e);
         }
       }
     }
@@ -691,7 +795,7 @@
         for (const e of G.enemies) {
           if (e.rise > 0 || e.removed || e.def.king || dist(z.x, z.y, e.x, e.y) > z.r * 0.7) continue;
           e.hp -= z.dps * dt;
-          if (e.hp <= 0) G.kill(e);
+          if (e.hp <= 0) slay(e);
         }
       }
       if (z.heal && dist(p.x, p.y, z.x, z.y) < z.r * 0.82) p.hp = Math.min(st.maxHp, p.hp + 5 * dt);

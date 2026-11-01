@@ -112,6 +112,16 @@ GRIDS = {
     # the Rose Paladin (kit 08): front, back, side and his three swing poses; his side walk, hurt and death
     'rose-paladin/poses-a.png': (3, 2, POSES_A),
     'rose-paladin/poses-b.png': (3, 2, POSES_B),
+    # the Bloodsworn (kit 09), drawn on green (his crimson is too close to magenta): front, back, side and his three swing
+    # poses; his side walk, hurt and death
+    'bloodsworn/poses-a.png': (3, 2, POSES_A),
+    'bloodsworn/poses-b.png': (3, 2, POSES_B),
+    # and his second look (10 and 20 stacks: forms 1 and 2): spikier pauldrons, crimson tabard, a jagged blood blade
+    'bloodsworn-f2/poses-a.png': (3, 2, POSES_A),
+    'bloodsworn-f2/poses-b.png': (3, 2, POSES_B),
+    # and his last look, Crowned (30 stacks: form 3): flame-spiked mantle, masked face, chains and crimson rags
+    'bloodsworn-f3/poses-a.png': (3, 2, POSES_A),
+    'bloodsworn-f3/poses-b.png': (3, 2, POSES_B),
     'colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '11_hurt']),
     'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
 }
@@ -140,7 +150,7 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
-KEY_OPTS = {'chain-reaper': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+KEY_OPTS = {'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
 # Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
 def jade_match(x):
     """The Jade Breaker's sheets each came out a little different in colour: match them all to his front view."""
@@ -317,6 +327,12 @@ SETS = {
         'jade-breaker/15_castB.png': ('side/castB', {'height': 72})})),
     # the Rose Paladin (kit 08): crown spikes and all, a little taller than the Flame Bastion
     'rose-paladin': ('rose-paladin', 'rose-paladin/01_front.png', 98, 1, twelve('rose-paladin', TWELVE_FILES)),
+    # the Bloodsworn (kit 09): hood and spiked pauldrons, about the Chain Reaper's height
+    'bloodsworn': ('bloodsworn', 'bloodsworn/01_front.png', 86, 1, twelve('bloodsworn', TWELVE_FILES)),
+    # his second look grows a little: bigger pauldrons, a little taller
+    'bloodsworn-f2': ('bloodsworn-f2', 'bloodsworn-f2/01_front.png', 90, 1, twelve('bloodsworn-f2', TWELVE_FILES)),
+    # Crowned he grows again: the spiked mantle and hood a little taller still
+    'bloodsworn-f3': ('bloodsworn-f3', 'bloodsworn-f3/01_front.png', 94, 1, twelve('bloodsworn-f3', TWELVE_FILES)),
     'chain-reaper': ('chain-reaper', 'chain-reaper/01_front.png', 84, 1, dict(twelve('chain-reaper', TWELVE_FILES), **{
         'chain-reaper/13_dash.png': ('side/dash', {'height': 70})})),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
@@ -400,6 +416,21 @@ SHEETS = {
         ('jade-breaker/run-front.png', 4, 1, 92, 'runF'),
         ('jade-breaker/run-back.png', 4, 1, 92, 'runB'),
         ('jade-breaker/walk-back.png', 4, 1, 90, 'walkB'),
+    ],
+    'bloodsworn': [
+        ('bloodsworn/walk-side-4.png', 4, 1, 84, 'side/walk'),
+        ('bloodsworn/walk-front.png', 4, 1, 86, 'walkF'),
+        ('bloodsworn/walk-back.png', 4, 1, 86, 'walkB'),
+    ],
+    'bloodsworn-f2': [
+        ('bloodsworn-f2/walk-side-4.png', 4, 1, 86, 'side/walk'),
+        ('bloodsworn-f2/walk-front.png', 4, 1, 90, 'walkF'),
+        ('bloodsworn-f2/walk-back.png', 4, 1, 90, 'walkB'),
+    ],
+    'bloodsworn-f3': [
+        ('bloodsworn-f3/walk-side-4.png', 4, 1, 90, 'side/walk'),
+        ('bloodsworn-f3/walk-front.png', 4, 1, 94, 'walkF'),
+        ('bloodsworn-f3/walk-back.png', 4, 1, 94, 'walkB'),
     ],
     'rose-paladin': [
         ('rose-paladin/walk-side-4.png', 4, 1, 96, 'side/walk'),
@@ -655,6 +686,11 @@ PROP_GRIDS = {
     'pike-warden/dragon-back.png': (6, 1, ['dragonB1', 'dragonB2', 'dragonB3', 'dragonB4', 'dragonB5', 'dragonB6']),
     'ashen-arbalist/flare.png': (4, 1, ['arbFlare1', 'arbFlare2', 'arbFlare3', 'arbFlare4']),
     # Jade Tide's crystals bursting from the ground: cracking up, grown, glinting, shattering
+    # the Bloodsworn's pieces (src/render.js), on green: a blood thorn and a cluster of them (Reap the Tithe), the crimson
+    # crescent his swings throw when Crowned, his thorn halo dull and lit, and a puff of blood mist
+    'bloodsworn/effects.png': (3, 2, ['bloodThorn', 'bloodThorns', 'bloodCrescent', '', '', 'bloodMist']),
+    # his halo seen from the front, from behind and from the side (facing right): dull, then lit when Crowned
+    'bloodsworn/halos.png': (3, 2, ['haloF', 'haloB', 'haloS', 'haloLitF', 'haloLitB', 'haloLitS']),
     'jade-breaker/crystals.png': (4, 1, ['jadeCrystal1', 'jadeCrystal2', 'jadeCrystal3', 'jadeCrystal4']),
     'world/boulders.png': (6, 2, ['boulder11', 'boulder12', 'boulder13', 'boulder21', 'boulder22', 'boulder23', 'boulder31', 'boulder32', 'boulder33', 'boulder41', 'boulder42', 'boulder43']),
 }
@@ -729,11 +765,15 @@ PROP_SAME.update({'reaperSickle2': 'reaperSickle1', 'reaperSickle3': 'reaperSick
 PROP_WIDTH['wallFire1'] = 84  # a section about half the wall's 170 px, so they overlap along it
 PROP_SAME.update({'wallFire2': 'wallFire1', 'wallFire3': 'wallFire1', 'wallFire4': 'wallFire1'})
 PROP_WIDTH.update({'arbBolt': 28, 'arbFlare2': 124})  # a bolt about a third of the knight; the burst as wide as a flare's reach (game.js flare(), 58 px)
+PROP_HEIGHT['bloodThorn'] = 46  # a thorn about half the knight (cluster at the same scale)
+PROP_SAME.update({'bloodThorns': 'bloodThorn'})
+PROP_WIDTH.update({'bloodCrescent': 52, 'haloF': 46, 'bloodMist': 40})  # the halo a little wider than his hood
+PROP_SAME.update({n: 'haloF' for n in ('haloB', 'haloS', 'haloLitF', 'haloLitB', 'haloLitS')})
 PROP_HEIGHT['jadeCrystal2'] = 60  # the grown crystals about two thirds of the knight
 PROP_SAME.update({'jadeCrystal1': 'jadeCrystal2', 'jadeCrystal3': 'jadeCrystal2', 'jadeCrystal4': 'jadeCrystal2'})
 PROP_SAME.update({'arbFlareBolt': 'arbBolt', 'arbFlare1': 'arbFlare2', 'arbFlare3': 'arbFlare2', 'arbFlare4': 'arbFlare2'})
 # Prop sheets drawn on another key colour than magenta, by folder.
-PROP_KEY = {'chain-reaper': (0, 255, 0)}
+PROP_KEY = {'chain-reaper': (0, 255, 0), 'bloodsworn': (0, 255, 0)}
 PROP_OUT = 'props'
 # Renders where the magenta background tinted the art pink (the trees' moss): pull it back out (see despill).
 PROP_DESPILL = set(['swampTree11', 'swampTree12', 'swampTree13', 'swampTree14', 'swampTree21', 'swampTree22', 'swampTree23', 'swampTree24', 'swampTree31', 'swampTree32', 'swampTree33', 'swampTree34'])
