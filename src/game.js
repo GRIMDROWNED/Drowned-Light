@@ -1017,7 +1017,8 @@
       if (e.spore > 0) e.spore -= dt; // Fred's spores
       if (e.mind > 0) e.mind -= dt;
       e.rallied = Math.max(0, (e.rallied || 0) - dt);
-      behave(e, dt, p, dp);
+      // rooted by the Chain Reaper's snare, a Drowned can't attack at all, not even its casts and summons (bosses shrug it off)
+      if (!(e.snareT > 0 && e.stun > 0 && !e.def.boss)) behave(e, dt, p, dp);
       if (e.stun > 0) {
         e.stun -= dt; // staggered: no moving, no attacking
         e.state = "move";
