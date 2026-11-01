@@ -552,6 +552,10 @@ FRAME_ORDER = {('lantern-knight', 'walkB'): [2, 1, 4, -1], ('mire-stalker', 'wal
                # the lantern is missing from frames 1 and 3
                ('drowned-wretch', 'walkB'): [2, 2, 4, 4]}
 
+# Walk sheets whose free arm flaps forward and back twice a stride: every frame takes its upper body
+# (rows above `cut`, in the cut frame) from frame `k` (1-based), so only the legs and the cape's hem walk.
+STEADY_UPPER = {('pike-warden', 'side/walk'): (2, 64)}
+
 # Where to mirror legs when the feet can't be found from the bottom rows (one foot lifted, a staff butt
 # beside them): character -> (legs share, half width, centre x) for mirror_legs.
 MIRROR_AT = {}  # (the Relic Bearer's, retired with him in v0.15.135, was (0.32, 10, 39))
@@ -823,6 +827,12 @@ for name, sheets in SHEETS.items():
         order = FRAME_ORDER.get((name, prefix))
         if order:
             frames = [frames[i - 1] if i > 0 else mirror_legs(frames[-i - 1], *MIRROR_AT.get(name, ())) for i in order]
+        steady = STEADY_UPPER.get((name, prefix))
+        if steady:
+            k, cut = steady
+            top = frames[k - 1].crop((0, 0, frames[k - 1].width, cut))
+            frames = [f.copy() for f in frames]
+            for f in frames: f.paste(top, (0, 0))  # replaced, not blended, so no ghost arms
         for i, im in enumerate(frames):
             dst = os.path.join(OUT, folder, prefix + str(i + 1) + '.png')
             os.makedirs(os.path.dirname(dst), exist_ok=True)
