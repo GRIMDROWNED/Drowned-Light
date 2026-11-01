@@ -300,7 +300,7 @@
     },
     /* Kit 09: a hooded crimson reaper-knight who feeds on the kill. Blood Tithe (src/kits.js K.tithe): every Drowned he
        slays is a stack, a boss `boss` stacks, and every `bossHits`th blow on a boss one more. Each stack is `dmg` more
-       damage, `speed` more pace and `atk` faster swings, up to `cap` stacks. They hold `hold` s after the last kill, then
+       damage, `speed` more pace and `atk` faster swings, with no cap. They hold `hold` s after the last kill, then
        bleed away one every `drain` s. His look follows the stacks, not his level: forms at `forms` stacks (src/render.js).
        To come: a secret unlock (Robert, 2026-11-01); open from the start for now. */
     bloodsworn: {
@@ -309,18 +309,18 @@
       desc: "A hooded knight in bone and crimson. Every Drowned he cuts down makes him stronger, faster and quicker to swing, for a while. Stay in the fight and he grows into a crowned terror; hang back and the blood runs dry.",
       attack: { type: "arc", name: "Red Edge", dmg: 11, range: 70, arc: 2.2, cd: 0.5, kb: 140 },
       dash: { type: "plain" },
-      // `long`, `longCap`: Long Vigil (15). `healAt`, `heal`: Bloodthirst (10). `halo*`: Thorn Halo (5). `crescent`: Crowned (20)
-      passive: { tithe: { dmg: 0.02, speed: 0.01, atk: 0.01, cap: 30, hold: 4, drain: 0.4, boss: 5, bossHits: 4, forms: [10, 20, 30],
-        long: 7, longCap: 40, healAt: 20, heal: 2, haloAt: 20, haloR: 74, haloDmg: 6, haloCd: 0.5, crescent: 0.6 } },
+      // `long`: Long Vigil (15). No cap on the stacks (Robert, 2026-11-01). `healAt`, `heal`: Bloodthirst (10). `halo*`: Thorn Halo (5). `crescent`: Crowned (20)
+      passive: { tithe: { dmg: 0.02, speed: 0.01, atk: 0.01, hold: 4, drain: 0.4, boss: 5, bossHits: 4, forms: [10, 20, 30],
+        long: 7, healAt: 20, heal: 2, haloAt: 20, haloR: 74, haloDmg: 6, haloCd: 0.5, crescent: 0.6 } },
       // Reap the Tithe: thorns burst up all round him out to `r` + `perR` a stack, striking for `dmg` x (1 + `perDmg` a stack),
       // and spend every stack (half from Crowned, 20)
       ability: { id: "reap", name: "Reap the Tithe", oil: 12, cd: 12, r: 90, perR: 5, rMax: 290, dmg: 18, perDmg: 0.08, kb: 260,
         desc: "Spend your Blood Tithe: thorns of blood burst from the ground all around you. The more stacks you spend, the wider and harder they strike." },
-      special: { name: "Blood Tithe", desc: "Every kill is a stack: 2% more damage, 1% more speed and 1% faster swings each, up to 30. They hold 4 seconds after your last kill, then bleed away. Bosses give 5." },
+      special: { name: "Blood Tithe", desc: "Every kill is a stack: 2% more damage, 1% more speed and 1% faster swings each, with no limit. They hold 4 seconds after your last kill, then bleed away. Bosses give 5." },
       milestones: [
         { name: "Thorn Halo", desc: "At 20 stacks a halo of thorns crowns you and cuts the Drowned close around you." },
         { name: "Bloodthirst", desc: "At 20 stacks or more, every kill heals you." },
-        { name: "Long Vigil", desc: "Your stacks hold 7 seconds, and you can hold up to 40." },
+        { name: "Long Vigil", desc: "Your stacks hold 7 seconds after your last kill." },
         { name: "Crowned in Thorns", desc: "At 30 stacks your swings throw red crescents, and Reap the Tithe spends only half your stacks." },
       ],
     },

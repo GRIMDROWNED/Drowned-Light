@@ -1036,7 +1036,7 @@
     const kit = G.kit();
     set($("abilityName"), "text", kit.ability.name);
     const abFrac = p.abiCd > 0 ? p.abiCd / DL.Kits.abilityCd() : 0;
-    set($("kitLine"), "text", `${kit.name} · Lv ${G.save.kitLevel} · ${G.diff().name}${DL.Abigail.buffed() ? " · Abigail's blessing" : ""}${G.save.kit === "bloodsworn" ? ` · Tithe ${DL.Kits.stacks(p)}/${DL.Kits.titheCap()}` : ""}`);
+    set($("kitLine"), "text", `${kit.name} · Lv ${G.save.kitLevel} · ${G.diff().name}${DL.Abigail.buffed() ? " · Abigail's blessing" : ""}${G.save.kit === "bloodsworn" ? ` · Tithe ${DL.Kits.stacks(p)}` : ""}`);
     set($("btnAbility"), "--cd", abFrac.toFixed(3));
     set($("btnAbility"), "class", "act" + (p.oil < kit.ability.oil ? " low" : ""));
     set($("btnDash"), "--cd", (p.dashCd / DL.Kits.dashCd()).toFixed(3));
