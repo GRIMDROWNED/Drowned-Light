@@ -146,12 +146,11 @@
       if (p.hp < max) { p.hp = Math.min(max, p.hp + T.heal); G.spark(p.x, p.y - 30, "255,90,120", 60); }
     }
   };
-  K.titheCap = () => { const T = tithe(); return T ? (K.has(15) ? T.longCap : T.cap) : 0; };
   K.titheAdd = function (n) {
     const T = tithe(), p = G.player;
     if (!T) return;
     const before = K.form(p);
-    p.tithe = Math.min(K.titheCap(), (p.tithe || 0) + n);
+    p.tithe = (p.tithe || 0) + n; // no cap
     p.titheHold = K.has(15) ? T.long : T.hold;
     p.titheDrain = T.drain;
     const f = K.form(p);

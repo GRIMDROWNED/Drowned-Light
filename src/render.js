@@ -1785,8 +1785,8 @@
   function drawTithe(c, G, p, t) {
     const K = DL.Kits, n = K.stacks(p);
     if (!n || p.held) return;
-    const f = K.form(p), cap = K.titheCap();
-    if (!(p.titheHold <= 0 && Math.floor(t * 8) % 2)) bar(c, p.x, p.y + 8, 30, n / cap, f >= 3 ? "#ff5a86" : "#c8284e");
+    const f = K.form(p), crown = DL.KITS.bloodsworn.passive.tithe.forms[2]; // the bar fills toward Crowned
+    if (!(p.titheHold <= 0 && Math.floor(t * 8) % 2)) bar(c, p.x, p.y + 8, 30, Math.min(1, n / crown), f >= 3 ? "#ff5a86" : "#c8284e");
     if (f < 2) return;
     // his drawn halo (props haloF/B/S, lit from form 3), seen the way he faces, round the top of his hood
     const { dir, flip } = Art.unitDir(p.swing ? p.swing.ang : p.angle);
