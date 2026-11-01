@@ -1704,7 +1704,7 @@
   /* A Dragon Lunge spirit dragon: coiling (frames 1-3), then lunging (4-6) with its jaws at j. Lunging down the
      screen it's drawn from the front, up the screen from behind, otherwise from the side, turned to its line. */
   function drawDragon(c, d, j) {
-    const ab = DL.KITS.pikeWarden.ability, life = ab.coil + ab.reach / ab.speed + 0.2;
+    const ab = DL.KITS.pikeWarden.ability, life = DL.Kits.dragonLife(d);
     const fr = d.t < ab.coil ? 1 + Math.min(2, Math.floor((d.t / ab.coil) * 3)) : 4 + Math.min(2, Math.floor(((d.t - ab.coil) / (life - 0.2 - ab.coil)) * 3));
     const sn = Math.sin(d.ang), view = sn > 0.6 ? "F" : sn < -0.6 ? "B" : "";
     const s = Art.sprites["dragon" + view + fr];
