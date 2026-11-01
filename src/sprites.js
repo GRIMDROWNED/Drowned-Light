@@ -95,7 +95,7 @@
     walking("champion", [87, 128], [58, 129], [41, 132], 3),
     walking("footman", [56, 78], [36, 84], [37, 83]),
     // the other kits' knights: the 12 poses and walk sheets like an enemy's, at every corruption stage
-    Object.assign(walking("pikeWarden", [48, 103], [33, 103], [31, 103]), { path: "assets/sprites/pike-warden/", keys: stages("pikeWarden") }),
+    Object.assign(walking("pikeWarden", [46, 101], [24, 104], [34, 103]), { path: "assets/sprites/pike-warden/", keys: stages("pikeWarden") }),
     arbalist(),
     iceMage(),
     Object.assign(walking("flameBastion", [58, 97], [39, 97], [33, 93]), { path: "assets/sprites/flame-bastion/", keys: stages("flameBastion") }),

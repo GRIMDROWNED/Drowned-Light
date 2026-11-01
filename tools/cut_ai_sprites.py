@@ -38,6 +38,7 @@ GRIDS = {
     'marsh-hexbearer/poses-b.png': (3, 2, POSES_B),
     'drowned-sovereign/poses-a.png': (3, 2, POSES_A),
     'drowned-sovereign/poses-b.png': (3, 2, POSES_B),
+    # the Dragon Spear (kit 02, redrawn 2026-11-01; once the Pike Warden)
     'pike-warden/poses-a.png': (3, 2, POSES_A),
     'pike-warden/poses-b.png': (3, 2, POSES_B),
     'ashen-arbalist/poses-a.png': (3, 2, POSES_A),
@@ -115,7 +116,7 @@ GRIDS = {
     'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
 }
 # Cells the AI drew at another scale than the rest of their sheet: cell -> factor to resize it by.
-CELL_SCALE = {'pike-warden/07_walk': 1.16, 
+CELL_SCALE = {
               # the hound's attack row came out smaller than its standing row
               'bone-hound/08_attackA': 1.25, 'bone-hound/09_attackB': 1.25, 'bone-hound/10_attackC': 1.25}
 # the Ember Hound's and the Grave Warg's attack rows and whole second sheets came out smaller than their standing rows
@@ -139,7 +140,7 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
-KEY_OPTS = {'chain-reaper': {'key': (0, 255, 0)}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+KEY_OPTS = {'chain-reaper': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
 # Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
 def jade_match(x):
     """The Jade Breaker's sheets each came out a little different in colour: match them all to his front view."""
@@ -225,7 +226,7 @@ SETS = {
     # the boss is drawn 1.5x bigger, so it is cut at 3 file px per art pixel (res: 3) to stay sharp
     'drowned-sovereign': ('drowned/champion', 'drowned-sovereign/01_front.png', 128, 1, twelve('drowned-sovereign', TWELVE_FILES)),
     # kit knights: the body is 80 px like the Lantern Knight's, so the reference pose with its pike above the hood is taller
-    'pike-warden': ('pike-warden', 'pike-warden/01_front.png', 104, 1, twelve('pike-warden', TWELVE_FILES)),
+    'pike-warden': ('pike-warden', 'pike-warden/01_front.png', 99, 1, twelve('pike-warden', TWELVE_FILES)),
     # redrawn 2026-10-28 (white hood, crossbow): the slimmest, shortest knight; his ability poses were rendered at another scale
     'ashen-arbalist': ('ashen-arbalist', 'ashen-arbalist/01_front.png', 82, 1, dict(twelve('ashen-arbalist', TWELVE_FILES), **{
         'ashen-arbalist/13_dash.png': ('side/dash', {'height': 61}),
@@ -549,9 +550,7 @@ SHEETS = {
 # in play order; a negative number is that frame with its legs mirrored, giving the other foot's step.
 FRAME_ORDER = {('lantern-knight', 'walkB'): [2, 1, 4, -1], ('mire-stalker', 'walkB'): [1, 2, 3, -2],
                # the lantern is missing from frames 1 and 3
-               ('drowned-wretch', 'walkB'): [2, 2, 4, 4],
-               # every frame steps with the same foot
-               ('pike-warden', 'walkF'): [1, 3, -1, 3]}
+               ('drowned-wretch', 'walkB'): [2, 2, 4, 4]}
 
 # Where to mirror legs when the feet can't be found from the bottom rows (one foot lifted, a staff butt
 # beside them): character -> (legs share, half width, centre x) for mirror_legs.
