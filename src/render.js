@@ -856,8 +856,9 @@
   function drawPlayer(c, G, t) {
     const p = G.player;
     if (p.held) return; // inside the Starved Bell
-    // the Bloodsworn changes his look with his Blood Tithe: his second look from form 1 (10 stacks)
-    const kit = G.save.kit === "bloodsworn" && DL.Kits.form(p) >= 1 ? "bloodswornB" : G.save.kit;
+    // the Bloodsworn changes his look with his Blood Tithe: his second look from form 1 (10 stacks), Crowned at form 3 (30)
+    const form = G.save.kit === "bloodsworn" ? DL.Kits.form(p) : 0;
+    const kit = form >= 3 ? "bloodswornC" : form >= 1 ? "bloodswornB" : G.save.kit;
     const key = kit + (G.state === "dying" ? 4 : p.stage);
     for (const tr of p.trail) Art.drawUnit(c, key, "dash", 0, tr.ang, tr.x, tr.y, 1, { alpha: tr.life * 1.4, flash: 0.5, flashColor: "#ffd59a" });
     shadow(c, p.x, p.y, 15, 5);
@@ -1791,7 +1792,7 @@
     const { dir, flip } = Art.unitDir(p.swing ? p.swing.ang : p.angle);
     const hs = Art.sprites[(f >= 3 ? "haloLit" : "halo") + (dir === "side" ? "S" : dir === "up" ? "B" : "F")];
     if (hs) {
-      const hw = hs.w * PS, hh = hs.h * PS, hy = p.y - 102 + Math.sin(t * 2) * 1.5, hx = p.x + (dir === "side" ? (flip ? 5 : -5) : 0);
+      const hw = hs.w * PS, hh = hs.h * PS, hy = p.y - (f >= 3 ? 108 : 102) + Math.sin(t * 2) * 1.5, hx = p.x + (dir === "side" ? (flip ? 5 : -5) : 0);
       if (f >= 3) {
         const g = c.createRadialGradient(hx, hy + hh / 2, 0, hx, hy + hh / 2, hw * 0.7);
         g.addColorStop(0, "rgba(255,70,110,0.3)"); g.addColorStop(1, "rgba(255,70,110,0)");

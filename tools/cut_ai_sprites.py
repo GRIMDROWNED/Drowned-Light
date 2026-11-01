@@ -119,6 +119,9 @@ GRIDS = {
     # and his second look (10 and 20 stacks: forms 1 and 2): spikier pauldrons, crimson tabard, a jagged blood blade
     'bloodsworn-f2/poses-a.png': (3, 2, POSES_A),
     'bloodsworn-f2/poses-b.png': (3, 2, POSES_B),
+    # and his last look, Crowned (30 stacks: form 3): flame-spiked mantle, masked face, chains and crimson rags
+    'bloodsworn-f3/poses-a.png': (3, 2, POSES_A),
+    'bloodsworn-f3/poses-b.png': (3, 2, POSES_B),
     'colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '11_hurt']),
     'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
 }
@@ -147,7 +150,7 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
-KEY_OPTS = {'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+KEY_OPTS = {'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
 # Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
 def jade_match(x):
     """The Jade Breaker's sheets each came out a little different in colour: match them all to his front view."""
@@ -328,6 +331,8 @@ SETS = {
     'bloodsworn': ('bloodsworn', 'bloodsworn/01_front.png', 86, 1, twelve('bloodsworn', TWELVE_FILES)),
     # his second look grows a little: bigger pauldrons, a little taller
     'bloodsworn-f2': ('bloodsworn-f2', 'bloodsworn-f2/01_front.png', 90, 1, twelve('bloodsworn-f2', TWELVE_FILES)),
+    # Crowned he grows again: the spiked mantle and hood a little taller still
+    'bloodsworn-f3': ('bloodsworn-f3', 'bloodsworn-f3/01_front.png', 94, 1, twelve('bloodsworn-f3', TWELVE_FILES)),
     'chain-reaper': ('chain-reaper', 'chain-reaper/01_front.png', 84, 1, dict(twelve('chain-reaper', TWELVE_FILES), **{
         'chain-reaper/13_dash.png': ('side/dash', {'height': 70})})),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
@@ -421,6 +426,11 @@ SHEETS = {
         ('bloodsworn-f2/walk-side-4.png', 4, 1, 86, 'side/walk'),
         ('bloodsworn-f2/walk-front.png', 4, 1, 90, 'walkF'),
         ('bloodsworn-f2/walk-back.png', 4, 1, 90, 'walkB'),
+    ],
+    'bloodsworn-f3': [
+        ('bloodsworn-f3/walk-side-4.png', 4, 1, 90, 'side/walk'),
+        ('bloodsworn-f3/walk-front.png', 4, 1, 94, 'walkF'),
+        ('bloodsworn-f3/walk-back.png', 4, 1, 94, 'walkB'),
     ],
     'rose-paladin': [
         ('rose-paladin/walk-side-4.png', 4, 1, 96, 'side/walk'),
