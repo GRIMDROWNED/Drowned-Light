@@ -58,7 +58,7 @@
   };
 
   /* ---------- passives ---------- */
-  // Pike Warden's Stable Form: standing still for a moment.
+  // The Dragon Spear's (once the Pike Warden's) Stable Form: standing still for a moment.
   K.steady = function (p) {
     const st = G.kit().passive && G.kit().passive.stance;
     return !!st && !p.moving && p.dashT <= 0 && (p.stillT || 0) >= st.after;
