@@ -23,6 +23,11 @@
 
   UI.init = function () {
     const G = DL.Game;
+    // Title key art (style.css #screenTitle.keyart): tall art on phones held upright, wide art otherwise.
+    // Set here so the URLs carry the version (DL.asset) and an update's new art isn't hidden by the old cache.
+    const root = document.documentElement.style;
+    root.setProperty("--title-art-tall", `url("${DL.asset("assets/title-portrait.jpg")}")`);
+    root.setProperty("--title-art-wide", `url("${DL.asset("assets/title-landscape.jpg")}")`);
     const press = (id, fn) => {
       const el = $(id);
       el.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); fn(); });
@@ -929,6 +934,38 @@
   }
 
   /* ---------------- per-frame HUD ---------------- */
+  // Radial action buttons: the main one in the corner, the others spread evenly on an arc from its left
+  // round to straight above it. The arc widens when more buttons are showing,
+  // so neighbours never overlap. Only re-placed when the set of buttons or the screen size changes.
+  const RING = { manual: ["btnDash", "btnAbility", "btnMine", "btnTorch", "btnBoost"], auto: ["btnAbility", "btnTorch", "btnBoost"] };
+  UI.layoutButtons = function (manual) {
+    const main = $(manual ? "btnAttack" : "btnDash");
+    const ring = RING[manual ? "manual" : "auto"].map($).filter((b) => !b.classList.contains("hidden"));
+    const key = `${manual}|${ring.map((b) => b.id).join()}|${innerWidth}x${innerHeight}`;
+    if (UI.ringKey === key) return;
+    UI.ringKey = key;
+    const box = $("buttons"), M = main.offsetWidth || 88, gap = 8;
+    box.style.width = box.style.height = M + "px";
+    main.style.left = main.style.top = "0px";
+    const sizes = ring.map((b) => b.offsetWidth || 64);
+    const a0 = 180, a1 = 90; // degrees: level with the main button on its left, round to straight up
+    const step = ring.length > 1 ? (a0 - a1) / (ring.length - 1) : 0;
+    // far enough out to clear the main button, and for neighbours on the arc to clear each other
+    let R = M / 2 + Math.max(...sizes, 0) / 2 + gap;
+    const chord = 2 * Math.sin((step * Math.PI) / 360); // distance between neighbours on an arc of radius 1
+    for (let i = 1; i < ring.length; i++) R = Math.max(R, ((sizes[i - 1] + sizes[i]) / 2 + gap) / chord);
+    let top = M;
+    ring.forEach((b, i) => {
+      const a = ((ring.length > 1 ? a0 - i * step : 135) * Math.PI) / 180, w = sizes[i];
+      b.style.left = M / 2 + R * Math.cos(a) - w / 2 + "px";
+      b.style.top = M / 2 - R * Math.sin(a) - w / 2 + "px";
+      top = Math.max(top, M / 2 + R * Math.sin(a) + w / 2);
+    });
+    // how tall the cluster stands, so phones held upright can lift the camp button and objective clear of it
+    document.documentElement.style.setProperty("--ring-h", Math.ceil(top) + "px");
+  };
+  addEventListener("resize", () => { UI.ringKey = null; });
+
   UI.update = function () {
     const G = DL.Game;
     if (G.state !== "play" && G.state !== "camp") return;
@@ -1052,6 +1089,7 @@
     set($("btnAttack"), "hidden", !manual);
     set($("btnMine"), "class", "act small mine" + (manual ? "" : " hidden") + (G.mineTarget ? " ready" : ""));
     document.body.classList.toggle("manual", manual);
+    UI.layoutButtons(manual);
     const cl = UI.campLabel();
     set($("campBtn"), "hidden", !cl);
     if (cl && UI.campShown !== cl) { UI.campShown = cl; $("campBtn").innerHTML = `${cl} <kbd data-pad="${UI.padLabel("camp")[0] || ""}">${UI.keyLabel("camp")[0] || ""}</kbd>`; }

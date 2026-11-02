@@ -152,10 +152,13 @@ body.touch kbd { display: none; }
 }
 #campBtn kbd { margin-left: 6px; }
 
+/* Radial action buttons: the main button (Attack in manual mode, Dash in auto) sits in the corner and the
+   rest fan out on an arc around it, all one thumb-reach away. UI.layoutButtons places them. */
 #buttons {
   position: absolute; right: max(14px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom));
-  display: flex; align-items: flex-end; gap: 10px;
+  width: 88px; height: 88px;
 }
+#buttons > .act { position: absolute; right: auto; bottom: auto; margin: 0; }
 .act {
   --cd: 0; position: relative; width: 74px; height: 74px; border-radius: 50%; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
@@ -204,6 +207,37 @@ h2 { font: 700 26px var(--font-title); margin: 0 0 10px; letter-spacing: 0.05em;
 }
 .menu button.primary { background: linear-gradient(#41301c, #24180c); border-color: var(--warm); color: #ffe6c2; box-shadow: 0 0 24px rgba(255, 160, 70, 0.3); }
 .menu button:hover { filter: brightness(1.15); }
+/* Title key art. The art carries the title and tagline, so the menu sits in its dark empty part:
+   below the scene on tall screens, under the title on the left on wide ones. */
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+#screenTitle.keyart {
+  display: block; padding: 0;
+  background: #020304 var(--title-art-wide) no-repeat left top / cover;
+}
+#screenTitle.keyart .title-card {
+  /* The wide art (3:2) covers the screen from its top-left corner, so it is max(100vw, 150vh) wide and
+     max(100vh, 66.7vw) tall. Its title is centred 28% across and ends 32% down: the menu goes just under it. */
+  --col: min(300px, 56vh);
+  margin: 0 0 0 max(16px, calc(max(28vw, 42vh) - var(--col) / 2));
+  width: var(--col); padding: max(34vh, 22.7vw) 0 24px;
+}
+#screenTitle.keyart .howto { margin-top: 18px; font-size: 12px; }
+#screenTitle.keyart .howto div { background: rgba(4, 8, 10, 0.78); }
+@media (max-height: 560px) and (min-aspect-ratio: 1/1) {
+  /* phones on their side: two columns of buttons so they fit under the title */
+  #screenTitle.keyart .title-card { --col: min(380px, 100vw - 32px); }
+  #screenTitle.keyart .menu { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  #screenTitle.keyart .menu button { min-height: 38px; font-size: 13px; }
+  #screenTitle.keyart .menu button.primary { grid-column: 1 / -1; }
+}
+@media (max-aspect-ratio: 1/1) {
+  /* the tall art is fitted to the screen height; spare width shows the art's own near-black edge colour */
+  #screenTitle.keyart { background-image: var(--title-art-tall); background-position: center top; background-size: auto 100%; }
+  /* the tall art's empty dark water starts 55% of the way down */
+  #screenTitle.keyart .title-card { margin: 0 auto; width: min(320px, calc(100% - 32px)); padding-top: 54vh; }
+  #screenTitle.keyart .menu { gap: 8px; }
+  #screenTitle.keyart .menu button { min-height: 42px; }
+}
 .howto { display: grid; gap: 8px; margin: 26px auto 0; text-align: left; font-size: 13px; line-height: 1.5; color: #c9d0cd; max-width: 500px; }
 .howto div { background: rgba(8, 16, 21, 0.72); border-left: 2px solid var(--gold); padding: 8px 12px; border-radius: 4px; }
 .howto b { color: var(--ink); }
@@ -289,12 +323,12 @@ body.pad .controls-hint kbd { display: inline; }
   #vitals .row { font-size: 9.5px; }
   #nav { min-width: 0; padding: 6px 9px; }
   #dayText { font-size: 13px; }
-  #objective { top: auto; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 110px); white-space: normal; text-align: center; width: max-content; max-width: 90vw; }
+  #objective { top: auto; bottom: calc(max(16px, env(safe-area-inset-bottom)) + var(--ring-h, 200px) + 64px); white-space: normal; text-align: center; width: max-content; max-width: 90vw; }
   #carried { top: calc(max(12px, env(safe-area-inset-top)) + 140px); }
   .act { width: 64px; height: 64px; }
   .act.big { width: 78px; height: 78px; }
   .act.small { width: 54px; height: 54px; }
-  #campBtn { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 96px); }
+  #campBtn { bottom: calc(max(16px, env(safe-area-inset-bottom)) + var(--ring-h, 200px) + 12px); }
 }
 
 /* ---------- studio splash (Drowned Games) ---------- */
