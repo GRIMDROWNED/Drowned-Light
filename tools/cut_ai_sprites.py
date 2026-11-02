@@ -116,7 +116,7 @@ GRIDS = {
     # poses; his side walk, hurt and death
     'bloodsworn/poses-a.png': (3, 2, POSES_A),
     'bloodsworn/poses-b.png': (3, 2, POSES_B),
-    # and his second look (10 and 20 stacks: forms 1 and 2): spikier pauldrons, crimson tabard, a jagged blood blade
+    # and his second look (10 and 20 stacks: forms 1 and 2): a crowned knight in crimson and gold (first try in bloodsworn-f2-v1)
     'bloodsworn-f2/poses-a.png': (3, 2, POSES_A),
     'bloodsworn-f2/poses-b.png': (3, 2, POSES_B),
     # and his last look, Crowned (30 stacks: form 3): flame-spiked mantle, masked face, chains and crimson rags

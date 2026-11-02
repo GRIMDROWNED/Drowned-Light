@@ -221,14 +221,16 @@
     return set;
   }
 
-  /* The Bloodsworn (kit 09): the 12 poses and walk sheets, drawn on green. His Red Edge is the raised sword, the thrust
+  /* The Bloodsworn (kit 09): the 12 poses and walk sheets, drawn on green (redrawn by Robert 2026-11-02 as a helmed knight in
+     dark plum and gold plate with a crimson scarf and tabard; the hooded first try is in returned/bloodsworn-v1). His Red Edge is the raised sword, the thrust
      and the low follow-through. His forms (src/render.js) lay a blood aura and his drawn thorn halo over this one look. */
   function bloodsworn() {
-    return Object.assign(walking("bloodsworn", [42, 88], [31, 88], [26, 88]), { path: "assets/sprites/bloodsworn/", keys: stages("bloodsworn") });
+    return Object.assign(walking("bloodsworn", [37, 86], [26, 88], [22, 88]), { path: "assets/sprites/bloodsworn/", keys: stages("bloodsworn") });
   }
-  // his second look, from 10 stacks (forms 1 and 2, src/render.js): spikier, a crimson tabard and a jagged blood blade
+  // his second look, from 10 stacks (forms 1 and 2, src/render.js): a crowned knight in crimson and gold plate, with a
+  // magenta lantern at his belt and a long blood-veined sword (redrawn by Robert 2026-11-02)
   function bloodswornB() {
-    return Object.assign(walking("bloodswornB", [45, 88], [34, 92], [41, 92]), { path: "assets/sprites/bloodsworn-f2/", keys: stages("bloodswornB") });
+    return Object.assign(walking("bloodswornB", [34, 88], [26, 92], [22, 92]), { path: "assets/sprites/bloodsworn-f2/", keys: stages("bloodswornB") });
   }
   // and his last look, Crowned (30 stacks, form 3): the flame-spiked mantle, masked face, chains and crimson rags
   function bloodswornC() {
