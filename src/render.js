@@ -842,15 +842,16 @@
 
   // Which animation the player shows this frame: [anim, frame, facing angle].
   function playerAnim(G, p, t) {
-    if (G.state === "dying") return ["death", Math.min(2, Math.floor(G.dying / 0.45)), p.angle];
+    const key = G.save.kit + p.stage, n = (anim) => Art.animLength(key, anim); // drawn frames (3 for most kits, 8 for the Jade Breaker)
+    if (G.state === "dying") return ["death", Math.min(n("death") - 1, Math.floor((G.dying / 1.35) * n("death"))), p.angle];
     if (p.dashT > 0 || p.tideDash) return ["dash", 0, p.angle];
     if (p.waltz) return [p.moving ? "walk" : "idle", p.moving ? Math.floor(p.animT * stepRate(G.save.kit + p.stage, false)) : 0, t * 13]; // turning on the spot in Rose's Waltz
-    if (p.tideCharge && p.tideCharge.t > 0.12) return [castAnim(G.save.kit + p.stage), 0, p.aim ?? p.angle]; // winding up Jade Tide
+    if (p.tideCharge && p.tideCharge.t > 0.12) return [castAnim(key), n(castAnim(key)) > 3 ? 2 : 0, p.aim ?? p.angle]; // winding up Jade Tide (the blade raised)
     if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
-    if (p.swing) return ["attack", Math.min(2, Math.floor((p.swing.t / p.swing.dur) * 3)), p.swing.ang];
-    if (p.cast) return [castAnim(G.save.kit + p.stage), Math.min(2, Math.floor((p.cast.t / p.cast.dur) * 3)), p.cast.ang];
+    if (p.swing) return ["attack", Math.min(n("attack") - 1, Math.floor((p.swing.t / p.swing.dur) * n("attack"))), p.swing.ang];
+    if (p.cast) return [castAnim(key), Math.min(n(castAnim(key)) - 1, Math.floor((p.cast.t / p.cast.dur) * n(castAnim(key)))), p.cast.ang];
     if (p.moving) return [moveAnim(G.save.kit + p.stage, p.running), Math.floor(p.animT * stepRate(G.save.kit + p.stage, p.running)), p.angle];
-    return ["idle", Math.floor(t * 1.6), p.angle];
+    return ["idle", Math.floor(t * (n("idle") > 1 ? 6 : 1.6)), p.angle]; // a drawn breathing idle plays at 6 frames a second
   }
 
   function drawPlayer(c, G, t) {
@@ -865,7 +866,7 @@
     const [anim, fr, ang] = playerAnim(G, p, t);
     let alpha = 1;
     if (p.inv > 0 && p.dashT <= 0 && Math.floor(t * 20) % 2) alpha = 0.65;
-    if (p.downT > 0) { Art.drawUnit(c, key, "death", 2, ang, p.x, p.y, 1, { alpha: 0.5 }); return; }
+    if (p.downT > 0) { Art.drawUnit(c, key, "death", Art.animLength(key, "death") - 1, ang, p.x, p.y, 1, { alpha: 0.5 }); return; }
     Art.drawUnit(c, key, anim, fr, ang, p.x, p.y, 1, { alpha, flash: p.flash > 0 ? 0.7 : 0, flashColor: "#ff9a9a" });
   }
 
@@ -874,13 +875,14 @@
     if (a.swallowed) return; // inside the Starved Bell
     const key = a.kit + (a.stage || 1);
     shadow(c, a.x, a.y, 15, 5);
-    if (a.down) { Art.drawUnit(c, key, "death", 2, a.angle, a.x, a.y, 1, { alpha: 0.5 }); }
+    const n = (anim) => Art.animLength(key, anim);
+    if (a.down) { Art.drawUnit(c, key, "death", n("death") - 1, a.angle, a.x, a.y, 1, { alpha: 0.5 }); }
     else {
-      let anim = "idle", fr = Math.floor(t * 1.6), ang = a.angle;
+      let anim = "idle", fr = Math.floor(t * (n("idle") > 1 ? 6 : 1.6)), ang = a.angle;
       if (a.dashT > 0) anim = "dash";
-      else if (a.swing) { anim = "attack"; fr = Math.min(2, Math.floor((a.swing.t / a.swing.dur) * 3)); ang = a.swing.ang; }
+      else if (a.swing) { anim = "attack"; fr = Math.min(n("attack") - 1, Math.floor((a.swing.t / a.swing.dur) * n("attack"))); ang = a.swing.ang; }
       else if (a.cast && a.kit === "rosePaladin") ang = t * 13; // waltzing
-      else if (a.cast) { anim = castAnim(key); fr = Math.min(2, Math.floor(a.cast * 3)); }
+      else if (a.cast) { anim = castAnim(key); fr = Math.min(n(anim) - 1, Math.floor(a.cast * n(anim))); }
       else if (a.moving) { anim = moveAnim(key, a.running); fr = Math.floor(a.animT * stepRate(key, a.running)); }
       Art.drawUnit(c, key, anim, fr, ang, a.x, a.y, 1);
     }
