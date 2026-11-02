@@ -166,22 +166,23 @@
   // recoloured to his palette; running away from you he keeps his walk, played a third quicker.
   // The Jade Breaker is animated from his drawn poses by SpriteCook (tools/cut_spritecook_run.py): 8-frame walks,
   // idles, runs and Jade Sweeps each way, and from the side his Jade Tide (the blade driven into the ground) and his fall.
-  // A sweep sheet's 5th frame is left out (a ghosted blade). Each sheet shares one foot point, set by matching its
-  // first frame to his still pose.
+  // Some sweep frames are left out (a ghosted blade; from behind, the blade swung back up over his head). Each sheet
+  // shares one foot point, set by matching its first frame to his still pose. From behind he holds the sword low at
+  // his side (a SpriteCook redraw of his back pose), so it never covers his helmet.
   function jade() {
     const set = Object.assign(walking("jadeBreaker", [76, 91], [28, 92], [29, 93]), { path: "assets/sprites/jade-breaker/", keys: stages("jadeBreaker") });
-    const f8 = (p, skip) => [1, 2, 3, 4, 5, 6, 7, 8].filter((i) => i !== skip).map((i) => p + i);
+    const f8 = (p, keep = [1, 2, 3, 4, 5, 6, 7, 8]) => keep.map((i) => p + i);
     const SHEETS = {
-      side: { walk: ["side/step", [35, 91]], idle: ["side/idle", [35, 89]], attack: ["side/sweep", [61, 124], 5], run: ["side/sprint", [41, 98]] },
-      down: { walk: ["stepF", [28, 99]], idle: ["idleF", [26, 93]], attack: ["sweepF", [68, 125], 5], run: ["sprintF", [30, 98]] },
-      up: { walk: ["stepB", [34, 97]], idle: ["idleB", [32, 91]], attack: ["sweepB", [55, 123], 5], run: ["sprintB", [32, 100]] },
+      side: { walk: ["side/step", [35, 91]], idle: ["side/idle", [35, 89]], attack: ["side/sweep", [61, 124], [1, 2, 3, 4, 6, 7, 8]], run: ["side/sprint", [41, 98]] },
+      down: { walk: ["stepF", [28, 99]], idle: ["idleF", [26, 93]], attack: ["sweepF", [68, 125], [1, 2, 3, 4, 6, 7, 8]], run: ["sprintF", [30, 98]] },
+      up: { walk: ["stepB", [36, 89]], idle: ["idleB", [32, 89]], attack: ["sweepB", [58, 113], [1, 2, 3, 4, 5, 6]], run: ["sprintB", [34, 94]] },
     };
     const tide = f8("side/tide"), fall = f8("side/fall");
     Object.assign(set.feet, sheetFeet(tide, [37, 126]), sheetFeet(fall, [60, 89]));
     for (const dir in SHEETS) {
       const v = set.views[dir];
       for (const anim in SHEETS[dir]) {
-        const [p, foot, skip] = SHEETS[dir][anim], fr = f8(p, skip);
+        const [p, foot, keep] = SHEETS[dir][anim], fr = f8(p, keep);
         v[anim] = fr.map((f) => f + "@-");
         Object.assign(set.feet, sheetFeet(fr, foot));
       }
