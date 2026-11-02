@@ -23,6 +23,11 @@
 
   UI.init = function () {
     const G = DL.Game;
+    // Title key art (style.css #screenTitle.keyart): tall art on phones held upright, wide art otherwise.
+    // Set here so the URLs carry the version (DL.asset) and an update's new art isn't hidden by the old cache.
+    const root = document.documentElement.style;
+    root.setProperty("--title-art-tall", `url("${DL.asset("assets/title-portrait.jpg")}")`);
+    root.setProperty("--title-art-wide", `url("${DL.asset("assets/title-landscape.jpg")}")`);
     const press = (id, fn) => {
       const el = $(id);
       el.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); fn(); });
