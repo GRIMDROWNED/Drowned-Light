@@ -2,7 +2,7 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.164";
+const VERSION = "0.15.165";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
@@ -34,8 +34,8 @@ const FILES = [
     "ashen-arbalist/side/": ["castA", "castB", "dash", "death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "ice-mage/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "ice-mage/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
-    "flame-bastion/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
-    "flame-bastion/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
+    "flame-bastion/": ["attackA", "attackB", "attackC", "back", "cleaveB1", "cleaveB2", "cleaveB3", "cleaveB4", "cleaveB5", "cleaveB6", "cleaveB7", "cleaveB8", "cleaveF1", "cleaveF2", "cleaveF3", "cleaveF4", "cleaveF5", "cleaveF6", "cleaveF7", "cleaveF8", "front", "idleB1", "idleB2", "idleB3", "idleB4", "idleB5", "idleB6", "idleB7", "idleB8", "idleF1", "idleF2", "idleF3", "idleF4", "idleF5", "idleF6", "idleF7", "idleF8", "right", "stepB1", "stepB2", "stepB3", "stepB4", "stepB5", "stepB6", "stepB7", "stepB8", "stepF1", "stepF2", "stepF3", "stepF4", "stepF5", "stepF6", "stepF7", "stepF8", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
+    "flame-bastion/side/": ["cleave1", "cleave2", "cleave3", "cleave4", "cleave5", "cleave6", "cleave7", "cleave8", "death", "fall1", "fall2", "fall3", "fall4", "fall5", "fall6", "fall7", "fall8", "hurt", "idle1", "idle2", "idle3", "idle4", "idle5", "idle6", "idle7", "idle8", "plant1", "plant2", "plant3", "plant4", "plant5", "plant6", "plant7", "plant8", "step1", "step2", "step3", "step4", "step5", "step6", "step7", "step8", "walk1", "walk2", "walk3", "walk4"],
     "chain-reaper/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "chain-reaper/side/": ["dash", "death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "jade-breaker/": ["attackA", "attackB", "attackC", "back", "front", "idleB1", "idleB2", "idleB3", "idleB4", "idleB5", "idleB6", "idleB7", "idleB8", "idleF1", "idleF2", "idleF3", "idleF4", "idleF5", "idleF6", "idleF7", "idleF8", "right", "runB1", "runB2", "runB3", "runB4", "runF1", "runF2", "runF3", "runF4", "sprintB1", "sprintB2", "sprintB3", "sprintB4", "sprintB5", "sprintB6", "sprintB7", "sprintB8", "sprintF1", "sprintF2", "sprintF3", "sprintF4", "sprintF5", "sprintF6", "sprintF7", "sprintF8", "stepB1", "stepB2", "stepB3", "stepB4", "stepB5", "stepB6", "stepB7", "stepB8", "stepF1", "stepF2", "stepF3", "stepF4", "stepF5", "stepF6", "stepF7", "stepF8", "sweepB1", "sweepB2", "sweepB3", "sweepB4", "sweepB5", "sweepB6", "sweepB7", "sweepB8", "sweepF1", "sweepF2", "sweepF3", "sweepF4", "sweepF5", "sweepF6", "sweepF7", "sweepF8", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],

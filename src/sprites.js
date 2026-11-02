@@ -98,7 +98,7 @@
     Object.assign(walking("pikeWarden", [46, 101], [24, 104], [34, 103]), { path: "assets/sprites/pike-warden/", keys: stages("pikeWarden") }),
     arbalist(),
     iceMage(),
-    Object.assign(walking("flameBastion", [58, 97], [39, 97], [33, 93]), { path: "assets/sprites/flame-bastion/", keys: stages("flameBastion") }),
+    bastion(),
     reaper(),
     jade(),
     rosePaladin(),
@@ -164,31 +164,52 @@
   // His sweep is wind-up, mid-sweep, follow-through; Jade Tide is a crouched wind-up and the great sweep; a low lunge for his dash.
   // At full speed he runs with 8 frames from the side (side/sprint1-8) and facing you (sprintF1-8), made with SpriteCook and
   // recoloured to his palette; running away from you he keeps his walk, played a third quicker.
-  // The Jade Breaker is animated from his drawn poses by SpriteCook (tools/cut_spritecook_run.py): 8-frame walks,
-  // idles, runs and Jade Sweeps each way, and from the side his Jade Tide (the blade driven into the ground) and his fall.
-  // Some sweep frames are left out (a ghosted blade; from behind, the blade swung back up over his head). Each sheet
-  // shares one foot point, set by matching its first frame to his still pose. From behind he holds the sword low at
-  // his side (a SpriteCook redraw of his back pose), so it never covers his helmet.
-  function jade() {
-    const set = Object.assign(walking("jadeBreaker", [76, 91], [28, 92], [29, 93]), { path: "assets/sprites/jade-breaker/", keys: stages("jadeBreaker") });
+  /* Kits animated from their drawn poses by SpriteCook (tools/cut_spritecook_run.py): `sheets[dir][anim]` is
+     [file prefix, foot point, frames to keep (default 1-8)], each 8-frame sheet sharing one foot point found by matching
+     its first frame to the still pose; `all` holds side-view animations used facing every way. */
+  function cooked(set, sheets, all) {
     const f8 = (p, keep = [1, 2, 3, 4, 5, 6, 7, 8]) => keep.map((i) => p + i);
-    const SHEETS = {
-      side: { walk: ["side/step", [35, 91]], idle: ["side/idle", [35, 89]], attack: ["side/sweep", [61, 124], [1, 2, 3, 4, 6, 7, 8]], run: ["side/sprint", [41, 98]] },
-      down: { walk: ["stepF", [28, 99]], idle: ["idleF", [26, 93]], attack: ["sweepF", [68, 125], [1, 2, 3, 4, 6, 7, 8]], run: ["sprintF", [30, 98]] },
-      up: { walk: ["stepB", [36, 89]], idle: ["idleB", [32, 89]], attack: ["sweepB", [58, 113], [1, 2, 3, 4, 5, 6]], run: ["sprintB", [34, 94]] },
-    };
-    const tide = f8("side/tide"), fall = f8("side/fall");
-    Object.assign(set.feet, sheetFeet(tide, [37, 126]), sheetFeet(fall, [60, 89]));
-    for (const dir in SHEETS) {
+    const shared = {};
+    for (const anim in all) {
+      const [p, foot, keep] = all[anim];
+      shared[anim] = f8(p, keep);
+      Object.assign(set.feet, sheetFeet(shared[anim], foot));
+    }
+    for (const dir in sheets) {
       const v = set.views[dir];
-      for (const anim in SHEETS[dir]) {
-        const [p, foot, keep] = SHEETS[dir][anim], fr = f8(p, keep);
+      for (const anim in sheets[dir]) {
+        const [p, foot, keep] = sheets[dir][anim], fr = f8(p, keep);
         v[anim] = fr.map((f) => f + "@-");
         Object.assign(set.feet, sheetFeet(fr, foot));
       }
-      Object.assign(v, { cast: tide, death: fall, dash: ["side/dash"] });
+      Object.assign(v, shared);
     }
     return set;
+  }
+
+  // The Jade Breaker: 8-frame walks, idles, runs and Jade Sweeps each way, and from the side his Jade Tide (the blade
+  // driven into the ground) and his fall. Some sweep frames are left out (a ghosted blade; from behind, the blade swung
+  // back up over his head). From behind he holds the sword low at his side (a SpriteCook redraw of his back pose).
+  function jade() {
+    const set = Object.assign(walking("jadeBreaker", [76, 91], [28, 92], [29, 93]), { path: "assets/sprites/jade-breaker/", keys: stages("jadeBreaker") });
+    for (const dir in set.views) set.views[dir].dash = ["side/dash"];
+    return cooked(set, {
+      side: { walk: ["side/step", [35, 91]], idle: ["side/idle", [35, 89]], attack: ["side/sweep", [61, 124], [1, 2, 3, 4, 6, 7, 8]], run: ["side/sprint", [41, 98]] },
+      down: { walk: ["stepF", [28, 99]], idle: ["idleF", [26, 93]], attack: ["sweepF", [68, 125], [1, 2, 3, 4, 6, 7, 8]], run: ["sprintF", [30, 98]] },
+      up: { walk: ["stepB", [36, 89]], idle: ["idleB", [32, 89]], attack: ["sweepB", [58, 113], [1, 2, 3, 4, 5, 6]], run: ["sprintB", [34, 94]] },
+    }, { cast: ["side/tide", [37, 126]], death: ["side/fall", [60, 89]] });
+  }
+
+  // The Flame Bastion: 8-frame walks, idles and Bastion Blade cleaves each way, and from the side Flame Bastion (the
+  // sword planted in the ground behind his shield) and his fall. Frames with a stray helm plume or a blade swung
+  // behind him are left out; his side idle breathes on its first two frames.
+  function bastion() {
+    const set = Object.assign(walking("flameBastion", [58, 97], [39, 97], [33, 93]), { path: "assets/sprites/flame-bastion/", keys: stages("flameBastion") });
+    return cooked(set, {
+      side: { walk: ["side/step", [39, 96]], idle: ["side/idle", [32, 105], [1, 1, 1, 2, 2, 2]], attack: ["side/cleave", [67, 134], [1, 2, 3, 5, 6, 7, 8]] },
+      down: { walk: ["stepF", [46, 98]], idle: ["idleF", [44, 94]], attack: ["cleaveF", [67, 130], [1, 2, 3, 4, 6, 7, 8]] },
+      up: { walk: ["stepB", [36, 93]], idle: ["idleB", [37, 91]], attack: ["cleaveB", [67, 129], [1, 2, 3, 4, 5, 6]] },
+    }, { cast: ["side/plant", [42, 135]], death: ["side/fall", [67, 94]] });
   }
 
   /* The Rose Paladin (kit 08): the 12 poses and walk sheets. His Thorn Lash is the raised sword, the cut and the
