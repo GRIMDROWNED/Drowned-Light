@@ -152,10 +152,13 @@ body.touch kbd { display: none; }
 }
 #campBtn kbd { margin-left: 6px; }
 
+/* Radial action buttons: the main button (Attack in manual mode, Dash in auto) sits in the corner and the
+   rest fan out on an arc around it, all one thumb-reach away. UI.layoutButtons places them. */
 #buttons {
   position: absolute; right: max(14px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom));
-  display: flex; align-items: flex-end; gap: 10px;
+  width: 88px; height: 88px;
 }
+#buttons > .act { position: absolute; right: auto; bottom: auto; margin: 0; }
 .act {
   --cd: 0; position: relative; width: 74px; height: 74px; border-radius: 50%; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
@@ -320,12 +323,12 @@ body.pad .controls-hint kbd { display: inline; }
   #vitals .row { font-size: 9.5px; }
   #nav { min-width: 0; padding: 6px 9px; }
   #dayText { font-size: 13px; }
-  #objective { top: auto; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 110px); white-space: normal; text-align: center; width: max-content; max-width: 90vw; }
+  #objective { top: auto; bottom: calc(max(16px, env(safe-area-inset-bottom)) + var(--ring-h, 200px) + 64px); white-space: normal; text-align: center; width: max-content; max-width: 90vw; }
   #carried { top: calc(max(12px, env(safe-area-inset-top)) + 140px); }
   .act { width: 64px; height: 64px; }
   .act.big { width: 78px; height: 78px; }
   .act.small { width: 54px; height: 54px; }
-  #campBtn { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 96px); }
+  #campBtn { bottom: calc(max(16px, env(safe-area-inset-bottom)) + var(--ring-h, 200px) + 12px); }
 }
 
 /* ---------- studio splash (Drowned Games) ---------- */
