@@ -232,9 +232,9 @@
   function bloodswornB() {
     return Object.assign(walking("bloodswornB", [34, 88], [26, 92], [22, 92]), { path: "assets/sprites/bloodsworn-f2/", keys: stages("bloodswornB") });
   }
-  // and his last look, Crowned (30 stacks, form 3): the flame-spiked mantle, masked face, chains and crimson rags
+  // and his last look, Crowned (30 stacks, form 3): the crowned knight again, now in a white fur mantle with purple cape and lantern
   function bloodswornC() {
-    return Object.assign(walking("bloodswornC", [41, 92], [34, 96], [31, 96]), { path: "assets/sprites/bloodsworn-f3/", keys: stages("bloodswornC") });
+    return Object.assign(walking("bloodswornC", [37, 92], [28, 96], [24, 96]), { path: "assets/sprites/bloodsworn-f3/", keys: stages("bloodswornC") });
   }
 
   function reaper() {
