@@ -309,10 +309,10 @@
   };
   // Robert's drawn stone strips (tools/cut_pyramid.py, 2 file px per world px). Until they load, the coded stone shows.
   const ART = {};
-  for (const n of ["south", "north", "east", "west", "stairS"]) {
+  for (const n of ["south", "north", "east", "west", "stairS", "stairN"]) {
     const img = new Image();
     img.onload = () => { ART[n] = img; };
-    img.src = DL.asset("assets/sprites/pyramid/" + (n === "stairS" ? "stair-south" : "step-" + n) + ".png");
+    img.src = DL.asset("assets/sprites/pyramid/" + (n === "stairS" ? "stair-south" : n === "stairN" ? "stair-north" : "step-" + n) + ".png");
   }
   // Tile a strip along a run, clipped to the box (x, y, w, h). Horizontal strips are `th` px tall, vertical ones `th` wide.
   function strip(c, img, x, y, w, h, th, vertical) {
@@ -367,6 +367,10 @@
     if (ART.north) strip(c, ART.north, L, T - 2, w, 11, 11, false);
     else { c.fillStyle = "rgba(215,200,160,0.5)"; c.fillRect(L, T, w, 3); c.fillStyle = "rgba(0,0,0,0.5)"; c.fillRect(L, T - 3, w, 3); }
     const sx = L + HALF - P.stairW / 2;
+    if (ART.stairN) { // the flight going down and away to the north: its landing on this square, its foot on the land beyond
+      const w = P.stairW + 16, h = w * ART.stairN.height / ART.stairN.width;
+      return c.drawImage(ART.stairN, sx - 8, T + 16 - h, w, h);
+    }
     for (let i = 0; i < 4; i++) { c.fillStyle = i % 2 ? "#7a705c" : "#9a8f76"; c.fillRect(sx, T + i * 5, P.stairW, 5); }
   }
   // An east or west edge: lip and shadow line along it, and the stairs' treads crossing it.
