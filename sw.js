@@ -2,7 +2,7 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.171";
+const VERSION = "0.15.172";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
@@ -138,3 +138,4 @@ self.addEventListener("fetch", (e) => {
       .catch(() => caches.match(req).then((r) => r || caches.match(req, { ignoreSearch: true })).then((r) => r || (req.mode === "navigate" ? caches.match("index.html") : Response.error())))
   );
 });
+

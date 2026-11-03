@@ -41,8 +41,8 @@
     return pts;
   };
 
-  // Tier I at Flame 1–2, Tier II at 3–4, Tier III at 5.
-  Camp.tier = (up) => (up.flame >= 5 ? 3 : up.flame >= 3 ? 2 : 1);
+  // A new silhouette at Flame 5, 10, 15 and 20; a drowned flame keeps the first camp's shape.
+  Camp.tier = (up) => Math.max(1, DL.FLAME.looks.filter((l) => up.flame >= l).length);
   Camp.walled = (up) => up.stakes >= 2;
   Camp.towerCount = (lv) => [0, 1, 2, 4][lv];
 
@@ -59,6 +59,8 @@
     L.banners = [{ x: -30, y: -34 }];
     if (tier >= 2) L.banners.push({ x: 30, y: -34 });
     if (tier >= 3) L.banners.push({ x: -58, y: 38 }, { x: 58, y: 38 });
+    if (tier >= 4) L.banners.push({ x: -100, y: -108 }, { x: 100, y: -108 });
+    if (tier >= 5) L.banners.push({ x: -150, y: 90 }, { x: 150, y: 90 });
     L.forge = up.forge ? { x: -138, y: 14 } : null;
     L.armory = up.armory ? { x: 136, y: 16 } : null;
     L.workbench = up.workbench ? { x: -50, y: 150 } : null;
@@ -136,3 +138,4 @@
     return Camp.gatePoint(g.angle, 0, inside ? -34 : 34);
   };
 })(window.DL);
+

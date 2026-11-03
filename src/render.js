@@ -579,7 +579,7 @@
     c.fillRect(Math.round(x - w / 2), Math.round(y), Math.max(0, w * k), 3);
   }
 
-  /* ---------- base camp: grows through three tiers ---------- */
+  /* ---------- base camp: a new form every five Flame levels ---------- */
   function drawCampGround(c, G) {
     const L = DL.Camp.layout(G.save.up), R = DL.WALL_R;
     if (L.tier === 1) {
@@ -591,6 +591,14 @@
       return;
     }
     // trodden perimeter path and a flagstone plaza
+    if (L.tier >= 4) {
+      // Coded milestone stonework until Robert's new Flame/camp art is cut into frames.
+      c.fillStyle = L.tier >= 5 ? "#655c42" : "#484641";
+      c.fillRect(-132, -91, 264, 182);
+      c.strokeStyle = L.tier >= 5 ? "#b7a66a" : "#81816c";
+      c.lineWidth = 3;
+      for (let i = 0; i < L.tier - 2; i++) c.strokeRect(-132 + i * 7, -91 + i * 7, 264 - i * 14, 182 - i * 14);
+    }
     c.strokeStyle = "rgba(66,54,40,0.6)";
     c.lineWidth = 18;
     c.strokeRect(-(R - 34), -(R - 34), (R - 34) * 2, (R - 34) * 2);
@@ -729,16 +737,29 @@
         }
       }
     }
-    // the Central Flame: stone ring → raised fire pit → iron beacon
+    // Stone ring → fire pit → beacon → citadel dais → crowned beacon.
     const f = G.flame;
     put(2, () => {
       const lvl = u.flame;
       let fy = 2;
-      if (Art.sprites.flame1) { const y = [10, 14, 12][L.tier - 1]; sprite(c, "flame" + L.tier, 0, y); fy = FLAME_FIRE[L.tier]; }
+      const artTier = Math.min(3, L.tier);
+      if (L.tier >= 4) {
+        c.fillStyle = L.tier >= 5 ? "#a38a4e" : "#65635a";
+        c.fillRect(-34, -5, 68, 17);
+        c.fillStyle = "#302e29";
+        for (const x of [-38, 30]) c.fillRect(x, -82, 8, 90);
+        c.fillStyle = L.tier >= 5 ? "#ddc478" : "#939181";
+        for (const x of [-42, 26]) c.fillRect(x, -85, 16, 7);
+        if (L.tier >= 5) {
+          c.fillRect(-42, -97, 84, 6);
+          for (const x of [-40, -22, -4, 14, 32]) c.fillRect(x, -108, 8, 15);
+        }
+      }
+      if (Art.sprites["flame" + artTier]) { const y = [10, 14, 12][artTier - 1]; sprite(c, "flame" + artTier, 0, y); fy = FLAME_FIRE[artTier]; }
       else if (L.tier === 1) sprite(c, "firering", 0, 10);
       else if (L.tier === 2) { sprite(c, "firepit2", 0, 14); fy = -2; }
       else { shadow(c, 0, 8, 40, 10, 0.45); sprite(c, "brazierBig", 0, 12); fy = -46; }
-      if (f.lit) Art.drawFire(c, 0, fy, 1.6 + lvl * 0.25 + (f.hitT > 0 ? -0.4 : 0), t);
+      if (f.lit) Art.drawFire(c, 0, fy, 1.6 + Math.min(lvl, 10) * 0.25 + (f.hitT > 0 ? -0.4 : 0), t);
       else { c.fillStyle = "#6a2a14"; c.fillRect(-4, fy - 4, 3, 2); c.fillRect(3, fy - 2, 2, 2); }
       if (f.lit && f.hp < f.max) bar(c, 0, fy - 50 - lvl * 4, 46, f.hp / f.max, "#ffb35a");
     });
@@ -1977,3 +1998,4 @@
     c.imageSmoothingEnabled = false;
   }
 })(window.DL);
+

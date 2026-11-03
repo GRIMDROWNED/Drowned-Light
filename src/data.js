@@ -9,7 +9,8 @@
   DL.WALL_R = 235;      // palisade half-side; set from the Barricade level by DL.Camp.sync
   DL.WALL_SIZES = [235, 235, 235, 235, 290, 345]; // palisade half-side at each Barricade level: levels 4 and 5 push it out
   DL.GARDEN_YIELD = [0, 4, 8, 14];
-  DL.TIER_NAMES = ["", "A Place to Rest", "A Growing Bastion", "A Beacon in the Marsh"];
+  DL.TIER_NAMES = ["", "A Place to Rest", "A Growing Bastion", "A Beacon in the Marsh", "A Citadel of Light", "The Crown of the Pyramid"];
+  DL.FLAME = { max: 20, perBarricade: 4, looks: [1, 5, 10, 15, 20] };
 
   DL.RESOURCES = {
     wood: { name: "Wood", color: "#a07a52" },
@@ -341,7 +342,8 @@
      2. The Central Flame needs nights survived (FLAME_NIGHTS), and every building's levels hang off the Flame.
      3. Kit levels are locked in bands behind camp structures (KIT_BANDS). */
   DL.COST_SCALE = 2;
-  DL.FLAME_NIGHTS = [0, 0, 1, 3, 6, 10]; // nights survived to build Central Flame level i
+  // Keep the original 1 / 3 / 6 / 10 nights at levels 2–5, then continue the same progression.
+  DL.FLAME_NIGHTS = Array.from({ length: DL.FLAME.max + 1 }, (_, l) => l * (l - 1) / 2);
   DL.KIT_BANDS = [
     { upTo: 5, req: { forge: 1 } },
     { upTo: 10, req: { forge: 2, flame: 3 } },
@@ -697,11 +699,15 @@
   // Camp buildings. costs[level] = price to go from `level` to `level + 1`.
   // reqFlame(target) = Central Flame level needed to build that level.
   DL.UPGRADES = [
-    { id: "flame", name: "Central Flame", max: 5,
-      info: "The heart of the camp. A bigger light and a sturdier flame. Levels 3 and 5 grow the camp into a Bastion, then a Beacon.",
+    { id: "flame", name: "Central Flame", max: DL.FLAME.max,
+      info: "The heart of the pyramid. Each Barricade level allows four Flame levels, up to 20. The camp takes a new form at levels 5, 10, 15 and 20.",
       effect: (l) => `Light radius ${180 + 40 * l} · flame strength ${150 + 100 * l}`,
       costs: [null, { wood: 10, stone: 6 }, { wood: 22, stone: 16, resin: 5 }, { wood: 34, stone: 30, iron: 10, resin: 10 },
-        { wood: 48, stone: 42, iron: 22, pearl: 3, black: 2 }],
+        { wood: 48, stone: 42, iron: 22, pearl: 3, black: 2 },
+        ...Array.from({ length: DL.FLAME.max - 5 }, (_, i) => ({
+          wood: 62 + i * 14, stone: 54 + i * 12, iron: 30 + i * 8,
+          resin: 12 + i * 3, pearl: 4 + Math.floor(i / 2), black: 2 + Math.floor(i / 3),
+        }))],
       reqFlame: () => 0 },
     { id: "forge", name: "Forge", max: 4, info: "Hone your weapon.",
       effect: (l) => `Weapon damage +${20 * l}%`,
@@ -733,7 +739,7 @@
         "Great palisade · the camp grows again · 60 damage at the gates"][l],
       costs: [{ wood: 18 }, { wood: 36, iron: 8 }, { wood: 50, iron: 18, resin: 10 }, { wood: 64, stone: 30, iron: 24 },
         { wood: 76, stone: 44, iron: 30, black: 3 }],
-      reqFlame: (t) => [0, 1, 3, 5, 5, 5][t] },
+      reqFlame: (t) => [0, 1, 4, 8, 12, 16][t] },
     /* Homes for your companions: each level of a home lets its companion train five more levels (DL.SUMMON).
        `needs` = the companion someone in this world must have won before the home can be built. */
     { id: "kennel", name: "Bone Kennel", max: 3, needs: "hound", info: "A den of bones and hides for your Bone Hound. Each level lets it train five more levels.",
@@ -786,3 +792,4 @@
     return p;
   };
 })(window.DL);
+

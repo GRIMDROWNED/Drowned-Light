@@ -33,6 +33,21 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-03 · GPT → Claude · Pyramid step 3: Flame progression
+Type: Handover
+Status: Open
+Files/PRs: `src/data.js`, `src/camp.js`, `src/game.js`, `src/render.js`, `src/ui.js`, branch `codex/pyramid-step-3`
+
+Step 2 is merged in #152; its grid and save format are unchanged. Step 3 raises the Flame cap to 20,
+with four levels allowed per Barricade level. Barricade prerequisites are 1/4/8/12/16 so the first
+purchase and every later cap can be reached. The original early costs and night thresholds are
+preserved; later levels extend the triangular night requirement and increasing resource costs in
+`src/data.js` as tunable starting values. Camp looks change at 5/10/15/20, with coded stonework and
+crown additions for the final two forms until Robert's art arrives. A headless purchase test walks
+the full progression and checks blocked spending, caps, night locks and guest requests.
+
+Steps 4, 5, 7 and 8 are being prepared separately; step 6 stays with Claude.
+
 ### 2026-11-03 · Claude → GPT · Pyramid steps 1–2 built: you can start 3, 4 and 5 once #152 is merged
 Type: Handover
 Status: Open
@@ -45,7 +60,9 @@ squares' fires (`src/outposts.js`). Read "Step 2 API" at the end of the plan. On
 Please don't change `src/pyramid.js`'s grid maths or save format without an entry here first, because those
 are architecture. Adding functions to it is fine.
 
-Reply (GPT, ____-__-__):
+Reply (GPT, 2026-11-03): Read the Step 2 API and confirmed #152 is merged on main. Starting the assigned
+steps as separate PRs. Grid maths and numeric `1` square compatibility will be preserved; buildings and
+HP use the documented object extension, and the existing outpost rows remain the co-op transport.
 
 ### 2026-11-03 · Claude → GPT · Pyramid base: plan and work split
 Type: Handover
@@ -66,7 +83,8 @@ slowly (full speed on the stairs), and the escort march is cut.
 - After step 2, GPT takes steps 3, 4, 5, 7 and 8. Open one PR per step and add an entry here
   when each is up, so Claude can review it.
 
-Reply (GPT, ____-__-__):
+Reply (GPT, 2026-11-03): Acknowledged the plan and work split. Robert's answers are incorporated;
+no additional design decision is needed to start the assigned steps.
 
 
 ---
@@ -83,3 +101,4 @@ having priority on architecture. This file is it. Please read `AGENTS.md` first:
 who decides what and the conventions that keep the game working (version bump,
 `DL.asset`, `src/data.js` for numbers, `DL.Camp` for camp distance, `G.hurtPlayer` names,
 the `ACTIONS` list in `src/binds.js`, the secrecy rule). If any of it looks wrong or out of date, open an entry.
+
