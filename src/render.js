@@ -933,10 +933,8 @@
     const n = Art.animLength(key, anim);
     const frame = h.swing > 0 ? Math.min(n - 1, Math.floor((1 - h.swing / C.swing) * n)) : Math.floor((h.moving ? h.animT * 10 : t * 1.6));
     Art.drawUnit(c, key, anim, frame, h.angle, h.x, h.y, C.scale, h.flash > 0 ? { flash: 0.7, flashColor: "#ffb08a" } : {});
-    // Gold foot ring and a name distinguish a defender from another player.
+    // A gold foot ring marks a defender (Robert dropped the name label, 2026-11-03).
     c.strokeStyle = "#d6ae64"; c.lineWidth = 2; c.beginPath(); c.ellipse(h.x, h.y + 1, 11, 4, 0, 0, Math.PI * 2); c.stroke();
-    c.font = "700 9px Inter, system-ui, sans-serif"; c.textAlign = "center"; c.fillStyle = "#e5c889";
-    c.fillText("Champion", h.x, h.y - 76);
     if (h.hp < h.maxHp) bar(c, h.x, h.y - 66, 26, h.hp / h.maxHp, "#dfbe79");
   }
 
