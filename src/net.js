@@ -191,7 +191,7 @@
       if (m.wyvern) DL.Wyvern.join(g.id); // and David
       const harvested = [];
       for (const c of DL.World.chunks.values()) for (const o of c.objects) if (o.harvested || o.dead || (o.maxHp && o.hp < o.maxHp)) harvested.push(objRow(o));
-      sendTo(g, { t: "welcome", v: VERSION, id: g.id, up: G.save.up, difficulty: G.save.difficulty, day: G.save.day, nights: G.save.nights, time: G.time, ob: harvested });
+      sendTo(g, { t: "welcome", v: VERSION, id: g.id, up: G.save.up, difficulty: G.save.difficulty, terrain: G.save.terrain || "flat", day: G.save.day, nights: G.save.nights, time: G.time, ob: harvested });
       say(`A friend joined as the ${a.label} (Lv ${a.kitLevel}).`, "good");
       DL.Sound.play("dawn");
     } else if (m.t === "state") {
@@ -431,9 +431,11 @@
     G.save.kit = Net.joinKit;
     G.save.kitLevel = Net.joinLevel(Net.joinKit);
     G.save.difficulty = w.difficulty;
+    G.save.terrain = w.terrain || "flat";
     G.save.day = w.day;
     G.save.nights = w.nights;
     DL.World.chunks.clear();
+    DL.Terrain.reset();
     G.startLife();
     G.time = w.time;
     G.player.x = 30 * (w.id || 1);
