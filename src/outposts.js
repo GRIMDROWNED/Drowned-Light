@@ -1,8 +1,8 @@
 /* Drowned Light — the fires of the Pyramid's squares (they replaced outposts; src/pyramid.js holds the squares).
    Every square the knights hold has a brazier of firelight at its middle in a ring of stakes. Supplies carried
    there are sent home to the camp's stash, and with your Kindle lit you can travel along his old paths between
-   the camp and every square (DL.OUTPOST). The Drowned go for a square's fire like any light; snuffed, it's lit
-   again at dawn. The squares belong to the world (the host's save); the host runs their fires and sends them in
+   the camp and every square (DL.OUTPOST). The Drowned go for a square's fire like any light; destroyed, its square
+   sinks and the Central Flame loses a level. Surviving squares recover at dawn. The host runs their fires and sends them in
    snapshots, which also tell a friend's device which squares are held. */
 "use strict";
 (function (DL) {
@@ -16,6 +16,14 @@
   const compass = (dx, dy) => ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"][((Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) % 8) + 8) % 8];
   Outposts.max = () => DL.Pyramid.limit();
   const name = (o) => `the ${compass(o.x, o.y)} square, ring ${DL.Pyramid.ring(o.gx, o.gy)}`;
+  const maxHp = () => DL.PYRAMID.hp;
+  // Version 0.15.171 stored 1 for a held square; widen only when it acquires changing state.
+  function saveHp(o) {
+    const sq = G.save.pyramid.sq, k = o.gx + "," + o.gy;
+    if (!sq[k]) return;
+    if (typeof sq[k] !== "object") sq[k] = {};
+    sq[k].hp = o.hp;
+  }
 
   // The live fires, one at the middle of every square the knights hold (the camp has its own Central Flame).
   // A fire keeps its state across a rebuild.
@@ -26,12 +34,22 @@
     DL.Pyramid.each((gx, gy) => {
       if (!gx && !gy) return;
       const c = DL.Pyramid.center(gx, gy);
-      list.push(old.get(gx + "," + gy) || { kind: "outpost", gx, gy, x: c.x, y: c.y, rad: 14, hp: O.hp, max: O.hp, lit: true, hitT: 0 });
+      const saved = G.save.pyramid.sq[gx + "," + gy], max = maxHp();
+      const hp = saved && Number.isFinite(saved.hp) ? Math.max(0, Math.min(max, saved.hp)) : max;
+      const o = old.get(gx + "," + gy) || { kind: "outpost", gx, gy, x: c.x, y: c.y, rad: 14, hitT: 0 };
+      Object.assign(o, { hp, max, lit: hp > 0 });
+      list.push(o);
     });
     G.outposts = list;
     for (const o of list) DL.Pyramid.refreshBuildings(o);
   };
-  Outposts.dawn = function () { for (const o of G.outposts) { o.lit = true; o.hp = o.max; for (const q of o.pylons || []) { q.lit = true; q.hp = q.max; } } };
+  Outposts.dawn = function () {
+    for (const o of G.outposts) {
+      o.lit = true; o.hp = o.max;
+      if (!G.isGuest()) saveHp(o);
+      for (const q of o.pylons || []) { q.lit = true; q.hp = q.max; }
+    }
+  };
   Outposts.update = function (dt) {
     for (const o of G.outposts) { o.hitT = Math.max(0, o.hitT - dt); for (const q of o.pylons || []) q.hitT = Math.max(0, q.hitT - dt); }
     DL.Pyramid.update(dt);
@@ -62,14 +80,20 @@
 
   // The Drowned strike its fire (src/game.js).
   Outposts.hurt = function (o, amt) {
-    o.hp -= amt;
+    if (G.isGuest() || G.save.up.flame <= 0 || !o.lit || !G.outposts.includes(o) || !Number.isFinite(amt) || amt <= 0) return;
+    o.hp = Math.max(0, o.hp - amt);
     o.hitT = 0.2;
     for (let i = 0; i < 4; i++) G.spark(o.x, o.y - 24, "255,160,70", 80);
     if (o.hp <= 0 && o.lit) {
       o.lit = false; o.hp = 0;
       for (let i = 0; i < 14; i++) G.puff(o.x, o.y - 24, "rgba(40,40,40,0.7)", 50, 1);
-      DL.Net.say("An outpost's fire has been snuffed out.", "warn");
-      say("An outpost's fire has been snuffed out.", "warn");
+      DL.Pyramid.lose(o.gx, o.gy);
+      const msg = `The Drowned take ${name(o)}. Its land sinks into the marsh.`;
+      DL.Net.say(msg, "danger");
+      say(msg, "danger");
+    } else {
+      saveHp(o);
+      G.persist();
     }
   };
 
@@ -85,6 +109,7 @@
   };
   // Why you can't travel now (null when you can).
   Outposts.travelLock = function () {
+    if (G.save.up.flame <= 0) return "The Central Flame is lost. This world has fallen";
     if (!DL.Kindle.lit()) return "You need a guide who knows the old paths. Something lost in the Mire still remembers them";
     if (G.night && G.enemies.some((e) => !e.removed && e.rise <= 0 && dist(e.x, e.y, G.player.x, G.player.y) < O.safeR)) return "The Drowned are too close";
     return null;
@@ -135,7 +160,7 @@
   /* ---------------- co-op ---------------- */
   Outposts.rows = () => G.outposts.map((o) => [o.gx, o.gy, o.x, o.y, o.lit ? 1 : 0, Math.round(o.hp), o.max, o.b, (o.pylons || []).map((q) => [Math.round(q.hp), q.lit ? 1 : 0])]);
   Outposts.apply = function (rows) {
-    G.outposts = (rows || []).map((r) => ({ kind: "outpost", gx: r[0], gy: r[1], x: r[2], y: r[3], lit: !!r[4], hp: r[5], max: r[6] || O.hp, b: DL.Pyramid.cleanBuildings(r[7]), rad: 14, hitT: 0 }));
+    G.outposts = (rows || []).map((r) => ({ kind: "outpost", gx: r[0], gy: r[1], x: r[2], y: r[3], lit: !!r[4], hp: r[5], max: r[6] || maxHp(), b: DL.Pyramid.cleanBuildings(r[7]), rad: 14, hitT: 0 }));
     DL.Pyramid.setHeld(G.outposts.map((o) => o.gx + "," + o.gy)); // a friend sees the host's pyramid
     G.outposts.forEach((o, i) => {
       DL.Pyramid.refreshBuildings(o);

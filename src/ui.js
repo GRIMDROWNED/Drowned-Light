@@ -85,7 +85,7 @@
     $("campBtn").addEventListener("click", () => UI.campAction());
 
     $("btnBegin").addEventListener("click", () => {
-      if (!G.save.started) { UI.openSetup(); return; }
+      if (!G.save.started || G.save.up.flame === 0) { UI.openSetup(); return; }
       UI.hideScreens(); G.begin(); UI.showHud(true);
     });
     $("btnNew").addEventListener("click", () => {
@@ -120,7 +120,10 @@
       UI.setup[UI.setup.step === 1 ? "kit" : "diff"] = b.dataset.pick;
       UI.renderSetup();
     });
-    $("btnRise").addEventListener("click", () => { UI.hideScreens(); G.respawn(); UI.showHud(true); });
+    $("btnRise").addEventListener("click", () => {
+      if (G.save.up.flame === 0) { DL.Net.leave(true); UI.toTitle(); return; }
+      UI.hideScreens(); G.respawn(); UI.showHud(true);
+    });
     $("btnWinGo").addEventListener("click", () => UI.closeWin());
     $("btnResume").addEventListener("click", () => UI.resume());
     $("btnQuit").addEventListener("click", () => { G.persist(); DL.Net.leave(true); UI.toTitle(); });
@@ -229,7 +232,7 @@
 
   UI.showTitle = function () {
     const G = DL.Game;
-    $("btnBegin").innerHTML = G.save.started
+    $("btnBegin").innerHTML = G.save.up.flame === 0 ? "Camp fallen — begin a new game" : G.save.started
       ? `Continue — Day ${G.save.day}<span class="sub">Slot ${G.slot} · ${G.kit().name} · Level ${G.save.kitLevel} · ${G.diff().name}</span>`
       : "Begin";
     $("btnNew").classList.toggle("hidden", !G.save.started);
@@ -400,7 +403,7 @@
     $("deathTitle").textContent = info.cause === "corruption" ? "You have drowned" : info.cause === "camp" ? "Your camp has fallen" : "Your light is spent";
     $("deathCause").textContent = info.cause === "corruption"
       ? "The darkness filled your armour, and you became one of the Drowned."
-      : info.cause === "camp" ? "The Drowned put out the Central Flame, and the dark poured in."
+      : info.cause === "camp" ? "The Central Flame reached level 0. The Pyramid has fallen to the Drowned."
       : "You fell to the Drowned, and the deep claimed what was left.";
     // what dealt the killing blow (src/game.js G.lastHit)
     const h = info.hit;
@@ -408,7 +411,9 @@
       ? ` You bled out in ${h.by}.`
       : ` Slain by ${/^(the|an?) /i.test(h.by) ? h.by : "a " + h.by}: a blow of ${Math.round(h.dmg)} when you had ${Math.max(1, Math.round(h.hp))} health left.`;
     const lost = DL.RES_KEYS.filter((k) => info.lost[k] > 0).map((k) => chip(k, info.lost[k])).join("");
-    $("deathLost").innerHTML = info.any
+    $("btnRise").textContent = info.cause === "camp" ? "Return to title" : "Rise at camp";
+    $("deathLost").innerHTML = info.cause === "camp"
+      ? "<p class=\"muted\">This world is lost. Begin a new game from the title screen to kindle another flame.</p>" : info.any
       ? `<p>Your drowned self now wanders <b>${info.zone}</b>, carrying:</p><div class="chips">${lost}</div><p class="muted">Slay it to reclaim your supplies.${info.hadSelf ? " Your previous drowned self has sunk into the deep — its supplies are gone." : ""}</p>`
       : `<p class="muted">You carried nothing. Your stored supplies and camp are safe.${info.hadSelf ? " Your drowned self still waits where you last fell." : ""}</p>`;
     $("deathStats").textContent = `Day ${info.day} · nights survived: ${info.nights}`;
@@ -1077,7 +1082,8 @@
 
     // objective banner
     let obj = "";
-    if (G.cave) obj = DL.Cave.objective();
+    if (G.save.up.flame === 0) obj = "The Central Flame is lost. This world has fallen.";
+    else if (G.cave) obj = DL.Cave.objective();
     else if (G.isGuest() && (G.hostState === "dead" || G.hostState === "dying")) obj = "Your friend has fallen — waiting for them to rise";
     else if (DL.Wyvern.carrying()) obj = "The mother wyvern hunts you — slay her to keep the egg";
     else if (DL.Finale.objective(p)) obj = DL.Finale.objective(p);

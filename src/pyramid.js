@@ -71,10 +71,17 @@
   };
   // The Drowned take a square (for the sieges, step 5): it sinks back into the marsh.
   Py.lose = function (gx, gy) {
-    if ((gx === 0 && gy === 0) || !Py.has(gx, gy)) return false;
+    if (G.isGuest() || G.save.up.flame <= 0 || (gx === 0 && gy === 0) || !Py.has(gx, gy) || !G.save.pyramid.sq[key(gx, gy)]) return false;
+    const fire = G.outposts.find((o) => o.gx === gx && o.gy === gy);
+    if (fire) {
+      fire.lit = false; fire.hp = 0; // invalidate enemies' old goal references too
+      for (const pylon of fire.pylons || []) { pylon.lit = false; pylon.hp = 0; }
+    }
     delete G.save.pyramid.sq[key(gx, gy)];
-    G.persist();
+    G.save.up.flame = Math.max(0, G.save.up.flame - 1);
     DL.Outposts.reset();
+    DL.Siege.levelLost();
+    G.persist();
     return true;
   };
 
@@ -110,6 +117,7 @@
     return def && lv < def.max ? DL.scaleCost({ ...def.costs[lv] }) : null;
   };
   Py.buildLock = function (gx, gy, id, actor = G.player) {
+    if (G.save.up.flame <= 0) return "This world has fallen; begin a new game";
     if (!Number.isInteger(gx) || !Number.isInteger(gy) || !Py.inGrid(gx, gy) || !(gx || gy) || !Py.has(gx, gy)) return "Build at a square you hold";
     const c = Py.center(gx, gy);
     if (G.cave || !actor || actor.down || actor.downT > 0 || !Number.isFinite(actor.x) || !Number.isFinite(actor.y) || DL.dist(actor.x, actor.y, c.x, c.y) > P.buildR) return "Stand at this square's fire to build";

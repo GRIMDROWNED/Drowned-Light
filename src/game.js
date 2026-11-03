@@ -205,6 +205,7 @@
     }
     G.startLife();
     for (const k of DL.RES_KEYS) G.player.carried[k] = G.save.carried[k] || 0;
+    if (!G.isGuest() && G.save.up.flame === 0) G.campFallen();
   };
 
   G.newGame = function (kit, difficulty, attackMode) {
@@ -232,7 +233,7 @@
     G.enemies = []; G.projectiles = []; G.pickups = []; G.effects = []; G.texts = [];
     G.torches = []; G.lightZones = []; G.telegraphs = []; G.hexPools = []; G.decals = []; G.lights = [];
     G.blooms = []; G.amethysts = []; G.walls = []; G.wisp = null; G.hitNodes = [];
-    G.flame = { kind: "flame", x: 0, y: 0, rad: 24, hp: st.flameHp, max: st.flameHp, lit: true, hitT: 0 };
+    G.flame = { kind: "flame", x: 0, y: 0, rad: 24, hp: G.save.up.flame > 0 ? st.flameHp : 0, max: st.flameHp, lit: G.save.up.flame > 0, hitT: 0 };
     G.towerCd = [0, 0, 0, 0];
     G.resetPylons();
     G.siegeT = 5; G.spawnT = 3; G.rootEvent = null; G.selfEnemy = null; G.champSpawned = false;
@@ -264,6 +265,7 @@
   };
 
   G.respawn = function () {
+    if (G.save.up.flame === 0) { DL.UI.toTitle(); return; }
     G.save.day += 1;
     G.persist();
     G.startLife();
@@ -319,6 +321,7 @@
     DL.Rose.local();
     DL.Cave.update(dt);
     updateEnemies(dt);
+    if (G.state === "dying") return;
     DL.Hounds.update(dt);
     DL.Golems.update(dt);
     DL.Kindle.update(dt);
@@ -1704,7 +1707,7 @@
   function die(cause) {
     const p = G.player;
     if (G.state !== "play") return;
-    if (DL.Cave.fall()) return; // falling in Derek's Hollow doesn't drown you
+    if (cause !== "camp" && DL.Cave.fall()) return; // a lost camp ends the world, including the Hollow
     if (G.isGuest()) { if (!(p.downT > 0)) guestDown(); return; }
     G.state = "dying";
     G.dying = 0;
@@ -1736,6 +1739,7 @@
   // Why the next level of a building can't be built yet (null when it can, cost aside).
   G.flameCap = () => Math.min(DL.FLAME.max, Math.max(1, DL.FLAME.perBarricade * G.save.up.stakes));
   G.upgradeLock = function (u, lvl) {
+    if (G.save.up.flame === 0) return "This world has fallen; begin a new game";
     if (u.trophy && !G.save.trophies[u.trophy]) return u.trophy === "bell" ? "Slay the Starved Bell first" : "Slay the Deadly Rose first";
     if (u.needs && !DL.Summons.anyHas(u.needs)) return `Win ${DL.SUMMON[u.needs].name} first`;
     const needFlame = u.reqFlame(lvl + 1);
@@ -1786,8 +1790,13 @@
     return true;
   };
 
-  // Your camp's flame drowned on a siege night with DL.SIEGE.gameOver on: for now, the knight falls with it.
-  G.campFallen = () => die("camp");
+  // Level zero is terminal for this save; closing a menu, reloading or rising again cannot rekindle it.
+  G.campFallen = function () {
+    if (G.isGuest() || G.save.up.flame > 0 || G.state === "dying" || G.state === "dead") return;
+    if (DL.UI) DL.UI.hideScreens();
+    G.state = "play";
+    die("camp");
+  };
 
   G.restUntilDusk = function () {
     if (G.phase() !== "day") return;
