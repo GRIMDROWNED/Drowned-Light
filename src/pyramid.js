@@ -378,7 +378,7 @@
   // Robert's east/west stairs (2026-11-03) are drawn with height, which the overhead camera never shows on a side edge,
   // so they read as stuck on (Robert: "This looks wrong"). Off until top-down side stairs are drawn (Robert chose new art);
   // meanwhile the north flight is turned on its side. The files stay.
-  const SIDE_STAIR_ART = false;
+  const SIDE_STAIR_ART = true; // the top-down redo is in (v0.15.188); west is east mirrored
   function rimV(c, X, T, dx) {
     const img = dx === 1 ? ART.east : ART.west;
     if (img) strip(c, img, dx === 1 ? X - 9 : X, T, 13, CELL, 13, true);
@@ -389,8 +389,9 @@
     const sy = T + HALF - P.stairW / 2, x0 = dx === 1 ? X - 16 : X;
     const st = SIDE_STAIR_ART ? (dx === 1 ? ART.stairE : ART.stairW) : null;
     if (st) { // the flight runs down and away across the edge: its landing (a third of it) on this square
-      const h = P.stairW + 10, w = h * st.width / st.height, edge = dx === 1 ? X + 4 : X;
-      return c.drawImage(st, dx === 1 ? edge - w * 0.3 : edge - w * 0.7, sy - 5, w, h);
+      // a long flight, so it's drawn squeezed east-west (narrower treads) to about 200 px; its paved landing is the first 22%
+      const h = P.stairW + 10, w = Math.min(h * st.width / st.height, 200), edge = dx === 1 ? X + 4 : X;
+      return c.drawImage(st, dx === 1 ? edge - w * 0.22 : edge - w * 0.78, sy - 5, w, h);
     }
     if (ART.stairN) { // meanwhile: the north flight (seen from above) turned to run down to the east or west
       const w = P.stairW + 16, h = w * ART.stairN.height / ART.stairN.width, edge = dx === 1 ? X + 4 : X;
