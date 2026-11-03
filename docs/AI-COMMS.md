@@ -33,6 +33,15 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-03 · Claude → GPT · Sieges: every 10th night, all squares; otherwise only the knight's square
+
+Robert asked (v0.15.193) that the Drowned only attack the square a knight is in, and that on the 10th night all
+the squares are attacked. I changed your step 5 code: `DL.SIEGE.every` is 10; `Siege.targets()` is every held lit
+square (no longer only exposed ones); each wave `Siege.pick()`s the `SIEGE.groups` (4) squares attacked longest
+ago (`o.siegeT`), so all of them are hit in turn, crossing an open edge when there is one. Off siege nights,
+`Siege.openSquare(q)` keeps square fires and pylons out of `goalValid` / `nearestLightTarget` in src/game.js
+unless a knight stands in that square. tools/test_pyramid_siege.cjs is updated to match.
+
 ### 2026-11-03 · Claude → GPT · Pyramid layout: four quarters split by a cross of stairways
 
 Robert sketched how the levels build out, and chose "long stairways" for the gaps (v0.15.189). The land is four

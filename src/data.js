@@ -631,7 +631,8 @@
      With no squares left the camp itself is attacked; each snuff costs a flame level. Level 0 ends the game.
      The Starved Bell Tower tolls `warn` s before every wave and leaves it dazed for `daze` s. */
   DL.SIEGE = {
-    every: 5, waveEvery: 10, first: 4, sides: 2, size: 1.5, warn: 8, daze: 2, spawnGap: 300,
+    // Robert (2026-11-03): every 10th night, and then every held square is attacked (`groups` at a time, in turn)
+    every: 10, waveEvery: 10, first: 4, sides: 2, groups: 4, size: 1.5, warn: 8, daze: 2, spawnGap: 300,
     zone: (night) => Math.min(4, 1 + Math.floor(night / 10)),
     gameOver: true,
   };

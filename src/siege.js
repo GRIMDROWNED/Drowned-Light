@@ -1,5 +1,6 @@
-/* Drowned Light — the Great Siege and the Starved Bell Tower. Every fifth night the Drowned march on exposed
-   Pyramid squares, wherever the knights are. Every destroyed square lowers the Central Flame one level;
+/* Drowned Light — the Great Siege and the Starved Bell Tower. Every tenth night the Drowned march on all the
+   Pyramid's squares, wherever the knights are (Robert, 2026-11-03; on other nights they only go for the square
+   a knight stands in, Siege.openSquare). Every destroyed square lowers the Central Flame one level;
    when no squares remain they attack the camp itself. A flame at level zero is a lost world.
    The Starved Bell Tower, built from the slain Bell's clapper, tolls before every wave that comes for the camp,
    says where it's coming from, and leaves the wave dazed when it arrives. The host's device runs it all. */
@@ -19,8 +20,8 @@
   Siege.nightsLeft = () => (S.every - (nightNo() % S.every)) % S.every;
   Siege.line = function () {
     const n = Siege.nightsLeft();
-    if (Siege.on) return "The Great Siege is upon the outer squares. Every square lost lowers the Central Flame; level 0 loses the world.";
-    return n === 0 ? "Tonight the Drowned march on your outer squares: the Great Siege." : `The Great Siege comes every ${S.every}th night: ${n} night${n > 1 ? "s" : ""} from now.`;
+    if (Siege.on) return "The Great Siege is upon every square. Every square lost lowers the Central Flame; level 0 loses the world.";
+    return n === 0 ? "Tonight the Drowned march on all your squares: the Great Siege." : `The Great Siege comes every ${S.every}th night: ${n} night${n > 1 ? "s" : ""} from now.`;
   };
 
   Siege.reset = function () { Siege.on = false; Siege.fallen = false; Siege.nextA = null; Siege.warned = false; };
@@ -33,7 +34,8 @@
     Siege.warned = false;
     Siege.nextA = rand(0, TAU);
     sfx("toll");
-    say("THE GREAT SIEGE. Defend your outer squares! Each square lost lowers the Central Flame.", "danger");
+    for (const o of G.outposts) o.siegeT = 0;
+    say("THE GREAT SIEGE. The Drowned march on every square! Each square lost lowers the Central Flame.", "danger");
   };
   Siege.dawn = function () {
     if (!Siege.on) return;
@@ -43,7 +45,7 @@
   };
   // A day dawning tomorrow on the eve of a siege: a warning.
   Siege.morning = function () {
-    if (!G.isGuest() && Siege.nightsLeft() === 0) setTimeout(() => say("The Drowned gather in the deep. Tonight they will march on your outer squares.", "warn"), 2600);
+    if (!G.isGuest() && Siege.nightsLeft() === 0) setTimeout(() => say("The Drowned gather in the deep. Tonight they will march on all your squares.", "warn"), 2600);
   };
 
   /* ---------------- waves ---------------- */
@@ -74,15 +76,25 @@
 
   const SIDES = [[0, -1], [1, 0], [0, 1], [-1, 0]];
   const openSides = (o) => SIDES.filter(([dx, dy]) => !DL.Pyramid.has(o.gx + dx, o.gy + dy));
-  // Only land with an unclaimed neighbour is exposed. Fully surrounded squares are protected by those outside.
-  Siege.targets = () => G.outposts.filter((o) => o.lit && DL.Pyramid.has(o.gx, o.gy) && openSides(o).length);
-  function approach(a) {
+  // Every held square is a target of the Great Siege.
+  Siege.targets = () => G.outposts.filter((o) => o.lit && DL.Pyramid.has(o.gx, o.gy));
+  /* Off siege nights the Drowned leave the squares alone unless a knight is in one: only that square's fire and
+     lamps draw them (src/game.js goalValid / nearestLightTarget). */
+  Siege.openSquare = function (q) {
+    if (Siege.on) return true;
+    const c = DL.Pyramid.cell(q.x, q.y);
+    return G.knights().some((k) => { const s = DL.Pyramid.cell(k.x, k.y); return s.gx === c.gx && s.gy === c.gy; });
+  };
+  // This wave's targets: the squares attacked longest ago (all of them in turn), up to `groups` at once.
+  Siege.pick = function () {
     const targets = Siege.targets();
-    if (!targets.length) return { target: G.flame, a, radius: DL.WALL_R + S.spawnGap };
-    const ux = Math.cos(a), uy = Math.sin(a);
-    // Meet the perimeter facing the incoming wave, then approach across an exposed edge of that square.
-    const target = targets.reduce((best, o) => o.x * ux + o.y * uy > best.x * ux + best.y * uy ? o : best);
-    const [dx, dy] = openSides(target).reduce((best, side) => side[0] * ux + side[1] * uy > best[0] * ux + best[1] * uy ? side : best);
+    if (!targets.length) return [];
+    return targets.sort((p, q) => (p.siegeT || 0) - (q.siegeT || 0) || DL.dist(0, 0, q.x, q.y) - DL.dist(0, 0, p.x, p.y)).slice(0, S.groups);
+  };
+  // Approach a square across an open (unheld) edge facing out from the camp if it has one, else straight outward.
+  function approach(target) {
+    const ux = target.x, uy = target.y, open = openSides(target);
+    const [dx, dy] = open.length ? open.reduce((best, side) => side[0] * ux + side[1] * uy > best[0] * ux + best[1] * uy ? side : best) : [ux, uy];
     return { target, a: Math.atan2(dy, dx), radius: DL.MAP.cell / 2 + S.spawnGap };
   }
 
@@ -95,12 +107,14 @@
     Siege.warned = false;
     const zi = S.zone(nightNo()), D = G.diff();
     const n = Math.round((3 + Math.floor(G.save.day * 1.3)) * S.size * D.spawn * G.partyScale());
-    const all = [];
-    for (let s = 0; s < S.sides; s++) {
-      const a = Siege.nextA + (s * TAU) / S.sides;
-      const wave = approach(a), target = wave.target;
-      if (!target.lit) continue;
-      all.push(...G.spawnWave(target.x, target.y, DL.campPool(G.save.day), Math.ceil(n / S.sides), target, wave.radius, zi, wave.a));
+    const all = [], picks = Siege.pick(), stamp = (Siege.stamp = (Siege.stamp || 0) + 1);
+    if (!picks.length) { // no squares held: the camp itself
+      for (let s = 0; s < S.sides; s++) all.push(...G.spawnWave(G.flame.x, G.flame.y, DL.campPool(G.save.day), Math.ceil(n / S.sides), G.flame, DL.WALL_R + S.spawnGap, zi, Siege.nextA + (s * TAU) / S.sides));
+    }
+    for (const target of picks) {
+      const wave = approach(target);
+      target.siegeT = stamp;
+      all.push(...G.spawnWave(target.x, target.y, DL.campPool(G.save.day), Math.ceil(n / picks.length), target, wave.radius, zi, wave.a));
     }
     daze(all);
     Siege.nextA = rand(0, TAU);
