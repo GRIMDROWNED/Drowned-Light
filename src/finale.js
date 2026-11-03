@@ -1,12 +1,10 @@
-/* Drowned Light — the finale: the Fire Bearer, the march to the Drowned Gate, and the Sunken King.
-   Nothing of it shows until it's earned (the secrecy rule): Central Flame 5, the Starved Bell and the Deadly Rose slain,
-   Derek won from the Colossus, and your Kindle lit. At the next dawn Kindle climbs into the Central Flame, drinks it in and
-   rises as the Fire Bearer, a lantern as tall as a tower on four long legs. From the camp, by day, the host begins the march:
-     the march  the Bearer walks for the Drowned Gate, far out in the Abyss, but only while a knight walks beside it. By day the
-                Drowned climb out of the mud to drown its flame; at dusk it plants its legs wherever it is and makes camp
-                (braziers round it, its light grows), and the night's waves come for it there. It heals some at dawn.
-                Struck down, it gutters and falls back to its last camp, and rekindles at dawn. The Great Siege doesn't
-                come for the camp while it's out: the Drowned hunt the Bearer instead.
+/* Drowned Light — the finale: the Fire Bearer, the Drowned Gate, and the Sunken King.
+   Nothing of it shows until it's earned (the secrecy rule): the pyramid must cover DL.PYRAMID.win (80%) of the land
+   (Pyramid.coverage, src/pyramid.js). At the next dawn Kindle climbs into the Central Flame on the pyramid's top, drinks it
+   in and rises as the Fire Bearer, a lantern as tall as a tower on four long legs. From the camp, by day, the host sends it:
+     the stride the Bearer strides straight to the hearth before the Drowned Gate (no escort march since the pyramid plan,
+                docs/PYRAMID-PLAN.md answer 4), and the gate becomes a travel destination. Struck down there, it gutters on
+                the hearth and rekindles at dawn. Old saves that were mid-march (stage 2) are moved to the hearth.
      the gate   a round arch of black stone with three hollows round it, alone in the Abyss in a lake of black water, a
                 causeway running out to it.
                 Anyone can come upon it before the end; it only says it's sealed.
@@ -35,15 +33,14 @@
   let blows = [], beam = null, found = false, net = { stage: 0, charge: 0, open: 0, phase: 0, kingId: 0 }, seen = -1, winAt = 0;
 
   /* ---------------- state ---------------- */
-  // The stage: 0 nothing yet (all secret), 1 the Bearer has risen and waits in the camp, 2 on the march, 3 at the gate, 4 won.
+  // The stage: 0 nothing yet (all secret), 1 the Bearer has risen and waits in the camp, 2 the old march (moved to 3 on load), 3 at the gate, 4 won.
   const S = () => G.save.finale;
   Finale.stage = () => (G.isGuest() ? net.stage : S().stage);
   // The Bearer is out of the camp: the Great Siege leaves the camp alone.
-  Finale.away = () => Finale.stage() === 2 || Finale.stage() === 3;
   // While Kindle is the Bearer, the host's Kindle isn't at their heel.
   Finale.bearing = () => !G.isGuest() && S().stage >= 1 && S().stage <= 3;
   // Everything the end needs, done in this world.
-  Finale.ready = () => G.save.up.flame >= 5 && !!G.save.trophies.bell && !!G.save.trophies.rose && !!G.save.golem && !!G.save.kindle.lit;
+  Finale.ready = () => DL.Pyramid.coverage() >= DL.PYRAMID.win;
   Finale.king = () => G.enemies.find((e) => e.def.king && !e.removed) || null;
   Finale.won = () => Finale.stage() === 4;
 
@@ -114,8 +111,12 @@
     if (G.isGuest()) return;
     const s = S();
     if (s.stage === 1) Finale.b = makeBearer(campSpot().x, campSpot().y);
-    else if (s.stage === 2 || s.stage === 3) Finale.b = makeBearer(s.x, s.y);
+    else if (s.stage === 2 || s.stage === 3) {
+      if (s.stage === 2) { const h = plant(); s.stage = 3; s.x = h.x; s.y = h.y; s.rest = h; } // the march is gone: on to the hearth
+      Finale.b = makeBearer(s.x, s.y);
+    }
   };
+  Finale.hearth = () => plant();
   function store() {
     const b = Finale.b, s = S();
     if (b) { s.x = Math.round(b.x); s.y = Math.round(b.y); s.hp = Math.round(b.hp); s.down = b.down; }
@@ -131,18 +132,17 @@
     for (let i = 0; i < 5; i++) G.spark(b.x + rand(-14, 14), b.y - rand(40, 110), FIRE, 90);
     if (b.hp <= 0) fall(b);
   };
-  // Struck down: it gutters and staggers back to its last camp, to rekindle at dawn.
+  // Struck down: it gutters on the hearth (or in the camp), to rekindle at dawn.
   function fall(b) {
-    const s = S(), back = s.rest || campSpot();
+    const s = S(), back = s.stage === 3 ? plant() : campSpot();
     b.hp = 0; b.down = true; b.lit = false; b.camp = false; b.charge = 0;
     for (let i = 0; i < 30; i++) G.puff(b.x + rand(-30, 30), b.y - rand(0, 140), "rgba(40,36,32,0.75)", 80, 1.3, -20);
     const k = Finale.king();
     if (k) sink(k);
     b.x = back.x; b.y = back.y;
-    if (s.stage === 3) s.stage = 2;
     store();
     sfx("death");
-    say("The Fire Bearer gutters out and staggers back to its last camp. Its fire will rekindle at dawn.", "danger");
+    say("The Fire Bearer gutters out on the hearth. Its fire will rekindle at dawn.", "danger");
   }
 
   /* ---------------- rising (host, at dawn) ---------------- */
@@ -156,7 +156,7 @@
     G.persist();
     setTimeout(() => say("Kindle scuttles up onto the Central Flame and drinks it in, flame and all.", "good"), 2600);
     setTimeout(() => { sfx("milestone"); G.camera.shake = 10; say("The fire rises with him. Kindle stands up as tall as a tower: the Fire Bearer.", "good"); }, 6500);
-    setTimeout(() => say(`Far off in the Abyss, something answers. The Bearer turns to the ${Finale.where().dir}. Begin the march from the camp, by day.`, "warn"), 11000);
+    setTimeout(() => say(`Far off in the Abyss, something answers. The Bearer turns to the ${Finale.where().dir}. Send it to the gate from the camp, by day.`, "warn"), 11000);
   }
   Finale.dawn = function () {
     if (G.isGuest()) return;
@@ -166,41 +166,28 @@
     b.camp = false;
     if (b.down) {
       b.down = false; b.lit = true; b.hp = b.max = maxHp();
-      say("Dawn. The Fire Bearer's flame rekindles. Walk beside it and it marches on.", "good");
+      say("Dawn. The Fire Bearer's flame rekindles on the hearth.", "good");
     } else b.hp = Math.min(b.max, b.hp + b.max * F.dawnHeal);
     store();
   };
-  // Dusk on the march: it plants its legs and makes camp, braziers round it.
-  Finale.nightfall = function () {
-    if (G.isGuest()) return;
-    const s = S(), b = Finale.b;
-    if (s.stage !== 2 || !b || b.down) return;
-    b.camp = true;
-    b.moving = false;
-    b.waveT = 5;
-    s.rest = { x: Math.round(b.x), y: Math.round(b.y) };
-    const night = DL.CYCLE.night + DL.CYCLE.dusk + DL.CYCLE.dawn;
-    for (let i = 0; i < F.braziers; i++) {
-      const a = (i / F.braziers) * TAU + Math.PI / 4;
-      G.torches.push({ type: "brazier", x: b.x + Math.cos(a) * F.brazierR, y: b.y + Math.sin(a) * F.brazierR * 0.7, t: night, max: night, r: 120 * G.diff().light, hp: 90, rad: 10 });
-    }
-    store();
-    say("The Fire Bearer plants its legs and makes camp. Hold its light until dawn.", "warn");
-  };
+  Finale.nightfall = function () {}; // the march and its night camps are gone (kept so callers still work)
 
   // From the camp menu (the host, by day): off to the gate.
   Finale.begin = function () {
     const s = S(), b = Finale.b;
     if (G.isGuest() || s.stage !== 1 || !b || G.night) return false;
-    s.stage = 2;
-    s.rest = { x: Math.round(b.x), y: Math.round(b.y) };
+    for (let i = 0; i < 24; i++) G.puff(b.x + rand(-30, 30), b.y - rand(0, 140), "rgba(255,190,110,0.6)", 60, 1, -30);
+    const h = plant();
+    s.stage = 3;
+    s.rest = h;
+    b.x = h.x; b.y = h.y; b.moving = false; b.charge = 0; b.angle = -Math.PI / 2;
     store();
     sfx("milestone");
-    say(`The Fire Bearer sets out for the gate, ${Finale.where().m} m to the ${Finale.where().dir}. It walks only while a knight walks beside it.`, "good");
+    say(`The Fire Bearer strides down the pyramid and away to the hearth before the gate, ${Finale.where().m} m to the ${Finale.where().dir}. Travel there to stand with it.`, "good");
     return true;
   };
   Finale.lock = function () {
-    if (G.isGuest()) return "Only the host can begin the march";
+    if (G.isGuest()) return "Only the host can send the Bearer";
     if (G.night) return "Only by day";
     return "";
   };
@@ -222,8 +209,7 @@
     if (b.leave != null) return leaving(b, dt);
     if (b.down) return;
     pulse(b, dt);
-    if (s.stage === 2) march(b, dt);
-    else if (s.stage === 3) atGate(b, dt);
+    if (s.stage === 3) atGate(b, dt);
     b.saveT -= dt;
     if (b.saveT <= 0) { b.saveT = 8; store(); }
   };
@@ -238,51 +224,6 @@
     G.effects.push({ type: "ring", x: b.x, y: b.y - 6, r0: 20, r1: F.pulseR, col: FIRE, w: 6, t: 0, max: 0.5 });
     for (const e of prey) G.hitEnemy(e, F.pulseDmg, Math.atan2(e.y - b.y, e.x - b.x), 140, 6, true);
     sfx("flameHit");
-  }
-
-  function march(b, dt) {
-    if (b.camp) {
-      // its camp for the night: waves from two sides while a knight is there to hold it
-      if (nearest(b.x, b.y) > F.campR) return;
-      b.waveT -= dt;
-      if (b.waveT > 0) return;
-      b.waveT = F.waveEvery;
-      const zi = Math.max(1, DL.World.zoneIndex(b.x, b.y)), D = G.diff();
-      const n = Math.round((F.waveN + Math.floor(G.save.day * 0.5)) * D.spawn * G.partyScale()), a = rand(0, TAU);
-      for (let i = 0; i < 2; i++) G.spawnWave(b.x, b.y, DL.ZONES[zi].pool, Math.ceil(n / 2), b, 430, zi, a + i * Math.PI);
-      return;
-    }
-    if (G.night) { b.moving = false; return; }
-    const to = plant(), d = dist(b.x, b.y, to.x, to.y);
-    if (d < 6) return arrive(b);
-    if (nearest(b.x, b.y) > F.leash) { b.moving = false; return; }
-    const spd = F.speed * (DL.World.isWater(b.x, b.y) ? F.wade : 1), step = Math.min(d, spd * dt);
-    b.x += ((to.x - b.x) / d) * step;
-    b.y += ((to.y - b.y) / d) * step;
-    b.angle = Math.atan2(to.y - b.y, to.x - b.x);
-    b.moving = true;
-    if (Math.random() < dt * 3) G.puff(b.x + rand(-30, 30), b.y + rand(-8, 8), "rgba(70,60,50,0.5)", 30, 0.8);
-    // by day the Drowned climb out of the mud ahead of it
-    b.bandT -= dt;
-    if (b.bandT > 0) return;
-    b.bandT = F.bandEvery;
-    const zi = Math.max(1, DL.World.zoneIndex(b.x, b.y)), n = Math.round((F.bandN + Math.max(0, zi - 2)) * G.diff().spawn * G.partyScale());
-    const base = b.angle + rand(-1.1, 1.1);
-    for (let i = 0; i < n; i++) {
-      const a = base + rand(-0.5, 0.5), r = F.bandR + rand(-40, 60);
-      const e = G.makeEnemy(DL.weighted(DL.ZONES[zi].pool), b.x + Math.cos(a) * r, b.y + Math.sin(a) * r, zi, { goal: b, march: true, rise: 0.9 });
-      G.enemies.push(e);
-    }
-  }
-
-  function arrive(b) {
-    const s = S();
-    s.stage = 3;
-    b.moving = false;
-    b.charge = 0;
-    b.angle = -Math.PI / 2;
-    store();
-    say("The Fire Bearer plants its legs on the cold hearth before the gate.", "warn");
   }
 
   /* ---------------- the Sunken King (host) ---------------- */
@@ -488,22 +429,22 @@
       <p>The Fire Bearer carried the last light of the marsh to the gate, and ${KING} is no more. The gate stands open, ${w.m} m to the ${w.dir}.</p></article>`;
     const lock = Finale.lock();
     const body = st === 1
-      ? `<p>Kindle drank the Central Flame and rose as the Fire Bearer. Far off in the Abyss, ${w.m} m to the ${w.dir}, something waits for its fire. Walk beside it and it marches; it rests at night, and the Drowned will come for its flame.</p>
-         <footer>${lock ? `<span class="req">${lock}</span>` : ""}<button data-act="march" ${lock ? "disabled" : ""}>Begin the march</button></footer>`
-      : `<p>${st === 3 ? "The Bearer stands on the hearth before the gate." : "The Bearer is on its way to the gate. It walks only while a knight walks beside it, and makes camp at night."}</p>`;
-    return `<article class="card finale-card"><header><h3>The Fire Bearer</h3><span class="tag">${st === 1 ? "Waiting" : st === 2 ? "On the march" : "At the gate"}</span></header>${body}</article>`;
+      ? `<p>Kindle drank the Central Flame and rose as the Fire Bearer. Past your outer squares, ${w.m} m to the ${w.dir}, something waits for its fire. Send it and it strides straight to the hearth before the gate; the gate becomes a place you can travel to.</p>
+         <footer>${lock ? `<span class="req">${lock}</span>` : ""}<button data-act="march" ${lock ? "disabled" : ""}>Send it to the gate</button></footer>`
+      : `<p>The Bearer stands on the hearth before the gate. Travel there and guard it while it gathers its flame.</p>`;
+    return `<article class="card finale-card"><header><h3>The Fire Bearer</h3><span class="tag">${st === 1 ? "Waiting" : "At the gate"}</span></header>${body}</article>`;
   };
   // The field guide's line: nothing at all until the gate is found or the Bearer has risen.
   Finale.guideLine = function () {
     const st = Finale.stage(), w = Finale.where();
     if (st === 0) return Finale.found() ? `A sealed gate of black stone stands in the Abyss, ${w.m} m ${w.dir} of camp, out in a black lake. Three hollows are carved round its arch.` : "";
     if (st === 4) return `<b>The Drowned Gate</b> stands open, ${w.m} m ${w.dir} of camp.`;
-    return `<b>The Fire Bearer</b> carries the Central Flame's fire to the gate in the Abyss, ${w.m} m ${w.dir} of camp. It walks only while you walk beside it, and makes camp at night.`;
+    return `<b>The Fire Bearer</b> carries the Central Flame's fire to the gate in the Abyss, ${w.m} m ${w.dir} of camp. It waits on the hearth before the gate for you.`;
   };
   // The banner while you're with it.
   Finale.objective = function (p) {
     const st = Finale.stage(), b = Finale.b;
-    if (!b || (st !== 2 && st !== 3) || dist(p.x, p.y, b.x, b.y) > 900) return "";
+    if (!b || st !== 3 || dist(p.x, p.y, b.x, b.y) > 900) return "";
     const hp = `Bearer ${Math.max(0, Math.ceil(b.hp))} / ${b.max}`;
     if (b.down) return "The Fire Bearer has guttered out · it rekindles at dawn";
     if (st === 3) {
@@ -512,9 +453,7 @@
       if (Finale.isOpen(e)) return `His heart is open: strike ${KING}! · ${hp}`;
       return `Guard the Bearer · its flame ${Math.floor((G.isGuest() ? net.charge : b.charge) * 100)}% · ${hp}`;
     }
-    if (b.camp) return `Hold the Bearer's camp until dawn · ${hp}`;
-    const to = plant();
-    return `Walk beside the Fire Bearer · ${hp} · gate ${Math.round(dist(b.x, b.y, to.x, to.y) / 10)} m`;
+    return "";
   };
   // The compass: to the Bearer while you're away from it, to the gate while you're with it.
   Finale.nav = function (p) {
@@ -534,7 +473,6 @@
   // While the Bearer camps, and in the arena, only its waves and the King's Drowned come (src/game.js).
   Finale.busySpot = function (p) {
     const st = Finale.stage(), b = Finale.b;
-    if (st === 2 && b && b.camp && G.night && dist(p.x, p.y, b.x, b.y) < F.campR) return true;
     if (st === 3) { const a = arena(); return dist(p.x, p.y, a.x, a.y) < GT.arenaR + 600; }
     return false;
   };

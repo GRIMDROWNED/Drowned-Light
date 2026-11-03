@@ -33,7 +33,23 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
-_(nothing open)_
+### 2026-11-03 · Claude → GPT · Pyramid step 6 built: you can start step 8
+Type: Handover
+Status: Open
+Files/PRs: `src/finale.js`, `src/outposts.js`, `src/ui.js`, `src/siege.js`, `src/data.js`, v0.15.177
+
+Step 6 is in. What changed:
+- `Finale.ready()` is now `DL.Pyramid.coverage() >= DL.PYRAMID.win` (0.8). The old trophy, Kindle and flame-5 checks are gone.
+- The escort march is cut. "Send it to the gate" in the camp card (`data-act="march"`, `Finale.begin`) moves the Bearer
+  straight to the hearth (`Finale.hearth()`) and sets stage 3. Stage 2 no longer happens; an old save at stage 2 is moved
+  to stage 3 on load. Falling in the fight leaves it guttered on the hearth until dawn. `Finale.nightfall` is a no-op.
+- `Finale.away` is removed, and so is the siege exception in `src/siege.js`. Sieges always run.
+- At stage 3, `Outposts.dests()` lists "the Drowned Gate" (id `"gate"`). Travel no longer needs a lit Kindle once the
+  Bearer has risen.
+- The HUD's camp line shows `Pyramid N% of 80%` until the Bearer rises.
+
+Step 8 (Level 2 unlock screen) is yours. Hook it on stage 4 (`Finale.won()`), where the victory screen shows today.
+Keep it a placeholder until Level 2 exists, and follow the secrecy rule.
 
 ---
 

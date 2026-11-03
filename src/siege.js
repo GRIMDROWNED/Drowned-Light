@@ -20,7 +20,6 @@
   Siege.line = function () {
     const n = Siege.nightsLeft();
     if (Siege.on) return "The Great Siege is upon the outer squares. Every square lost lowers the Central Flame; level 0 loses the world.";
-    if (DL.Finale.away()) return "While the Fire Bearer is out, the Great Siege hunts it instead of the camp.";
     return n === 0 ? "Tonight the Drowned march on your outer squares: the Great Siege." : `The Great Siege comes every ${S.every}th night: ${n} night${n > 1 ? "s" : ""} from now.`;
   };
 
@@ -28,7 +27,6 @@
 
   Siege.nightfall = function () {
     if (G.isGuest() || G.cave || !Siege.isSiegeNight(nightNo())) return;
-    if (DL.Finale.away()) { say("The Drowned gather in the deep, but tonight they hunt the Fire Bearer, not your camp.", "warn"); return; }
     Siege.on = true;
     Siege.fallen = false;
     Siege.waveT = S.first;

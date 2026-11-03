@@ -550,14 +550,10 @@
                  camera pulls back to show at least `view` px top to bottom (and `viewW` across), and leans toward the King.
                  The gate stands in a lake of black water (`lake`: a rounded box centred `cy` px off the gate, `rx` by `ry`
                  px); a stone causeway `causeway` px either side of the middle runs out of it to the gate. Nobody wades it.
-       march     begun from the camp by day. The Bearer walks `speed` px/s (`wade` × in water), only while a knight is within
-                 `leash` px. It has `hp` health (× the party), firelight `light` px round it, and every `pulseEvery` s burns
-                 the Drowned within `pulseR` px for `pulseDmg` (and sets them alight). By day, every `bandEvery` s while it
-                 walks, `bandN` (+1 per zone past the Mire) Drowned rise from the mud `bandR` px off and come for it.
-       night     at dusk it plants its feet wherever it is (its last camp, where it falls back to) and lights `braziers`
-                 braziers `brazierR` px round it; its light grows to `restLight`. Every `waveEvery` s a wave of `waveN`
-                 (+ the day, like the camp's) comes for it from two sides, while a knight is within `campR` px.
-                 At dawn it heals `dawnHeal` of its health. The Great Siege doesn't come while the Bearer is out.
+       bearer    sent from the camp by day, it strides straight to the hearth (the escort march was cut for the pyramid).
+                 It has `hp` health (× the party), firelight `light` px round it, and every `pulseEvery` s burns the
+                 Drowned within `pulseR` px for `pulseDmg`. At dawn it heals `dawnHeal` of its health. The march numbers
+                 below (speed, leash, band*, braziers, wave*, campR, restLight) are no longer used.
        falling   at 0 health it gutters and falls back to its last camp (or the Central Flame), and rekindles at dawn.
        king      the Sunken King rises `rise` s after the Bearer plants at the gate. While the Bearer stands it fills its
                  charge over `charge` s (each blow it takes knocks off `hitCharge`), then hurls its flame: the King's heart
