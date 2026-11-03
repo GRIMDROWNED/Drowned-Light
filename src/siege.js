@@ -1,6 +1,6 @@
-/* Drowned Light — the Great Siege and the Starved Bell Tower. Every tenth night the Drowned march on the camp
-   itself, wherever the knights are: waves pour in from two sides all night, and if the Central Flame goes out
-   the camp has fallen. (While the game is in development a fallen camp only says so: DL.SIEGE.gameOver.)
+/* Drowned Light — the Great Siege and the Starved Bell Tower. Every fifth night the Drowned march on exposed
+   Pyramid squares, wherever the knights are. Every destroyed square lowers the Central Flame one level;
+   when no squares remain they attack the camp itself. A flame at level zero is a lost world.
    The Starved Bell Tower, built from the slain Bell's clapper, tolls before every wave that comes for the camp,
    says where it's coming from, and leaves the wave dazed when it arrives. The host's device runs it all. */
 "use strict";
@@ -19,9 +19,9 @@
   Siege.nightsLeft = () => (S.every - (nightNo() % S.every)) % S.every;
   Siege.line = function () {
     const n = Siege.nightsLeft();
-    if (Siege.on) return "The Great Siege is upon the camp. Keep the Central Flame burning until dawn.";
+    if (Siege.on) return "The Great Siege is upon the outer squares. Every square lost lowers the Central Flame; level 0 loses the world.";
     if (DL.Finale.away()) return "While the Fire Bearer is out, the Great Siege hunts it instead of the camp.";
-    return n === 0 ? "Tonight the Drowned march on the camp: the Great Siege." : `The Great Siege comes every ${S.every}th night: ${n} night${n > 1 ? "s" : ""} from now.`;
+    return n === 0 ? "Tonight the Drowned march on your outer squares: the Great Siege." : `The Great Siege comes every ${S.every}th night: ${n} night${n > 1 ? "s" : ""} from now.`;
   };
 
   Siege.reset = function () { Siege.on = false; Siege.fallen = false; Siege.nextA = null; Siege.warned = false; };
@@ -35,17 +35,17 @@
     Siege.warned = false;
     Siege.nextA = rand(0, TAU);
     sfx("toll");
-    say("THE GREAT SIEGE. The Drowned march on your camp from every side!", "danger");
+    say("THE GREAT SIEGE. Defend your outer squares! Each square lost lowers the Central Flame.", "danger");
   };
   Siege.dawn = function () {
     if (!Siege.on) return;
     Siege.on = false;
-    if (!Siege.fallen) say("Dawn breaks over the camp. The Great Siege is broken!", "good");
+    if (!Siege.fallen) say("Dawn breaks over the Pyramid. The Great Siege is broken!", "good");
     Siege.fallen = false;
   };
   // A day dawning tomorrow on the eve of a siege: a warning.
   Siege.morning = function () {
-    if (!G.isGuest() && Siege.nightsLeft() === 0) setTimeout(() => say("The Drowned gather in the deep. Tonight they will march on your camp.", "warn"), 2600);
+    if (!G.isGuest() && Siege.nightsLeft() === 0) setTimeout(() => say("The Drowned gather in the deep. Tonight they will march on your outer squares.", "warn"), 2600);
   };
 
   /* ---------------- waves ---------------- */
@@ -74,6 +74,20 @@
     Siege.warned = false;
   };
 
+  const SIDES = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+  const openSides = (o) => SIDES.filter(([dx, dy]) => !DL.Pyramid.has(o.gx + dx, o.gy + dy));
+  // Only land with an unclaimed neighbour is exposed. Fully surrounded squares are protected by those outside.
+  Siege.targets = () => G.outposts.filter((o) => o.lit && DL.Pyramid.has(o.gx, o.gy) && openSides(o).length);
+  function approach(a) {
+    const targets = Siege.targets();
+    if (!targets.length) return { target: G.flame, a, radius: DL.WALL_R + S.spawnGap };
+    const ux = Math.cos(a), uy = Math.sin(a);
+    // Meet the perimeter facing the incoming wave, then approach across an exposed edge of that square.
+    const target = targets.reduce((best, o) => o.x * ux + o.y * uy > best.x * ux + best.y * uy ? o : best);
+    const [dx, dy] = openSides(target).reduce((best, side) => side[0] * ux + side[1] * uy > best[0] * ux + best[1] * uy ? side : best);
+    return { target, a: Math.atan2(dy, dx), radius: DL.MAP.cell / 2 + S.spawnGap };
+  }
+
   Siege.update = function (dt) {
     if (!Siege.on || G.isGuest() || G.cave || Siege.fallen) return;
     Siege.waveT -= dt;
@@ -86,22 +100,43 @@
     const all = [];
     for (let s = 0; s < S.sides; s++) {
       const a = Siege.nextA + (s * TAU) / S.sides;
-      all.push(...G.spawnWave(0, 0, DL.campPool(G.save.day), Math.ceil(n / S.sides), G.flame, DL.WALL_R + 300, zi, a));
+      const wave = approach(a), target = wave.target;
+      if (!target.lit) continue;
+      all.push(...G.spawnWave(target.x, target.y, DL.campPool(G.save.day), Math.ceil(n / S.sides), target, wave.radius, zi, wave.a));
     }
     daze(all);
     Siege.nextA = rand(0, TAU);
   };
 
-  // The Central Flame went out (src/game.js). On a siege night that is the camp fallen.
-  Siege.flameOut = function () {
-    if (!Siege.on || Siege.fallen) return false;
-    Siege.fallen = true;
-    if (S.gameOver) {
-      say("The Central Flame is drowned. Your camp has fallen.", "danger");
-      setTimeout(() => G.campFallen && G.campFallen(), 1500);
-    } else {
-      say("Your camp has fallen! (While the game is in development, a fallen camp doesn't end your game.)", "danger");
+  // Recompute the central fire after losing a square or one level of the camp's fire.
+  Siege.levelLost = function () {
+    if (G.isGuest()) return;
+    const st = G.stats();
+    G.flame.max = st.flameHp;
+    G.flame.hp = Math.min(G.flame.hp, st.flameHp);
+    if (G.save.up.flame > 0) {
+      say(`The Central Flame falls to level ${G.save.up.flame}.`, "danger");
+      return;
     }
+    G.flame.hp = 0; G.flame.lit = false;
+    if (Siege.fallen) return;
+    Siege.fallen = true;
+    Siege.on = false;
+    say("The Central Flame has fallen to level 0. Your camp is lost.", "danger");
+    if (S.gameOver) G.campFallen();
+  };
+
+  // Without outer land the camp still has to be defended. A real snuff costs one level, not the whole world.
+  Siege.flameOut = function () {
+    if (G.isGuest() || !Siege.on || Siege.fallen || G.flame.lit) return false;
+    G.save.up.flame = Math.max(0, G.save.up.flame - 1);
+    Siege.levelLost();
+    if (G.save.up.flame > 0) {
+      G.flame.lit = true;
+      G.flame.hp = G.flame.max;
+    }
+    G.persist();
     return true;
   };
 })(window.DL);
+

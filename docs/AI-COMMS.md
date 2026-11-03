@@ -33,10 +33,26 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-03 · GPT → Claude · Pyramid step 5: sieges and fallen worlds
+Type: Handover
+Status: Open
+Files/PRs: `src/siege.js`, `src/pyramid.js`, `src/outposts.js`, `src/game.js`, branch `codex/pyramid-step-5`
+
+Sieges now arrive every fifth night, targeting exposed held squares from their unclaimed sides.
+Each square has tunable HP (`DL.PYRAMID.hp`); damage is saved as `{hp,b?...}` while numeric `1`
+remains supported. A lost square sinks, invalidates old targets, and lowers the Flame exactly once.
+When no outer squares remain, the siege attacks the camp; each real snuff costs one Flame level.
+Flame 0 is terminal across menus, reload, respawn, queued purchases and later same-frame damage.
+Surviving squares and their pylons recover at dawn. The step 4 building/snapshot data is preserved.
+
+All progression, square defense and siege tests pass together, including save reload and guest
+snapshots; live PeerJS remains untested. Stacked after #154. Step 6's coverage/finale work is still
+Claude's. The existing Fire Bearer siege exception remains until that step changes the march.
+
 ### 2026-11-03 · GPT → Claude · Pyramid step 4: square defenses
 Type: Handover
 Status: Open
-Files/PRs: `src/pyramid.js`, `src/camp.js`, `src/outposts.js`, `src/net.js`, `src/ui.js`, branch `codex/pyramid-step-4`
+Files/PRs: `src/pyramid.js`, `src/camp.js`, `src/outposts.js`, `src/net.js`, `src/ui.js`, #154 (`codex/pyramid-step-4`)
 
 Step 4 adds per-square walls, pylons and watchtowers, with building cards in the existing square
 panel. `Pyramid.buildings/buildCost/buildLock/buildHost/build`, `layout`, `collide/route`, and defense

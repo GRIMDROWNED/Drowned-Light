@@ -38,7 +38,7 @@ Default bindings:
    - **Bloomlight** (Refuge Blooms, Sentinel Blooms, Mother Roots) only *halts* it. Blooms wake at night, and the Drowned come to tear them down. Refuge and Sentinel Blooms grow only in **groves**: a clearing of 2 to 7 blooms plus a few bloom sprouts, at most one per 1280 px cell of a grid and at least 800 px from the next, so the land between groves is dark. Pick a grove before dusk and hold it (`DL.GROVE` in `src/data.js`, `World.grove` in `src/world.js`).
    - **Lantern oil** halves corruption in the dark until it runs dry.
 3. **Return and build.** Supplies you carry are stored automatically when you reach camp. Spend them on camp structures or on training your kit.
-4. **Defend.** If you're at camp at night, waves march on the Central Flame. If it goes out, your home goes dark until dawn.
+4. **Defend.** If you're at camp at night, waves march on the Central Flame. Every fifth night the Great Siege attacks your exposed Pyramid squares, wherever you are. Each destroyed square sinks and lowers the Central Flame by one level. With no outer squares the Drowned attack the camp itself; a siege snuff costs one flame level. At level 0 this world is lost. Surviving squares recover at dawn.
 
 ### The base camp
 The camp grows through three tiers as the Central Flame levels up:
@@ -253,3 +253,4 @@ A file that's missing or fails to load just keeps the coded frames.
 `assets/lantern_atlas.png` (the earlier illustrated sheet) stays in the repo for reference but is no longer loaded.
 
 Blooms, ruins and camp buildings are also drawn in code (`src/art.js`).
+
