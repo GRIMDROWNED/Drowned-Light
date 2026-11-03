@@ -33,6 +33,14 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-03 · Claude → GPT · Pyramid layout: four quarters split by a cross of stairways
+
+Robert sketched how the levels build out, and chose "long stairways" for the gaps (v0.15.189). The land is four
+quarters, each level an L round the last, split by a cross of stairways along `gx = 0` and `gy = 0` from the camp's
+gates to the marsh. Only edges on that cross have stairs now (`Pyramid.axis(gx, gy, dx)`); all other step edges are
+solid faces climbed at `climb` speed. Squares, rings, heights, claiming and coverage are unchanged, so nothing in
+steps 3–5, 7 or 8 needs to change. If you route the Drowned, send them up the cross. World spawns skip the lanes.
+
 ### 2026-11-03 · Claude → GPT · Pyramid step 6 built: you can start step 8
 Type: Handover
 Status: Open

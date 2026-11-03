@@ -2,8 +2,10 @@
    centre square (0, 0). Knights claim squares next to ones they hold, and every claimed square rises out of the
    ground: the camp stands as many levels high as the Central Flame's level, each ring out one level lower, so the
    base is one stepped pyramid with the flame on top. Each claimed square has a brazier at its centre (it does what
-   outposts did: store supplies, travel, light; src/outposts.js) and stairs in the middle of every edge that drops.
-   Anyone crossing a drop off the stairs climbs it slowly (DL.PYRAMID.climb).
+   outposts did: store supplies, travel, light; src/outposts.js). Robert's layout (sketch, 2026-11-03): the land builds
+   out as four quarters, each level an L wrapped round the last, split by a cross of long stairways running from the
+   camp down to the marsh along the axes (gx = 0 and gy = 0). Only the cross has stairs; anyone crossing a drop off
+   them climbs it slowly (DL.PYRAMID.climb).
 
    Grid square (gx, gy) covers centre ± cell/2. Claimed squares live in G.save.pyramid.sq ("gx,gy": 1) on the host;
    friends get them in snapshots through Outposts.rows. API for later steps (sieges, buildings, coverage):
@@ -249,6 +251,9 @@
   const drop = (gx, gy, dx, dy) => Py.height(gx, gy) - Py.height(gx + dx, gy + dy);
   // Is (x, y) on the stairs in the middle of an edge?
   const onStair = (along) => Math.abs(along) < P.stairW / 2;
+  // Stairs only where an edge crosses the cross of stairways: north/south edges of the gx = 0 column, east/west of gy = 0.
+  const axis = (gx, gy, dx) => (dx ? gy === 0 : gx === 0);
+  Py.axis = axis;
   /* Speed for a walker at (x, y): P.climb while it's on a step edge's face or lip off the stairs, else 1.
      The band is the face on a south edge (drawn on the high square, as tall as the drop) and 20 px elsewhere,
      plus 12 px at the foot on the low side. */
@@ -263,10 +268,10 @@
       if (d > 0) {
         // this square is the high side: its lip (or face, on the south) runs along the edge
         const band = dy === 1 ? faceH(d) : 20;
-        if (edge > HALF - band && !onStair(along)) return P.climb;
+        if (edge > HALF - band && !(axis(gx, gy, dx) && onStair(along))) return P.climb;
       } else if (d < 0) {
         // the low side: the foot of the step
-        if (edge > HALF - 12 && !onStair(along)) return P.climb;
+        if (edge > HALF - 12 && !(axis(gx, gy, dx) && onStair(along))) return P.climb;
       }
     }
     return 1;
@@ -291,6 +296,7 @@
     if (G.cave) return;
     const g0x = Math.round(view.left / CELL) - 1, g1x = Math.round(view.right / CELL) + 1;
     const g0y = Math.round(view.top / CELL) - 1, g1y = Math.round(view.bottom / CELL) + 1;
+    // first the tops and the paved stairways of the cross, then the faces over them
     for (let gy = g0y; gy <= g1y; gy++) for (let gx = g0x; gx <= g1x; gx++) {
       const h = sh(gx, gy);
       if (h <= 0.01) continue;
@@ -298,15 +304,39 @@
       // a faint stone wash on the raised top, so held land reads at a glance
       c.fillStyle = `rgba(150,140,115,${Math.min(0.1, 0.025 * h)})`;
       c.fillRect(L, T, CELL, CELL);
+      if (gx === 0 && gy === 0) { // the camp: the four stairways start at its gates
+        const a = DL.WALL_R || 235;
+        lane(c, x - P.stairW / 2, y + a, P.stairW, HALF - a, false); lane(c, x - P.stairW / 2, T, P.stairW, HALF - a, false);
+        lane(c, x + a, y - P.stairW / 2, HALF - a, P.stairW, true); lane(c, L, y - P.stairW / 2, HALF - a, P.stairW, true);
+      } else if (gx === 0) lane(c, x - P.stairW / 2, T, P.stairW, CELL, false);
+      else if (gy === 0) lane(c, L, y - P.stairW / 2, CELL, P.stairW, true);
+    }
+    for (let gy = g0y; gy <= g1y; gy++) for (let gx = g0x; gx <= g1x; gx++) {
+      const h = sh(gx, gy);
+      if (h <= 0.01) continue;
+      const { x, y } = Py.center(gx, gy), L = x - HALF, T = y - HALF;
       for (const [dx, dy] of SIDES) {
         const d = h - sh(gx + dx, gy + dy);
         if (d <= 0.01) continue;
-        if (dy === 1) southFace(c, L, T + CELL, d);
-        else if (dy === -1) rimH(c, L, T, CELL);
-        else rimV(c, dx === 1 ? L + CELL - 4 : L, T, dx);
+        const st = axis(gx, gy, dx);
+        if (dy === 1) southFace(c, L, T + CELL, d, st);
+        else if (dy === -1) rimH(c, L, T, CELL, st);
+        else rimV(c, dx === 1 ? L + CELL - 4 : L, T, dx, st);
       }
     }
   };
+  /* A stretch of the cross's stairways across a held square: a paved lane of shallow treads between low kerbs
+     (coded; one long flight a level, the drawn flights sit at the drops). */
+  function lane(c, x, y, w, h, horiz) {
+    c.fillStyle = "rgba(128,118,96,0.78)"; c.fillRect(x, y, w, h);
+    c.fillStyle = "rgba(0,0,0,0.2)";
+    if (horiz) for (let xx = x + 8; xx < x + w; xx += 18) c.fillRect(xx, y, 2, h);
+    else for (let yy = y + 8; yy < y + h; yy += 18) c.fillRect(x, yy, w, 2);
+    c.fillStyle = "rgba(205,190,150,0.35)";
+    if (horiz) { c.fillRect(x, y + 2, w, 2); c.fillRect(x, y + h - 9, w, 2); } else { c.fillRect(x + 2, y, 2, h); c.fillRect(x + w - 9, y, 2, h); }
+    c.fillStyle = "rgba(44,38,30,0.85)"; // the kerbs
+    if (horiz) { c.fillRect(x, y - 4, w, 5); c.fillRect(x, y + h - 1, w, 7); } else { c.fillRect(x - 5, y, 5, h); c.fillRect(x + w, y, 5, h); }
+  }
   // Robert's drawn stone strips (tools/cut_pyramid.py, 2 file px per world px). Until they load, the coded stone shows.
   const ART = {};
   for (const n of ["south", "north", "east", "west", "stairS", "stairN", "stairE", "stairW"]) {
@@ -328,13 +358,14 @@
     c.restore();
   }
   // The face on a square's south edge: stone courses (one drawn course per level), stairs in the middle.
-  function southFace(c, L, foot, d) {
+  function southFace(c, L, foot, d, stair) {
     const H = faceH(d), top = foot - H, sx = L + HALF - P.stairW / 2;
     if (ART.south) {
       strip(c, ART.south, L, top, CELL, H, P.face, false);
       const sg = c.createLinearGradient(0, foot, 0, foot + 18);
       sg.addColorStop(0, "rgba(0,0,0,0.45)"); sg.addColorStop(1, "rgba(0,0,0,0)");
       c.fillStyle = sg; c.fillRect(L, foot, CELL, 18);
+      if (!stair) return;
       if (ART.stairS) return c.drawImage(ART.stairS, sx - 8, top - 4, P.stairW + 16, H + 6); // the flight, stretched to the face's height
       return stairs(c, sx, top, H);
     }
@@ -351,7 +382,7 @@
     const sg = c.createLinearGradient(0, foot, 0, foot + 18);
     sg.addColorStop(0, "rgba(0,0,0,0.45)"); sg.addColorStop(1, "rgba(0,0,0,0)");
     c.fillStyle = sg; c.fillRect(L, foot, CELL, 18);
-    stairs(c, sx, top, H);
+    if (stair) stairs(c, sx, top, H);
   }
   // Stairs: lit treads stepping down to the foot (coded until the stair art comes).
   function stairs(c, sx, top, H) {
@@ -364,9 +395,10 @@
     c.fillStyle = "#3a342b"; c.fillRect(sx - 6, top, 6, H); c.fillRect(sx + P.stairW, top, 6, H); // the stair's side walls
   }
   // A north edge seen from above: a pale lip on the high side, a dark line below it, and the stairs' landing.
-  function rimH(c, L, T, w) {
+  function rimH(c, L, T, w, stair) {
     if (ART.north) strip(c, ART.north, L, T - 2, w, 11, 11, false);
     else { c.fillStyle = "rgba(215,200,160,0.5)"; c.fillRect(L, T, w, 3); c.fillStyle = "rgba(0,0,0,0.5)"; c.fillRect(L, T - 3, w, 3); }
+    if (!stair) return;
     const sx = L + HALF - P.stairW / 2;
     if (ART.stairN) { // the flight going down and away to the north: its landing on this square, its foot on the land beyond
       const w = P.stairW + 16, h = w * ART.stairN.height / ART.stairN.width;
@@ -379,13 +411,14 @@
   // so they read as stuck on (Robert: "This looks wrong"). Off until top-down side stairs are drawn (Robert chose new art);
   // meanwhile the north flight is turned on its side. The files stay.
   const SIDE_STAIR_ART = true; // the top-down redo is in (v0.15.188); west is east mirrored
-  function rimV(c, X, T, dx) {
+  function rimV(c, X, T, dx, stair) {
     const img = dx === 1 ? ART.east : ART.west;
     if (img) strip(c, img, dx === 1 ? X - 9 : X, T, 13, CELL, 13, true);
     else {
       c.fillStyle = "rgba(215,200,160,0.5)"; c.fillRect(X, T, 3, CELL);
       c.fillStyle = "rgba(0,0,0,0.5)"; c.fillRect(X + (dx === 1 ? 4 : -3), T, 3, CELL);
     }
+    if (!stair) return;
     const sy = T + HALF - P.stairW / 2, x0 = dx === 1 ? X - 16 : X;
     const st = SIDE_STAIR_ART ? (dx === 1 ? ART.stairE : ART.stairW) : null;
     if (st) { // the flight runs down and away across the edge: its landing (a third of it) on this square

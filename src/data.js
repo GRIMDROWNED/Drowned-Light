@@ -681,8 +681,8 @@
   /* The Pyramid (src/pyramid.js, docs/PYRAMID-PLAN.md). The Central Flame's level L lets the knights hold
      `perFlame * (L - 1)` squares; a square is claimed standing within `claimR` px of its middle, next to one already
      held, for cost[ring - 1]. Held squares stand (flame level - ring) levels high, `face` px of rock per level (at
-     most `maxFace` levels drawn), rising `riseSpeed` levels a second. Off the `stairW` px stairs in the middle of
-     each edge, crossing a step goes at `climb` of full speed. `win` of the squares held wakes the Drowned Gate. */
+     most `maxFace` levels drawn), rising `riseSpeed` levels a second. Stairs run only along the cross of stairways
+     (the gx = 0 and gy = 0 lines, `stairW` px wide); off them, crossing a step goes at `climb` of full speed. `win` of the squares held wakes the Drowned Gate. */
   DL.PYRAMID = {
     perFlame: 4, claimR: 170, face: 18, maxFace: 5, riseSpeed: 1.5, stairW: 110, climb: 0.35, win: 0.8, hp: 320,
     wallR: 350, gateHalf: 55, wallStep: 28, buildR: 90, wallDamagePerLevel: 3, wallEvery: 0.6,
