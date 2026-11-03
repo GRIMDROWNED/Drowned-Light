@@ -328,6 +328,13 @@
   /* A stretch of the cross's stairways across a held square: a paved lane of shallow treads between low kerbs
      (coded; one long flight a level, the drawn flights sit at the drops). */
   function lane(c, x, y, w, h, horiz) {
+    if (ART.lane) { // Robert's stairway strip (v0.15.191), kerbs included, so a little wider than stairW; turned for east-west
+      const W = ART.lane.width / 2, pad = (W - P.stairW) / 2;
+      if (!horiz) return strip(c, ART.lane, x - pad, y, W, h, W, true);
+      c.save(); c.translate(x, y + h / 2); c.rotate(-Math.PI / 2);
+      strip(c, ART.lane, -W / 2, 0, W, w, W, true);
+      return c.restore();
+    }
     c.fillStyle = "rgba(128,118,96,0.78)"; c.fillRect(x, y, w, h);
     c.fillStyle = "rgba(0,0,0,0.2)";
     if (horiz) for (let xx = x + 8; xx < x + w; xx += 18) c.fillRect(xx, y, 2, h);
@@ -339,11 +346,11 @@
   }
   // Robert's drawn stone strips (tools/cut_pyramid.py, 2 file px per world px). Until they load, the coded stone shows.
   const ART = {};
-  for (const n of ["south", "north", "east", "west", "stairS", "stairN", "stairE", "stairW"]) {
+  for (const n of ["south", "north", "east", "west", "stairS", "stairN", "stairE", "stairW", "lane"]) {
     if (typeof Image === "undefined") break; // the node tests have no images
     const img = new Image();
     img.onload = () => { ART[n] = img; };
-    img.src = DL.asset("assets/sprites/pyramid/" + (n.startsWith("stair") ? "stair-" + { S: "south", N: "north", E: "east", W: "west" }[n[5]] : "step-" + n) + ".png");
+    img.src = DL.asset("assets/sprites/pyramid/" + (n === "lane" ? "stairway-lane" : n.startsWith("stair") ? "stair-" + { S: "south", N: "north", E: "east", W: "west" }[n[5]] : "step-" + n) + ".png");
   }
   // Tile a strip along a run, clipped to the box (x, y, w, h). Horizontal strips are `th` px tall, vertical ones `th` wide.
   function strip(c, img, x, y, w, h, th, vertical) {

@@ -48,6 +48,21 @@ for name, width in STAIRS.items():
     im.save(os.path.join(OUT, name + '.png'))
     outs.append(im)
     print(name, im.size)
+# The cross's stairway lane (v0.15.191): one tiling strip, cut from just after a tread joint to the end of
+# a joint so it repeats cleanly, LANE file px wide (130 world px: stairW 110 plus kerbs). Used for all four arms.
+LANE, LANE_ROWS = 260, (51, 1498)
+path = os.path.join(SRC, 'stairway-lane.png')
+if os.path.exists(path):
+    a = np.asarray(Image.open(path).convert('RGB')).astype(int)
+    fg = key_mask(a, tol=120, fringe=2)
+    xs = np.where(fg.any(0))[0]
+    y0, y1, x0, x1 = LANE_ROWS[0], LANE_ROWS[1], xs.min(), xs.max() + 1
+    rgba = np.zeros((y1 - y0, x1 - x0, 4), 'uint8')
+    rgba[..., :3] = a[y0:y1, x0:x1] * fg[y0:y1, x0:x1, None]; rgba[..., 3] = fg[y0:y1, x0:x1] * 255
+    im = shrink(rgba, LANE / rgba.shape[1], colors=32, crop=False)
+    im.save(os.path.join(OUT, 'stairway-lane.png'))
+    outs.append(im)
+    print('stairway-lane', im.size)
 # Barracks levels 1-3, one sheet of three side by side, cut to WIDTHS file px (props, res 2).
 sheet = os.path.join(SRC, 'barracks-sheet.png')
 if os.path.exists(sheet):
