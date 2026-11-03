@@ -717,6 +717,7 @@
         for (let i = 1; i < m; i++) for (const x of [-R, R]) {
           const y = -R + (2 * R * i) / m;
           if (Math.abs(y) < DL.Camp.GATE_HALF + 14) continue;
+          if (y > 0 && y < DL.Camp.GATE_HALF + 14 + 51) continue; // a strip stands 51 px tall: the one south of the gate would hide it
           put(y, () => sprite(c, "palisadeSide" + rf, x, y + 4, x > 0));
         }
         for (const x of [-R, R]) for (const y of [-R, R]) put(y + 1, () => sprite(c, "cornerPost" + rf, x, y + 4, x > 0));
