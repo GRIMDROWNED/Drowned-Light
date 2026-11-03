@@ -554,6 +554,27 @@
     const g = cv.getContext("2d");
     g.save(); g.globalCompositeOperation = "source-atop"; g.fillStyle = "#03070a"; g.fillRect(0, 0, cv.width, cv.height); g.restore();
   }
+  /* Draw something into a big off-screen canvas, then scale its drawn bounds (grown over time to cover any bob)
+     into the portrait with a little margin, standing on the bottom. */
+  const FIT_W = 260, FIT_H = 300, fitBox = {};
+  let fitCv = null;
+  function fitPortrait(g, cv, key, draw, size = 1) {
+    if (!fitCv) { fitCv = document.createElement("canvas"); fitCv.width = FIT_W; fitCv.height = FIT_H; }
+    const o = fitCv.getContext("2d", { willReadFrequently: true });
+    o.setTransform(1, 0, 0, 1, 0, 0); o.clearRect(0, 0, FIT_W, FIT_H); o.imageSmoothingEnabled = false;
+    draw(o);
+    const px = o.getImageData(0, 0, FIT_W, FIT_H).data;
+    let x0 = FIT_W, y0 = FIT_H, x1 = -1, y1 = -1;
+    for (let y = 0; y < FIT_H; y++) for (let x = 0; x < FIT_W; x++) if (px[(y * FIT_W + x) * 4 + 3] > 24) {
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+    if (x1 < 0) return;
+    const b = fitBox[key] || (fitBox[key] = { x0, y0, x1, y1 });
+    b.x0 = Math.min(b.x0, x0); b.y0 = Math.min(b.y0, y0); b.x1 = Math.max(b.x1, x1); b.y1 = Math.max(b.y1, y1);
+    const w = b.x1 - b.x0 + 1, h = b.y1 - b.y0 + 1, k = Math.min((cv.width - 6) / w, (cv.height - 4) / h) * size;
+    g.imageSmoothingEnabled = true;
+    g.drawImage(fitCv, b.x0, b.y0, w, h, (cv.width - w * k) / 2, size < 1 ? (cv.height - h * k) / 2 : cv.height - 2 - h * k, w * k, h * k);
+  }
   UI.drawPortraits = function (t) {
     for (const cv of document.querySelectorAll("canvas[data-kit]")) {
       const g = cv.getContext("2d"), id = cv.dataset.kit, on = UI.setup.kit === id || cv.dataset.still;
@@ -572,14 +593,11 @@
     for (const cv of document.querySelectorAll("canvas[data-wraith]")) {
       const g = cv.getContext("2d");
       g.clearRect(0, 0, cv.width, cv.height);
-      g.save();
-      g.translate(cv.width / 2, cv.height - 2);
-      g.scale(0.9, 0.9);
       const lk = DL.Summons.look("wraith");
       // the Soul Wisp is only glow (drawn over the dark in the world), so draw that here
-      if (lk.wisp && !lk.drawn) DL.Render.drawWisp(g, 0, -26, 1.6, Math.PI / 2, 1, t);
-      else DL.Render.drawWraith(g, { id: 1, x: 0, y: 0, angle: Math.PI / 2, state: "move" }, t);
-      g.restore();
+      if (lk.wisp && !lk.drawn) { fitPortrait(g, cv, "wisp", (o) => DL.Render.drawWisp(o, FIT_W / 2, FIT_H / 2, 1.6, Math.PI / 2, 1, t), 0.8); continue; }
+      // her drawn forms are much taller than the card's frame: draw her off-screen and shrink her to fit (Robert, 2026-11-03)
+      fitPortrait(g, cv, lk.key || "abigail", (o) => DL.Render.drawWraith(o, { id: 1, x: FIT_W / 2, y: FIT_H - 20, angle: Math.PI / 2, state: "move" }, t));
     }
     for (const cv of document.querySelectorAll("canvas[data-fred]")) {
       const g = cv.getContext("2d");
