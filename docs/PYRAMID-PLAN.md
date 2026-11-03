@@ -138,3 +138,7 @@ Not done yet:
 - The Drowned don't path to the stairways of the cross. They climb straight over, which is slow.
 - Trees and rocks can still stand on a rock face.
 - Robert's stone faces are in (v0.15.178, `assets/sprites/pyramid/step-*.png`, cut by `tools/cut_pyramid.py`). Stairs, markers, barracks, flame looks and the rim are still coded placeholders.
+
+Cross squares (v0.15.197, Robert asked): the squares on the cross are stairway land, not fire squares. They can't be
+claimed and rise with the held squares beside them (`Pyramid.raised`). The first ring has 4 fire squares (the corners);
+the map has 64 claimable squares.

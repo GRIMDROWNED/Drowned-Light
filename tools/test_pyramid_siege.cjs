@@ -44,24 +44,23 @@ function world(flame = 5, squares = {}) {
 // Nights 10, 20, ... are sieges, and every held square is attacked in turn, up to SIEGE.groups at a time.
 {
   const squares = {};
-  for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) if (x || y) squares[x + "," + y] = 1;
-  // Extend a solid block to surround square (1,0), making it an interior square.
-  squares["2,-1"] = squares["2,0"] = squares["2,1"] = 1;
+  // Fire squares only: the squares on the cross of stairways (gx = 0 or gy = 0) are never held.
+  for (const k of ["1,1", "-1,1", "1,-1", "-1,-1", "2,1", "1,2", "2,2", "3,1", "3,2", "1,3", "2,3", "3,3"]) squares[k] = 1;
   const { DL, G, calls } = world(5, squares);
   assert.equal(DL.Siege.isSiegeNight(5), false);
   assert.equal(DL.Siege.isSiegeNight(10), true);
   assert.equal(DL.Siege.isSiegeNight(20), true);
-  assert.equal(DL.Siege.targets().some((o) => o.gx === 1 && o.gy === 0), true, "interior squares are attacked too");
+  assert.equal(DL.Siege.targets().some((o) => o.gx === 2 && o.gy === 2), true, "interior squares are attacked too");
   G.knights = () => [G.player];
-  G.player.x = 800; G.player.y = 0;
-  const far = G.outposts.find((o) => o.gx === -1 && o.gy === 0), here = G.outposts.find((o) => o.gx === 1 && o.gy === 0);
+  G.player.x = 800; G.player.y = 800;
+  const far = G.outposts.find((o) => o.gx === -1 && o.gy === -1), here = G.outposts.find((o) => o.gx === 1 && o.gy === 1);
   assert.equal(DL.Siege.openSquare(far), false, "off siege nights only the knight's square draws the Drowned");
   assert.equal(DL.Siege.openSquare(here), true);
   DL.Siege.nightfall();
   assert.equal(DL.Siege.on, true);
   assert.equal(DL.Siege.openSquare(far), true);
   const hit = new Set();
-  for (let w = 0; w < 3; w++) {
+  for (let w = 0; w < 3; w++) { // 12 squares, 4 a wave
     calls.waves.length = 0;
     DL.Siege.update(w ? DL.SIEGE.waveEvery : DL.SIEGE.first);
     assert.equal(calls.waves.length, DL.SIEGE.groups);
@@ -69,7 +68,7 @@ function world(flame = 5, squares = {}) {
       assert.equal(row[4].kind, "outpost");
       hit.add(row[4].gx + "," + row[4].gy);
       const dx = Math.round(Math.cos(row[7])), dy = Math.round(Math.sin(row[7]));
-      if (row[4].gx !== 1 || row[4].gy !== 0) assert.equal(DL.Pyramid.has(row[4].gx + dx, row[4].gy + dy), false, "waves cross an open edge when there is one");
+      if (row[4].gx !== 2 || row[4].gy !== 2) assert.equal(DL.Pyramid.has(row[4].gx + dx, row[4].gy + dy), false, "waves cross an open edge when there is one");
     }
   }
   assert.equal(hit.size, DL.Siege.targets().length, "every square is attacked in turn");
@@ -80,35 +79,35 @@ function world(flame = 5, squares = {}) {
 
 // Legacy numeric squares acquire HP lazily; damage persists without destroying building records.
 {
-  const { DL, G, calls } = world(5, { "1,0": 1, "0,1": { hp: 180, b: { wall: 2, tower: 1 } } });
+  const { DL, G, calls } = world(5, { "1,1": 1, "-1,-1": { hp: 180, b: { wall: 2, tower: 1 } } });
   const fire = G.outposts.find((o) => o.gx === 1);
   assert.equal(fire.hp, DL.PYRAMID.hp);
   DL.Outposts.hurt(fire, 20);
-  assert.equal(calls.saved.pyramid.sq["1,0"].hp, DL.PYRAMID.hp - 20);
+  assert.equal(calls.saved.pyramid.sq["1,1"].hp, DL.PYRAMID.hp - 20);
   DL.Outposts.reset();
   assert.equal(G.outposts.find((o) => o.gx === 1).hp, DL.PYRAMID.hp - 20);
-  const built = G.outposts.find((o) => o.gy === 1);
+  const built = G.outposts.find((o) => o.gy === -1);
   DL.Outposts.hurt(built, 10);
-  assert.deepEqual(calls.saved.pyramid.sq["0,1"].b, { wall: 2, tower: 1 });
+  assert.deepEqual(calls.saved.pyramid.sq["-1,-1"].b, { wall: 2, tower: 1 });
   DL.Outposts.dawn();
-  assert.equal(G.save.pyramid.sq["0,1"].hp, DL.PYRAMID.hp);
-  assert.equal(G.save.pyramid.sq["0,1"].b.wall, 2);
+  assert.equal(G.save.pyramid.sq["-1,-1"].hp, DL.PYRAMID.hp);
+  assert.equal(G.save.pyramid.sq["-1,-1"].b.wall, 2);
 }
 
 // A destroyed square sinks exactly once; old enemy goals cannot inflict a second loss.
 {
-  const { DL, G, calls } = world(5, { "1,0": { hp: 12, b: { wall: 2, pylon: 1 } }, "0,1": 1 });
+  const { DL, G, calls } = world(5, { "1,1": { hp: 12, b: { wall: 2, pylon: 1 } }, "-1,-1": 1 });
   const fire = G.outposts.find((o) => o.gx === 1);
   const oldPylon = fire.pylons[0];
   DL.Outposts.hurt(fire, 99);
-  assert.equal(DL.Pyramid.has(1, 0), false);
-  assert.equal(G.save.pyramid.sq["1,0"], undefined);
+  assert.equal(DL.Pyramid.has(1, 1), false);
+  assert.equal(G.save.pyramid.sq["1,1"], undefined);
   assert.equal(G.save.up.flame, 4);
   assert.equal(G.flame.max, 550);
   assert.equal(fire.lit, false);
   assert.equal(oldPylon.lit, false, "enemy goals to vanished pylons must also become invalid");
   DL.Outposts.hurt(fire, 99);
-  assert.equal(DL.Pyramid.lose(1, 0), false);
+  assert.equal(DL.Pyramid.lose(1, 1), false);
   assert.equal(G.save.up.flame, 4);
   assert.equal(calls.defeats, 0);
   assert.equal(calls.saved.up.flame, 4);
@@ -116,7 +115,7 @@ function world(flame = 5, squares = {}) {
 
 // Hosts alone mutate square HP or ownership; snapshots convey health and disappearing squares to guests.
 {
-  const host = world(5, { "1,0": { hp: 120, b: { wall: 2, pylon: 1, tower: 1 } } });
+  const host = world(5, { "1,1": { hp: 120, b: { wall: 2, pylon: 1, tower: 1 } } });
   const guest = world(5);
   guest.DL.Net.role = "guest";
   host.G.outposts[0].pylons[0].hp = 20;
@@ -124,16 +123,16 @@ function world(flame = 5, squares = {}) {
   guest.DL.Outposts.apply(JSON.parse(JSON.stringify(host.DL.Outposts.rows())));
   assert.equal(guest.G.outposts[0].hp, 120);
   assert.equal(guest.G.outposts[0].max, host.DL.PYRAMID.hp);
-  assert.equal(guest.DL.Pyramid.buildings(1, 0).wall, 2);
+  assert.equal(guest.DL.Pyramid.buildings(1, 1).wall, 2);
   assert.equal(guest.DL.Pyramid.pylons().length, 2);
   assert.equal(guest.DL.Pyramid.pylons()[0].hp, 20);
   assert.equal(guest.DL.Pyramid.pylons()[0].lit, false);
   guest.DL.Outposts.hurt(guest.G.outposts[0], 1000);
   assert.equal(guest.G.outposts[0].hp, 120);
-  assert.equal(guest.DL.Pyramid.lose(1, 0), false);
+  assert.equal(guest.DL.Pyramid.lose(1, 1), false);
   host.DL.Outposts.hurt(host.G.outposts[0], 1000);
   guest.DL.Outposts.apply(host.DL.Outposts.rows());
-  assert.equal(guest.DL.Pyramid.has(1, 0), false);
+  assert.equal(guest.DL.Pyramid.has(1, 1), false);
   assert.equal(guest.G.outposts.length, 0);
   guest.DL.Siege.nightfall();
   assert.equal(guest.DL.Siege.on, false);
@@ -155,7 +154,7 @@ function world(flame = 5, squares = {}) {
 
 // The last lost level ends play even while a camp menu is open and cannot be escaped by respawning/reloading.
 {
-  const { DL, G, calls } = world(1, { "1,0": 1, "0,1": 1 });
+  const { DL, G, calls } = world(1, { "1,1": 1, "-1,-1": 1 });
   G.state = "camp";
   DL.Outposts.hurt(G.outposts[0], 1000);
   assert.equal(G.save.up.flame, 0);

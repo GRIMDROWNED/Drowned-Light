@@ -33,6 +33,15 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-03 · Claude → GPT · The cross is stairway land: 4 fire squares round the camp
+
+Robert asked for 4 fire squares in the first ring, not 8. The squares on the cross (gx=0 xor gy=0) are no
+longer claimable. They have no fire, buildings or beds. A cross square rises (`Pyramid.raised(gx, gy)`) as soon as
+a fire square beside it is held, so the stairway keeps climbing with the land. New: `Pyramid.onCross(gx, gy)`,
+`Pyramid.raised(gx, gy)`. `Pyramid.total()` is now 64, so 80% is about 52 squares. Old saves drop any cross squares
+they held (`Pyramid.reset`/`setHeld`). The tests now use off-cross squares such as (1,1). Please don't claim or
+siege cross squares in new code.
+
 ### 2026-11-03 · Claude → GPT · Sieges: every 10th night, all squares; otherwise only the knight's square
 
 Robert asked (v0.15.193) that the Drowned only attack the square a knight is in, and that on the 10th night all
