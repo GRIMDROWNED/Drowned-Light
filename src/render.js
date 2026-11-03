@@ -753,8 +753,11 @@
     put(2, () => {
       const lvl = u.flame;
       let fy = 2;
-      const artTier = Math.min(3, L.tier);
-      if (L.tier >= 4) {
+      const artTier = Math.min(3, L.tier), look = [0, 1, 5, 10, 15, 20][L.tier], drawnLook = L.tier >= 2 && Art.sprites["flame" + look];
+      if (drawnLook) { // Robert's milestone looks (flame 5, 10, 15, 20; tools/cut_pyramid.py)
+        sprite(c, "flame" + look, 0, 12);
+        fy = FLAME_FIRE[look];
+      } else if (L.tier >= 4) {
         c.fillStyle = L.tier >= 5 ? "#a38a4e" : "#65635a";
         c.fillRect(-34, -5, 68, 17);
         c.fillStyle = "#302e29";
@@ -766,7 +769,8 @@
           for (const x of [-40, -22, -4, 14, 32]) c.fillRect(x, -108, 8, 15);
         }
       }
-      if (Art.sprites["flame" + artTier]) { const y = [10, 14, 12][artTier - 1]; sprite(c, "flame" + artTier, 0, y); fy = FLAME_FIRE[artTier]; }
+      if (drawnLook) {}
+      else if (Art.sprites["flame" + artTier]) { const y = [10, 14, 12][artTier - 1]; sprite(c, "flame" + artTier, 0, y); fy = FLAME_FIRE[artTier]; }
       else if (L.tier === 1) sprite(c, "firering", 0, 10);
       else if (L.tier === 2) { sprite(c, "firepit2", 0, 14); fy = -2; }
       else { shadow(c, 0, 8, 40, 10, 0.45); sprite(c, "brazierBig", 0, 12); fy = -46; }
@@ -794,7 +798,7 @@
 
   // Where the fire sits in each drawn Central Flame (on its coals), and the lamp glass on each drawn pylon
   // level and on the reinforced gate post, relative to where they stand.
-  const FLAME_FIRE = { 1: -12, 2: -34, 3: -68 };
+  const FLAME_FIRE = { 1: -12, 2: -34, 3: -68, 5: -56, 10: -78, 15: -82, 20: -84 };
   const PYLON_LAMPS = { 1: [[-20, -74], [17, -58]], 2: [[-19, -71], [17, -62]], 3: [[-24, -71], [23, -63]] };
   const GATE_LAMP = [31, -56];
   const SIDE_STEP = 18; // ground each side-on wall strip covers, north to south

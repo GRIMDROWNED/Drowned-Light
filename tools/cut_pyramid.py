@@ -59,4 +59,20 @@ if os.path.exists(sheet):
         im.save(os.path.join(OUT, '..', 'props', 'barracks%d.png' % (i + 1)))
         outs.append(im)
         print('barracks%d' % (i + 1), im.size)
+# Central Flame looks at flame 5, 10, 15 and 20: one sheet of four side by side, cut to WIDTHS file px (props, res 2).
+# Prints where the coals sit (world px above the bottom), for FLAME_FIRE in src/render.js.
+sheet = os.path.join(SRC, 'flame-sheet.png')
+if os.path.exists(sheet):
+    for cell, lvl, width in zip(split_grid(Image.open(sheet), 4, 1), (5, 10, 15, 20), (116, 128, 144, 160)):
+        a = np.asarray(cell.convert('RGB')).astype(int)
+        fg = key_mask(a, tol=120, fringe=2)
+        xs = np.where(fg.any(0))[0]
+        im = cut_keyed(cell, width / (xs.max() - xs.min() + 1), fringe=2)
+        im.save(os.path.join(OUT, '..', 'props', 'flame%d.png' % lvl))
+        outs.append(im)
+        q = np.asarray(im).astype(int); h, w = q.shape[:2]
+        mid = q[:, w // 2 - 6: w // 2 + 6]
+        coal = (mid[..., 3] > 0) & (mid[..., :3].max(-1) < 75) & (mid[..., :3].max(-1) - mid[..., :3].min(-1) < 18)
+        rows = np.where(coal.sum(1) >= 4)[0]
+        print('flame%d' % lvl, im.size, 'coals top at', (h - rows.min()) / 2 if len(rows) else None, 'world px above bottom')
 contact(outs, os.path.join(SRC, 'contact.png'))
