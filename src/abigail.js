@@ -37,7 +37,7 @@
     spot = null;
     for (let t = 0; t < 64 && !spot; t++) {
       const a = DL.hash(53, 29, 700 + t) * TAU, r = A.graveDist + (DL.hash(53, 29, 780 + t) - 0.5) * 300;
-      const x = Math.round(Math.cos(a) * r), y = Math.round(Math.sin(a) * r);
+      const q = DL.Camp.onSquare(a, r), x = Math.round(q.x), y = Math.round(q.y); // r is distance out on the square map (DL.MAP)
       if (dry(x, y) && !groveNear(x, y)) spot = { x, y };
     }
     spot = spot || { x: 0, y: A.graveDist };
@@ -67,7 +67,7 @@
       for (let t = 0; t < 24 && !at; t++) {
         // spread round the ring: each takes its own slice of the circle, jittered
         const a = ((k + DL.hash(61, n, 800 + t)) / count) * TAU + n * 1.7, r = r0 + DL.hash(61, n, 900 + t) * (r1 - r0);
-        const x = Math.round(Math.cos(a) * r), y = Math.round(Math.sin(a) * r);
+        const q = DL.Camp.onSquare(a, r), x = Math.round(q.x), y = Math.round(q.y); // r is distance out on the square map (DL.MAP)
         if (!W.isWater(x, y) && DL.Camp.sq(x, y) > 320) at = { x, y };
       }
       if (at) orbs.push({ i: n, x: at.x, y: at.y });

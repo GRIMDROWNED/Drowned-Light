@@ -21,16 +21,21 @@
   };
   DL.RES_KEYS = Object.keys(DL.RESOURCES);
 
-  // Zones are rings around the camp. Deeper = darker, deadlier, richer.
+  /* The Level 1 map (docs/PYRAMID-PLAN.md): a square grid of `cell` px squares, `rings` rings round the camp's
+     square (a 9 x 9 grid), so the grid reaches `cell * (rings + 0.5)` px out (Camp.sq). Past it a rim of Abyss
+     shore `rim` px wide, then black water no one can cross: the world ends there (World.EDGE). */
+  DL.MAP = { cell: 800, rings: 4, rim: 1500 };
+
+  // Zones are the map's square rings round the camp (Camp.sq distance). Deeper = darker, deadlier, richer.
   DL.ZONES = [
     { name: "Camp Clearing", r: 0, corrupt: 1, hp: 1, dmg: 1, yield: 1, density: 0, dim: 0, pool: {} },
-    { name: "The Shallows", r: 380, corrupt: 1, hp: 1, dmg: 1, yield: 1, density: 9, dim: 0,
+    { name: "The Shallows", r: 400, corrupt: 1, hp: 1, dmg: 1, yield: 1, density: 9, dim: 0,
       pool: { squire: 5, footman: 3, revenant: 1 } },
-    { name: "The Mire", r: 1300, corrupt: 1.25, hp: 1.35, dmg: 1.2, yield: 1.6, density: 11, dim: 0.08,
+    { name: "The Mire", r: 1200, corrupt: 1.25, hp: 1.35, dmg: 1.2, yield: 1.6, density: 11, dim: 0.08,
       pool: { squire: 4, footman: 4, archer: 3, revenant: 2, defiler: 2, hexbearer: 1 } },
-    { name: "Drowned Reaches", r: 2600, corrupt: 1.55, hp: 1.8, dmg: 1.45, yield: 2.3, density: 13, dim: 0.2,
+    { name: "Drowned Reaches", r: 2000, corrupt: 1.55, hp: 1.8, dmg: 1.45, yield: 2.3, density: 13, dim: 0.2,
       pool: { squire: 3, footman: 4, archer: 3, revenant: 3, defiler: 3, blackguard: 2, hexbearer: 2, champion: 0.15 } },
-    { name: "The Abyss", r: 4000, corrupt: 2, hp: 2.4, dmg: 1.75, yield: 3.2, density: 14, dim: 0.5, abyss: true,
+    { name: "The Abyss", r: 2800, corrupt: 2, hp: 2.4, dmg: 1.75, yield: 3.2, density: 14, dim: 0.5, abyss: true,
       pool: { footman: 3, archer: 3, revenant: 3, defiler: 3, blackguard: 3, hexbearer: 3, champion: 0.5 } },
   ];
 
@@ -419,8 +424,8 @@
   DL.ABIGAIL = {
     name: "Abigail", speed: 175, cd: 1.6, sight: 300, dmg: 6, perFlame: 0.15, reqFlame: 2,
     orbSpeed: 240, orbLife: 2.4, curse: 0.1, pulseEvery: 20, buffDur: 10, buff: 0.1,
-    need: 10, orbs: [[3, 550, 1250], [4, 1400, 2550], [3, 2700, 3900], [2, 4150, 4700]], grab: 28,
-    graveDist: 4400, clear: 190, giveR: 120,
+    need: 10, orbs: [[3, 480, 1120], [4, 1280, 1920], [3, 2080, 2720], [2, 2900, 3500]], grab: 28,
+    graveDist: 3200, clear: 190, giveR: 120,
   };
   /* Fred, the mushroom familiar (src/fred.js). A tiny Fred sleeps in a fairy ring of toadstools in the Drowned
      Reaches, `ringDist` px out (a clearing of `clear` px). Come within `wakeR` px of it at night with a torch in your
@@ -442,7 +447,7 @@
     mindEvery: 14, mindFor: 4, mindR: 260,             // B at 10: Mindrot
     rebloom: 0.4,                                      // A at 15: Second Bloom
     stormEvery: 25, stormR: 200, sleep: 2.5,           // B at 15: Spore Storm
-    ringDist: 3150, clear: 170, wakeR: 70, trialHp: 260, waveEvery: 10, waveR: 480, trialCapEvery: 15, winR: 900, wilt: 3,
+    ringDist: 2400, clear: 170, wakeR: 70, trialHp: 260, waveEvery: 10, waveR: 480, trialCapEvery: 15, winR: 900, wilt: 3,
     campCaps: [0, 0, 1, 3], // glowcaps the Toadstool Cottage sprouts in the camp each dawn, by its level
     repick: { resin: 40, pearl: 10, black: 5 }, // choosing his roads again, at a level 3 cottage
     roads: [
@@ -480,7 +485,7 @@
     boostFor: 20, boostEvery: 40, tailwind: 0.3, fury: 0.25, // A at 10: Tailwind (speed); B at 10: War Fury (damage)
     shock: 0.8,                                        // A at 15: Static Shock (stun, never a boss)
     cauterAt: 0.3, cauterHeal: 0.3, cauterFor: 3, cauterEvery: 60, // B at 15: Cauterize
-    nestDist: 3400, clear: 170, grab: 40, warnR: 230, arriveR: 760, winR: 900, respawnDays: 3, haulSpeed: 0.92, catchUp: 620,
+    nestDist: 2550, clear: 170, grab: 40, warnR: 230, arriveR: 760, winR: 900, respawnDays: 3, haulSpeed: 0.92, catchUp: 620,
     swoop: { first: 5, every: 9, min: 110, max: 430, windup: 0.8, speed: 720, dur: 0.6, dmg: 0.9, kb: 300 },
     breath: { first: 3, every: 11, range: 230, windup: 0.8, dur: 1.4, arc: 0.48, tick: 0.25, dmg: 0.22 },
     storm: { every: 12, delay: 1.2, extra: 3, r: 40, dmg: 0.85 },
@@ -505,7 +510,7 @@
      once it has lost `free` of its health since (friends, hounds and Derek can cut you free), or when it dies. Slain, it
      stays gone for `respawnDays` days. */
   DL.BELL = {
-    r: 4800, roam: 0.0035, spawn: 1100, forget: 1700, erupt: 120, creep: 26,
+    r: 3200, roam: 0.0035, spawn: 1100, forget: 1700, erupt: 120, creep: 26,
     tollEvery: 8, tollR: 160, tollCorrupt: 12, gulpEvery: 7, gulpR: 170, gulpWindup: 0.9, lunge: 620,
     hold: 3, bite: 0.22, free: 0.1, respawnDays: 3,
   };
@@ -525,7 +530,7 @@
      Below `phase2` of her health she moves `fast` times quicker, her moves come `rate` times as often, and the briar
      rings her too. Slain, she stays gone `respawnDays` days. */
   DL.ROSE = {
-    dist: 4500, clear: 230, bushes: 11, petalR: 1700, hintR: 1500, foundR: 420, spawn: 1100, forget: 1700, leash: 460,
+    dist: 3250, clear: 230, bushes: 11, petalR: 1700, hintR: 1500, foundR: 420, spawn: 1100, forget: 1700, leash: 460,
     lashKb: 260, lashShow: 0.4, phase2: 0.5, fast: 1.2, rate: 1.35, respawnDays: 4, maxVines: 30,
     waltz: { first: 5, every: 9, windup: 0.9, spin: 1.3, r: 170, drift: 0.6, hits: 3, dmg: 0.45, kb: 240 },
     briar: { first: 3, every: 11, windup: 0.6, delay: 0.5, reach: 480, n: 5, step: 58, r: 34, dmg: 0.7, life: 4, sting: 0.12 },
@@ -562,7 +567,7 @@
                    call   `n` (+1 per phase) Drowned climb out of the black water and go for the Bearer;
                    rain   from phase 2: black water rains on `n` spots round the knights, adding `corrupt` corruption. */
   DL.FINALE = {
-    gate: { dist: 4900, clear: 560, foundR: 650, arenaR: 420, arenaY: 250, plantY: 380, view: 1450, viewW: 1000,
+    gate: { dist: 3950, clear: 560, foundR: 650, arenaR: 420, arenaY: 250, plantY: 380, view: 1450, viewW: 1000,
       lake: { cy: -150, rx: 820, ry: 580 }, causeway: 170 },
     speed: 24, wade: 0.6, leash: 340, hp: 1500, light: 260, restLight: 330, pulseEvery: 3, pulseR: 95, pulseDmg: 18,
     bandEvery: 15, bandN: 3, bandR: 440, braziers: 4, brazierR: 160, waveEvery: 11, waveN: 4, campR: 750, dawnHeal: 0.4,

@@ -68,8 +68,8 @@
     };
     spot = null;
     for (let t = 0; t < 160 && !spot; t++) {
-      const a = -Math.PI / 2 + (DL.hash(71, 43, 300 + t) - 0.5) * 2.2, r = GT.dist + (DL.hash(71, 43, 400 + t) - 0.5) * 500;
-      const x = Math.round(Math.cos(a) * r), y = Math.round(Math.sin(a) * r);
+      const a = -Math.PI / 2 + (DL.hash(71, 43, 300 + t) - 0.5) * 1.4, r = GT.dist + (DL.hash(71, 43, 400 + t) - 0.5) * 500;
+      const q = DL.Camp.onSquare(a, r), x = Math.round(q.x), y = Math.round(q.y); // r is distance out on the square map (DL.MAP)
       const ax = x, ay = y + GT.arenaY;
       if (dryRing(ax, ay) && !groveNear(ax, ay) && Math.hypot(x - rose.x, y - rose.y) > 1800 && Math.hypot(x - gs.x, y - gs.y) > 1400) spot = { x, y };
     }

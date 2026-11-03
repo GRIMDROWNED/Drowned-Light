@@ -189,7 +189,7 @@ No build step, no dependencies. These are plain scripts loaded in order:
 | `src/art.js` | procedural pixel sprites for the world, camp and effects |
 | `src/units.js` | the knight, Drowned Knight, Bone Hound, Derek and Starved Bell sprite sheets (all animations, corruption stages) |
 | `src/sprites.js` | loads hand-drawn PNG art over the coded sprites and sheets |
-| `src/world.js` | endless chunked wetland: ground texture, resources, blooms, collisions |
+| `src/world.js` | the Level 1 map (a 9 × 9 grid of 800 px squares plus a rim, `DL.MAP`; the world ends in black water at `World.EDGE`), chunked: ground texture, resources, blooms, collisions |
 | `src/game.js` | simulation: player, corruption, spawning, enemy AI, combat, camp economy, saving |
 | `src/hounds.js` | the Bone Hound: its hunt and bite, bleeding, being knocked out, co-op ownership |
 | `src/den.js` | the Bone Wolf den: where it lies, the pack, hauling a carcass home to win a hound |
