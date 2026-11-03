@@ -26,7 +26,7 @@
   G.defaultSave = () => ({
     v: 1, day: 1, nights: 0, deepest: 0, muted: false,
     stash: emptyRes(),
-    up: { flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, roost: 0, bell: 0, roseheart: 0 },
+    up: { fortress: 1, flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, roost: 0, bell: 0, roseheart: 0 },
     kit: "lanternBlade",
     kitLevel: 1,
     difficulty: "dark",
@@ -479,6 +479,7 @@
     }
     if (lay.forge) L.push({ x: lay.forge.x - 4, y: lay.forge.y - 14, r: 60, s: 0.6, col: "255,120,40", a: 0.7, flick: 1 });
     if (lay.workbench) L.push({ x: lay.workbench.x + 8, y: lay.workbench.y - 26, r: 45, s: 0.5, col: "255,190,100", a: 0.5, flick: 1 });
+    for (const f of lay.fires || []) L.push({ x: f.x, y: f.y - (f.kind === "torch" ? 26 : 30), r: f.kind === "torch" ? 70 : f.kind === "beacon" ? 110 : 90, s: 0.7, col: "255,160,70", a: 0.8, flick: 1, kind: "human" });
     if (lay.garden && G.nightAmt > 0.3) L.push({ x: lay.garden.x, y: lay.garden.y - 12, r: 60 + 12 * G.save.up.garden, s: 0.6, col: "80,230,240", a: 0.8 });
     if (G.save.up.stakes >= 3) {
       for (const g of DL.Camp.GATES) for (const sgn of [-1, 1]) {
@@ -777,7 +778,7 @@
   G.collideCamp = (ent, r) => collideCamp(ent, r);
   function collideCamp(ent, r) {
     DL.Pyramid.collide(ent, r);
-    if (DL.Camp.sq(ent.x, ent.y) > 280) return;
+    if (DL.Camp.sq(ent.x, ent.y) > DL.WALL_R + 80) return; // the Refuge's south face hangs below its edge
     DL.Camp.collideWall(ent, r, G.save.up);
     for (const s of G.campSolids()) {
       const dx = ent.x - s.x, dy = ent.y - s.y, d = Math.hypot(dx, dy), m = s.r + r;
@@ -1785,8 +1786,12 @@
     if (id === "workbench") G.player.oil = st.maxOil;
     if (id === "pylon" || id === "stakes") G.resetPylons();
     if (id === "roseheart") checkUnlocks(false);
-    if (id === "stakes" && lvl + 1 >= 4) setTimeout(() => say("The walls go up farther out. Your camp grows.", "good"), 300);
-    if (id === "flame" && DL.Camp.tier(G.save.up) !== DL.Camp.tier({ ...G.save.up, flame: lvl })) {
+    if (id === "flame" && DL.Refuge && DL.Refuge.on()) { // the Refuge takes its next form (src/refuge.js)
+      G.resetPylons();
+      const info = DL.Refuge.info(DL.Refuge.level());
+      setTimeout(() => say(`The refuge grows: ${info.name}. ${info.text}`, "good"), 300);
+    } else if (id === "stakes" && lvl + 1 >= 4) setTimeout(() => say("The walls go up farther out. Your camp grows.", "good"), 300);
+    if (id === "flame" && !(DL.Refuge && DL.Refuge.on()) && DL.Camp.tier(G.save.up) !== DL.Camp.tier({ ...G.save.up, flame: lvl })) {
       setTimeout(() => say(`Your camp grows: ${DL.TIER_NAMES[DL.Camp.tier(G.save.up)]}.`, "good"), 300);
     }
     G.persist();

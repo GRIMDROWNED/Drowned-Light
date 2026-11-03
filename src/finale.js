@@ -40,7 +40,8 @@
   // While Kindle is the Bearer, the host's Kindle isn't at their heel.
   Finale.bearing = () => !G.isGuest() && S().stage >= 1 && S().stage <= 3;
   // Everything the end needs, done in this world.
-  Finale.ready = () => DL.Pyramid.coverage() >= DL.PYRAMID.win;
+  // With the Refuge (src/refuge.js) it is the completed fortress, Central Flame 20, in place of 80% of the land.
+  Finale.ready = () => (DL.Refuge.on() ? (G.save.up.flame || 0) >= DL.FLAME.max : DL.Pyramid.coverage() >= DL.PYRAMID.win);
   Finale.king = () => G.enemies.find((e) => e.def.king && !e.removed) || null;
   Finale.won = () => Finale.stage() === 4;
 
@@ -429,7 +430,7 @@
       <p>The Fire Bearer carried the last light of the marsh to the gate, and ${KING} is no more. The gate stands open, ${w.m} m to the ${w.dir}.</p></article>`;
     const lock = Finale.lock();
     const body = st === 1
-      ? `<p>Kindle drank the Central Flame and rose as the Fire Bearer. Past your outer squares, ${w.m} m to the ${w.dir}, something waits for its fire. Send it and it strides straight to the hearth before the gate; the gate becomes a place you can travel to.</p>
+      ? `<p>Kindle drank the Central Flame and rose as the Fire Bearer. Past ${DL.Refuge.on() ? "the refuge's walls" : "your outer squares"}, ${w.m} m to the ${w.dir}, something waits for its fire. Send it and it strides straight to the hearth before the gate; the gate becomes a place you can travel to.</p>
          <footer>${lock ? `<span class="req">${lock}</span>` : ""}<button data-act="march" ${lock ? "disabled" : ""}>Send it to the gate</button></footer>`
       : `<p>The Bearer stands on the hearth before the gate. Travel there and guard it while it gathers its flame.</p>`;
     return `<article class="card finale-card"><header><h3>The Fire Bearer</h3><span class="tag">${st === 1 ? "Waiting" : "At the gate"}</span></header>${body}</article>`;

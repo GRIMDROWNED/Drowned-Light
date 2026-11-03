@@ -76,6 +76,18 @@
     for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) mine.addEventListener(ev, () => { DL.Input.mineBtn = false; });
     mine.addEventListener("contextmenu", (e) => e.preventDefault());
     for (const id of ["btnView", "btnView2"]) $(id).addEventListener("click", () => { DL.View.cycle(); UI.updateViewLabel(); });
+    // The Refuge switch (src/refuge.js): the new terraced fortress, or the old grid of squares. Saved squares are kept.
+    $("btnRefuge").addEventListener("click", () => {
+      if (G.isGuest()) return UI.toast("Only the host can switch the refuge.", "warn");
+      G.save.up.fortress = DL.Refuge.on() ? 0 : 1;
+      DL.Camp.sync(G.save.up);
+      DL.Outposts.reset();
+      G.resetPylons();
+      if (DL.World.ground) DL.World.ground.clear();
+      DL.Pyramid.ver++;
+      G.persist();
+      UI.updateRefugeLabel();
+    });
     $("btnZoom").addEventListener("click", () => { $("btnZoom").textContent = "Zoom: " + DL.Render.cycleZoom(); });
     $("btnCombat").addEventListener("click", () => {
       G.save.attackMode = G.save.attackMode === "manual" ? "auto" : "manual";
@@ -290,6 +302,7 @@
   UI.coopStatus = function (msg) { $("coopStatus").textContent = msg || ""; };
 
   UI.pause = function () {
+    UI.updateRefugeLabel();
     const G = DL.Game;
     if (G.state !== "play") return;
     $("btnLeaveCoop").classList.toggle("hidden", !DL.Net.role);
@@ -619,6 +632,8 @@
   };
 
   /* ---------------- camp menu ---------------- */
+  UI.updateRefugeLabel = () => { const b = $("btnRefuge"); if (b) b.textContent = "Refuge: " + (DL.Refuge.on() ? "Fortress" : "Squares"); };
+
   // The camp button (and the C key): enter the camp, open a square's paths, or claim the square you stand in (src/pyramid.js).
   UI.campLabel = function () {
     const G = DL.Game;
@@ -762,7 +777,8 @@
           ${DL.Finale.guideLine() ? `<li>${DL.Finale.guideLine()}</li>` : ""}
           <li><b>Black Pearls</b> are found only in the Abyss: in clams half sunk in its mud, now and then on its Drowned, and on its great bosses. The last levels of the camp need them.</li>
           <li>${DL.Siege.line()}${s.trophies.bell ? " Your Bell Tower, hung with the Starved Bell's clapper, warns of every wave." : ""}</li>
-          <li>Grow the <b>Pyramid</b>: stand near the middle of a square next to your land and claim it. It rises out of the marsh with a fire at its heart, and every Central Flame level lets you hold ${DL.PYRAMID.perFlame} more. ${DL.Pyramid.line()}. Supplies brought to a square's fire go home${DL.Kindle.lit() ? ", and with your Kindle lit you can travel between your squares and the camp" : ". Something lost in the Mire still remembers the old paths between them"}.</li>
+          ${DL.Refuge.on() ? `<li>Grow the <b>Refuge</b>: every Central Flame level builds the fortress round it, from a hearth to a terraced stronghold with stairs on every side. ${DL.Refuge.line()}. At level ${DL.FLAME.max} the refuge is complete.</li>` : ""}
+          ${DL.Refuge.on() ? "" : `<li>Grow the <b>Pyramid</b>: stand near the middle of a square next to your land and claim it. It rises out of the marsh with a fire at its heart, and every Central Flame level lets you hold ${DL.PYRAMID.perFlame} more. ${DL.Pyramid.line()}. Supplies brought to a square's fire go home${DL.Kindle.lit() ? ", and with your Kindle lit you can travel between your squares and the camp" : ". Something lost in the Mire still remembers the old paths between them"}.</li>`}
           <li>Fall, and your <b>drowned self</b> keeps your supplies. Slay it to get them back.</li>
         </ul></article>`;
     }
@@ -1050,7 +1066,7 @@
     set($("coopChip"), "hidden", !coopText);
     const d = Math.hypot(p.x, p.y);
     set($("homeArrow"), "transform", `rotate(${(Math.atan2(-p.y, -p.x) * 180) / Math.PI}deg)`);
-    set($("homeDist"), "text", (DL.SANDBOX ? "SANDBOX · " : "") + (G.cave ? "Camp: far above" : (DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`) + (DL.Finale.stage() >= 1 ? "" : ` · Pyramid ${Math.floor(DL.Pyramid.coverage() * 100)}% of ${Math.round(DL.PYRAMID.win * 100)}%`)));
+    set($("homeDist"), "text", (DL.SANDBOX ? "SANDBOX · " : "") + (G.cave ? "Camp: far above" : (DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`) + (DL.Finale.stage() >= 1 ? "" : DL.Refuge.on() ? ` · Refuge ${DL.Refuge.level()} of ${DL.FLAME.max}` : ` · Pyramid ${Math.floor(DL.Pyramid.coverage() * 100)}% of ${Math.round(DL.PYRAMID.win * 100)}%`)));
     // the way to Derek's Hollow, once found, until you've won him
     const cn = DL.Cave.showNav();
     set($("caveNav"), "hidden", !cn);

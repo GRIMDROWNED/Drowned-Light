@@ -80,6 +80,7 @@
      run straight through along the gate's line until past the wall, so it never scrapes along the stakes.
      Outside, it runs around the wall rather than into it. */
   function gateWay(h, tx, ty) {
+    if (DL.Refuge && DL.Refuge.on()) return DL.Camp.route(h.x, h.y, tx, ty, G.save.up); // the Refuge's stairs (src/refuge.js)
     if (!DL.Camp.walled(G.save.up)) return null;
     const C = DL.Camp, R = DL.WALL_R, inside = C.inside(h.x, h.y);
     // the way round the outside keeps well off the corners, so a straight leg never clips one;

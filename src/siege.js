@@ -18,8 +18,11 @@
   Siege.isSiegeNight = (n) => n % S.every === 0;
   // Nights to the next Great Siege: 0 = tonight.
   Siege.nightsLeft = () => (S.every - (nightNo() % S.every)) % S.every;
+  const fort = () => !!(DL.Refuge && DL.Refuge.on()); // the Refuge has no squares: the siege comes for the camp (src/refuge.js)
   Siege.line = function () {
     const n = Siege.nightsLeft();
+    if (Siege.on && fort()) return "The Great Siege is upon the refuge. Every time the Central Flame is snuffed it drops a level; level 0 loses the world.";
+    if (n === 0 && fort()) return "Tonight the Drowned march on the refuge: the Great Siege.";
     if (Siege.on) return "The Great Siege is upon every square. Every square lost lowers the Central Flame; level 0 loses the world.";
     return n === 0 ? "Tonight the Drowned march on all your squares: the Great Siege." : `The Great Siege comes every ${S.every}th night: ${n} night${n > 1 ? "s" : ""} from now.`;
   };
@@ -35,7 +38,7 @@
     Siege.nextA = rand(0, TAU);
     sfx("toll");
     for (const o of G.outposts) o.siegeT = 0;
-    say("THE GREAT SIEGE. The Drowned march on every square! Each square lost lowers the Central Flame.", "danger");
+    say(fort() ? "THE GREAT SIEGE. The Drowned march on the refuge! Guard the Central Flame." : "THE GREAT SIEGE. The Drowned march on every square! Each square lost lowers the Central Flame.", "danger");
   };
   Siege.dawn = function () {
     if (!Siege.on) return;
@@ -45,7 +48,7 @@
   };
   // A day dawning tomorrow on the eve of a siege: a warning.
   Siege.morning = function () {
-    if (!G.isGuest() && Siege.nightsLeft() === 0) setTimeout(() => say("The Drowned gather in the deep. Tonight they will march on all your squares.", "warn"), 2600);
+    if (!G.isGuest() && Siege.nightsLeft() === 0) setTimeout(() => say(fort() ? "The Drowned gather in the deep. Tonight they will march on the refuge." : "The Drowned gather in the deep. Tonight they will march on all your squares.", "warn"), 2600);
   };
 
   /* ---------------- waves ---------------- */

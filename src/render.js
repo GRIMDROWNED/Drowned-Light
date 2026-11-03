@@ -599,6 +599,7 @@
   /* ---------- base camp: a new form every five Flame levels ---------- */
   function drawCampGround(c, G) {
     const L = DL.Camp.layout(G.save.up), R = DL.WALL_R;
+    if (L.fortress) return DL.Refuge.drawGround(c, L, G.time); // the Refuge's terraces and stairs (src/refuge.js)
     if (L.tier === 1) {
       c.strokeStyle = "rgba(90,75,55,0.35)";
       c.lineWidth = 3;
@@ -705,8 +706,9 @@
       if (q.lit) for (const [ox, oy] of lamps) lampFlame(c, q.x + ox, q.y + oy);
       if (q.hp < q.max) bar(c, q.x, q.y - 120, 24, q.hp / q.max, "#ffb35a");
     });
+    if (L.fortress) pushRefuge(list, c, L, u, t);
     // barricade: stakes, then a palisade with four gates
-    if (u.stakes === 1) {
+    else if (u.stakes === 1) {
       DL.Camp.ring(R - 10, 52).forEach(({ x, y }, i) => put(y, () => sprite(c, "stake", x, y + 2, i % 2 === 0)));
     } else if (u.stakes >= 2) {
       const rf = u.stakes >= 3 && Art.sprites.palisade2 ? "2" : "";
@@ -785,6 +787,61 @@
       else { c.fillStyle = "#6a2a14"; c.fillRect(-4, fy - 4, 3, 2); c.fillRect(3, fy - 2, 2, 2); }
       if (f.lit && f.hp < f.max) bar(c, 0, fy - 50 - lvl * 4, 46, f.hp / f.max, "#ffb35a");
     });
+  }
+
+  /* The Refuge's own pieces (src/refuge.js): its barracks, tents, supply pile, placeholder plots for buildings not yet
+     drawn, watch fires, lamps and beacons; and the Barricade's stakes or palisade along the outermost wall, broken at
+     every stair. */
+  function pushRefuge(list, c, L, u, t) {
+    const put = (y, f) => list.push({ y, f });
+    for (const it of L.items) {
+      if (it.sprite === "tent") continue; // drawn with the tents
+      if (it.id === "barracks") { const lv = DL.Refuge.barracks(u); put(it.y, () => drawBarracks(c, it.x, it.y, lv)); continue; }
+      if (it.id === "supplies") {
+        put(it.y, () => {
+          const piles = ["resWood", "resStone", "resWood", "resIron", "resResin"];
+          piles.forEach((n, i) => { if (Art.sprites[n]) sprite(c, n, it.x - 14 + (i % 3) * 14, it.y - 8 + Math.floor(i / 3) * 10); });
+        });
+        continue;
+      }
+      if (it.ph) put(it.y, () => DL.Refuge.drawPlaceholder(c, it));
+    }
+    for (const f of L.fires) put(f.y, () => {
+      if (f.kind === "torch") { sprite(c, "torch", f.x, f.y + 2); Art.drawFire(c, f.x, f.y + 10 - Art.sprites.torch.h * PS, 0.7, t); return; }
+      sprite(c, "brazier", f.x, f.y + 2, false);
+      Art.drawFire(c, f.x, f.y + 14 - Art.sprites.brazier.h * PS, f.kind === "beacon" ? 1.5 : 1.1, t);
+    });
+    if (!u.stakes) return;
+    const g = L.geo, R = L.R, ring = DL.Refuge.blockers(u).find((r) => r.half === R);
+    const gaps = ring ? ring.stairs : [];
+    const open = (s, along) => gaps.some((q) => q.s === s && Math.abs(along - q.at) < q.w / 2 + 14);
+    const rf = u.stakes >= 3 && Art.sprites.palisade2 ? "2" : "";
+    if (u.stakes === 1) {
+      DL.Camp.ring(R - 10, 52).forEach(({ x, y }, i) => {
+        const s = Math.abs(y) >= Math.abs(x) ? (y < 0 ? 0 : 2) : (x > 0 ? 1 : 3);
+        if (!open(s, s % 2 ? y : x)) put(y, () => sprite(c, "stake", x, y + 2, i % 2 === 0));
+      });
+      return;
+    }
+    const n = Math.round((2 * R) / 46);
+    for (let i = 1; i < n; i++) for (const [y, s] of [[-R, 0], [R, 2]]) {
+      const x = -R + (2 * R * i) / n;
+      if (!open(s, x)) put(y, () => sprite(c, "palisade" + rf, x, y + 4, i % 2 === 0));
+    }
+    const m = Math.round((2 * R) / SIDE_STEP);
+    for (let i = 1; i < m; i++) for (const [x, s] of [[-R, 3], [R, 1]]) {
+      const y = -R + (2 * R * i) / m;
+      if (open(s, y) || (y > 0 && open(s, y - 51))) continue; // a side strip stands 51 px tall: keep it off the stair south of it
+      put(y, () => sprite(c, (Art.sprites.palisadeSide ? "palisadeSide" : "palisade") + rf, x, y + 4, x > 0));
+    }
+    for (const x of [-R, R]) for (const y of [-R, R]) put(y + 1, () => sprite(c, "cornerPost" + rf, x, y + 4, x > 0));
+    for (const q of gaps) { // gate posts either side of each stair
+      const [nx, ny] = [[0, -1], [1, 0], [0, 1], [-1, 0]][q.s];
+      for (const sg of [-1, 1]) {
+        const x = nx ? nx * R : q.at + sg * (q.w / 2 + 6), y = ny ? ny * R : q.at + sg * (q.w / 2 + 6);
+        put(y + 1, () => sprite(c, u.stakes >= 3 && Art.sprites.gatePost2 ? "gatePost2" : "gatePost", x, y + 4, sg > 0));
+      }
+    }
   }
 
   /* The Rose Heart: Robert's drawing of each level once it's in (roseHeart1–3); till then the Deadly Rose's own bud,

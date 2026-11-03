@@ -717,6 +717,70 @@
     spawnX: 38, spawnY: 32, spacing: 28, knockback: 60, scale: 0.85, barracksRadius: 26,
   };
 
+  /* The Refuge (Robert, 2026-11-03; src/refuge.js): the camp grows into a terraced fortress over the Central Flame's
+     20 levels, in place of the grid of squares. Switched in the pause menu (save.up.fortress: 0 = the old squares).
+     Half-sides are in world px round the flame; [level, value] lists take the last entry at or below the level.
+     Each terrace wall is one level of drop: a south face `face` px tall hangs below it (like the pyramid's steps).
+     Stairs: `at` = offset along the side from its middle, `w` = width. Items: `at` = where it stands at level 20
+     (earlier levels scale it in and the placer nudges it to the nearest free ground in its district); `hw` = half
+     its footprint's width; `from` = the refuge level a decor piece appears; `ph` = placeholder until art is drawn. */
+  DL.REFUGE = {
+    camp: 260,                                   // the camp's half-side before the terraces (levels 1-5)
+    lowWall: 3,                                  // low stone walls round the camp from this level (gaps at the four paths)
+    sanctum: [[4, 95], [10, 150]],               // the flame's raised platform (First Terrace, Inner Ring)
+    main: [[6, 300], [10, 340]],                 // the district terrace (Expanded Terrace, Inner Ring)
+    outer: [[11, 470], [18, 540]],               // the outer terrace (Outer Terrace, Outer Ring)
+    centralW: [[1, 80], [15, 112]],              // the central stairs and avenues (Great Stairways widen them)
+    mainSide: { from: 9, at: 205, w: 58 },       // Secondary Access: two more stairs on each side of the district terrace
+    outerSide: { from: 15, at: 330, w: 66 },     // Great Stairways: two more on each side of the outer terrace
+    barracks: [[5, 1], [12, 2], [17, 3]],        // the refuge's barracks level (its champions defend the refuge)
+    towerIn: 34,                                 // watchtowers stand this far in from the outermost wall's corners
+    levels: [
+      null,
+      { name: "First Flame", text: "A small hearth on a stone foundation." },
+      { name: "Survivor Camp", text: "Tents and a supply pile round the fire." },
+      { name: "Fortified Camp", text: "Low stone walls with four openings." },
+      { name: "First Terrace", text: "The flame stands on a raised platform with four stairs." },
+      { name: "Barracks", text: "The first permanent building, and a better brazier." },
+      { name: "Expanded Terrace", text: "A wide paved terrace for the districts." },
+      { name: "Resource Yards", text: "A storehouse, a salvage yard and training grounds." },
+      { name: "Reinforced Walls", text: "Corner bastions on the outer wall." },
+      { name: "Secondary Access", text: "Two more stairs on every side." },
+      { name: "Inner Ring", text: "A wider, walled sanctum round the flame." },
+      { name: "Outer Terrace", text: "A second terrace opens round the districts." },
+      { name: "Defensive Expansion", text: "Watch fires on the terrace corners; the barracks grows." },
+      { name: "Resource Network", text: "An alchemy station and lit avenues." },
+      { name: "Living Quarters", text: "Survivor quarters and more tents." },
+      { name: "Great Stairways", text: "Grand central stairs and two more on every outer side." },
+      { name: "Upper Works", text: "An expedition lodge and a research archive." },
+      { name: "Champion Wing", text: "The barracks' last form, and guard banners." },
+      { name: "Outer Ring", text: "The outer terrace reaches its full size." },
+      { name: "Final Reinforcement", text: "Lamps at every stair and banners on the walls." },
+      { name: "Completed Refuge", text: "The summoning circle, beacons and the crowned flame." },
+    ],
+    // district: nw military and crafting, ne champions and operations, sw familiars and cultivation, se boss rewards
+    items: {
+      // existing camp buildings (canonical ids from DL.UPGRADES; shown when built, a reserved plot otherwise)
+      forge: { d: "nw", at: [-250, -100], hw: 32 }, armory: { d: "nw", at: [-100, -250], hw: 31 }, workbench: { d: "nw", at: [-290, -250], hw: 30 },
+      garden: { d: "sw", at: [-250, 110], hw: 32 }, kennel: { d: "sw", at: [-110, 262], hw: 24 }, shrine: { d: "sw", at: [-230, 232], hw: 27 },
+      toadstool: { d: "sw", at: [-298, 300], hw: 26 }, workshop: { d: "sw", at: [-405, 140], hw: 28 }, roost: { d: "sw", at: [-160, 445], hw: 30 },
+      bell: { d: "se", at: [110, 240], hw: 21 }, roseheart: { d: "se", at: [250, 250], hw: 23 },
+      // refuge structures, by refuge level
+      barracks: { d: "ne", at: [230, -120], hw: 44, from: 5 },
+      tentA: { d: "ne", at: [110, -250], hw: 26, from: 2, sprite: "tent" }, tentB: { d: "ne", at: [290, -280], hw: 26, from: 2, sprite: "tent", flip: true },
+      supplies: { d: "ne", at: [190, -230], hw: 18, from: 2 },
+      storehouse: { d: "ne", at: [410, -260], hw: 36, from: 7, ph: "Storehouse" },
+      salvage: { d: "sw", at: [-280, 380], hw: 36, from: 7, ph: "Salvage Yard" },
+      training: { d: "nw", at: [-400, -150], hw: 40, from: 7, ph: "Training Grounds" },
+      alchemy: { d: "nw", at: [-150, -405], hw: 30, from: 13, ph: "Alchemy Station" },
+      quarters: { d: "ne", at: [400, -130], hw: 40, from: 14, ph: "Survivor Quarters" },
+      tentC: { d: "ne", at: [150, -410], hw: 26, from: 14, sprite: "tent" }, tentD: { d: "ne", at: [250, -420], hw: 26, from: 14, sprite: "tent", flip: true },
+      lodge: { d: "ne", at: [410, -400], hw: 38, from: 16, ph: "Expedition Lodge" },
+      archive: { d: "se", at: [260, 110], hw: 38, from: 16, ph: "Research Archive" },
+      circle: { d: "se", at: [400, 210], hw: 44, from: 20, ph: "Summoning Circle" },
+    },
+  };
+
   // Camp buildings. costs[level] = price to go from `level` to `level + 1`.
   // reqFlame(target) = Central Flame level needed to build that level.
   DL.UPGRADES = [
