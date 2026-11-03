@@ -1730,12 +1730,14 @@
   G.pay = pay;
 
   // Why the next level of a building can't be built yet (null when it can, cost aside).
+  G.flameCap = () => Math.min(DL.FLAME.max, Math.max(1, DL.FLAME.perBarricade * G.save.up.stakes));
   G.upgradeLock = function (u, lvl) {
     if (u.trophy && !G.save.trophies[u.trophy]) return u.trophy === "bell" ? "Slay the Starved Bell first" : "Slay the Deadly Rose first";
     if (u.needs && !DL.Summons.anyHas(u.needs)) return `Win ${DL.SUMMON[u.needs].name} first`;
     const needFlame = u.reqFlame(lvl + 1);
     if (G.save.up.flame < needFlame) return `Needs Central Flame ${needFlame}`;
     if (u.id === "flame") {
+      if (lvl + 1 > G.flameCap()) return `Needs Barricade ${Math.ceil((lvl + 1) / DL.FLAME.perBarricade)} (Flame limit ${G.flameCap()})`;
       const nights = DL.FLAME_NIGHTS[lvl + 1] || 0;
       if (G.save.nights < nights) return `Needs ${nights} night${nights > 1 ? "s" : ""} survived (${G.save.nights} so far)`;
     }
@@ -1745,6 +1747,7 @@
   G.buyUpgrade = function (id) {
     if (G.isGuest()) { DL.Net.event({ t: "build", id }); return true; } // the host builds it from the shared stash
     const u = DL.UPGRADES.find((x) => x.id === id), lvl = G.save.up[id];
+    if (!u) return false;
     if (lvl >= u.max) return false;
     const cost = u.costs[lvl];
     if (G.upgradeLock(u, lvl) || !G.canAfford(cost)) { sfx("deny"); return false; }
@@ -1790,3 +1793,4 @@
     G.player.oil = st.maxOil;
   };
 })(window.DL);
+

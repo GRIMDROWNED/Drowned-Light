@@ -633,7 +633,7 @@
     $("campStash").innerHTML = DL.RES_KEYS.map((k) => `<span class="stash-item">${chip(k, s.stash[k])}<small>${DL.RESOURCES[k].name}</small></span>`).join("");
     const tier = DL.Camp.tier(s.up);
     const siegeIn = DL.Siege.nightsLeft();
-    $("campDay").textContent = (UI.atOutpost ? "Square · " : G.isGuest() ? "Your friend's camp · shared stash · " : "") + `Tier ${"I".repeat(tier)} · ${DL.TIER_NAMES[tier]} · Day ${s.day} · ${G.phase() === "day" ? "Daylight" : G.phase() === "night" ? "Night" : G.phase() === "dusk" ? "Dusk" : "Dawn"}` +
+    $("campDay").textContent = (UI.atOutpost ? "Square · " : G.isGuest() ? "Your friend's camp · shared stash · " : "") + `Tier ${["", "I", "II", "III", "IV", "V"][tier]} · ${DL.TIER_NAMES[tier]} · Day ${s.day} · ${G.phase() === "day" ? "Daylight" : G.phase() === "night" ? "Night" : G.phase() === "dusk" ? "Dusk" : "Dawn"}` +
       ` · ${DL.Siege.on ? "GREAT SIEGE" : siegeIn === 0 ? "Great Siege tonight" : `Great Siege in ${siegeIn} night${siegeIn > 1 ? "s" : ""}`}`;
     let html = "";
     if (UI.campTab === "build") {
@@ -642,7 +642,9 @@
       for (const u of DL.UPGRADES) {
         const lvl = s.up[u.id], max = lvl >= u.max;
         if (!lvl && secret(u)) { hidden++; continue; } // won from a boss or a familiar: kept a surprise until then
-        const pips = Array.from({ length: u.max }, (_, i) => `<i class="${i < lvl ? "on" : ""}"></i>`).join("");
+        const pips = u.id === "flame"
+          ? `<span class="tag">${lvl} / ${u.max}</span>` + DL.FLAME.looks.slice(1).map((l) => `<i title="Flame ${l}" class="${lvl >= l ? "on" : ""}"></i>`).join("")
+          : Array.from({ length: u.max }, (_, i) => `<i class="${i < lvl ? "on" : ""}"></i>`).join("");
         let action = "";
         if (max) action = `<span class="maxed">Complete</span>`;
         else {
@@ -1097,3 +1099,4 @@
     if (G.state === "camp" && UI.campTab === "kit" && (houndState(DL.Hounds.mine()) !== UI.houndShown || !!DL.Golems.mine() !== UI.golemShown || !!DL.Abigail.mine() !== UI.wraithShown || !!DL.Fred.mine() !== UI.fredShown || !!DL.Wyvern.mine() !== UI.wyvernShown)) UI.renderCamp();
   };
 })(window.DL);
+
