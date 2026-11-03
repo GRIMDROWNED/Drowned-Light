@@ -54,6 +54,11 @@ Numbers marked *(proposed)* are Claude's starting values and go in `src/data.js`
   stairs**; every other step edge is a solid face (climbed slowly). The stairways are paved lanes
   `stairW` wide (coded) with the drawn flights at each drop, and nothing spawns on them.
   `Pyramid.axis(gx, gy, dx)` says whether an edge has stairs.
+- **Paving (Robert, 2026-11-03, v0.15.192):** a held square (not the camp's) is paved with the camp
+  flagstones, and its resources grow only in three kerbed square **marsh beds** (`DL.PYRAMID.beds`;
+  the south-west corner is left for the barracks). The world's own nodes there are hidden
+  (`Pyramid.hides`, filtered in `World.near`); each bed has its own nodes (`o.bed`), seen once
+  the square is held. Knights aren't slowed by water under the paving (`Pyramid.paved`).
 - **Unlocking:** flame level `L` lets you hold up to `4 × (L − 1)` squares *(proposed)*. You
   claim ring by ring, inner rings first, with the corners and edge-centres (the stair squares)
   of a ring before its fill-in squares. Flame 20 allows 76 squares, which is enough for 80%.

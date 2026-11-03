@@ -89,7 +89,24 @@
         if (frHere && DL.Fred.clears(x, y)) continue;
         if (wnHere && DL.Wyvern.clears(x, y)) continue;
         if (fnHere && DL.Finale.clears(x, y)) continue;
-        objs.push(this.makeObj(type, x, y, `${cx},${cy},${i}`, ozi, DL.hash(cx, cy, i * 5 + 4)));
+        const wild = this.makeObj(type, x, y, `${cx},${cy},${i}`, ozi, DL.hash(cx, cy, i * 5 + 4));
+        wild.wild = true; // hidden once its square is held and paved (src/pyramid.js)
+        objs.push(wild);
+      }
+      // The marsh beds of the Pyramid's squares (src/pyramid.js): each grows a few nodes, seen once the square is held.
+      const B = DL.PYRAMID.beds, C = DL.MAP.cell;
+      for (let gy = Math.round(cy * CH / C); gy <= Math.round((cy + 1) * CH / C); gy++) for (let gx = Math.round(cx * CH / C); gx <= Math.round((cx + 1) * CH / C); gx++) {
+        for (const b of DL.Pyramid.beds(gx, gy)) for (let k = 0; k < B.nodes; k++) {
+          const a = (k / B.nodes) * Math.PI * 2 + DL.hash(gx, gy, 3300 + b.i) * 6.28, r = b.half * 0.5;
+          const x = b.x + Math.cos(a) * r, y = b.y + Math.sin(a) * r;
+          if (Math.floor(x / CH) !== cx || Math.floor(y / CH) !== cy || DL.Cave.clears(x, y)) continue;
+          const bzi = Math.max(1, this.zoneIndex(x, y)), table = {};
+          for (const [t, w] of Object.entries(DL.SPAWN_TABLE[bzi])) if (t !== "gap" && t !== "reeds") table[t] = w;
+          const type = DL.weighted(table, DL.hash(gx * 7 + b.i, gy * 7 + k, 3400));
+          const o = this.makeObj(type, x, y, `${cx},${cy},bed${gx}_${gy}_${b.i}_${k}`, bzi, DL.hash(gx, gy, 3500 + b.i * 5 + k));
+          o.bed = gx + "," + gy;
+          objs.push(o);
+        }
       }
       // The blooms of this chunk's grove that stand inside it.
       if (grove) for (const g of grove.items) {
@@ -156,8 +173,12 @@
       const x0 = Math.floor((x - R) / CH), x1 = Math.floor((x + R) / CH);
       const y0 = Math.floor((y - R) / CH), y1 = Math.floor((y + R) / CH);
       for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
-        const objs = this.chunk(cx, cy).objects;
-        for (let i = 0; i < objs.length; i++) fn(objs[i]);
+        const objs = this.chunk(cx, cy).objects, v = DL.Pyramid.ver;
+        for (let i = 0; i < objs.length; i++) {
+          const o = objs[i];
+          if (o.pv !== v) { o.pv = v; o.off = DL.Pyramid.hides(o); } // paved over, or a bed of land not yet held
+          if (!o.off) fn(o);
+        }
       }
     },
 
