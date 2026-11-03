@@ -988,7 +988,8 @@ if not only or 'finale' in only:
 # runs on into the left and the bottom into the top. `World` in src/world.js samples them.
 GROUND = {'camp-earth': 'campEarth', 'camp-flagstones': 'campFlags', 'camp-paving': 'campPaving', 'grass': 'grass', 'dirt': 'dirt',
           'shore': 'shore', 'shallow': 'shallow', 'deep': 'deep', 'boardwalk': 'boardwalk',
-          '../cave/cave-floor': 'caveFloor'}  # the floor of Derek's Hollow
+          '../cave/cave-floor': 'caveFloor',
+          'rim-deep': 'rimDeep', 'rim-shore': 'rimShore'}  # the world's edge: black water past the rim, the Abyss shore before it  # the floor of Derek's Hollow
 GROUND_SIZE, GROUND_BLEND = 200, 8
 
 def seamless(a, k):
