@@ -926,7 +926,8 @@
   }
 
   function drawChampion(c, h, t) {
-    const key = "lanternBlade1", C = DL.PYRAMID.champion;
+    const drawn = !Art.sheet("pyrChampion").down.idle[0].blank && !Art.sheet("pyrChampion").side.walk[0].blank;
+    const key = drawn ? "pyrChampion" : "lanternBlade1", C = DL.PYRAMID.champion;
     shadow(c, h.x, h.y, 13, 4);
     const anim = h.swing > 0 ? "attack" : h.moving ? "walk" : "idle";
     const n = Art.animLength(key, anim);
