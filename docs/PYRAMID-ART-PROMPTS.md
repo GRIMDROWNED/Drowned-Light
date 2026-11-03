@@ -274,6 +274,34 @@ pure magenta background."
 Proposed folder `returned/pyramid-champion/`, cut like the other characters (a `SETS` entry in
 `tools/cut_ai_sprites.py`). The game shows it at 0.85 × knight scale (`DL.PYRAMID.champion.scale`).
 
+## 8. The cross of stairways (lane tile, added by Claude, 2026-11-03)
+
+Robert's layout splits the pyramid into four quarters by a cross of long stairways that run from the
+camp's four gates down to the marsh (v0.15.189). The game currently draws those lanes as coded grey
+paving. This prompt makes one repeating stretch of that stairway. The drawn flights at each drop stay
+as they are. The tile is used for all four arms: as drawn for north and south, and turned on its side
+for east and west.
+
+> A seamless vertical section of a long, shallow stone stairway seen from almost straight above, for a
+> dark-fantasy pixel-art game, in the same style, stone colours and pixel size as the attached stair
+> and stone-face references. A paved processional stair about four knights wide, made of many low,
+> broad, worn grey-brown stone treads running straight across the strip, each tread a thin band with
+> a narrow dark shadow line at its front edge, a few cracked or chipped treads, a little moss and damp
+> in the joints. A low, dark kerb of squared stones runs along both long edges of the stair. Seen from
+> overhead, so no risers, side walls or height are visible, only the tops of the treads and the kerbs.
+> The strip runs from the very top edge of the image to the very bottom edge, and the top and bottom
+> ends match exactly so it tiles endlessly with no visible join. No landing, no torches, no plants or
+> objects over the stairs, no symbol in the middle. The strip is centred and fills about one quarter
+> of the image's width. Light from the upper left. Uniform flat pure magenta background RGB 255, 0,
+> 255 on both sides of the strip, no ground, no shadow, no text.
+
+Use a tall portrait canvas (1024 × 1536 works). Attach `assets/sprites/pyramid/stair-south.png` and
+`step-south.png` as style references.
+
+Proposed source `returned/pyramid/stairway-lane.png`. It would be cut by `tools/cut_pyramid.py` to
+about 130 world px wide (the lane is `stairW` 110 plus its kerbs) and tiled along the lane in
+`lane()` in `src/pyramid.js`. Until it arrives, the coded paving stays.
+
 ## Delivery and art-pass checks
 
 - Keep the original returned PNGs and their prompt/reference notes in the project art sources.
