@@ -589,7 +589,7 @@
       p.trail.push({ x: p.x, y: p.y, life: 0.25, ang: p.angle });
       DL.Kits.dashTick(p, st, dt);
     } else {
-      const wet = W.isWater(p.x, p.y) ? 0.82 : 1;
+      const wet = W.isWater(p.x, p.y) && !DL.Pyramid.paved(p.x, p.y) ? 0.82 : 1;
       const spd = 150 * DL.Pyramid.speedMult(p) * DL.Kits.speedMult(p) * wet * (p.corrupt >= 75 ? 0.9 : 1) * (DL.Den.carrying() ? DL.DEN.haulSpeed : 1) * (DL.Wyvern.carrying() ? DL.WYVERN.haulSpeed : 1) * DL.Abigail.mult() * DL.Wyvern.speedMult();
       p.moving = inp.m > 0.15;
       p.running = inp.m > 0.9; // full speed: a kit with drawn run frames runs (src/render.js)

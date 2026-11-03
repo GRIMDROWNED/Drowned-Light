@@ -100,6 +100,35 @@
   // The squares held (from the save on the host, from a snapshot on a friend's device).
   Py.setHeld = function (keys) {
     held = new Set(["0,0", ...keys]);
+    Py.ver++;
+  };
+  Py.ver = 0; // bumped whenever the held squares change, so world objects re-check whether they show
+
+  /* ---------------- flagstone and marsh beds (Robert, 2026-11-03) ----------------
+     A held square is paved with flagstones; its resources grow only in square beds of marsh left open in it
+     (P.beds: three beds, the south-west corner kept for the barracks). The world's own nodes on a held square
+     are hidden, and each bed has its own few (World.gen makes them, o.bed = the square's key). The camp square
+     keeps its ground and nodes as before. */
+  Py.beds = function (gx, gy) {
+    if (!(gx || gy) || !Py.inGrid(gx, gy)) return [];
+    const c = Py.center(gx, gy), B = P.beds;
+    return B.at.map(([ax, ay], i) => ({
+      x: c.x + ax * B.off + (DL.hash(gx, gy, 3100 + i) - 0.5) * B.jitter,
+      y: c.y + ay * B.off + (DL.hash(gx, gy, 3200 + i) - 0.5) * B.jitter, half: B.half, i,
+    }));
+  };
+  const inBed = (x, y, gx, gy) => Py.beds(gx, gy).some((b) => Math.abs(x - b.x) < b.half && Math.abs(y - b.y) < b.half);
+  // Paved: on a held square (not the camp's) and outside its marsh beds.
+  Py.paved = function (x, y) {
+    const { gx, gy } = Py.cell(x, y);
+    return !!(gx || gy) && Py.has(gx, gy) && !inBed(x, y, gx, gy);
+  };
+  // Whether a world object is hidden: wild nodes under a held square's paving, and bed nodes of unheld squares.
+  Py.hides = function (o) {
+    if (o.bed) return !held.has(o.bed);
+    if (!o.wild) return false;
+    const { gx, gy } = Py.cell(o.x, o.y);
+    return !!(gx || gy) && held.has(key(gx, gy));
   };
 
   /* ---------------- buildings ---------------- */
@@ -301,9 +330,11 @@
       const h = sh(gx, gy);
       if (h <= 0.01) continue;
       const { x, y } = Py.center(gx, gy), L = x - HALF, T = y - HALF;
-      // a faint stone wash on the raised top, so held land reads at a glance
-      c.fillStyle = `rgba(150,140,115,${Math.min(0.1, 0.025 * h)})`;
-      c.fillRect(L, T, CELL, CELL);
+      if (!(gx || gy) || !paveSquare(c, gx, gy, L, T)) {
+        // a faint stone wash on the raised top, so held land reads at a glance (the camp, or until the flagstones load)
+        c.fillStyle = `rgba(150,140,115,${Math.min(0.1, 0.025 * h)})`;
+        c.fillRect(L, T, CELL, CELL);
+      }
       if (gx === 0 && gy === 0) { // the camp: the four stairways start at its gates
         const a = DL.WALL_R || 235;
         lane(c, x - P.stairW / 2, y + a, P.stairW, HALF - a, false); lane(c, x - P.stairW / 2, T, P.stairW, HALF - a, false);
@@ -325,6 +356,31 @@
       }
     }
   };
+  // Flagstones over a held square, with its marsh beds left open in kerbed squares. False until the textures load.
+  const pats = new WeakMap();
+  function pattern(c, n) {
+    const img = DL.World.canvases && DL.World.canvases[n];
+    if (!img) return null;
+    let m = pats.get(c);
+    if (!m) pats.set(c, (m = {}));
+    if (!m[n]) { m[n] = c.createPattern(img, "repeat"); m[n].setTransform(new DOMMatrix().scale(2)); }
+    return m[n];
+  }
+  function paveSquare(c, gx, gy, L, T) {
+    const flags = pattern(c, "campFlags"), marsh = pattern(c, "grass");
+    if (!flags || !marsh) return false;
+    c.fillStyle = flags; c.fillRect(L, T, CELL, CELL);
+    c.fillStyle = "rgba(0,0,0,0.22)"; c.fillRect(L, T, CELL, CELL);
+    for (const b of Py.beds(gx, gy)) {
+      const x = b.x - b.half, y = b.y - b.half, s = b.half * 2;
+      c.fillStyle = "rgba(38,32,25,0.95)"; c.fillRect(x - 7, y - 7, s + 14, s + 14);   // the kerb
+      c.fillStyle = "rgba(190,175,140,0.35)"; c.fillRect(x - 7, y - 7, s + 14, 3);   // its lit top edge
+      c.fillStyle = marsh; c.fillRect(x, y, s, s);
+      c.fillStyle = "rgba(0,0,0,0.18)"; c.fillRect(x, y, s, s);
+      c.fillStyle = "rgba(0,0,0,0.35)"; c.fillRect(x, y, s, 6);                      // the kerb's shadow
+    }
+    return true;
+  }
   /* A stretch of the cross's stairways across a held square: a paved lane of shallow treads between low kerbs
      (coded; one long flight a level, the drawn flights sit at the drops). */
   function lane(c, x, y, w, h, horiz) {
