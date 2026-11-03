@@ -309,10 +309,10 @@
   };
   // Robert's drawn stone strips (tools/cut_pyramid.py, 2 file px per world px). Until they load, the coded stone shows.
   const ART = {};
-  for (const n of ["south", "north", "east", "west"]) {
+  for (const n of ["south", "north", "east", "west", "stairS"]) {
     const img = new Image();
     img.onload = () => { ART[n] = img; };
-    img.src = DL.asset("assets/sprites/pyramid/step-" + n + ".png");
+    img.src = DL.asset("assets/sprites/pyramid/" + (n === "stairS" ? "stair-south" : "step-" + n) + ".png");
   }
   // Tile a strip along a run, clipped to the box (x, y, w, h). Horizontal strips are `th` px tall, vertical ones `th` wide.
   function strip(c, img, x, y, w, h, th, vertical) {
@@ -334,6 +334,7 @@
       const sg = c.createLinearGradient(0, foot, 0, foot + 18);
       sg.addColorStop(0, "rgba(0,0,0,0.45)"); sg.addColorStop(1, "rgba(0,0,0,0)");
       c.fillStyle = sg; c.fillRect(L, foot, CELL, 18);
+      if (ART.stairS) return c.drawImage(ART.stairS, sx - 8, top - 4, P.stairW + 16, H + 6); // the flight, stretched to the face's height
       return stairs(c, sx, top, H);
     }
     const grad = c.createLinearGradient(0, top, 0, foot);

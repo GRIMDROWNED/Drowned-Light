@@ -33,4 +33,19 @@ for name, (thin, run) in STRIPS.items():
     im.save(os.path.join(OUT, name + '.png'))
     outs.append(im)
     print(name, im.size)
+# Stairs: one flight per image, cut whole (no repeat trim) to WIDTH file px wide.
+STAIRS = {'stair-south': 244}
+for name, width in STAIRS.items():
+    path = os.path.join(SRC, name + '.png')
+    if not os.path.exists(path): continue
+    a = np.asarray(Image.open(path).convert('RGB')).astype(int)
+    fg = key_mask(a, tol=120, fringe=2)
+    ys, xs = np.where(fg)
+    y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+    rgba = np.zeros((y1 - y0, x1 - x0, 4), 'uint8')
+    rgba[..., :3] = a[y0:y1, x0:x1] * fg[y0:y1, x0:x1, None]; rgba[..., 3] = fg[y0:y1, x0:x1] * 255
+    im = shrink(rgba, width / rgba.shape[1], colors=32)
+    im.save(os.path.join(OUT, name + '.png'))
+    outs.append(im)
+    print(name, im.size)
 contact(outs, os.path.join(SRC, 'contact.png'))
