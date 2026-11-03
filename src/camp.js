@@ -10,7 +10,7 @@
 
   // Size the camp for the Barricade level: the walls, the ground inside them, and the deposit range follow.
   Camp.sync = function (up) {
-    const r = DL.WALL_SIZES[up.stakes] || DL.WALL_SIZES[0];
+    const r = Math.max(DL.WALL_SIZES[up.stakes] || DL.WALL_SIZES[0], DL.WALL_TIER[Camp.tier(up)] || 0);
     if (r === R) return;
     R = DL.WALL_R = r;
     DL.CAMP_RADIUS = R - 30;
@@ -53,27 +53,29 @@
     if (key === cacheKey) return cache;
     const tier = Camp.tier(up);
     const L = { tier, R };
-    L.tents = [{ x: -82, y: -70, flip: false }];
-    if (tier >= 2) L.tents.push({ x: 80, y: -78, flip: true });
-    if (tier >= 3) L.tents.push({ x: -34, y: -132, flip: false }, { x: 40, y: -128, flip: true });
-    L.banners = [{ x: -30, y: -34 }];
-    if (tier >= 2) L.banners.push({ x: 30, y: -34 });
-    if (tier >= 3) L.banners.push({ x: -58, y: 38 }, { x: 58, y: 38 });
-    if (tier >= 4) L.banners.push({ x: -100, y: -108 }, { x: 100, y: -108 });
-    if (tier >= 5) L.banners.push({ x: -150, y: 90 }, { x: 150, y: 90 });
-    L.forge = up.forge ? { x: -138, y: 14 } : null;
-    L.armory = up.armory ? { x: 136, y: 16 } : null;
-    L.workbench = up.workbench ? { x: -50, y: 150 } : null;
-    L.garden = up.garden ? { x: 66, y: 140 } : null;
-    // the companions' homes and the Abyss trophies take the outer ground, spreading out as the walls do
-    const o = R - 82;
-    L.kennel = up.kennel ? { x: -o, y: -Math.round(R * 0.5) } : null;
-    L.workshop = up.workshop ? { x: o, y: -Math.round(R * 0.42) } : null;
-    L.shrine = up.shrine ? { x: -Math.round(R * 0.52), y: Math.round(R * 0.43) } : null;
-    L.toadstool = up.toadstool ? { x: Math.round(R * 0.6), y: Math.round(R * 0.47) } : null;
-    L.roost = up.roost ? { x: Math.round(R * 0.42), y: Math.round(R * 0.78) } : null;
-    L.roseheart = up.roseheart ? { x: Math.round(R * 0.42), y: -(R - 58) } : null; // the bell's twin, across the north gate
-    L.bell = up.bell ? { x: -Math.round(R * 0.42), y: -(R - 58) } : null;
+    /* Laid out after Robert's picture (2026-11-03): the Flame's plaza in the middle on the cross of paths, a building
+       in each quarter (forge NW, armory NE, workbench SW, garden SE), tents either side of the north path, and the
+       companions' homes and trophies further out along the walls. Spots are fractions of the wall's half-side, so
+       everything moves apart as the camp grows. */
+    const at = (fx, fy, extra) => ({ x: Math.round(fx * R), y: Math.round(fy * R), ...extra });
+    L.tents = [at(-0.22, -0.72, { flip: false })];
+    if (tier >= 2) L.tents.push(at(0.22, -0.72, { flip: true }));
+    L.banners = [at(-0.2, -0.3)];
+    if (tier >= 2) L.banners.push(at(0.2, -0.3));
+    if (tier >= 3) L.banners.push(at(-0.2, 0.3), at(0.2, 0.3));
+    if (tier >= 4) L.banners.push(at(-0.6, -0.1), at(0.6, -0.1));
+    if (tier >= 5) L.banners.push(at(-0.13, 0.62), at(0.13, 0.62));
+    L.forge = up.forge ? at(-0.5, -0.38) : null;
+    L.armory = up.armory ? at(0.5, -0.38) : null;
+    L.workbench = up.workbench ? at(-0.5, 0.42) : null;
+    L.garden = up.garden ? at(0.5, 0.42) : null;
+    L.kennel = up.kennel ? at(-0.8, -0.58) : null;
+    L.workshop = up.workshop ? at(0.8, -0.58) : null;
+    L.bell = up.bell ? at(-0.8, -0.2) : null;
+    L.roseheart = up.roseheart ? at(0.8, -0.2) : null;
+    L.shrine = up.shrine ? at(-0.8, 0.26) : null;
+    L.toadstool = up.toadstool ? at(0.8, 0.26) : null;
+    L.roost = up.roost ? at(0.3, 0.78) : null;
     // watchtowers stand in the corners (the third level fills all four), pylons along the walls by the gates
     const cn = R - 56;
     L.towers = [[-1, -1], [1, -1], [-1, 1], [1, 1]].slice(0, Camp.towerCount(up.tower)).map(([sx, sy]) => ({ x: sx * cn, y: sy * cn }));

@@ -8,6 +8,7 @@
   DL.CAMP_RADIUS = 205; // deposit + camp menu range (grows with the walls: DL.Camp.menuR)
   DL.WALL_R = 235;      // palisade half-side; set from the Barricade level by DL.Camp.sync
   DL.WALL_SIZES = [235, 235, 235, 235, 290, 345]; // palisade half-side at each Barricade level: levels 4 and 5 push it out
+  DL.WALL_TIER = [0, 235, 260, 300, 335, 370];    // ...and at least this at each camp look (Flame 1/5/10/15/20), so the camp spreads out as it grows (Robert, 2026-11-03)
   DL.GARDEN_YIELD = [0, 4, 8, 14];
   DL.TIER_NAMES = ["", "A Place to Rest", "A Growing Bastion", "A Beacon in the Marsh", "A Citadel of Light", "The Crown of the Pyramid"];
   DL.FLAME = { max: 20, perBarricade: 4, looks: [1, 5, 10, 15, 20] };
