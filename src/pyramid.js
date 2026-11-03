@@ -188,7 +188,7 @@
     const towers = [[-1, -1], [1, -1], [-1, 1], [1, 1]].slice(0, DL.Camp.towerCount(b.tower)).map(([x, y]) => ({ x: c.x + x * corner, y: c.y + y * corner }));
     const gates = [[0, -1, -96], [0, 1, 96], [1, 0, -96], [-1, 0, 96], [0, -1, 96], [0, 1, -96]];
     const pylons = gates.slice(0, b.pylon * 2).map(([x, y, along]) => ({ x: c.x + x * (r - 20) - y * along, y: c.y + y * (r - 20) + x * along }));
-    return { ...c, r, b, towers, pylons, barracks: b.barracks ? { x: c.x - 100, y: c.y + 115 } : null };
+    return { ...c, r, b, towers, pylons, barracks: b.barracks ? { x: c.x - 175, y: c.y + 215 } : null }; // the south-west corner: off the stairway and the marsh beds
   };
   Py.refreshBuildings = function (o) {
     o.b = Py.buildings(o.gx, o.gy);
@@ -261,6 +261,8 @@
       if (L.b.wall) for (const q of DL.Camp.ring(P.wallR, P.wallStep)) {
         const along = Math.abs(q.x) === P.wallR ? q.y : q.x;
         if (Math.abs(along) < P.gateHalf) continue;
+        // a side-on stake stands 51 px tall, so the one just south of a side gate would hide the opening
+        if (Math.abs(q.x) === P.wallR && q.y > 0 && q.y < P.gateHalf + 51) continue;
         const x = o.x + q.x, y = o.y + q.y;
         const side = Math.abs(q.x) === P.wallR, suffix = L.b.wall >= 3 ? "2" : "";
         const name = side && DL.Art.sprites["palisadeSide" + suffix] ? "palisadeSide" + suffix : "palisade" + suffix;
@@ -339,8 +341,10 @@
         const a = DL.WALL_R || 235;
         lane(c, x - P.stairW / 2, y + a, P.stairW, HALF - a, false); lane(c, x - P.stairW / 2, T, P.stairW, HALF - a, false);
         lane(c, x + a, y - P.stairW / 2, HALF - a, P.stairW, true); lane(c, L, y - P.stairW / 2, HALF - a, P.stairW, true);
-      } else if (gx === 0) lane(c, x - P.stairW / 2, T, P.stairW, CELL, false);
-      else if (gy === 0) lane(c, L, y - P.stairW / 2, CELL, P.stairW, true);
+      } else if (gx === 0 || gy === 0) {
+        if (gx === 0) lane(c, x - P.stairW / 2, T, P.stairW, CELL, false); else lane(c, L, y - P.stairW / 2, CELL, P.stairW, true);
+        landing(c, x, y); // the square's fire stands on a round landing in the stairway
+      }
     }
     for (let gy = g0y; gy <= g1y; gy++) for (let gx = g0x; gx <= g1x; gx++) {
       const h = sh(gx, gy);
@@ -365,6 +369,16 @@
     if (!m) pats.set(c, (m = {}));
     if (!m[n]) { m[n] = c.createPattern(img, "repeat"); m[n].setTransform(new DOMMatrix().scale(2)); }
     return m[n];
+  }
+  // A round flagstone landing with a kerb, where a square's fire stands in the stairway.
+  function landing(c, x, y) {
+    const flags = pattern(c, "campFlags");
+    c.beginPath(); c.arc(x, y, 92, 0, Math.PI * 2);
+    c.fillStyle = "rgba(38,32,25,0.95)"; c.fill();
+    c.beginPath(); c.arc(x, y, 84, 0, Math.PI * 2);
+    c.fillStyle = flags || "#5a5446"; c.fill();
+    c.fillStyle = "rgba(0,0,0,0.15)"; c.fill();
+    c.strokeStyle = "rgba(190,175,140,0.3)"; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 90, Math.PI * 1.1, Math.PI * 1.9); c.stroke();
   }
   function paveSquare(c, gx, gy, L, T) {
     const flags = pattern(c, "campFlags"), marsh = pattern(c, "grass");
@@ -460,8 +474,10 @@
   /* Where the cross's stairway meets a north, east or west drop (no rock face shows from above there), it just
      carries on over the edge onto the lower land instead of a separate flight (Robert, 2026-11-03: the flight and
      the lane side by side looked like two different stairs). A dark line marks the edge. */
-  const LANE_OVER = 150;
+  const LANE_OVER = 150, LANE_IN = 14; // past the edge, and back over the high side's lip so no rim line crosses the stairs
   function laneOver(c, x, y, w, h, horiz, edge) {
+    if (horiz) { if (x < edge) w += LANE_IN; else { x -= LANE_IN; w += LANE_IN; } }
+    else { h += LANE_IN; }
     lane(c, x, y, w, h, horiz);
     c.fillStyle = "rgba(0,0,0,0.45)";
     if (horiz) c.fillRect(edge - 2, y - 10, 4, h + 20); else c.fillRect(x - 10, edge - 2, w + 20, 4);

@@ -110,7 +110,11 @@
       }
       // The blooms of this chunk's grove that stand inside it.
       if (grove) for (const g of grove.items) {
-        if (Math.floor(g.x / CH) === cx && Math.floor(g.y / CH) === cy && !DL.Cave.clears(g.x, g.y)) objs.push(this.makeObj(g.type, g.x, g.y, g.id, grove.zi, g.h));
+        if (Math.floor(g.x / CH) === cx && Math.floor(g.y / CH) === cy && !DL.Cave.clears(g.x, g.y)) {
+          const o = this.makeObj(g.type, g.x, g.y, g.id, grove.zi, g.h);
+          o.wild = true; // a grove under a held square's paving is gone too (src/pyramid.js)
+          objs.push(o);
+        }
       }
       if (Math.floor(den.x / CH) === cx && Math.floor(den.y / CH) === cy) objs.push(this.makeObj("den", den.x, den.y, `${cx},${cy},den`, zi, 0.3));
       if (gsHere) for (const g of DL.Abigail.graves()) {
