@@ -126,10 +126,33 @@
      (P.beds: three beds, the south-west corner kept for the barracks). The world's own nodes on a held square
      are hidden, and each bed has its own few (World.gen makes them, o.bed = the square's key). The camp square
      keeps its ground and nodes as before. */
+  /* Special places (the den, the Hollow's mouth, Kindle's spot, the fairy ring, the graves, the wyvern nest) stand
+     on a set plot of their square (Robert, 2026-11-03: not left there haphazardly): the middle of the north-west,
+     north-east or south-east quarter nearest where they fell, in place of that quarter's marsh bed. Each place's
+     own spot() runs its picks through Py.site. The Deadly Rose's garden and the Drowned Gate are too big for a
+     quarter and keep their own ground. */
+  const SITE_AT = [[1, -1], [-1, -1], [1, 1]], SITE_OFF = 200;
+  Py.SITE_HALF = 130;
+  Py.site = function (x, y) {
+    const { gx, gy } = Py.cell(x, y);
+    if (!(gx || gy) || !Py.inGrid(gx, gy)) return { x, y };
+    const c = Py.center(gx, gy);
+    let best = SITE_AT[0], bd = Infinity;
+    for (const q of SITE_AT) { const d = Math.hypot(x - c.x - q[0] * SITE_OFF, y - c.y - q[1] * SITE_OFF); if (d < bd) { bd = d; best = q; } }
+    return { x: c.x + best[0] * SITE_OFF, y: c.y + best[1] * SITE_OFF };
+  };
+  // The special places' plots on square (gx, gy).
+  Py.sites = function (gx, gy) {
+    const out = [];
+    const pick = (o, s) => { if (o && typeof o[s] === "function") { const p = o[s](); if (p) out.push(p); } };
+    try { pick(DL.Den, "spot"); pick(DL.Cave, "mouth"); pick(DL.Kindle, "spot"); pick(DL.Fred, "ringSpot"); pick(DL.Abigail, "graveSpot"); pick(DL.Wyvern, "nestSpot"); }
+    catch (e) { return []; } // too early in a load for the places to know their spots
+    return out.filter((p) => { const q = Py.cell(p.x, p.y); return q.gx === gx && q.gy === gy; });
+  };
   Py.beds = function (gx, gy) {
     if (!(gx || gy) || onCross(gx, gy) || !Py.inGrid(gx, gy)) return [];
-    const c = Py.center(gx, gy), B = P.beds;
-    return B.at.map(([ax, ay], i) => ({
+    const c = Py.center(gx, gy), B = P.beds, taken = Py.sites(gx, gy);
+    return B.at.map((at, i) => [at, i]).filter(([[ax, ay]]) => !taken.some((p) => Math.abs(p.x - c.x - ax * SITE_OFF) < 2 && Math.abs(p.y - c.y - ay * SITE_OFF) < 2)).map(([[ax, ay], i]) => ({
       x: c.x + ax * B.off + (DL.hash(gx, gy, 3100 + i) - 0.5) * B.jitter,
       y: c.y + ay * B.off + (DL.hash(gx, gy, 3200 + i) - 0.5) * B.jitter, half: B.half, i,
     }));
@@ -397,6 +420,14 @@
     if (!flags || !marsh) return false;
     c.fillStyle = flags; c.fillRect(L, T, CELL, CELL);
     c.fillStyle = "rgba(0,0,0,0.22)"; c.fillRect(L, T, CELL, CELL);
+    for (const p of Py.sites(gx, gy)) { // a laid plot under each special place: kerb, flagstones, inset bands
+      const h = Py.SITE_HALF;
+      c.fillStyle = "rgba(38,32,25,0.95)"; c.fillRect(p.x - h - 7, p.y - h - 7, 2 * h + 14, 2 * h + 14);
+      c.fillStyle = flags; c.fillRect(p.x - h, p.y - h, 2 * h, 2 * h);
+      c.fillStyle = "rgba(0,0,0,0.12)"; c.fillRect(p.x - h, p.y - h, 2 * h, 2 * h);
+      c.strokeStyle = "rgba(200,180,120,0.45)"; c.lineWidth = 3;
+      for (const k of [6, 16, 26]) c.strokeRect(p.x - h + k, p.y - h + k, 2 * (h - k), 2 * (h - k));
+    }
     for (const b of Py.beds(gx, gy)) {
       const x = b.x - b.half, y = b.y - b.half, s = b.half * 2;
       c.fillStyle = "rgba(38,32,25,0.95)"; c.fillRect(x - 7, y - 7, s + 14, s + 14);   // the kerb

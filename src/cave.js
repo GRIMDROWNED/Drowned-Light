@@ -31,7 +31,7 @@
     mouthFor = G.save.difficulty;
     const wet = (x, y) => DL.World.waterVal(x, y) < 0.36, den = DL.Den ? DL.Den.spot() : { x: 1e9, y: 0 };
     for (let k = 0; k < 60 && !mouth; k++) {
-      const a = -0.8 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.13, q = DL.Camp.onSquare(a, C.dist), x = q.x, y = q.y;
+      const a = -0.8 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.13, o = DL.Camp.onSquare(a, C.dist), q = DL.Pyramid.site(o.x, o.y), x = q.x, y = q.y;
       let dry = !wet(x, y) && !wet(x, y - 40) && dist(x, y, den.x, den.y) > 800;
       for (let i = 0; i < 8 && dry; i++) dry = !wet(x + Math.cos((i / 8) * TAU) * 120, y - 30 + Math.sin((i / 8) * TAU) * 120);
       if (dry) mouth = { x: Math.round(x), y: Math.round(y) };

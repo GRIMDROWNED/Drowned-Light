@@ -47,7 +47,7 @@
     spot = null;
     for (let t = 0; t < 80 && !spot; t++) {
       const a = DL.hash(71, 43, 300 + t) * TAU, r = F.ringDist + (DL.hash(71, 43, 400 + t) - 0.5) * 300;
-      const q = DL.Camp.onSquare(a, r), x = Math.round(q.x), y = Math.round(q.y); // r is distance out on the square map (DL.MAP)
+      const q = DL.Pyramid.site(DL.Camp.onSquare(a, r).x, DL.Camp.onSquare(a, r).y), x = Math.round(q.x), y = Math.round(q.y); // r is distance out on the square map (DL.MAP)
       if (dry(x, y) && !groveNear(x, y) && !DL.Cave.clears(x, y)) spot = { x, y };
     }
     spot = spot || { x: -F.ringDist * 0.7, y: -F.ringDist * 0.7 };
