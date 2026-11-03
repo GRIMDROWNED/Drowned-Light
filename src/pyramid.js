@@ -309,10 +309,10 @@
   };
   // Robert's drawn stone strips (tools/cut_pyramid.py, 2 file px per world px). Until they load, the coded stone shows.
   const ART = {};
-  for (const n of ["south", "north", "east", "west", "stairS", "stairN"]) {
+  for (const n of ["south", "north", "east", "west", "stairS", "stairN", "stairE", "stairW"]) {
     const img = new Image();
     img.onload = () => { ART[n] = img; };
-    img.src = DL.asset("assets/sprites/pyramid/" + (n === "stairS" ? "stair-south" : n === "stairN" ? "stair-north" : "step-" + n) + ".png");
+    img.src = DL.asset("assets/sprites/pyramid/" + (n.startsWith("stair") ? "stair-" + { S: "south", N: "north", E: "east", W: "west" }[n[5]] : "step-" + n) + ".png");
   }
   // Tile a strip along a run, clipped to the box (x, y, w, h). Horizontal strips are `th` px tall, vertical ones `th` wide.
   function strip(c, img, x, y, w, h, th, vertical) {
@@ -382,6 +382,11 @@
       c.fillStyle = "rgba(0,0,0,0.5)"; c.fillRect(X + (dx === 1 ? 4 : -3), T, 3, CELL);
     }
     const sy = T + HALF - P.stairW / 2, x0 = dx === 1 ? X - 16 : X;
+    const st = dx === 1 ? ART.stairE : ART.stairW;
+    if (st) { // the flight runs down and away across the edge: its landing (a third of it) on this square
+      const h = P.stairW + 10, w = h * st.width / st.height, edge = dx === 1 ? X + 4 : X;
+      return c.drawImage(st, dx === 1 ? edge - w * 0.3 : edge - w * 0.7, sy - 5, w, h);
+    }
     for (let i = 0; i < 4; i++) { c.fillStyle = i % 2 ? "#7a705c" : "#9a8f76"; c.fillRect(x0 + i * 5, sy, 5, P.stairW); }
   }
 

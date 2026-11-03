@@ -34,7 +34,7 @@ for name, (thin, run) in STRIPS.items():
     outs.append(im)
     print(name, im.size)
 # Stairs: one flight per image, cut whole (no repeat trim) to WIDTH file px wide.
-STAIRS = {'stair-south': 244, 'stair-north': 244}
+STAIRS = {'stair-south': 244, 'stair-north': 244, 'stair-east': 360, 'stair-west': 360}  # stair-west is stair-east mirrored (Robert asked)
 for name, width in STAIRS.items():
     path = os.path.join(SRC, name + '.png')
     if not os.path.exists(path): continue
