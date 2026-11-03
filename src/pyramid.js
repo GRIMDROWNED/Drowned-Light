@@ -310,6 +310,7 @@
   // Robert's drawn stone strips (tools/cut_pyramid.py, 2 file px per world px). Until they load, the coded stone shows.
   const ART = {};
   for (const n of ["south", "north", "east", "west", "stairS", "stairN", "stairE", "stairW"]) {
+    if (typeof Image === "undefined") break; // the node tests have no images
     const img = new Image();
     img.onload = () => { ART[n] = img; };
     img.src = DL.asset("assets/sprites/pyramid/" + (n.startsWith("stair") ? "stair-" + { S: "south", N: "north", E: "east", W: "west" }[n[5]] : "step-" + n) + ".png");
