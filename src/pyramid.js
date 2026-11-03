@@ -136,6 +136,7 @@
   };
   const inBed = (x, y, gx, gy) => Py.beds(gx, gy).some((b) => Math.abs(x - b.x) < b.half && Math.abs(y - b.y) < b.half);
   // Paved: on a held square (not the camp's) and outside its marsh beds.
+  const faceH = (d) => Math.min(P.maxFace, d) * P.face; // px of rock face for a drop of d levels
   Py.paved = function (x, y) {
     const { gx, gy } = Py.cell(x, y);
     return !!(gx || gy) && raised.has(key(gx, gy)) && !inBed(x, y, gx, gy);
@@ -145,7 +146,10 @@
     if (o.bed) return !held.has(o.bed);
     if (!o.wild) return false;
     const { gx, gy } = Py.cell(o.x, o.y);
-    return !!(gx || gy) && raised.has(key(gx, gy));
+    if ((gx || gy) && raised.has(key(gx, gy))) return true;
+    // under the rock face that hangs down from a higher square to the north
+    const d = Py.height(gx, gy - 1) - Py.height(gx, gy);
+    return d > 0 && o.y - (Py.center(gx, gy).y - HALF) < faceH(d) + 20;
   };
 
   /* ---------------- buildings ---------------- */
@@ -294,7 +298,6 @@
   };
 
   /* ---------------- climbing ---------------- */
-  const faceH = (d) => Math.min(P.maxFace, d) * P.face; // px of rock face for a drop of d levels
   // The drop across the edge of square (gx, gy) toward (dx, dy): its height minus the neighbour's (>0: a drop).
   const drop = (gx, gy, dx, dy) => Py.height(gx, gy) - Py.height(gx + dx, gy + dy);
   // Is (x, y) on the stairs in the middle of an edge?
@@ -303,8 +306,9 @@
   const axis = (gx, gy, dx) => (dx ? gy === 0 : gx === 0);
   Py.axis = axis;
   /* Speed for a walker at (x, y): P.climb while it's on a step edge's face or lip off the stairs, else 1.
-     The band is the face on a south edge (drawn on the high square, as tall as the drop) and 20 px elsewhere,
-     plus 12 px at the foot on the low side. */
+     The band is 20 px of lip on the high side, and 12 px at the foot on the low side; a south face hangs down
+     over the low square (v0.15.199, so the high square's walls and buildings stand on its flagstones), so there
+     the low side's band is the whole face. */
   Py.speedMult = function (ent) {
     if (G.cave || DL.Cave.inRegion(ent.x, ent.y)) return 1;
     const { gx, gy } = Py.cell(ent.x, ent.y), c = Py.center(gx, gy);
@@ -315,11 +319,11 @@
       const d = drop(gx, gy, dx, dy);
       if (d > 0) {
         // this square is the high side: its lip (or face, on the south) runs along the edge
-        const band = dy === 1 ? faceH(d) : 20;
-        if (edge > HALF - band && !(axis(gx, gy, dx) && onStair(along))) return P.climb;
+        if (edge > HALF - 20 && !(axis(gx, gy, dx) && onStair(along))) return P.climb;
       } else if (d < 0) {
         // the low side: the foot of the step
-        if (edge > HALF - 12 && !(axis(gx, gy, dx) && onStair(along))) return P.climb;
+        const band = dy === -1 ? faceH(-d) + 12 : 12;
+        if (edge > HALF - band && !(axis(gx, gy, dx) && onStair(along))) return P.climb;
       }
     }
     return 1;
@@ -327,7 +331,9 @@
 
   /* ---------------- drawing ---------------- */
   // Each square's drawn height eases toward its real one, so a square (or the whole pyramid) rises.
+  let lastFlame = 0;
   Py.update = function (dt) {
+    if (G.save.up.flame !== lastFlame) { lastFlame = G.save.up.flame; Py.ver++; } // face heights change with the flame
     for (const k of raised) if (!shown.has(k)) shown.set(k, 0);
     for (const [k, v] of shown) {
       const [gx, gy] = k.split(",").map(Number), h = Py.height(gx, gy);
@@ -440,9 +446,10 @@
     }
     c.restore();
   }
-  // The face on a square's south edge: stone courses (one drawn course per level), stairs in the middle.
-  function southFace(c, L, foot, d, stair) {
-    const H = faceH(d), top = foot - H, sx = L + HALF - P.stairW / 2;
+  /* The face on a square's south edge: stone courses (one drawn course per level), stairs in the middle.
+     It hangs from the edge down over the lower square, so the whole top of the high square stays usable. */
+  function southFace(c, L, edge, d, stair) {
+    const H = faceH(d), top = edge, foot = edge + H, sx = L + HALF - P.stairW / 2;
     if (ART.south) {
       strip(c, ART.south, L, top, CELL, H, P.course || 18, false); // three drawn courses a level
       const sg = c.createLinearGradient(0, foot, 0, foot + 18);
