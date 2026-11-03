@@ -131,6 +131,10 @@
     /* co-op */
     $("btnCoop").addEventListener("click", () => UI.openCoop());
     $("btnSaves").addEventListener("click", () => UI.openSaves());
+    // Sandbox: the same game reloaded with ?sandbox (its own saves), and back
+    $("btnSandbox").textContent = DL.SANDBOX ? "Leave sandbox" : "Sandbox";
+    $("btnSandbox").addEventListener("click", () => { location.href = location.pathname + (DL.SANDBOX ? "" : "?sandbox"); });
+    if (DL.SANDBOX) document.title = "Drowned Light — Sandbox";
     $("btnSavesBack").addEventListener("click", () => { $("screenSaves").classList.add("hidden"); UI.showTitle(); });
     $("savesList").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-slot]");
@@ -1027,7 +1031,7 @@
     set($("coopChip"), "hidden", !coopText);
     const d = Math.hypot(p.x, p.y);
     set($("homeArrow"), "transform", `rotate(${(Math.atan2(-p.y, -p.x) * 180) / Math.PI}deg)`);
-    set($("homeDist"), "text", G.cave ? "Camp: far above" : (DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`) + (DL.Finale.stage() >= 1 ? "" : ` · Pyramid ${Math.floor(DL.Pyramid.coverage() * 100)}% of ${Math.round(DL.PYRAMID.win * 100)}%`));
+    set($("homeDist"), "text", (DL.SANDBOX ? "SANDBOX · " : "") + (G.cave ? "Camp: far above" : (DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`) + (DL.Finale.stage() >= 1 ? "" : ` · Pyramid ${Math.floor(DL.Pyramid.coverage() * 100)}% of ${Math.round(DL.PYRAMID.win * 100)}%`)));
     // the way to Derek's Hollow, once found, until you've won him
     const cn = DL.Cave.showNav();
     set($("caveNav"), "hidden", !cn);
