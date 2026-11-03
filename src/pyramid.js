@@ -392,7 +392,7 @@
       const level = barracksLevel(h.gx, h.gy), home = champHome(h);
       h.maxHp = C.hp[level]; h.hp = Math.min(h.hp, h.maxHp);
       h.animT += dt; h.flash = Math.max(0, h.flash - dt); h.cd = Math.max(0, h.cd - dt); h.moving = false;
-      const valid = (e) => e && !e.removed && e.hp > 0 && e.rise <= 0 && !e.dormant && !e.mind && inGuard(e, h.gx, h.gy);
+      const valid = (e) => e && !e.removed && e.hp > 0 && e.rise <= 0 && !e.dormant && !(e.mind > 0) && inGuard(e, h.gx, h.gy);
       if (h.swing > 0) {
         const before = h.swing; h.swing = Math.max(0, h.swing - dt);
         const e = h.tgt;

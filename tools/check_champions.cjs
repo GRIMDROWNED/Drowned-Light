@@ -77,6 +77,16 @@ function world(level = 1) {
   Py.updateChampions(1); assert.equal(h.tgt, null);
 }
 
+// Mindrot stops protecting an enemy as soon as it expires, even when the timer overshoots below zero.
+for (const mind of [1, -0.01]) {
+  const { G, Py, C } = world();
+  Py.updateChampions(C.train[1]);
+  const h = G.champions[0];
+  G.enemies.push({ x: h.x + 20, y: h.y, hp: 100, def: { radius: 10 }, rise: 0, mind });
+  Py.updateChampions(0.01);
+  assert.equal(h.swing > 0, mind <= 0, "only an active Mindrot effect prevents targeting");
+}
+
 // Extinguished fires pause recruitment; lost squares remove their defenders and pending recruitment.
 {
   const { G, Py, C } = world(2);
