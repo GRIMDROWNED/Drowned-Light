@@ -85,7 +85,7 @@ Numbers marked *(proposed)* are Claude's starting values and go in `src/data.js`
 | Step | What | Who |
 |---|---|---|
 | 1 | Bounded map: rim, special places pinned to squares, zones by ring (**done**, v0.15.170: `DL.MAP`, `World.GRID/EDGE/beyond`, zones use `Camp.sq`, special places placed with `Camp.onSquare`) | Claude |
-| 2 | `src/pyramid.js` core: grid, save, claim/lose, coverage, raised-step drawing, stairs; outposts replaced | Claude |
+| 2 | `src/pyramid.js` core: grid, save, claim/lose, coverage, raised-step drawing, stairs, climbing; outposts replaced (**done**, v0.15.171; see the API below) | Claude |
 | 3 | Central Flame levels to 20, max set by Barricade, look change every 5 levels | GPT (Claude reviews) |
 | 4 | Per-square buildings: walls, pylons, watchtowers (camp code made reusable in step 2) | GPT |
 | 5 | Sieges every 5 nights against squares, square HP, lost squares lower the flame, lose rule | GPT (Claude reviews) |
@@ -104,3 +104,26 @@ touch different files and can run side by side.
 - Barracks, three levels.
 - Central Flame looks at levels 5, 10, 15 and 20.
 - The rim: deep water edge, Abyss shore.
+
+## Step 2 API (`src/pyramid.js`, built 2026-11-03)
+
+Grid: `Pyramid.cell(x, y)` → `{gx, gy}`, `center(gx, gy)`, `ring(gx, gy)`, `inGrid`, `has(gx, gy)`,
+`each(fn(gx, gy))` (the camp `0,0` included), `count()` (held squares, not counting the camp), `total()` (80),
+`coverage()` (0–1), `limit()` (`perFlame × (flame − 1)`), `height(gx, gy)` (flame level − ring, held only).
+Claiming: `claimable(x, y)`, `cost(gx, gy)`, `lock(gx, gy)`, `claimHost(gx, gy, mine)`. Losing: `lose(gx, gy)`
+(sinks the square; **step 5 must also drop the Central Flame a level there and check flame 0 = game over**).
+Movement: `speedMult(ent)` (already applied to the knight's walk and to every walking Drowned in `src/game.js`).
+Drawing: `update(dt)` (called from `Outposts.update`), `drawGround(c, view)` (called from `src/render.js`).
+Text: `line()`.
+
+Save: `G.save.pyramid.sq = { "gx,gy": 1 }`. Step 5 can widen the value to an object, for example
+`{ hp, b: {...} }`. Keep `1` meaning "held" for old saves.
+
+Each held square's fire lives in `G.outposts` (`src/outposts.js`: `{gx, gy, x, y, hp, max, lit}`), which handles
+storing supplies, travel, light, the Drowned targeting it, and co-op rows. A friend's device learns the held
+squares from those rows (`Outposts.apply` → `Pyramid.setHeld`).
+
+Not done yet:
+- The Drowned don't path to the stairs. They climb straight over, which is slow.
+- Trees and rocks can still stand on a rock face.
+- All the step art is coded placeholder (stone courses, treads) until the art pass.

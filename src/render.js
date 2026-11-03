@@ -149,6 +149,7 @@
     DL.Cave.drawGround(c, view);
     DL.Rose.drawGround(c, view);
     DL.Finale.drawGround(c, view, t);
+    DL.Pyramid.drawGround(c, view); // the Pyramid's raised squares: rock faces, lips, stairs
 
     for (const d of G.decals) sprite(c, d.type, d.x, d.y, false, Math.min(1, d.t / 3));
 

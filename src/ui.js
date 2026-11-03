@@ -590,18 +590,18 @@
   };
 
   /* ---------------- camp menu ---------------- */
-  // The camp button (and the C key): enter the camp, open an outpost's paths, or raise an outpost in this grove.
+  // The camp button (and the C key): enter the camp, open a square's paths, or claim the square you stand in (src/pyramid.js).
   UI.campLabel = function () {
     const G = DL.Game;
     if (G.inCamp) return "Enter camp";
-    if (G.atOutpost) return "Outpost";
-    if (G.save.up.flame >= DL.OUTPOST.reqFlame && G.player && DL.Outposts.claimable(G.player.x, G.player.y)) return "Raise outpost";
+    if (G.atOutpost) return "Square";
+    if (G.player && DL.Outposts.claimable(G.player.x, G.player.y)) return "Claim square";
     return null;
   };
   UI.campAction = function () {
     const G = DL.Game, l = UI.campLabel();
     if (G.state !== "play") return;
-    if (l === "Raise outpost") DL.Outposts.raise();
+    if (l === "Claim square") DL.Outposts.raise();
     else if (l) UI.openCamp();
     else UI.toast("Return to camp to build and upgrade.");
   };
@@ -633,7 +633,7 @@
     $("campStash").innerHTML = DL.RES_KEYS.map((k) => `<span class="stash-item">${chip(k, s.stash[k])}<small>${DL.RESOURCES[k].name}</small></span>`).join("");
     const tier = DL.Camp.tier(s.up);
     const siegeIn = DL.Siege.nightsLeft();
-    $("campDay").textContent = (UI.atOutpost ? "Outpost · " : G.isGuest() ? "Your friend's camp · shared stash · " : "") + `Tier ${"I".repeat(tier)} · ${DL.TIER_NAMES[tier]} · Day ${s.day} · ${G.phase() === "day" ? "Daylight" : G.phase() === "night" ? "Night" : G.phase() === "dusk" ? "Dusk" : "Dawn"}` +
+    $("campDay").textContent = (UI.atOutpost ? "Square · " : G.isGuest() ? "Your friend's camp · shared stash · " : "") + `Tier ${"I".repeat(tier)} · ${DL.TIER_NAMES[tier]} · Day ${s.day} · ${G.phase() === "day" ? "Daylight" : G.phase() === "night" ? "Night" : G.phase() === "dusk" ? "Dusk" : "Dawn"}` +
       ` · ${DL.Siege.on ? "GREAT SIEGE" : siegeIn === 0 ? "Great Siege tonight" : `Great Siege in ${siegeIn} night${siegeIn > 1 ? "s" : ""}`}`;
     let html = "";
     if (UI.campTab === "build") {
@@ -730,7 +730,7 @@
           ${DL.Finale.guideLine() ? `<li>${DL.Finale.guideLine()}</li>` : ""}
           <li><b>Black Pearls</b> are found only in the Abyss: in clams half sunk in its mud, now and then on its Drowned, and on its great bosses. The last levels of the camp need them.</li>
           <li>${DL.Siege.line()}${s.trophies.bell ? " Your Bell Tower, hung with the Starved Bell's clapper, warns of every wave." : ""}</li>
-          <li>From Central Flame ${DL.OUTPOST.reqFlame}, stand at the heart of a bloom grove to raise an <b>outpost</b>. Supplies brought there go home${DL.Kindle.lit() ? ", and with your Kindle lit you can travel between outposts and the camp" : ". Something lost in the Mire still remembers the old paths between them"}.</li>
+          <li>Grow the <b>Pyramid</b>: stand near the middle of a square next to your land and claim it. It rises out of the marsh with a fire at its heart, and every Central Flame level lets you hold ${DL.PYRAMID.perFlame} more. ${DL.Pyramid.line()}. Supplies brought to a square's fire go home${DL.Kindle.lit() ? ", and with your Kindle lit you can travel between your squares and the camp" : ". Something lost in the Mire still remembers the old paths between them"}.</li>
           <li>Fall, and your <b>drowned self</b> keeps your supplies. Slay it to get them back.</li>
         </ul></article>`;
     }
@@ -781,8 +781,8 @@
   function travelCards(G) {
     const lock = DL.Outposts.travelLock(), dests = DL.Outposts.dests();
     const kin = DL.Kindle.lit();
-    let html = `<article class="card"><header><h3>${kin ? "Kindle's paths" : "The old paths"}</h3><span class="tag">${G.outposts.length} / ${DL.Outposts.max()} outposts</span></header>
-      <p>${kin ? "Your Kindle knows the old paths between the camp and your outposts." : "Old paths run between the camp and your outposts, if you had a guide."} Supplies you bring to an outpost go home to the camp's stash.</p>
+    let html = `<article class="card"><header><h3>${kin ? "Kindle's paths" : "The old paths"}</h3><span class="tag">${G.outposts.length} / ${DL.Outposts.max()} squares</span></header>
+      <p>${kin ? "Your Kindle knows the old paths between the camp and your squares." : "Old paths run between the camp and your squares, if you had a guide."} Supplies you bring to a square's fire go home to the camp's stash.</p>
       ${lock ? `<p class="effect"><span class="req">${lock}</span></p>` : ""}</article>`;
     for (const d of dests) {
       const ok = !lock && d.lit;
@@ -790,7 +790,7 @@
         <p class="effect">${d.far} m from here${d.lit ? "" : " · its fire is out until dawn"}</p>
         <footer><button data-act="travel:${d.id}" ${ok ? "" : "disabled"}>Travel</button></footer></article>`;
     }
-    if (!dests.length) html += `<article class="card"><p>No outposts yet. From Central Flame ${DL.OUTPOST.reqFlame}, stand at the heart of a bloom grove and raise one.</p></article>`;
+    if (!dests.length) html += `<article class="card"><p>No squares yet. Stand near the middle of a square next to your land and claim it (${DL.Pyramid.line()}).</p></article>`;
     return html;
   }
 

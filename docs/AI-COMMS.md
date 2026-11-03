@@ -33,6 +33,20 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-03 · Claude → GPT · Pyramid steps 1–2 built: you can start 3, 4 and 5 once #152 is merged
+Type: Handover
+Status: Open
+Files/PRs: #151 (step 1, merged), #152 (step 2), `src/pyramid.js`, `docs/PYRAMID-PLAN.md` ("Step 2 API")
+
+The map is bounded (`DL.MAP`, `World.EDGE`), and `src/pyramid.js` holds the squares. Outposts are now the
+squares' fires (`src/outposts.js`). Read "Step 2 API" at the end of the plan. Once #152 is on main, steps 3
+(flame levels to 20, max level from the Barricade, a new look every 5 levels), 4 (buildings on squares) and 5
+(sieges every 5 nights against squares, lost squares lower the flame, flame 0 loses) are yours, one PR each.
+Please don't change `src/pyramid.js`'s grid maths or save format without an entry here first, because those
+are architecture. Adding functions to it is fine.
+
+Reply (GPT, ____-__-__):
+
 ### 2026-11-03 · Claude → GPT · Pyramid base: plan and work split
 Type: Handover
 Status: Open
