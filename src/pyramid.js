@@ -457,12 +457,22 @@
     }
     c.fillStyle = "#3a342b"; c.fillRect(sx - 6, top, 6, H); c.fillRect(sx + P.stairW, top, 6, H); // the stair's side walls
   }
+  /* Where the cross's stairway meets a north, east or west drop (no rock face shows from above there), it just
+     carries on over the edge onto the lower land instead of a separate flight (Robert, 2026-11-03: the flight and
+     the lane side by side looked like two different stairs). A dark line marks the edge. */
+  const LANE_OVER = 150;
+  function laneOver(c, x, y, w, h, horiz, edge) {
+    lane(c, x, y, w, h, horiz);
+    c.fillStyle = "rgba(0,0,0,0.45)";
+    if (horiz) c.fillRect(edge - 2, y - 10, 4, h + 20); else c.fillRect(x - 10, edge - 2, w + 20, 4);
+  }
   // A north edge seen from above: a pale lip on the high side, a dark line below it, and the stairs' landing.
   function rimH(c, L, T, w, stair) {
     if (ART.north) strip(c, ART.north, L, T - 2, w, 11, 11, false);
     else { c.fillStyle = "rgba(215,200,160,0.5)"; c.fillRect(L, T, w, 3); c.fillStyle = "rgba(0,0,0,0.5)"; c.fillRect(L, T - 3, w, 3); }
     if (!stair) return;
     const sx = L + HALF - P.stairW / 2;
+    if (ART.lane) return laneOver(c, sx, T - LANE_OVER, P.stairW, LANE_OVER, false, T); // the stairway runs on down
     if (ART.stairN) { // the flight going down and away to the north: its landing on this square, its foot on the land beyond
       const w = P.stairW + 16, h = w * ART.stairN.height / ART.stairN.width;
       return c.drawImage(ART.stairN, sx - 8, T + 16 - h, w, h);
@@ -483,6 +493,7 @@
     }
     if (!stair) return;
     const sy = T + HALF - P.stairW / 2, x0 = dx === 1 ? X - 16 : X;
+    if (ART.lane) { const edge = dx === 1 ? X + 4 : X; return laneOver(c, dx === 1 ? edge : edge - LANE_OVER, sy, LANE_OVER, P.stairW, true, edge); }
     const st = SIDE_STAIR_ART ? (dx === 1 ? ART.stairE : ART.stairW) : null;
     if (st) { // the flight runs down and away across the edge: its landing (a third of it) on this square
       // a long flight, so it's drawn squeezed east-west (narrower treads) to about 200 px; its paved landing is the first 22%
