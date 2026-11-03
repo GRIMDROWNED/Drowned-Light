@@ -356,6 +356,7 @@
       // companion levels, Abyss trophies, the Great Siege, outposts [grove x, grove y, x, y, lit, hp], the Rose Heart's briar
       sm: G.save.summons, tr: G.save.trophies, gs: DL.Siege.on ? 1 : 0,
       op: DL.Outposts.rows(), rh: DL.Trophies.rows(),
+      ch: DL.Pyramid.championRows(near), // allied barracks champions, simulated by the host only
       // the finale: [stage, the Fire Bearer, the Sunken King's heart, his hands' moves, the flame it hurls] (src/finale.js)
       fn: DL.Finale.snap(),
       ob: dirty,
@@ -531,6 +532,7 @@
     const oldSquareBuildings = G.state === "camp" ? JSON.stringify(G.outposts.map((o) => [o.gx, o.gy, o.b])) : null;
     DL.Outposts.apply(m.op);
     if (oldSquareBuildings != null && oldSquareBuildings !== JSON.stringify(G.outposts.map((o) => [o.gx, o.gy, o.b])) && DL.UI.refreshCamp) DL.UI.refreshCamp();
+    DL.Pyramid.applyChampions(m.ch);
     DL.Trophies.apply(m.rh);
     DL.Finale.applySnap(m.fn);
 
@@ -630,6 +632,7 @@
     DL.Abigail.guest(dt, k);
     DL.Fred.guest(dt, k);
     DL.Wyvern.guest(dt, k);
+    DL.Pyramid.guestChampions(dt, k);
     DL.Finale.guest(dt, k);
   };
 

@@ -172,7 +172,7 @@
       if (DL.Camp.sq(ent.x - o.x, ent.y - o.y) > P.wallR + r + 10) continue;
       const L = Py.layout(o.gx, o.gy);
       if (L.b.wall) DL.Camp.collideSquareWalls(ent, r, o.x, o.y, P.wallR, P.gateHalf);
-      for (const q of [...L.towers.map((q) => ({ ...q, r: 14 })), ...(o.pylons || []).map((q) => ({ ...q, r: 6 }))]) {
+      for (const q of [...L.towers.map((q) => ({ ...q, r: 14 })), ...(o.pylons || []).map((q) => ({ ...q, r: 6 })), ...(L.barracks ? [{ ...L.barracks, r: P.champion.barracksRadius }] : [])]) {
         const dx = ent.x - q.x, dy = ent.y - q.y, d = Math.hypot(dx, dy), m = q.r + r;
         if (d > 0.01 && d < m) { ent.x = q.x + dx / d * m; ent.y = q.y + dy / d * m; }
       }
@@ -282,6 +282,7 @@
       const nv = v < h ? Math.min(h, v + dt * P.riseSpeed) : Math.max(h, v - dt * P.riseSpeed);
       if (nv <= 0 && !held.has(k)) shown.delete(k); else shown.set(k, nv);
     }
+    Py.updateChampions(dt);
   };
   const sh = (gx, gy) => shown.get(key(gx, gy)) || 0;
 
@@ -345,6 +346,133 @@
     const sy = T + HALF - P.stairW / 2, x0 = dx === 1 ? X - 16 : X;
     for (let i = 0; i < 4; i++) { c.fillStyle = i % 2 ? "#7a705c" : "#9a8f76"; c.fillRect(x0 + i * 5, sy, 5, P.stairW); }
   }
+
+  /* ---------------- barracks champions ---------------- */
+  // Live defenders are rebuilt from the barracks, like camp defenses; only the building level is saved.
+  G.champions = [];
+  const training = new Map();
+  const barracksLevel = (gx, gy) => Math.min(P.build.barracks.max, Math.max(0, Py.buildings(gx, gy).barracks || 0));
+  const champHome = (h) => {
+    const c = Py.layout(h.gx, h.gy).barracks, C = P.champion;
+    return { x: c.x + C.spawnX + h.slot * C.spacing, y: c.y + C.spawnY };
+  };
+  const alive = (h) => G.save.up.flame > 0 && h && h.hp > 0 && Py.has(h.gx, h.gy) && barracksLevel(h.gx, h.gy) > 0;
+  const inGuard = (e, gx, gy) => {
+    const c = Py.center(gx, gy);
+    return Math.max(Math.abs(e.x - c.x), Math.abs(e.y - c.y)) <= P.champion.defend;
+  };
+  Py.resetChampions = function () { G.champions = []; training.clear(); };
+  Py.updateChampions = function (dt) {
+    if (G.isGuest() || G.cave || G.save.up.flame <= 0) return;
+    const C = P.champion;
+    G.champions = G.champions.filter(alive);
+    const homes = new Set();
+    Py.each((gx, gy) => {
+      if (!gx && !gy) return;
+      const level = barracksLevel(gx, gy);
+      if (!level) return;
+      const id = key(gx, gy); homes.add(id);
+      // An extinguished square cannot train until its fire is restored.
+      const fire = G.outposts.find((o) => o.gx === gx && o.gy === gy);
+      if (!fire || !fire.lit) return;
+      const count = G.champions.filter((h) => h.gx === gx && h.gy === gy).length;
+      if (count >= C.count[level]) { training.delete(id); return; }
+      const left = (training.has(id) ? training.get(id) : C.train[level]) - dt;
+      if (left > 0) { training.set(id, left); return; }
+      const slots = G.champions.filter((h) => h.gx === gx && h.gy === gy).map((h) => h.slot);
+      let slot = 0; while (slots.includes(slot)) slot++;
+      const h = { id: ++G.eid, champion: true, gx, gy, slot, hp: C.hp[level], maxHp: C.hp[level],
+        angle: Math.PI / 2, moving: false, animT: 0, flash: 0, cd: 0, swing: 0, hit: false, tgt: null };
+      Object.assign(h, champHome(h)); G.champions.push(h);
+      training.set(id, C.train[level]);
+      if (G.puff) G.puff(h.x, h.y - 20, "rgba(255,200,110,0.6)", 35, 0.6);
+    });
+    for (const id of training.keys()) if (!homes.has(id)) training.delete(id);
+    for (const h of G.champions) {
+      const level = barracksLevel(h.gx, h.gy), home = champHome(h);
+      h.maxHp = C.hp[level]; h.hp = Math.min(h.hp, h.maxHp);
+      h.animT += dt; h.flash = Math.max(0, h.flash - dt); h.cd = Math.max(0, h.cd - dt); h.moving = false;
+      const valid = (e) => e && !e.removed && e.hp > 0 && e.rise <= 0 && !e.dormant && !(e.mind > 0) && inGuard(e, h.gx, h.gy);
+      if (h.swing > 0) {
+        const before = h.swing; h.swing = Math.max(0, h.swing - dt);
+        const e = h.tgt;
+        if (!h.hit && before > C.hitAt && h.swing <= C.hitAt) {
+          h.hit = true;
+          if (valid(e) && DL.dist(h.x, h.y, e.x, e.y) <= C.reach + e.def.radius + C.radius) {
+            G.hitEnemy(e, C.dmg[level], h.angle, C.knockback, 0, true);
+            G.effects.push({ type: "slash", x: h.x, y: h.y - 20, ang: h.angle, arc: 1.7,
+              r: C.reach, t: 0, max: C.swing, col: "255,195,100", w: 5 });
+          }
+        }
+        continue;
+      }
+      let target = null, nearest = Infinity;
+      for (const e of G.enemies) if (valid(e)) {
+        const d = DL.dist(h.x, h.y, e.x, e.y);
+        if (d < nearest) { target = e; nearest = d; }
+      }
+      h.tgt = target;
+      if (!target && DL.dist(h.x, h.y, home.x, home.y) < C.guard) {
+        if (G.outposts.some((o) => o.gx === h.gx && o.gy === h.gy && o.lit)) h.hp = Math.min(h.maxHp, h.hp + C.regen * dt);
+        continue;
+      }
+      const tx = target ? target.x : home.x, ty = target ? target.y : home.y;
+      h.angle = Math.atan2(ty - h.y, tx - h.x);
+      if (target && nearest <= C.reach + target.def.radius) {
+        if (!h.cd) { h.swing = C.swing; h.hit = false; h.cd = C.cd; }
+        continue;
+      }
+      const waypoint = Py.route ? Py.route(h.x, h.y, tx, ty) : null;
+      const dx = (waypoint ? waypoint.x : tx) - h.x, dy = (waypoint ? waypoint.y : ty) - h.y, d = Math.hypot(dx, dy) || 1;
+      const step = Math.min(d, C.speed * Py.speedMult(h) * dt);
+      h.x += dx / d * step; h.y += dy / d * step; h.moving = true;
+      DL.World.collide(h, C.radius);
+      if (Py.collide) Py.collide(h, C.radius);
+      DL.Finale.collide(h);
+    }
+  };
+  // Enemies may fight a nearby defending champion just as they fight a Bone Hound.
+  Py.championTarget = function (x, y, radius) {
+    let best = null, d = radius;
+    for (const h of G.champions) if (alive(h)) {
+      const next = DL.dist(x, y, h.x, h.y);
+      if (next < d) { d = next; best = h; }
+    }
+    return best;
+  };
+  Py.hurtChampion = function (h, amount) {
+    if (G.isGuest() || !alive(h) || !Number.isFinite(amount) || amount <= 0) return;
+    h.hp = Math.max(0, h.hp - amount); h.flash = 0.2;
+    if (!h.hp) {
+      const level = barracksLevel(h.gx, h.gy);
+      training.set(key(h.gx, h.gy), P.champion.train[level]);
+      if (G.puff) G.puff(h.x, h.y - 20, "rgba(220,190,140,0.6)", 35, 0.6);
+    }
+  };
+  Py.championShot = function (b) {
+    if (G.isGuest()) return false;
+    const h = G.champions.find((h) => alive(h) && DL.dist(b.x, b.y, h.x, h.y - 22) < P.champion.radius + (b.r || 4));
+    if (!h) return false;
+    Py.hurtChampion(h, b.dmg); return true;
+  };
+  Py.championRows = function (near) {
+    return G.champions.filter((h) => alive(h) && (!near || near(h.x, h.y, 1100))).map((h) =>
+      [h.id, h.gx, h.gy, h.slot, h.x, h.y, h.angle, h.moving ? 1 : 0, Math.ceil(h.hp), h.maxHp, h.swing, h.flash]);
+  };
+  Py.applyChampions = function (rows) {
+    if (G.save.up.flame <= 0) return;
+    const old = new Map(G.champions.map((h) => [h.id, h]));
+    G.champions = (rows || []).map((r) => Object.assign(old.get(r[0]) || { id: r[0], x: r[4], y: r[5], animT: 0 }, {
+      champion: true, gx: r[1], gy: r[2], slot: r[3], tx: r[4], ty: r[5], angle: r[6], moving: !!r[7], hp: r[8], maxHp: r[9], swing: r[10], flash: r[11],
+    }));
+  };
+  Py.guestChampions = function (dt, blend) {
+    if (G.save.up.flame <= 0) return;
+    for (const h of G.champions) {
+      h.x += (h.tx - h.x) * blend; h.y += (h.ty - h.y) * blend;
+      h.animT += dt; h.flash = Math.max(0, h.flash - dt); h.swing = Math.max(0, h.swing - dt);
+    }
+  };
 
   /* ---------------- HUD ---------------- */
   Py.line = () => `${Py.count()} / ${Py.limit()} squares held · ${Math.round(Py.coverage() * 100)}% of the land (${Math.round(P.win * 100)}% wakes the Drowned Gate)`;

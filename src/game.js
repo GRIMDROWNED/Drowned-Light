@@ -240,6 +240,7 @@
     G.dying = 0;
     DL.Siege.reset();
     DL.Outposts.reset();
+    DL.Pyramid.resetChampions();
     DL.Trophies.reset();
     G.camera = { x: 0, y: 70, shake: 0 };
     G.nightAmt = 0; G.night = false;
@@ -951,12 +952,15 @@
     let best = G.player, bd = G.player.downT > 0 ? 1e9 : dist(e.x, e.y, G.player.x, G.player.y);
     for (const a of G.allies) if (!a.down) { const d = dist(e.x, e.y, a.x, a.y); if (d < bd) { bd = d; best = a; } }
     // little Fred in his fairy ring comes first, and a turned Drowned close by is fought back
+    const champion = !e.def.boss && DL.Pyramid.championTarget(e.x, e.y, bd);
+    if (champion) { best = champion; bd = dist(e.x, e.y, champion.x, champion.y); }
     return DL.Fred.decoy(e, DL.Hounds.nearest(e.x, e.y, bd) || best);
   }
   function hurtKnight(k, dmg, ang, by) {
     if (k.def) hitEnemy(k, dmg, ang, 80, 0, true); // one Drowned striking another (Fred's Mindrot)
     else if (k.fredTrial) DL.Fred.hurtTrial(dmg);
     else if (k.hound) DL.Hounds.hurt(k, dmg, ang);
+    else if (k.champion) DL.Pyramid.hurtChampion(k, dmg);
     else if (k !== G.player) DL.Net.hurtAlly(k, dmg, ang);
     else hurtPlayer(dmg, ang, by);
   }
@@ -1531,6 +1535,7 @@
           const h = a ? null : G.hounds.find((k) => !(k.down > 0) && dist(b.x, b.y, k.x, k.y - 14) < 13);
           if (a) { DL.Net.hurtAlly(a, b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
           else if (h) { DL.Hounds.hurt(h, b.dmg, Math.atan2(b.vy, b.vx)); b.life = 0; }
+          else if (DL.Pyramid.championShot(b)) b.life = 0;
           else if (DL.Fred.shot(b)) b.life = 0; // little Fred in his fairy ring
         }
       } else {
@@ -1583,6 +1588,7 @@
         }
         for (const a of G.allies) if (!a.down && dist(t.x, t.y, a.x, a.y) < t.r + 6) DL.Net.hurtAlly(a, t.dmg, Math.atan2(a.y - t.y, a.x - t.x));
         for (const h of G.hounds.slice()) if (dist(t.x, t.y, h.x, h.y) < t.r + 4) DL.Hounds.hurt(h, t.dmg, Math.atan2(h.y - t.y, h.x - t.x));
+        for (const h of G.champions.slice()) if (dist(t.x, t.y, h.x, h.y) < t.r + DL.PYRAMID.champion.radius) DL.Pyramid.hurtChampion(h, t.dmg);
         for (let i = 0; i < 10; i++) spark(t.x + rand(-t.r, t.r) * 0.6, t.y + rand(-t.r, t.r) * 0.3, t.rose ? "220,40,60" : t.wyv ? "170,210,255" : "90,235,245", 120);
         if (t.bolt) { G.effects.push({ type: "wyvStrike", x: t.x, y: t.y, t: 0, max: 0.35 }); G.camera.shake = Math.max(G.camera.shake, 4); } // the mother wyvern's lightning
         else if (!t.rose) G.effects.push({ type: "spikes", x: t.x, y: t.y, r: t.r, t: 0, max: 0.5 }); // the Deadly Rose's thorns draw themselves
@@ -1606,7 +1612,11 @@
         if (p.hp <= 0) { die("wounds"); return; }
       }
       q.tick = (q.tick || 0) - dt;
-      if (q.tick <= 0) { q.tick = 0.5; for (const a of G.allies) if (!a.down && inside(a, q)) DL.Net.hurtAlly(a, 2, 0); }
+      if (q.tick <= 0) {
+        q.tick = 0.5;
+        for (const a of G.allies) if (!a.down && inside(a, q)) DL.Net.hurtAlly(a, 2, 0);
+        for (const h of G.champions.slice()) if (inside(h, q)) DL.Pyramid.hurtChampion(h, 2);
+      }
       if (Math.random() < 0.15) puff(q.x + rand(-q.r, q.r) * 0.7, q.y + rand(-q.r, q.r) * 0.35, "rgba(60,220,230,0.5)", 20, 0.8, -20);
     }
     G.hexPools = G.hexPools.filter((q) => q.t < q.life);

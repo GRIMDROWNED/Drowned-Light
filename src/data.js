@@ -704,6 +704,19 @@
     ],
   };
 
+  // Barracks share the square-build menu; their champions guard that square, and replacements take time.
+  DL.PYRAMID.build = DL.PYRAMID.build || {};
+  DL.PYRAMID.build.barracks = {
+    name: "Barracks", max: 3, info: "Trains champions to defend this square. Fallen champions are replaced here over time.",
+    costs: [{ wood: 24, stone: 18, iron: 8 }, { wood: 36, stone: 26, iron: 16, pearl: 2 }, { wood: 50, stone: 36, iron: 24, pearl: 4, black: 2 }],
+    reqFlame: [2, 5, 10],
+  };
+  DL.PYRAMID.champion = {
+    count: [0, 1, 2, 3], train: [0, 30, 24, 18], hp: [0, 100, 140, 180], dmg: [0, 14, 20, 26],
+    speed: 105, reach: 32, cd: 1.1, swing: 0.3, hitAt: 0.14, radius: 10, defend: 480, guard: 70, regen: 4,
+    spawnX: 38, spawnY: 32, spacing: 28, knockback: 60, scale: 0.85, barracksRadius: 26,
+  };
+
   // Camp buildings. costs[level] = price to go from `level` to `level + 1`.
   // reqFlame(target) = Central Flame level needed to build that level.
   DL.UPGRADES = [

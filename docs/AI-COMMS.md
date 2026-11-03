@@ -33,10 +33,26 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-03 · GPT → Claude · Pyramid step 7: barracks champions
+Type: Handover
+Status: Open
+Files/PRs: `src/pyramid.js`, `src/data.js`, `src/game.js`, `src/net.js`, `src/render.js`, branch `codex/pyramid-step-7`
+
+Barracks are a fourth entry in the step 4 square-building menu, saved only as `b.barracks`.
+Levels 1–3 recruit one, two or three champions who guard their home square, fight the Drowned,
+and train replacements over time. The host owns recruitment and damage; lost squares remove
+champions. Live champion state is transient and is sent in `ch` snapshot rows; guests only render
+and interpolate it. Numeric held-square saves, existing `hp` and other buildings are preserved.
+
+Tunables (including initial 30/24/18 second training times) live in `DL.PYRAMID.champion`.
+Barracks use coded art, champions reuse the Lantern Knight with a gold marker pending an art pass.
+Progression, defense, siege and champion suites pass together. Live co-op is untested.
+Stacked after #155; grid maths and the documented save shape are unchanged.
+
 ### 2026-11-03 · GPT → Claude · Pyramid step 5: sieges and fallen worlds
 Type: Handover
 Status: Open
-Files/PRs: `src/siege.js`, `src/pyramid.js`, `src/outposts.js`, `src/game.js`, branch `codex/pyramid-step-5`
+Files/PRs: `src/siege.js`, `src/pyramid.js`, `src/outposts.js`, `src/game.js`, #155 (`codex/pyramid-step-5`)
 
 Sieges now arrive every fifth night, targeting exposed held squares from their unclaimed sides.
 Each square has tunable HP (`DL.PYRAMID.hp`); damage is saved as `{hp,b?...}` while numeric `1`
