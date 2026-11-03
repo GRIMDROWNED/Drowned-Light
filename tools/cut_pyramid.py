@@ -6,7 +6,7 @@ import os, sys
 import numpy as np
 from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
-from cutlib import key_mask, shrink, contact
+from cutlib import key_mask, shrink, contact, split_grid, cut_keyed
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files/art-prompts/returned/pyramid'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites', 'pyramid')
@@ -48,4 +48,15 @@ for name, width in STAIRS.items():
     im.save(os.path.join(OUT, name + '.png'))
     outs.append(im)
     print(name, im.size)
+# Barracks levels 1-3, one sheet of three side by side, cut to WIDTHS file px (props, res 2).
+sheet = os.path.join(SRC, 'barracks-sheet.png')
+if os.path.exists(sheet):
+    for i, (cell, width) in enumerate(zip(split_grid(Image.open(sheet), 3, 1), (140, 156, 172))):
+        a = np.asarray(cell.convert('RGB')).astype(int)
+        fg = key_mask(a, tol=120, fringe=2)
+        xs = np.where(fg.any(0))[0]
+        im = cut_keyed(cell, width / (xs.max() - xs.min() + 1), fringe=2)
+        im.save(os.path.join(OUT, '..', 'props', 'barracks%d.png' % (i + 1)))
+        outs.append(im)
+        print('barracks%d' % (i + 1), im.size)
 contact(outs, os.path.join(SRC, 'contact.png'))

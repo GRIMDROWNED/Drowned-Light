@@ -189,7 +189,7 @@
     DL.Rose.push(list, c, t, view);
     DL.Trophies.push(list, c);
     DL.Outposts.push(list, c, t, view, sprite, Art.drawFire, bar);
-    // Barracks use coded art until the drawn three-level set is ready; champions reuse the Lantern Knight.
+    // Barracks: a drawn picture per level (coded fallback in drawBarracks); champions reuse the Lantern Knight.
     DL.Pyramid.each((gx, gy) => {
       if (!gx && !gy) return;
       const level = DL.Pyramid.buildings(gx, gy).barracks;
@@ -904,6 +904,8 @@
   }
 
   function drawBarracks(c, x, y, level) {
+    const n = "barracks" + Math.min(3, level);
+    if (Art.sprites[n]) return sprite(c, n, x, y + 4); // Robert's drawn three levels (tools/cut_pyramid.py)
     shadow(c, x, y, 46, 12);
     c.save(); c.translate(Math.round(x), Math.round(y));
     c.fillStyle = level >= 3 ? "#5d6265" : "#5e4b38"; c.fillRect(-40, -53, 80, 53);
