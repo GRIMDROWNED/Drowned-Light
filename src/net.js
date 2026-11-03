@@ -243,6 +243,9 @@
       else sendTo(g, { t: "say", m: "Couldn't train that — check the stash and the companion's home.", k: "warn" });
     } else if (ev.t === "outpost") {
       if (!DL.Outposts.raiseHost(ev.gx, ev.gy, false)) sendTo(g, { t: "say", m: "Couldn't claim that square: " + (DL.Outposts.lock(ev.gx, ev.gy) || "it's taken, or not next to your land") + ".", k: "warn" });
+    } else if (ev.t === "squareBuild") {
+      const ok = g && g.ally && DL.Pyramid.buildHost(ev.gx, ev.gy, ev.id, g.ally);
+      if (!ok) sendTo(g, { t: "say", m: "Couldn't build there: " + (DL.Pyramid.buildLock(ev.gx, ev.gy, ev.id, g && g.ally) || "the square changed") + ".", k: "warn" });
     } else if (ev.t === "craftTorch") {
       const ok = G.canAfford(DL.TORCH_COST);
       if (ok) { G.pay(DL.TORCH_COST); G.persist(); }
@@ -525,7 +528,9 @@
     if (m.sm) G.save.summons = m.sm;
     if (m.tr) G.save.trophies = m.tr;
     DL.Siege.on = !!m.gs;
+    const oldSquareBuildings = G.state === "camp" ? JSON.stringify(G.outposts.map((o) => [o.gx, o.gy, o.b])) : null;
     DL.Outposts.apply(m.op);
+    if (oldSquareBuildings != null && oldSquareBuildings !== JSON.stringify(G.outposts.map((o) => [o.gx, o.gy, o.b])) && DL.UI.refreshCamp) DL.UI.refreshCamp();
     DL.Trophies.apply(m.rh);
     DL.Finale.applySnap(m.fn);
 
@@ -689,3 +694,4 @@
     if (!quiet && was) say("Co-op session ended.");
   };
 })(window.DL);
+

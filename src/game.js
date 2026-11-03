@@ -766,6 +766,7 @@
   G.campSolids = () => DL.Camp.layout(G.save.up).solids;
   G.collideCamp = (ent, r) => collideCamp(ent, r);
   function collideCamp(ent, r) {
+    DL.Pyramid.collide(ent, r);
     if (DL.Camp.sq(ent.x, ent.y) > 280) return;
     DL.Camp.collideWall(ent, r, G.save.up);
     for (const s of G.campSolids()) {
@@ -919,6 +920,7 @@
   /* ---------------- enemies ---------------- */
   function goalValid(g) {
     if (!g) return false;
+    if (g.kind === "pylon" && g.square && !DL.Pyramid.pylons().includes(g)) return false;
     if (g.kind === "flame" || g.kind === "pylon" || g.kind === "outpost" || g.kind === "bearer") return g.lit && (g.kind !== "bearer" || g === DL.Finale.b);
     if (g.type === "torch" || g.type === "brazier") return G.torches.includes(g);
     return !g.dead && g.active !== false;
@@ -928,6 +930,7 @@
     const consider = (o) => { const d = dist(x, y, o.x, o.y); if (d < bd) { bd = d; best = o; } };
     if (G.flame.lit) consider(G.flame);
     for (const q of G.pylons) if (q.lit) consider(q);
+    for (const q of DL.Pyramid.pylons()) if (q.lit) consider(q);
     for (const q of G.outposts) if (q.lit) consider(q);
     for (const t of G.torches) consider(t);
     for (const o of G.blooms) if (o.def.bloom && o.active) consider(o);
@@ -1067,7 +1070,8 @@
         e.backT = want === -1 ? 1.5 : Math.max(0, (e.backT || 0) - dt); // backing away lately: the Bone Hound runs these down first
         const spd = e.speed * (humanLightAt(e.x, e.y) ? 0.72 : 1) * (e.slow > 0 ? 0.6 : 1) * (e.spore > 0 ? e.sporeK : 1) * (e.rallied > 0 ? 1.2 : 1);
         // Walls in the way: head for the nearest gate first.
-        const wp = want === 1 && !e.def.fly ? DL.Camp.route(e.x, e.y, tx, ty, G.save.up) : null; // what flies goes over the walls
+        const campWp = want === 1 && !e.def.fly ? DL.Camp.route(e.x, e.y, tx, ty, G.save.up) : null;
+        const wp = want === 1 && !e.def.fly ? (DL.Pyramid.route(e.x, e.y, campWp ? campWp.x : tx, campWp ? campWp.y : ty) || campWp) : null; // what flies goes over the walls
         let mx = wp ? wp.x - e.x : dx, my = wp ? wp.y - e.y : dy;
         if (e.def.zigzag && want === 1 && !wp && d > 80) { // weave from side to side on the way in
           const w = Math.sin(e.animT * 5 + e.id) * 0.9, ox = mx;

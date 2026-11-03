@@ -203,6 +203,7 @@
       if (!b || b.disabled) return;
       const [act, arg] = b.dataset.act.split(":");
       if (act === "up") G.buyUpgrade(arg);
+      else if (act === "squareBuild") DL.Pyramid.build(arg);
       else if (act === "train") { const r = DL.Kits.train(); UI.justReached = r && r.milestone ? r.level : 0; }
       else if (act === "trainSummon") DL.Summons.train(arg);
       else if (act === "fredPath") DL.Summons.choose(arg);
@@ -609,7 +610,7 @@
     const G = DL.Game;
     if (G.state !== "play" || !(G.inCamp || G.atOutpost)) return;
     G.state = "camp";
-    // at an outpost there is only the way home and on to the other outposts
+    // A square's existing panel offers local defenses and the paths home.
     UI.atOutpost = !G.inCamp;
     if (UI.atOutpost) UI.campTab = "travel";
     else if (UI.campTab === "travel" && !G.outposts.length) UI.campTab = "build";
@@ -664,6 +665,7 @@
       if (hidden) html += `<article class="card locked-card"><header><h3>???</h3><span class="tag">Undiscovered</span></header>
         <p>Not everything here can be built with wood and stone. ${hidden} more ${hidden > 1 ? "are" : "is"} won out in the dark, from what hunts there and from what waits to be found.</p></article>`;
     } else if (UI.campTab === "travel") {
+      if (UI.atOutpost) html += squareBuildingCards(G);
       html += travelCards(G);
     } else if (UI.campTab === "kit") {
       const k = G.kit(), L = s.kitLevel, info = DL.Kits.trainInfo(), K = DL.Kits;
@@ -777,6 +779,19 @@
     else action = `<div class="cost">${costHtml(info.cost)}</div>` + (info.lock ? `<span class="req">${info.lock}</span>` : "") +
       `<button data-act="trainSummon:${kind}" ${info.ok ? "" : "disabled"}>Train to level ${L + 1}</button>`;
     return `<p class="effect"><b>${K.forms[f]}</b> · level ${L} of ${S.max} · ${K.powers[f]}.${next}</p>${track}<footer class="train">${action}</footer>`;
+  }
+
+  // Reuses the camp panel and its controller/back controls; no new input action or screen.
+  function squareBuildingCards(G) {
+    const o = G.atOutpost;
+    if (!o || !DL.Pyramid.has(o.gx, o.gy)) return "";
+    const b = DL.Pyramid.buildings(o.gx, o.gy);
+    let html = `<article class="card"><header><h3>Defend square ${o.gx}, ${o.gy}</h3></header><p>Build from the shared camp stash. Each square keeps its own buildings.</p></article>`;
+    for (const [id, def] of Object.entries(DL.PYRAMID.build)) {
+      const level = b[id], full = level >= def.max, lock = DL.Pyramid.buildLock(o.gx, o.gy, id);
+      html += `<article class="card"><header><h3>${def.name}</h3><span class="tag">${level} / ${def.max}</span></header><p>${def.info}</p><footer>${full ? '<span class="maxed">Complete</span>' : `<div class="cost">${costHtml(DL.Pyramid.buildCost(o.gx, o.gy, id))}</div>${lock ? `<span class="req">${lock}</span>` : ""}<button data-act="squareBuild:${id}" ${lock ? "disabled" : ""}>${level ? "Upgrade" : "Build"}</button>`}</footer></article>`;
+    }
+    return html;
   }
 
   // At an outpost or in the camp: Kindle's paths to everywhere else.

@@ -29,9 +29,14 @@
       list.push(old.get(gx + "," + gy) || { kind: "outpost", gx, gy, x: c.x, y: c.y, rad: 14, hp: O.hp, max: O.hp, lit: true, hitT: 0 });
     });
     G.outposts = list;
+    for (const o of list) DL.Pyramid.refreshBuildings(o);
   };
-  Outposts.dawn = function () { for (const o of G.outposts) { o.lit = true; o.hp = o.max; } };
-  Outposts.update = function (dt) { for (const o of G.outposts) o.hitT = Math.max(0, o.hitT - dt); DL.Pyramid.update(dt); };
+  Outposts.dawn = function () { for (const o of G.outposts) { o.lit = true; o.hp = o.max; for (const q of o.pylons || []) { q.lit = true; q.hp = q.max; } } };
+  Outposts.update = function (dt) {
+    for (const o of G.outposts) { o.hitT = Math.max(0, o.hitT - dt); for (const q of o.pylons || []) q.hitT = Math.max(0, q.hitT - dt); }
+    DL.Pyramid.update(dt);
+    DL.Pyramid.updateBuildings(dt);
+  };
 
   // The square's fire a knight at (x, y) stands at, if any.
   Outposts.at = function (x, y) {
@@ -101,6 +106,7 @@
 
   /* ---------------- light and drawing ---------------- */
   Outposts.lights = function (L) {
+    DL.Pyramid.buildingLights(L);
     for (const o of G.outposts) {
       if (o.lit) L.push({ x: o.x, y: o.y - 24, r: O.light * G.diff().light, s: 1, col: "255,140,60", a: 1, flick: 1, kind: "human" });
       else L.push({ x: o.x, y: o.y - 20, r: 30, s: 0.5, col: "255,80,30", a: 0.4, flick: 1 });
@@ -108,6 +114,7 @@
   };
   // Into the y-sorted scene: the ring of stakes and the brazier (a drawn outpost replaces both once it's in).
   Outposts.push = function (list, c, t, view, sprite, fire, bar) {
+    DL.Pyramid.pushBuildings(list, c, t, view, sprite, fire);
     for (const o of G.outposts) {
       if (o.x < view.left - 200 || o.x > view.right + 200 || o.y < view.top - 200 || o.y > view.bottom + 200) continue;
       const big = DL.Art.sprites.outpost; // the drawn outpost brings its own stakes
@@ -126,9 +133,16 @@
   };
 
   /* ---------------- co-op ---------------- */
-  Outposts.rows = () => G.outposts.map((o) => [o.gx, o.gy, o.x, o.y, o.lit ? 1 : 0, Math.round(o.hp)]);
+  Outposts.rows = () => G.outposts.map((o) => [o.gx, o.gy, o.x, o.y, o.lit ? 1 : 0, Math.round(o.hp), o.max, o.b, (o.pylons || []).map((q) => [Math.round(q.hp), q.lit ? 1 : 0])]);
   Outposts.apply = function (rows) {
-    G.outposts = (rows || []).map((r) => ({ kind: "outpost", gx: r[0], gy: r[1], x: r[2], y: r[3], lit: !!r[4], hp: r[5], max: O.hp, rad: 14, hitT: 0 }));
+    G.outposts = (rows || []).map((r) => ({ kind: "outpost", gx: r[0], gy: r[1], x: r[2], y: r[3], lit: !!r[4], hp: r[5], max: r[6] || O.hp, b: DL.Pyramid.cleanBuildings(r[7]), rad: 14, hitT: 0 }));
     DL.Pyramid.setHeld(G.outposts.map((o) => o.gx + "," + o.gy)); // a friend sees the host's pyramid
+    G.outposts.forEach((o, i) => {
+      DL.Pyramid.refreshBuildings(o);
+      const states = rows[i][8] || [];
+      (o.pylons || []).forEach((q, j) => { if (states[j]) { q.hp = states[j][0]; q.lit = !!states[j][1]; } });
+    });
+    if (G.atOutpost) G.atOutpost = G.outposts.find((o) => o.gx === G.atOutpost.gx && o.gy === G.atOutpost.gy) || null;
   };
 })(window.DL);
+

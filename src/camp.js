@@ -137,5 +137,42 @@
     if (g.arc < GATE_HALF * 0.6) return Camp.gatePoint(g.angle, 0, inside ? 40 : -40); // lined up: through
     return Camp.gatePoint(g.angle, 0, inside ? -34 : 34);
   };
+
+  // The same four-gate square geometry, translated to a Pyramid square without resizing the camp.
+  Camp.collideSquareWalls = function (ent, r, cx, cy, half, gate) {
+    const thick = 7 + r;
+    for (const a of GATES) for (const sgn of [-1, 1]) {
+      const nx = Math.round(Math.cos(a)), ny = Math.round(Math.sin(a));
+      const ax = cx + nx * half - ny * sgn * (gate + 7), ay = cy + ny * half + nx * sgn * (gate + 7);
+      const bx = cx + nx * half - ny * sgn * half, by = cy + ny * half + nx * sgn * half;
+      const ex = bx - ax, ey = by - ay;
+      const k = Math.max(0, Math.min(1, ((ent.x - ax) * ex + (ent.y - ay) * ey) / (ex * ex + ey * ey)));
+      const px = ax + ex * k, py = ay + ey * k, dx = ent.x - px, dy = ent.y - py, d = Math.hypot(dx, dy);
+      if (d >= thick) continue;
+      const side = ((ent.x - cx) * nx + (ent.y - cy) * ny) < half ? -1 : 1;
+      ent.x = px + (d > 0.5 ? dx / d : nx * side) * thick;
+      ent.y = py + (d > 0.5 ? dy / d : ny * side) * thick;
+    }
+  };
+  Camp.routeSquare = function (x, y, tx, ty, cx, cy, half, gate) {
+    const lx = x - cx, ly = y - cy, inside = Camp.sq(lx, ly) < half;
+    const targetInside = Camp.sq(tx - cx, ty - cy) < half;
+    if (inside && targetInside) return null;
+    if (!inside && !targetInside) {
+      // A square between us and the goal also needs a route through its two gates.
+      let lo = 0, hi = 1;
+      for (const [p, v] of [[lx, tx - x], [ly, ty - y]]) {
+        if (Math.abs(v) < 0.001) { if (Math.abs(p) > half) return null; continue; }
+        const a = (-half - p) / v, b = (half - p) / v;
+        lo = Math.max(lo, Math.min(a, b)); hi = Math.min(hi, Math.max(a, b));
+      }
+      if (lo > hi || hi < 0 || lo > 1) return null;
+    }
+    const g = Camp.nearestGate(inside ? tx - cx : lx, inside ? ty - cy : ly);
+    const nx = Math.round(Math.cos(g.angle)), ny = Math.round(Math.sin(g.angle));
+    const aligned = Math.abs(nx ? ly : lx) < gate * 0.6;
+    const out = aligned ? (inside ? 40 : -40) : (inside ? -34 : 34);
+    return { x: cx + nx * (half + out), y: cy + ny * (half + out) };
+  };
 })(window.DL);
 
