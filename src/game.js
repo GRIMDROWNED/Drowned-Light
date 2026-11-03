@@ -56,7 +56,8 @@
     // Abyss bosses slain at least once: their trophies can be built in the camp
     trophies: { bell: 0, rose: 0 },
     // outposts raised in bloom groves (src/outposts.js): [grove cell x, grove cell y, x, y]
-    outposts: [],
+    outposts: [], // (old saves: each becomes a Pyramid square, src/pyramid.js)
+    pyramid: { sq: {} },
     // the finale (src/finale.js): stage (0 nothing yet, 1 the Fire Bearer waits in camp, 2 on the march, 3 at the gate, 4 won),
     // where the Bearer stands, its health (-1: full), guttered, its last camp, the gate found yet, and the day it was won
     finale: { stage: 0, x: 0, y: 0, hp: -1, down: false, rest: null, found: false, won: 0 },
@@ -585,7 +586,7 @@
       DL.Kits.dashTick(p, st, dt);
     } else {
       const wet = W.isWater(p.x, p.y) ? 0.82 : 1;
-      const spd = 150 * DL.Kits.speedMult(p) * wet * (p.corrupt >= 75 ? 0.9 : 1) * (DL.Den.carrying() ? DL.DEN.haulSpeed : 1) * (DL.Wyvern.carrying() ? DL.WYVERN.haulSpeed : 1) * DL.Abigail.mult() * DL.Wyvern.speedMult();
+      const spd = 150 * DL.Pyramid.speedMult(p) * DL.Kits.speedMult(p) * wet * (p.corrupt >= 75 ? 0.9 : 1) * (DL.Den.carrying() ? DL.DEN.haulSpeed : 1) * (DL.Wyvern.carrying() ? DL.WYVERN.haulSpeed : 1) * DL.Abigail.mult() * DL.Wyvern.speedMult();
       p.moving = inp.m > 0.15;
       p.running = inp.m > 0.9; // full speed: a kit with drawn run frames runs (src/render.js)
       p.stillT = p.moving ? 0 : (p.stillT || 0) + dt;
@@ -966,6 +967,7 @@
         if (Math.random() < 0.4) puff(e.x + rand(-8, 8), e.y, "rgba(60,200,210,0.6)", 30, 0.5);
         continue;
       }
+      e.lx = e.x; e.ly = e.y; // where it stood, so climbing a Pyramid step can slow its move (below)
       const eZ = DL.ZONES[W.zoneIndex(e.x, e.y)];
       if (!G.night && !eZ.abyss && !e.isSelf && !e.def.den && !e.def.wyvern && !e.march) { // (the Drowned that rise against the Fire Bearer brave the sun)
         e.hp -= 30 * dt; // the sun unmakes them
@@ -1140,6 +1142,12 @@
         if (d < min) { a.x = h.x + (dx / d) * min; a.y = h.y + (dy / d) * min; }
       }
       if (a.def.fly) continue; // the mother wyvern flies over rocks, trees and walls
+      if (a.lx != null) {
+        // climbing a step of the Pyramid off its stairs is slow (src/pyramid.js)
+        const m = DL.Pyramid.speedMult(a);
+        if (m < 1) { a.x = a.lx + (a.x - a.lx) * m; a.y = a.ly + (a.y - a.ly) * m; }
+        a.lx = null;
+      }
       DL.Golems.push(a, a.def.radius * 0.6);
       W.collide(a, a.def.radius * 0.6);
       collideCamp(a, a.def.radius * 0.6);

@@ -679,6 +679,20 @@
      within `safeR` px of you. */
   DL.OUTPOST = { reqFlame: 3, max: [0, 0, 0, 1, 2, 3], cost: { wood: 24, stone: 16, iron: 8 }, claimR: 120, useR: 90, light: 150, hp: 160, safeR: 260 };
   DL.scaleCost = scaleCost;
+  /* The Pyramid (src/pyramid.js, docs/PYRAMID-PLAN.md). The Central Flame's level L lets the knights hold
+     `perFlame * (L - 1)` squares; a square is claimed standing within `claimR` px of its middle, next to one already
+     held, for cost[ring - 1]. Held squares stand (flame level - ring) levels high, `face` px of rock per level (at
+     most `maxFace` levels drawn), rising `riseSpeed` levels a second. Off the `stairW` px stairs in the middle of
+     each edge, crossing a step goes at `climb` of full speed. `win` of the squares held wakes the Drowned Gate. */
+  DL.PYRAMID = {
+    perFlame: 4, claimR: 170, face: 18, maxFace: 5, riseSpeed: 1.5, stairW: 110, climb: 0.35, win: 0.8,
+    cost: [
+      { wood: 20, stone: 12 },
+      { wood: 30, stone: 20, iron: 6 },
+      { wood: 40, stone: 30, iron: 12, pearl: 2 },
+      { wood: 50, stone: 40, iron: 18, pearl: 4, black: 1 },
+    ],
+  };
 
   // Camp buildings. costs[level] = price to go from `level` to `level + 1`.
   // reqFlame(target) = Central Flame level needed to build that level.

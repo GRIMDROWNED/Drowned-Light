@@ -242,7 +242,7 @@
       if (ok) say(`${who} trained ${DL.SUMMON[ev.kind].name} to level ${DL.Summons.level(ev.kind)}.`, "good");
       else sendTo(g, { t: "say", m: "Couldn't train that — check the stash and the companion's home.", k: "warn" });
     } else if (ev.t === "outpost") {
-      if (!DL.Outposts.raiseHost(ev.gx, ev.gy, false)) sendTo(g, { t: "say", m: "Couldn't raise an outpost: " + (DL.Outposts.lock() || "this grove is taken") + ".", k: "warn" });
+      if (!DL.Outposts.raiseHost(ev.gx, ev.gy, false)) sendTo(g, { t: "say", m: "Couldn't claim that square: " + (DL.Outposts.lock(ev.gx, ev.gy) || "it's taken, or not next to your land") + ".", k: "warn" });
     } else if (ev.t === "craftTorch") {
       const ok = G.canAfford(DL.TORCH_COST);
       if (ok) { G.pay(DL.TORCH_COST); G.persist(); }

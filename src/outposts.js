@@ -1,8 +1,9 @@
-/* Drowned Light — outposts. From Central Flame 3, a knight standing at the heart of a bloom grove can raise an
-   outpost there: a brazier of firelight in a ring of stakes. Supplies carried to an outpost are sent home to
-   the camp's stash, and with your Kindle lit you can travel along his old paths between the camp and every
-   outpost (DL.OUTPOST). The Drowned go for an outpost's fire like any light; snuffed, it's lit again at dawn.
-   Outposts belong to the world (the host's save); the host runs their fires and sends them in snapshots. */
+/* Drowned Light — the fires of the Pyramid's squares (they replaced outposts; src/pyramid.js holds the squares).
+   Every square the knights hold has a brazier of firelight at its middle in a ring of stakes. Supplies carried
+   there are sent home to the camp's stash, and with your Kindle lit you can travel along his old paths between
+   the camp and every square (DL.OUTPOST). The Drowned go for a square's fire like any light; snuffed, it's lit
+   again at dawn. The squares belong to the world (the host's save); the host runs their fires and sends them in
+   snapshots, which also tell a friend's device which squares are held. */
 "use strict";
 (function (DL) {
   const { dist, rand } = DL;
@@ -13,60 +14,46 @@
   G.outposts = [];
 
   const compass = (dx, dy) => ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"][((Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) % 8) + 8) % 8];
-  Outposts.max = () => O.max[G.save.up.flame] || 0;
+  Outposts.max = () => DL.Pyramid.limit();
+  const name = (o) => `the ${compass(o.x, o.y)} square, ring ${DL.Pyramid.ring(o.gx, o.gy)}`;
 
-  // The live fires, one per saved outpost.
+  // The live fires, one at the middle of every square the knights hold (the camp has its own Central Flame).
+  // A fire keeps its state across a rebuild.
   Outposts.reset = function () {
-    G.outposts = (G.save.outposts || []).map(([gx, gy, x, y]) => ({ kind: "outpost", gx, gy, x, y, rad: 14, hp: O.hp, max: O.hp, lit: true, hitT: 0 }));
+    if (!G.isGuest()) DL.Pyramid.reset();
+    const old = new Map(G.outposts.map((o) => [o.gx + "," + o.gy, o]));
+    const list = [];
+    DL.Pyramid.each((gx, gy) => {
+      if (!gx && !gy) return;
+      const c = DL.Pyramid.center(gx, gy);
+      list.push(old.get(gx + "," + gy) || { kind: "outpost", gx, gy, x: c.x, y: c.y, rad: 14, hp: O.hp, max: O.hp, lit: true, hitT: 0 });
+    });
+    G.outposts = list;
   };
   Outposts.dawn = function () { for (const o of G.outposts) { o.lit = true; o.hp = o.max; } };
-  Outposts.update = function (dt) { for (const o of G.outposts) o.hitT = Math.max(0, o.hitT - dt); };
+  Outposts.update = function (dt) { for (const o of G.outposts) o.hitT = Math.max(0, o.hitT - dt); DL.Pyramid.update(dt); };
 
-  // The outpost a knight at (x, y) stands at, if any.
+  // The square's fire a knight at (x, y) stands at, if any.
   Outposts.at = function (x, y) {
     for (const o of G.outposts) if (dist(x, y, o.x, o.y) < O.useR) return o;
     return null;
   };
-  // The unclaimed grove heart a knight at (x, y) could raise an outpost on, if any.
-  Outposts.claimable = function (x, y) {
-    if (G.cave) return null;
-    const GR = DL.GROVE, gx = Math.floor(x / GR.cell), gy = Math.floor(y / GR.cell);
-    const g = DL.World.grove(gx, gy, G.diff());
-    if (!g || dist(x, y, g.x, g.y) > O.claimR) return null;
-    if (G.outposts.some((o) => o.gx === gx && o.gy === gy)) return null;
-    return { gx, gy, x: Math.round(g.x), y: Math.round(g.y) };
-  };
-  // Why one can't be raised (null when it can).
-  Outposts.lock = function () {
-    if (G.save.up.flame < O.reqFlame) return `Needs Central Flame ${O.reqFlame}`;
-    if (G.outposts.length >= Outposts.max()) return G.save.up.flame >= 5 ? "No more outposts" : "Needs a higher Central Flame for another";
-    if (!G.canAfford(O.cost)) return "Not enough in the camp's stash";
-    return null;
+  // The square a knight at (x, y) could claim, if any.
+  Outposts.claimable = (x, y) => DL.Pyramid.claimable(x, y);
+  // Why it can't be claimed (null when it can): the square at (gx, gy), or the one the knight stands in.
+  Outposts.lock = function (gx, gy) {
+    if (gx == null) { const s = G.player && DL.Pyramid.claimable(G.player.x, G.player.y); if (!s) return "Stand near the middle of a square next to your land"; gx = s.gx; gy = s.gy; }
+    return DL.Pyramid.lock(gx, gy);
   };
 
-  // Raise an outpost on the grove the knight stands in (a guest asks the host, who builds it from the shared stash).
+  // Claim the square the knight stands in (a guest asks the host, who pays from the shared stash).
   Outposts.raise = function () {
     const p = G.player, spot = Outposts.claimable(p.x, p.y);
     if (!spot) return false;
     if (G.isGuest()) { DL.Net.event({ t: "outpost", gx: spot.gx, gy: spot.gy }); return true; }
     return Outposts.raiseHost(spot.gx, spot.gy, true);
   };
-  Outposts.raiseHost = function (gx, gy, mine) {
-    const g = DL.World.grove(gx, gy, G.diff()), lock = Outposts.lock();
-    if (!g || G.outposts.some((o) => o.gx === gx && o.gy === gy)) return false;
-    if (lock) { if (mine) { sfx("deny"); say(lock + ".", "warn"); } return false; }
-    G.pay(O.cost);
-    const x = Math.round(g.x), y = Math.round(g.y);
-    G.save.outposts.push([gx, gy, x, y]);
-    G.persist();
-    Outposts.reset();
-    sfx("build");
-    for (let i = 0; i < 20; i++) G.puff(x + rand(-50, 50), y - rand(0, 20), "rgba(160,130,90,0.6)", 50, 0.9, -20);
-    const msg = "An outpost rises in the grove: a brazier of firelight in a ring of stakes. Supplies brought here go home to the camp.";
-    say(msg, "good");
-    DL.Net.say(msg, "good");
-    return true;
-  };
+  Outposts.raiseHost = (gx, gy, mine) => DL.Pyramid.claimHost(gx, gy, mine);
 
   // The Drowned strike its fire (src/game.js).
   Outposts.hurt = function (o, amt) {
@@ -87,7 +74,7 @@
     const p = G.player, here = G.atOutpost;
     const out = [];
     if (!G.inCamp) out.push({ id: "camp", name: "The camp", x: 0, y: 70, lit: true });
-    G.outposts.forEach((o, i) => { if (o !== here) out.push({ id: i, name: `Outpost ${i + 1}`, x: o.x, y: o.y + 40, lit: o.lit, dir: compass(o.x, o.y), m: Math.round(Math.hypot(o.x, o.y) / 10) }); });
+    G.outposts.forEach((o, i) => { if (o !== here) out.push({ id: i, name: name(o), x: o.x, y: o.y + 40, lit: o.lit, dir: compass(o.x, o.y), m: Math.round(Math.hypot(o.x, o.y) / 10) }); });
     for (const d of out) d.far = Math.round(dist(p.x, p.y, d.x, d.y) / 10);
     return out;
   };
@@ -142,5 +129,6 @@
   Outposts.rows = () => G.outposts.map((o) => [o.gx, o.gy, o.x, o.y, o.lit ? 1 : 0, Math.round(o.hp)]);
   Outposts.apply = function (rows) {
     G.outposts = (rows || []).map((r) => ({ kind: "outpost", gx: r[0], gy: r[1], x: r[2], y: r[3], lit: !!r[4], hp: r[5], max: O.hp, rad: 14, hitT: 0 }));
+    DL.Pyramid.setHeld(G.outposts.map((o) => o.gx + "," + o.gy)); // a friend sees the host's pyramid
   };
 })(window.DL);
