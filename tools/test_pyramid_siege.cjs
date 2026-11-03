@@ -25,7 +25,7 @@ function world(flame = 5, squares = {}) {
   G.save = G.defaultSave();
   G.save.up.flame = flame;
   G.save.pyramid.sq = JSON.parse(JSON.stringify(squares));
-  G.save.nights = 4; G.save.day = 5;
+  G.save.nights = 9; G.save.day = 10;
   G.stats = () => ({ flameHp: 150 + 100 * G.save.up.flame });
   G.flame = { kind: "flame", x: 0, y: 0, hp: G.stats().flameHp, max: G.stats().flameHp, lit: true };
   G.state = "play";
@@ -41,28 +41,39 @@ function world(flame = 5, squares = {}) {
   return { DL, G, calls };
 }
 
-// Nights 5, 10, ... are sieges, and only exposed squares receive their waves.
+// Nights 10, 20, ... are sieges, and every held square is attacked in turn, up to SIEGE.groups at a time.
 {
   const squares = {};
   for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) if (x || y) squares[x + "," + y] = 1;
   // Extend a solid block to surround square (1,0), making it an interior square.
   squares["2,-1"] = squares["2,0"] = squares["2,1"] = 1;
   const { DL, G, calls } = world(5, squares);
-  assert.equal(DL.Siege.isSiegeNight(5), true);
+  assert.equal(DL.Siege.isSiegeNight(5), false);
   assert.equal(DL.Siege.isSiegeNight(10), true);
-  assert.equal(DL.Siege.isSiegeNight(4), false);
-  assert.equal(DL.Siege.targets().some((o) => o.gx === 1 && o.gy === 0), false);
+  assert.equal(DL.Siege.isSiegeNight(20), true);
+  assert.equal(DL.Siege.targets().some((o) => o.gx === 1 && o.gy === 0), true, "interior squares are attacked too");
+  G.knights = () => [G.player];
+  G.player.x = 800; G.player.y = 0;
+  const far = G.outposts.find((o) => o.gx === -1 && o.gy === 0), here = G.outposts.find((o) => o.gx === 1 && o.gy === 0);
+  assert.equal(DL.Siege.openSquare(far), false, "off siege nights only the knight's square draws the Drowned");
+  assert.equal(DL.Siege.openSquare(here), true);
   DL.Siege.nightfall();
   assert.equal(DL.Siege.on, true);
-  DL.Siege.update(DL.SIEGE.first);
-  assert.equal(calls.waves.length, DL.SIEGE.sides);
-  for (const row of calls.waves) {
-    assert.equal(row[4].kind, "outpost");
-    assert.equal(DL.Siege.targets().includes(row[4]), true);
-    const dx = Math.round(Math.cos(row[7])), dy = Math.round(Math.sin(row[7]));
-    assert.equal(DL.Pyramid.has(row[4].gx + dx, row[4].gy + dy), false);
+  assert.equal(DL.Siege.openSquare(far), true);
+  const hit = new Set();
+  for (let w = 0; w < 3; w++) {
+    calls.waves.length = 0;
+    DL.Siege.update(w ? DL.SIEGE.waveEvery : DL.SIEGE.first);
+    assert.equal(calls.waves.length, DL.SIEGE.groups);
+    for (const row of calls.waves) {
+      assert.equal(row[4].kind, "outpost");
+      hit.add(row[4].gx + "," + row[4].gy);
+      const dx = Math.round(Math.cos(row[7])), dy = Math.round(Math.sin(row[7]));
+      if (row[4].gx !== 1 || row[4].gy !== 0) assert.equal(DL.Pyramid.has(row[4].gx + dx, row[4].gy + dy), false, "waves cross an open edge when there is one");
+    }
   }
-  G.save.nights = 3;
+  assert.equal(hit.size, DL.Siege.targets().length, "every square is attacked in turn");
+  G.save.nights = 4;
   DL.Siege.reset(); DL.Siege.nightfall();
   assert.equal(DL.Siege.on, false);
 }

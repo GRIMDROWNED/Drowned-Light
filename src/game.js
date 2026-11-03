@@ -925,6 +925,7 @@
   function goalValid(g) {
     if (!g) return false;
     if (g.kind === "pylon" && g.square && !DL.Pyramid.pylons().includes(g)) return false;
+    if ((g.kind === "outpost" || (g.kind === "pylon" && g.square)) && !DL.Siege.openSquare(g)) return false; // only a knight's square, off siege nights
     if (g.kind === "flame" || g.kind === "pylon" || g.kind === "outpost" || g.kind === "bearer") return g.lit && (g.kind !== "bearer" || g === DL.Finale.b);
     if (g.type === "torch" || g.type === "brazier") return G.torches.includes(g);
     return !g.dead && g.active !== false;
@@ -934,8 +935,8 @@
     const consider = (o) => { const d = dist(x, y, o.x, o.y); if (d < bd) { bd = d; best = o; } };
     if (G.flame.lit) consider(G.flame);
     for (const q of G.pylons) if (q.lit) consider(q);
-    for (const q of DL.Pyramid.pylons()) if (q.lit) consider(q);
-    for (const q of G.outposts) if (q.lit) consider(q);
+    for (const q of DL.Pyramid.pylons()) if (q.lit && DL.Siege.openSquare(q)) consider(q);
+    for (const q of G.outposts) if (q.lit && DL.Siege.openSquare(q)) consider(q);
     for (const t of G.torches) consider(t);
     for (const o of G.blooms) if (o.def.bloom && o.active) consider(o);
     return best;

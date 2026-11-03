@@ -14,7 +14,7 @@ Numbers marked *(proposed)* are Claude's starting values and go in `src/data.js`
   maximum level. The flame and the camp **change look every 5 flame levels**.
 - On each square you build **walls, lantern pylons, watchtowers** and a new **barracks**
   (it makes champions or an army; Robert hasn't picked yet).
-- **Every 5 nights** huge waves of Drowned Knights attack the squares. Each square they destroy
+- **Every 10th night** *(Robert changed it from 5, 2026-11-03, v0.15.193)* huge waves of Drowned attack **every** held square in turn (`SIEGE.groups` at a time). On other nights the Drowned only go for the square a knight is standing in (`Siege.openSquare`). Each square they destroy
   **lowers the Central Flame by a level**. If the flame drops to 0, you lose.
 - When the pyramid covers **80% of the land** (the rest is left for the Drowned to spawn in), the
   **Sunken King fight** starts. This replaces the Fire Bearer march as its trigger. Winning
