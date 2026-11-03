@@ -189,6 +189,17 @@
     DL.Rose.push(list, c, t, view);
     DL.Trophies.push(list, c);
     DL.Outposts.push(list, c, t, view, sprite, Art.drawFire, bar);
+    // Barracks use coded art until the drawn three-level set is ready; champions reuse the Lantern Knight.
+    DL.Pyramid.each((gx, gy) => {
+      if (!gx && !gy) return;
+      const level = DL.Pyramid.buildings(gx, gy).barracks;
+      if (!level) return;
+      const b = DL.Pyramid.layout(gx, gy).barracks;
+      if (b.x >= view.left - 150 && b.x <= view.right + 150 && b.y >= view.top - 50 && b.y <= view.bottom + 180)
+        list.push({ y: b.y, f: () => drawBarracks(c, b.x, b.y, level) });
+    });
+    for (const h of G.champions) if (h.hp > 0 && h.x >= view.left - 100 && h.x <= view.right + 100 && h.y >= view.top - 40 && h.y <= view.bottom + 140)
+      list.push({ y: h.y, f: () => drawChampion(c, h, t) });
     DL.Fred.push(list, c, t, view);
     DL.Wyvern.push(list, c, t, view);
     DL.Finale.push(list, c, t, view);
@@ -890,6 +901,36 @@
     if (p.inv > 0 && p.dashT <= 0 && Math.floor(t * 20) % 2) alpha = 0.65;
     if (p.downT > 0) { Art.drawUnit(c, key, "death", Art.animLength(key, "death") - 1, ang, p.x, p.y, 1, { alpha: 0.5 }); return; }
     Art.drawUnit(c, key, anim, fr, ang, p.x, p.y, 1, { alpha, flash: p.flash > 0 ? 0.7 : 0, flashColor: "#ff9a9a" });
+  }
+
+  function drawBarracks(c, x, y, level) {
+    shadow(c, x, y, 46, 12);
+    c.save(); c.translate(Math.round(x), Math.round(y));
+    c.fillStyle = level >= 3 ? "#5d6265" : "#5e4b38"; c.fillRect(-40, -53, 80, 53);
+    c.fillStyle = "#292a29"; c.fillRect(-13, -31, 26, 31);
+    c.fillStyle = level >= 2 ? "#806b4c" : "#5b3529";
+    c.beginPath(); c.moveTo(-48, -49); c.lineTo(0, -77); c.lineTo(48, -49); c.closePath(); c.fill();
+    c.fillStyle = "#a18f6d"; c.fillRect(-43, -50, 86, 5); c.fillRect(-43, -5, 86, 5);
+    for (let i = 0; i < level; i++) {
+      c.fillStyle = "#a67132"; c.fillRect(-33 + i * 30, -65, 3, 25);
+      c.fillStyle = "#9f4232"; c.fillRect(-30 + i * 30, -65, 15, 14);
+      c.fillStyle = "#ffcf76"; c.fillRect(-26 + i * 30, -62, 4, 8);
+    }
+    c.restore();
+  }
+
+  function drawChampion(c, h, t) {
+    const key = "lanternBlade1", C = DL.PYRAMID.champion;
+    shadow(c, h.x, h.y, 13, 4);
+    const anim = h.swing > 0 ? "attack" : h.moving ? "walk" : "idle";
+    const n = Art.animLength(key, anim);
+    const frame = h.swing > 0 ? Math.min(n - 1, Math.floor((1 - h.swing / C.swing) * n)) : Math.floor((h.moving ? h.animT * 10 : t * 1.6));
+    Art.drawUnit(c, key, anim, frame, h.angle, h.x, h.y, C.scale, h.flash > 0 ? { flash: 0.7, flashColor: "#ffb08a" } : {});
+    // Gold foot ring and a name distinguish a defender from another player.
+    c.strokeStyle = "#d6ae64"; c.lineWidth = 2; c.beginPath(); c.ellipse(h.x, h.y + 1, 11, 4, 0, 0, Math.PI * 2); c.stroke();
+    c.font = "700 9px Inter, system-ui, sans-serif"; c.textAlign = "center"; c.fillStyle = "#e5c889";
+    c.fillText("Champion", h.x, h.y - 76);
+    if (h.hp < h.maxHp) bar(c, h.x, h.y - 66, 26, h.hp / h.maxHp, "#dfbe79");
   }
 
   // The co-op friend: their own kit and corruption, animated from what their device reports.
