@@ -190,7 +190,6 @@ No build step, no dependencies. These are plain scripts loaded in order:
 | `src/units.js` | the knight, Drowned Knight, Bone Hound, Derek and Starved Bell sprite sheets (all animations, corruption stages) |
 | `src/sprites.js` | loads hand-drawn PNG art over the coded sprites and sheets |
 | `src/world.js` | endless chunked wetland: ground texture, resources, blooms, collisions |
-| `src/terrain.js` | "Four heights" test land (pause menu, Land): four levels of ground, cliffs that block walking, ramps between them |
 | `src/game.js` | simulation: player, corruption, spawning, enemy AI, combat, camp economy, saving |
 | `src/hounds.js` | the Bone Hound: its hunt and bite, bleeding, being knocked out, co-op ownership |
 | `src/den.js` | the Bone Wolf den: where it lies, the pack, hauling a carcass home to win a hound |
