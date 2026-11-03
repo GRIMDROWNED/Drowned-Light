@@ -48,6 +48,12 @@ Numbers marked *(proposed)* are Claude's starting values and go in `src/data.js`
 - **80% coverage** is 64 of the 80 squares.
 - **Pyramid height:** the camp is level 4 *(top)*, ring 1 is 3, ring 2 is 2, ring 3 is 1 and
   ring 4 is 0. A square is drawn raised only once it's claimed.
+- **Layout (Robert's sketch, 2026-11-03, v0.15.189):** the land builds out as **four quarters**,
+  each level an L wrapped round the last, split by a **cross of long stairways** running from the
+  camp's four gates down to the marsh along the `gx = 0` and `gy = 0` lines. **Only the cross has
+  stairs**; every other step edge is a solid face (climbed slowly). The stairways are paved lanes
+  `stairW` wide (coded) with the drawn flights at each drop, and nothing spawns on them.
+  `Pyramid.axis(gx, gy, dx)` says whether an edge has stairs.
 - **Unlocking:** flame level `L` lets you hold up to `4 × (L − 1)` squares *(proposed)*. You
   claim ring by ring, inner rings first, with the corners and edge-centres (the stair squares)
   of a ring before its fill-in squares. Flame 20 allows 76 squares, which is enough for 80%.
@@ -71,7 +77,7 @@ Numbers marked *(proposed)* are Claude's starting values and go in `src/data.js`
   `save.outposts` is dropped.
 - **Per-square buildings** reuse the camp's patterns (`Camp.layout` / `Camp.collideWall` take a
   square's centre and size instead of assuming the origin). Costs and HP go in `DL.PYRAMID.build`.
-- **Climbing:** a walker crossing a step edge off the stairs moves at `DL.PYRAMID.climb` speed *(proposed 0.35)*, and gets full speed on a stair. This goes in `Pyramid.speedMult(ent)` and is called by the knight and Drowned movement in `src/game.js`.
+- **Climbing:** a walker crossing a step edge off the cross's stairs moves at `DL.PYRAMID.climb` speed *(proposed 0.35)*, and gets full speed on a stair. This goes in `Pyramid.speedMult(ent)` and is called by the knight and Drowned movement in `src/game.js`.
 - **Sieges:** `src/siege.js` changes from "every 10th night at the camp" to "every 5th night at
   the outer squares". A square at 0 HP is lost: `Pyramid.lose(gx, gy)` drops the flame one level
   and lowers the square. Flame 0 is game over (`DL.SIEGE.gameOver` turns on for this).
@@ -124,6 +130,6 @@ storing supplies, travel, light, the Drowned targeting it, and co-op rows. A fri
 squares from those rows (`Outposts.apply` → `Pyramid.setHeld`).
 
 Not done yet:
-- The Drowned don't path to the stairs. They climb straight over, which is slow.
+- The Drowned don't path to the stairways of the cross. They climb straight over, which is slow.
 - Trees and rocks can still stand on a rock face.
 - Robert's stone faces are in (v0.15.178, `assets/sprites/pyramid/step-*.png`, cut by `tools/cut_pyramid.py`). Stairs, markers, barracks, flame looks and the rim are still coded placeholders.

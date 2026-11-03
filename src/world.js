@@ -70,6 +70,8 @@
       for (let i = 0; i < n; i++) {
         const x = (cx + DL.hash(cx, cy, i * 3 + 1)) * CH, y = (cy + DL.hash(cx, cy, i * 3 + 2)) * CH;
         if (DL.Camp.sq(x, y) < CAMP_CLEAR || DL.Cave.clears(x, y)) continue;
+        // the Pyramid's cross of stairways (src/pyramid.js) stays clear
+        if (Math.min(Math.abs(x), Math.abs(y)) < DL.PYRAMID.stairW / 2 + 45 && DL.Camp.sq(x, y) < GRID) continue;
         const ozi = Math.max(1, this.zoneIndex(x, y));
         let type = DL.weighted(DL.SPAWN_TABLE[ozi], DL.hash(cx, cy, i * 3 + 3));
         // "gap" is where driftwood used to lie: nothing spawns there, so the ground is clearer
