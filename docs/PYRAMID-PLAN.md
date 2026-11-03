@@ -126,4 +126,4 @@ squares from those rows (`Outposts.apply` → `Pyramid.setHeld`).
 Not done yet:
 - The Drowned don't path to the stairs. They climb straight over, which is slow.
 - Trees and rocks can still stand on a rock face.
-- All the step art is coded placeholder (stone courses, treads) until the art pass.
+- Robert's stone faces are in (v0.15.178, `assets/sprites/pyramid/step-*.png`, cut by `tools/cut_pyramid.py`). Stairs, markers, barracks, flame looks and the rim are still coded placeholders.

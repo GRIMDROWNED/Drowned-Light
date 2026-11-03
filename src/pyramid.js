@@ -307,9 +307,35 @@
       }
     }
   };
-  // The face on a square's south edge: rough stone courses, darker toward the foot, stairs in the middle.
+  // Robert's drawn stone strips (tools/cut_pyramid.py, 2 file px per world px). Until they load, the coded stone shows.
+  const ART = {};
+  for (const n of ["south", "north", "east", "west"]) {
+    const img = new Image();
+    img.onload = () => { ART[n] = img; };
+    img.src = DL.asset("assets/sprites/pyramid/step-" + n + ".png");
+  }
+  // Tile a strip along a run, clipped to the box (x, y, w, h). Horizontal strips are `th` px tall, vertical ones `th` wide.
+  function strip(c, img, x, y, w, h, th, vertical) {
+    c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip();
+    if (!vertical) {
+      const tw = img.width * th / img.height;
+      for (let yy = y; yy < y + h; yy += th) for (let xx = x; xx < x + w; xx += tw) c.drawImage(img, xx, yy, tw + 0.5, th);
+    } else {
+      const tl = img.height * th / img.width;
+      for (let yy = y; yy < y + h; yy += tl) c.drawImage(img, x, yy, th, tl + 0.5);
+    }
+    c.restore();
+  }
+  // The face on a square's south edge: stone courses (one drawn course per level), stairs in the middle.
   function southFace(c, L, foot, d) {
     const H = faceH(d), top = foot - H, sx = L + HALF - P.stairW / 2;
+    if (ART.south) {
+      strip(c, ART.south, L, top, CELL, H, P.face, false);
+      const sg = c.createLinearGradient(0, foot, 0, foot + 18);
+      sg.addColorStop(0, "rgba(0,0,0,0.45)"); sg.addColorStop(1, "rgba(0,0,0,0)");
+      c.fillStyle = sg; c.fillRect(L, foot, CELL, 18);
+      return stairs(c, sx, top, H);
+    }
     const grad = c.createLinearGradient(0, top, 0, foot);
     grad.addColorStop(0, "#8d8370"); grad.addColorStop(0.12, "#5f5849"); grad.addColorStop(1, "#2a2620");
     c.fillStyle = grad;
@@ -323,7 +349,10 @@
     const sg = c.createLinearGradient(0, foot, 0, foot + 18);
     sg.addColorStop(0, "rgba(0,0,0,0.45)"); sg.addColorStop(1, "rgba(0,0,0,0)");
     c.fillStyle = sg; c.fillRect(L, foot, CELL, 18);
-    // stairs: lit treads stepping down to the foot
+    stairs(c, sx, top, H);
+  }
+  // Stairs: lit treads stepping down to the foot (coded until the stair art comes).
+  function stairs(c, sx, top, H) {
     const n = Math.max(2, Math.round(H / 8)), st = H / n;
     for (let i = 0; i < n; i++) {
       const yy = top + i * st;
@@ -334,15 +363,19 @@
   }
   // A north edge seen from above: a pale lip on the high side, a dark line below it, and the stairs' landing.
   function rimH(c, L, T, w) {
-    c.fillStyle = "rgba(215,200,160,0.5)"; c.fillRect(L, T, w, 3);
-    c.fillStyle = "rgba(0,0,0,0.5)"; c.fillRect(L, T - 3, w, 3);
+    if (ART.north) strip(c, ART.north, L, T - 2, w, 11, 11, false);
+    else { c.fillStyle = "rgba(215,200,160,0.5)"; c.fillRect(L, T, w, 3); c.fillStyle = "rgba(0,0,0,0.5)"; c.fillRect(L, T - 3, w, 3); }
     const sx = L + HALF - P.stairW / 2;
     for (let i = 0; i < 4; i++) { c.fillStyle = i % 2 ? "#7a705c" : "#9a8f76"; c.fillRect(sx, T + i * 5, P.stairW, 5); }
   }
   // An east or west edge: lip and shadow line along it, and the stairs' treads crossing it.
   function rimV(c, X, T, dx) {
-    c.fillStyle = "rgba(215,200,160,0.5)"; c.fillRect(X, T, 3, CELL);
-    c.fillStyle = "rgba(0,0,0,0.5)"; c.fillRect(X + (dx === 1 ? 4 : -3), T, 3, CELL);
+    const img = dx === 1 ? ART.east : ART.west;
+    if (img) strip(c, img, dx === 1 ? X - 9 : X, T, 13, CELL, 13, true);
+    else {
+      c.fillStyle = "rgba(215,200,160,0.5)"; c.fillRect(X, T, 3, CELL);
+      c.fillStyle = "rgba(0,0,0,0.5)"; c.fillRect(X + (dx === 1 ? 4 : -3), T, 3, CELL);
+    }
     const sy = T + HALF - P.stairW / 2, x0 = dx === 1 ? X - 16 : X;
     for (let i = 0; i < 4; i++) { c.fillStyle = i % 2 ? "#7a705c" : "#9a8f76"; c.fillRect(x0 + i * 5, sy, 5, P.stairW); }
   }
