@@ -76,6 +76,7 @@
     for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) mine.addEventListener(ev, () => { DL.Input.mineBtn = false; });
     mine.addEventListener("contextmenu", (e) => e.preventDefault());
     for (const id of ["btnView", "btnView2"]) $(id).addEventListener("click", () => { DL.View.cycle(); UI.updateViewLabel(); });
+    $("btnZoom").addEventListener("click", () => { $("btnZoom").textContent = "Zoom: " + DL.Render.cycleZoom(); });
     $("btnCombat").addEventListener("click", () => {
       G.save.attackMode = G.save.attackMode === "manual" ? "auto" : "manual";
       G.persist();

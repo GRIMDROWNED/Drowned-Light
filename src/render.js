@@ -113,11 +113,17 @@
     }
   }
 
+  // testing aid (pause menu "Zoom"): pull the camera back to see more of the map
+  R.ZOOMS = [[1, "Normal"], [0.6, "Far"], [0.35, "Farther"], [0.2, "Map"], [0.1, "Whole map"]];
+  R.zoomStep = 0;
+  R.userZoom = () => R.ZOOMS[R.zoomStep][0];
+  R.cycleZoom = () => { R.zoomStep = (R.zoomStep + 1) % R.ZOOMS.length; return R.ZOOMS[R.zoomStep][1]; };
+
   R.draw = function (G) {
     // facing the Sunken King, the camera pulls back far enough to show him (src/finale.js)
     const fv = G.player && G.state !== "title" ? DL.Finale.view(G.player) : null;
     R.zoomMul = (R.zoomMul || 1) + ((fv ? Math.min(1, R.H / (R.zoom * fv.need), R.W / (R.zoom * fv.needW)) : 1) - (R.zoomMul || 1)) * 0.03;
-    const c = R.ctx, z = R.zoom * R.zoomMul, cam = G.camera, dpr = R.dpr;
+    const c = R.ctx, z = R.zoom * R.zoomMul * R.userZoom(), cam = G.camera, dpr = R.dpr;
     const shx = (Math.random() - 0.5) * cam.shake, shy = (Math.random() - 0.5) * cam.shake;
     const vw = R.W / z, vh = R.H / z, left = cam.x - vw / 2, top = cam.y - vh / 2;
     const view = { left, top, right: left + vw, bottom: top + vh };
@@ -138,7 +144,7 @@
     for (let cy = Math.floor(top / CH); cy <= Math.floor(view.bottom / CH); cy++) {
       for (let cx = Math.floor(left / CH); cx <= Math.floor(view.right / CH); cx++) {
         let gc = W.groundCanvas(cx, cy, false);
-        if (!gc && built < 3) { gc = W.groundCanvas(cx, cy, true); built++; }
+        if (!gc && built < (R.zoomStep ? 8 : 3)) { gc = W.groundCanvas(cx, cy, true); built++; }
         if (!gc) { c.fillStyle = "#121a17"; c.fillRect(cx * CH, cy * CH, CH, CH); continue; }
         c.drawImage(gc, cx * CH, cy * CH, CH + 0.6, CH + 0.6);
       }
