@@ -9,14 +9,22 @@
   const WATER = 0.31, SHORE = 0.345;
   const GROUND_K = 0.62; // drawn ground textures are darkened by this to stay under the characters and props
 
+  // The map's grid ends GRID px out (Camp.sq); past it a rim of Abyss shore, then black water to EDGE, where the
+  // world ends (DL.MAP, docs/PYRAMID-PLAN.md). Derek's Hollow lies off the map and isn't bounded.
+  const GRID = DL.MAP.cell * (DL.MAP.rings + 0.5), EDGE = GRID + DL.MAP.rim, SEA = 160;
+
   const W = (DL.World = {
-    CH,
+    CH, GRID, EDGE,
+    // Past the world's end (or on the black water just inside it)?
+    // (the shore wobbles up to 120 px either way, so the world's end isn't a ruled line)
+    shoreOut(x, y) { return DL.Camp.sq(x, y) - (EDGE - SEA) + (DL.fbm(x / 300, y / 300, 91) - 0.5) * 240; },
+    beyond(x, y, pad = 0) { return !DL.Cave.inRegion(x, y) && this.shoreOut(x, y) > -pad; },
     chunks: new Map(),
     ground: new Map(),
 
     zoneIndex(x, y) {
       if (DL.Cave.inRegion(x, y)) return DL.CAVE.zone; // Derek's Hollow, far off the map
-      const d = Math.hypot(x, y);
+      const d = DL.Camp.sq(x, y); // the zones are the map's square rings
       let z = 0;
       for (let i = 0; i < DL.ZONES.length; i++) if (d >= DL.ZONES[i].r) z = i;
       return z;
@@ -24,7 +32,7 @@
     zone(x, y) { return DL.ZONES[this.zoneIndex(x, y)]; },
 
     waterVal(x, y) { return DL.fbm(x / 260, y / 260, 11); },
-    isWater(x, y) { return DL.Camp.sq(x, y) > CAMP_DRY && !DL.Cave.inRegion(x, y) && this.waterVal(x, y) < WATER; },
+    isWater(x, y) { return DL.Camp.sq(x, y) > CAMP_DRY && !DL.Cave.inRegion(x, y) && (this.waterVal(x, y) < WATER || this.beyond(x, y)); },
     isShore(x, y) { const w = this.waterVal(x, y); return DL.Camp.sq(x, y) > CAMP_DRY && !DL.Cave.inRegion(x, y) && w >= WATER && w < SHORE; },
 
     chunk(cx, cy) {
@@ -38,6 +46,7 @@
       const objs = [];
       const mx = (cx + 0.5) * CH, my = (cy + 0.5) * CH;
       if (DL.Cave.inRegion(mx, my)) return []; // the Hollow's cave floor is bare
+      if (this.beyond(mx, my, -CH - 120)) return []; // the black water at the world's end
       const zi = Math.max(1, this.zoneIndex(mx, my));
       const D = DL.Game.diff();
       // Each chunk lies inside exactly one cell of the grove grid (the cell is a whole number of chunks).
@@ -152,6 +161,11 @@
     // Push a circle out of solid objects (trees, rocks, pillars, roots).
     collide(ent, r) {
       DL.Cave.collide(ent, r); // the cave mouth's mound, and the Hollow's walls
+      // nobody wades out past the world's end
+      if (!DL.Cave.inRegion(ent.x, ent.y)) {
+        const lim = EDGE - SEA - 120 - r;
+        ent.x = Math.max(-lim, Math.min(lim, ent.x)); ent.y = Math.max(-lim, Math.min(lim, ent.y));
+      }
       this.near(ent.x, ent.y, 60, (o) => {
         const s = o.def.solid;
         if (!s || o.harvested) return;
@@ -223,6 +237,13 @@
 
     groundColor(x, y) {
       if (DL.Cave.inRegion(x, y)) return DL.Cave.groundColor(x, y);
+      const out = DL.Camp.sq(x, y) > GRID ? this.shoreOut(x, y) : -1;
+      if (out > 0) {
+        // the black water at the world's end, darkening out to nothing
+        const k = Math.min(1, out / 600), dp = this.texel("deep", x, y, 0.55 * (1 - k));
+        if (dp) return dp;
+        return [6 * (1 - k), 12 * (1 - k), 16 * (1 - k)];
+      }
       const d = Math.hypot(x, y);
       const depth = Math.min(1, d / 5000);
       const h = DL.hash(x >> 1, y >> 1, 3);

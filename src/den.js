@@ -29,7 +29,7 @@
     spot = null;
     for (let t = 0; t < 64 && !spot; t++) {
       const a = DL.hash(31, 17, 900 + t) * TAU, r = D.dist + (DL.hash(31, 17, 980 + t) - 0.5) * 300;
-      const x = Math.round(Math.cos(a) * r), y = Math.round(Math.sin(a) * r);
+      const q = DL.Camp.onSquare(a, r), x = Math.round(q.x), y = Math.round(q.y); // r is distance out on the square map (DL.MAP)
       if (dry(x, y) && !groveNear(x, y)) spot = { x, y };
     }
     spot = spot || { x: D.dist, y: 0 };

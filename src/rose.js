@@ -49,7 +49,7 @@
     spot = null;
     for (let t = 0; t < 96 && !spot; t++) {
       const a = DL.hash(61, 37, 900 + t) * TAU, r = K.dist + (DL.hash(61, 37, 1000 + t) - 0.5) * 300;
-      const x = Math.round(Math.cos(a) * r), y = Math.round(Math.sin(a) * r);
+      const q = DL.Camp.onSquare(a, r), x = Math.round(q.x), y = Math.round(q.y); // r is distance out on the square map (DL.MAP)
       if (dry(x, y) && !groveNear(x, y) && Math.hypot(x - gs.x, y - gs.y) > 1500) spot = { x, y };
     }
     spot = spot || { x: -gs.x * 0.9, y: -gs.y * 0.9 };

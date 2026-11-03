@@ -21,7 +21,7 @@
   }
   Bell.spot = function () {
     const s = state();
-    return { x: Math.cos(s.a) * D.r, y: Math.sin(s.a) * D.r };
+    return DL.Camp.onSquare(s.a, D.r); // it roams a square round the camp, out in the Abyss ring
   };
   const nearest = (e) => Math.min(1e9, ...G.knights().map((k) => dist(k.x, k.y, e.x, e.y)));
   const name = (k) => (k === G.player ? "The host" : k.label || "A friend");
@@ -60,8 +60,8 @@
     if (e.dormant) creep(e, dt, near);
     if (e.meal) feed(e, dt);
     // it never leaves the Abyss: chase it to the edge and it stops there
-    const minR = DL.ZONES[4].r + 120, r = Math.hypot(e.x, e.y);
-    if (r < minR) { e.x *= minR / r; e.y *= minR / r; }
+    const minR = DL.ZONES[4].r + 120, r = DL.Camp.sq(e.x, e.y);
+    if (r < minR && r > 0) { e.x *= minR / r; e.y *= minR / r; }
   };
 
   // Everyone left: it sinks back into the deep, whole again, and goes on roaming from there.

@@ -84,7 +84,7 @@ Numbers marked *(proposed)* are Claude's starting values and go in `src/data.js`
 
 | Step | What | Who |
 |---|---|---|
-| 1 | Bounded map: rim, special places pinned to squares, zones by ring | Claude |
+| 1 | Bounded map: rim, special places pinned to squares, zones by ring (**done**, v0.15.170: `DL.MAP`, `World.GRID/EDGE/beyond`, zones use `Camp.sq`, special places placed with `Camp.onSquare`) | Claude |
 | 2 | `src/pyramid.js` core: grid, save, claim/lose, coverage, raised-step drawing, stairs; outposts replaced | Claude |
 | 3 | Central Flame levels to 20, max set by Barricade, look change every 5 levels | GPT (Claude reviews) |
 | 4 | Per-square buildings: walls, pylons, watchtowers (camp code made reusable in step 2) | GPT |

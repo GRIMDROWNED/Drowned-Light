@@ -31,12 +31,13 @@
     mouthFor = G.save.difficulty;
     const wet = (x, y) => DL.World.waterVal(x, y) < 0.36, den = DL.Den ? DL.Den.spot() : { x: 1e9, y: 0 };
     for (let k = 0; k < 60 && !mouth; k++) {
-      const a = -0.8 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.13, x = Math.cos(a) * C.dist, y = Math.sin(a) * C.dist;
+      const a = -0.8 + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.13, q = DL.Camp.onSquare(a, C.dist), x = q.x, y = q.y;
       let dry = !wet(x, y) && !wet(x, y - 40) && dist(x, y, den.x, den.y) > 800;
       for (let i = 0; i < 8 && dry; i++) dry = !wet(x + Math.cos((i / 8) * TAU) * 120, y - 30 + Math.sin((i / 8) * TAU) * 120);
       if (dry) mouth = { x: Math.round(x), y: Math.round(y) };
     }
-    return mouth || (mouth = { x: Math.round(Math.cos(-0.8) * C.dist), y: Math.round(Math.sin(-0.8) * C.dist) });
+    const q = DL.Camp.onSquare(-0.8, C.dist);
+    return mouth || (mouth = { x: Math.round(q.x), y: Math.round(q.y) });
   };
   const mound = () => { const m = Cave.mouth(); return { x: m.x, y: m.y - 40 }; };
   const door = () => { const m = Cave.mouth(); return { x: m.x + DOOR.x, y: m.y + DOOR.y }; };
