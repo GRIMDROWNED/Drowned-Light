@@ -97,6 +97,22 @@ with enough treads for the tallest shown drop, then use matching tread sections 
 flights. The art pass must fit the existing opening and climb rules, rather than changing them
 to fit a picture. Record the foot/landing anchors in the cutter.
 
+### East and west stairs, redo (added by Claude, 2026-11-03)
+
+The first east/west stairs were drawn with visible height, but the camera never shows a side edge's wall,
+so they looked stuck on. Until the redo, the game turns the north flight on its side. Prompt:
+
+> Seen from straight above and slightly from the south, the same broad weathered stone staircase as the
+> approved north stair, but running DOWN toward the RIGHT side of the image (east). The image is wider than
+> tall, about 2 : 1. The top landing is a flat paved slab at the LEFT edge; each lower step is a narrow
+> vertical band further to the right, and only the flat tops of the steps show. No step faces, no wall
+> face, no side view. Low side walls run along the top and bottom edges of the flight, made of the same
+> pale coping blocks. Same stone, moss and warm palette as the north and south stairs, light from the upper
+> left, isolated on pure magenta, no ground or shadow.
+
+For the west stair use the same prompt with "toward the LEFT side (west)" and the landing at the RIGHT edge;
+keep the light from the upper left rather than mirroring.
+
 ## 3. Claimed-square marker
 
 Use a **small unlit brazier** as the first option; the game already animates the fire separately.

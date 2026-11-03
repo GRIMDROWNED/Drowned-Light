@@ -375,6 +375,10 @@
     for (let i = 0; i < 4; i++) { c.fillStyle = i % 2 ? "#7a705c" : "#9a8f76"; c.fillRect(sx, T + i * 5, P.stairW, 5); }
   }
   // An east or west edge: lip and shadow line along it, and the stairs' treads crossing it.
+  // Robert's east/west stairs (2026-11-03) are drawn with height, which the overhead camera never shows on a side edge,
+  // so they read as stuck on (Robert: "This looks wrong"). Off until top-down side stairs are drawn (Robert chose new art);
+  // meanwhile the north flight is turned on its side. The files stay.
+  const SIDE_STAIR_ART = false;
   function rimV(c, X, T, dx) {
     const img = dx === 1 ? ART.east : ART.west;
     if (img) strip(c, img, dx === 1 ? X - 9 : X, T, 13, CELL, 13, true);
@@ -383,10 +387,16 @@
       c.fillStyle = "rgba(0,0,0,0.5)"; c.fillRect(X + (dx === 1 ? 4 : -3), T, 3, CELL);
     }
     const sy = T + HALF - P.stairW / 2, x0 = dx === 1 ? X - 16 : X;
-    const st = dx === 1 ? ART.stairE : ART.stairW;
+    const st = SIDE_STAIR_ART ? (dx === 1 ? ART.stairE : ART.stairW) : null;
     if (st) { // the flight runs down and away across the edge: its landing (a third of it) on this square
       const h = P.stairW + 10, w = h * st.width / st.height, edge = dx === 1 ? X + 4 : X;
       return c.drawImage(st, dx === 1 ? edge - w * 0.3 : edge - w * 0.7, sy - 5, w, h);
+    }
+    if (ART.stairN) { // meanwhile: the north flight (seen from above) turned to run down to the east or west
+      const w = P.stairW + 16, h = w * ART.stairN.height / ART.stairN.width, edge = dx === 1 ? X + 4 : X;
+      c.save(); c.translate(edge, sy + P.stairW / 2); c.rotate(dx === 1 ? Math.PI / 2 : -Math.PI / 2);
+      c.drawImage(ART.stairN, -w / 2, 16 - h, w, h);
+      return c.restore();
     }
     for (let i = 0; i < 4; i++) { c.fillStyle = i % 2 ? "#7a705c" : "#9a8f76"; c.fillRect(x0 + i * 5, sy, 5, P.stairW); }
   }
