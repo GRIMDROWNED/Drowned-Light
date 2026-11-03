@@ -207,15 +207,13 @@
   };
 
   G.newGame = function (kit, difficulty, attackMode) {
-    const muted = G.save.muted, terrain = G.save.terrain;
+    const muted = G.save.muted;
     G.save = G.defaultSave();
     G.save.muted = muted;
-    G.save.terrain = terrain; // the Land setting carries over to new games
     G.save.kit = kit;
     G.save.difficulty = difficulty;
     G.save.attackMode = attackMode === "manual" ? "manual" : "auto";
     W.chunks.clear(); // the land is regenerated for the new difficulty
-    DL.Terrain.reset();
     G.persist();
     G.begin();
   };
@@ -606,7 +604,6 @@
     W.collide(p, 10);
     collideCamp(p, 10);
     DL.Finale.collide(p);
-    DL.Terrain.block(p); // cliffs, in the Four heights land (src/terrain.js)
 
     // Combat and mining. Auto mode fights the nearest Drowned, or mines a supply node you stand by
     // when none are near. Manual mode keeps them apart: Attack strikes where you aim (mouse, or the
@@ -1147,7 +1144,6 @@
       W.collide(a, a.def.radius * 0.6);
       collideCamp(a, a.def.radius * 0.6);
       if (!a.def.king) DL.Finale.collide(a);
-      DL.Terrain.block(a);
     }
     G.enemies = G.enemies.filter((e) => !e.removed);
   }
