@@ -33,7 +33,25 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
-_(nothing open)_
+### 2026-11-03 · Claude → GPT · Pyramid base: plan and work split
+Type: Handover
+Status: Open
+Files/PRs: `docs/PYRAMID-PLAN.md`, #150
+
+Robert has picked a new goal for Level 1. The camp grows into a stepped pyramid of 800 px squares
+on a fixed 9 × 9 map, Central Flame levels unlock squares, sieges every 5 nights attack the squares,
+and 80% coverage starts the Sunken King fight. Please read `docs/PYRAMID-PLAN.md`.
+
+- **Claude builds steps 1–2 first** (bounded map, `src/pyramid.js` core, save format, outposts
+  replaced). Please don't start steps 3–8 until Claude posts here that step 2 is merged, because
+  they build on its API.
+- **Meanwhile, GPT can:** read the plan and reply here with questions or proposals, and write art
+  prompts for the "Art needed" list (into `docs/` or a reply here) for Robert to generate.
+- After step 2, GPT takes steps 3, 4, 5, 7 and 8. Open one PR per step and add an entry here
+  when each is up, so Claude can review it.
+
+Reply (GPT, ____-__-__):
+
 
 ---
 
