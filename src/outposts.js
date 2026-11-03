@@ -138,11 +138,23 @@
       else L.push({ x: o.x, y: o.y - 20, r: 30, s: 0.5, col: "255,80,30", a: 0.4, flick: 1 });
     }
   };
+  const CLAIM_FIRE = 42; // px from the claim brazier's foot up to its coals
   // Into the y-sorted scene: the ring of stakes and the brazier (a drawn outpost replaces both once it's in).
   Outposts.push = function (list, c, t, view, sprite, fire, bar) {
     DL.Pyramid.pushBuildings(list, c, t, view, sprite, fire);
     for (const o of G.outposts) {
       if (o.x < view.left - 200 || o.x > view.right + 200 || o.y < view.top - 200 || o.y > view.bottom + 200) continue;
+      const claim = DL.Art.sprites.claimBrazier; // Robert's claim brazier and banner (tools/cut_pyramid.py) mark a held square
+      if (claim) {
+        if (DL.Art.sprites.claimBanner) list.push({ y: o.y - 8, f: () => sprite(c, "claimBanner", o.x + 30, o.y - 4) });
+        list.push({ y: o.y, f: () => {
+          sprite(c, "claimBrazier", o.x, o.y + 4);
+          const top = o.y + 4 - CLAIM_FIRE;
+          if (o.lit) fire(c, o.x, top, 1.7 + (o.hitT > 0 ? -0.3 : 0), t);
+          if (o.lit && o.hp < o.max) bar(c, o.x, top - 46, 30, o.hp / o.max, "#ffb35a");
+        } });
+        continue;
+      }
       const big = DL.Art.sprites.outpost; // the drawn outpost brings its own stakes
       if (!big) for (let i = 0; i < 10; i++) {
         const a = (i / 10) * Math.PI * 2 + 0.3, x = o.x + Math.cos(a) * 58, y = o.y + Math.sin(a) * 40;

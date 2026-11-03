@@ -28,6 +28,10 @@ POSES_A = ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '10_at
 POSES_B = ['04_walk', '05_walk', '06_walk', '07_walk', '11_hurt', '12_death']
 TWELVE_FILES = [n + '.png' for n in sorted(POSES_A + POSES_B)]
 GRIDS = {
+    # the Pyramid Champion (barracks defender): sheet A is front, back, right and three side walk frames;
+    # sheet B is wind-up, strike, shield bash, hurt, kneeling defeat and a front guard stance
+    'pyramid-champion/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '04_walk', '05_walk', '06_walk']),
+    'pyramid-champion/poses-b.png': (3, 2, ['08_attackA', '09_attackB', '10_attackC', '11_hurt', '12_death', '13_guard']),
     'swarming-revenant/poses-a.png': (3, 2, POSES_A),
     'swarming-revenant/poses-b.png': (3, 2, POSES_B),
     'lantern-reaver/poses-a.png': (3, 2, POSES_A),
@@ -184,6 +188,11 @@ ROSE_H = 368  # the Deadly Rose, cut at res 4: drawn 92 art px tall standing (x0
 ICE_MAGE_H = 104  # the Frostweaver, hat and staff tip included: the body about the other knights' height (res 2)
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
 SETS = {
+    # the Pyramid Champion: broad and armoured, a little taller than the Lantern Knight (shown at 0.85x, DL.PYRAMID.champion.scale)
+    'pyramid-champion': ('pyramid-champion', 'pyramid-champion/01_front.png', 88, 1, {
+        'pyramid-champion/01_front.png': 'front', 'pyramid-champion/02_back.png': 'back', 'pyramid-champion/03_right.png': 'right',
+        'pyramid-champion/08_attackA.png': 'attackA', 'pyramid-champion/09_attackB.png': 'attackB', 'pyramid-champion/10_attackC.png': 'attackC',
+        'pyramid-champion/11_hurt.png': 'side/hurt', 'pyramid-champion/12_death.png': 'side/death', 'pyramid-champion/13_guard.png': 'guard'}),
     'lantern-knight': ('lantern-knight', 'knight-front.png', 80, 3, {
         'knight-front.png': 'front',
         'knight-back.png': 'back',
@@ -346,6 +355,12 @@ SETS = {
 # Frames come out on one shared canvas (numbered prefix1, prefix2, ...); put the printed foot point
 # in that unit's `feet` in src/sprites.js.
 SHEETS = {
+    # the Pyramid Champion's side walk has three frames (the GRIDS strip), played 1-2-3-2 (src/sprites.js)
+    'pyramid-champion': [
+        ('pyramid-champion/walk-side-4.png', 3, 1, 88, 'side/walk'),
+        ('pyramid-champion/walk-front.png', 4, 1, 88, 'walkF'),
+        ('pyramid-champion/walk-back.png', 4, 1, 88, 'walkB'),
+    ],
     # the Frostweaver's side walk (the four walk cells of his poses-b sheet, strung into a strip by the GRIDS step), front and back walks
     'ice-mage': [('ice-mage/walk-side-4.png', 4, 1, 102, 'side/walk'), ('ice-mage/walk-front.png', 4, 1, 104, 'walkF'),
                  ('ice-mage/walk-back.png', 4, 1, 103, 'walkB')],

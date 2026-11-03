@@ -767,6 +767,7 @@
     sh.blackguard = buildSheet({ pal: d({ cloth: "#4a5559", clothMd: "#36424a", metal: "#2c3840", metalHi: "#55707a" }), weapon: "sword", offhand: "tower", bulk: 2, drips: 10, seed: 26 });
     sh.hexbearer = buildSheet({ pal: d({ cloth: "#8d9896" }), weapon: "staff", offhand: "lantern", torn: true, drips: 14, seed: 28 });
     sh.boneHound = Art.applyFrames("boneHound", houndSheet());
+    sh.pyrChampion = Art.applyFrames("pyrChampion", kindleSheet()); // blank until drawn: then src/render.js uses the Lantern Knight
     sh.derek = Art.applyFrames("derek", golemSheet());
     sh.bell = Art.applyFrames("bell", bellSheet());
     sh.kindle = Art.applyFrames("kindle", kindleSheet());

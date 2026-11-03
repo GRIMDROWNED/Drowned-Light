@@ -75,4 +75,17 @@ if os.path.exists(sheet):
         coal = (mid[..., 3] > 0) & (mid[..., :3].max(-1) < 75) & (mid[..., :3].max(-1) - mid[..., :3].min(-1) < 18)
         rows = np.where(coal.sum(1) >= 4)[0]
         print('flame%d' % lvl, im.size, 'coals top at', (h - rows.min()) / 2 if len(rows) else None, 'world px above bottom')
+# The claimed-square marker: Robert drew both the brazier and the banner, so a square shows both. name: (file, width or None, height)
+for name, (prop, width, height) in {'claim-brazier': ('claimBrazier', 64, None), 'claim-banner': ('claimBanner', None, 92)}.items():
+    path = os.path.join(SRC, name + '.png')
+    if not os.path.exists(path): continue
+    img = Image.open(path)
+    a = np.asarray(img.convert('RGB')).astype(int)
+    fg = key_mask(a, tol=120, fringe=2)
+    ys, xs = np.where(fg)
+    k = width / (xs.max() - xs.min() + 1) if width else height / (ys.max() - ys.min() + 1)
+    im = cut_keyed(img, k, fringe=2)
+    im.save(os.path.join(OUT, '..', 'props', prop + '.png'))
+    outs.append(im)
+    print(prop, im.size)
 contact(outs, os.path.join(SRC, 'contact.png'))
