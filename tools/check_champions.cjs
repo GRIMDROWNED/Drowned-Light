@@ -12,8 +12,8 @@ function world(level = 1) {
   let guest = false;
   const hits = [];
   const G = DL.Game = {
-    save: { up: { flame: 10 }, pyramid: { sq: { "1,0": { b: { barracks: level } } } } },
-    eid: 0, cave: null, enemies: [], effects: [], outposts: [{ gx: 1, gy: 0, lit: true }],
+    save: { up: { flame: 10 }, pyramid: { sq: { "1,1": { b: { barracks: level } } } } },
+    eid: 0, cave: null, enemies: [], effects: [], outposts: [{ gx: 1, gy: 1, lit: true }],
     isGuest: () => guest,
     hitEnemy: (e, amount) => { e.hp -= amount; hits.push([e, amount]); },
     canAfford: () => true, pay() {}, persist() {},
@@ -24,21 +24,21 @@ function world(level = 1) {
   vm.runInContext(fs.readFileSync(path.join(root, "src/camp.js"), "utf8"), context);
   vm.runInContext(fs.readFileSync(path.join(root, "src/pyramid.js"), "utf8"), context);
   const Py = DL.Pyramid, C = DL.PYRAMID.champion;
-  Py.setHeld(["1,0"]);
+  Py.setHeld(["1,1"]);
   return { DL, G, Py, C, hits, guest: (value) => { guest = value; } };
 }
 
 // Barracks follow the normal square purchase path and preserve existing siege HP and defenses.
 {
   const { G, Py } = world(0);
-  G.save.pyramid.sq["1,0"] = { hp: 230, b: { wall: 2, tower: 1 } };
-  const actor = { x: 800, y: 0 };
-  assert.equal(Py.buildLock(1, 0, "barracks", actor), null);
-  assert.equal(Py.buildHost(1, 0, "barracks", actor), true);
-  assert.equal(Py.buildings(1, 0).barracks, 1);
-  assert.equal(Py.buildings(1, 0).wall, 2);
-  assert.equal(G.save.pyramid.sq["1,0"].hp, 230);
-  assert.ok(Py.layout(1, 0).barracks);
+  G.save.pyramid.sq["1,1"] = { hp: 230, b: { wall: 2, tower: 1 } };
+  const actor = { x: 800, y: 800 };
+  assert.equal(Py.buildLock(1, 1, "barracks", actor), null);
+  assert.equal(Py.buildHost(1, 1, "barracks", actor), true);
+  assert.equal(Py.buildings(1, 1).barracks, 1);
+  assert.equal(Py.buildings(1, 1).wall, 2);
+  assert.equal(G.save.pyramid.sq["1,1"].hp, 230);
+  assert.ok(Py.layout(1, 1).barracks);
 }
 
 // Building a barracks doesn't instantly create an army, and production stops at the building's capacity.
@@ -94,7 +94,7 @@ for (const mind of [1, -0.01]) {
   Py.updateChampions(C.train[2] * 2); assert.equal(G.champions.length, 0);
   G.outposts[0].lit = true;
   Py.updateChampions(C.train[2]); assert.equal(G.champions.length, 1);
-  delete G.save.pyramid.sq["1,0"]; Py.setHeld([]);
+  delete G.save.pyramid.sq["1,1"]; Py.setHeld([]);
   assert.equal(Py.championRows().length, 0);
   Py.updateChampions(1); assert.equal(G.champions.length, 0);
 }

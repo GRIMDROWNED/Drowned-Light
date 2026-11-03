@@ -19,6 +19,20 @@
   const Py = (DL.Pyramid = {});
   const key = (gx, gy) => gx + "," + gy;
   let held = new Set(["0,0"]);  // the squares the knights hold (the camp always)
+  let raised = new Set(["0,0"]); // those, and the stairway squares of the cross that are up with them
+  /* The cross of stairways (gx = 0 or gy = 0, not the camp): its squares are no fire squares (Robert, 2026-11-03);
+     they can't be claimed and hold no fire, buildings or beds. One rises, as plain paved stairway land, once a fire
+     square beside it (across the stairway) is held. */
+  const onCross = (gx, gy) => (gx === 0) !== (gy === 0);
+  Py.onCross = onCross;
+  function raise() {
+    raised = new Set(held);
+    for (let r = 1; r <= RINGS; r++) for (const [gx, gy] of [[0, r], [0, -r], [r, 0], [-r, 0]]) {
+      const side = gx === 0 ? [[1, gy], [-1, gy]] : [[gx, 1], [gx, -1]];
+      if (side.some(([x, y]) => held.has(key(x, y)))) raised.add(key(gx, gy));
+    }
+  }
+  Py.raised = (gx, gy) => raised.has(key(gx, gy));
   const shown = new Map();       // the height each square is drawn at, easing toward its real height
 
   /* ---------------- grid ---------------- */
@@ -28,22 +42,23 @@
   Py.inGrid = (gx, gy) => Py.ring(gx, gy) <= RINGS;
   Py.has = (gx, gy) => held.has(key(gx, gy));
   Py.count = () => held.size - 1; // claimed squares, not counting the camp
-  Py.total = () => (2 * RINGS + 1) * (2 * RINGS + 1) - 1;
+  Py.total = () => (2 * RINGS + 1) * (2 * RINGS + 1) - 1 - 4 * RINGS; // fire squares only, not the cross
   Py.coverage = () => Py.count() / Py.total();
   Py.each = (fn) => { for (const k of held) { const [gx, gy] = k.split(",").map(Number); fn(gx, gy); } };
   // How many squares the Central Flame lets the knights hold.
   Py.limit = () => Math.max(0, P.perFlame * ((G.save.up.flame || 1) - 1));
   // Levels a held square stands above the marsh: the camp is as high as the flame's level, each ring out one lower.
-  Py.height = (gx, gy) => (Py.has(gx, gy) ? Math.max(0, (G.save.up.flame || 1) - Py.ring(gx, gy)) : 0);
+  Py.height = (gx, gy) => (raised.has(key(gx, gy)) ? Math.max(0, (G.save.up.flame || 1) - Py.ring(gx, gy)) : 0);
 
   /* ---------------- claiming ---------------- */
   const SIDES = [[0, -1], [1, 0], [0, 1], [-1, 0]];
-  const touches = (gx, gy) => SIDES.some(([dx, dy]) => Py.has(gx + dx, gy + dy));
+  // Next to raised land (a fire square, a raised stairway square or the camp), or a first-ring corner off the camp's corner.
+  const touches = (gx, gy) => (Math.abs(gx) === 1 && Math.abs(gy) === 1) || SIDES.some(([dx, dy]) => Py.raised(gx + dx, gy + dy));
   // The unclaimed square a knight at (x, y) could claim, standing near its middle: next to one the knights hold.
   Py.claimable = function (x, y) {
     if (G.cave) return null;
     const { gx, gy } = Py.cell(x, y), c = Py.center(gx, gy);
-    if (!Py.inGrid(gx, gy) || Py.has(gx, gy) || !touches(gx, gy)) return null;
+    if (!Py.inGrid(gx, gy) || onCross(gx, gy) || Py.has(gx, gy) || !touches(gx, gy)) return null;
     if (Math.abs(x - c.x) > P.claimR || Math.abs(y - c.y) > P.claimR) return null;
     return { gx, gy, x: c.x, y: c.y };
   };
@@ -56,7 +71,7 @@
   };
   // The host claims a square (a friend's claim comes as an "outpost" event, src/net.js).
   Py.claimHost = function (gx, gy, mine) {
-    if (!Py.inGrid(gx, gy) || Py.has(gx, gy) || !touches(gx, gy)) return false;
+    if (!Py.inGrid(gx, gy) || onCross(gx, gy) || Py.has(gx, gy) || !touches(gx, gy)) return false;
     const lock = Py.lock(gx, gy);
     if (lock) { if (mine) { sfx("deny"); say(lock + ".", "warn"); } return false; }
     G.pay(Py.cost(gx, gy));
@@ -95,11 +110,13 @@
       for (const [, , x, y] of G.save.outposts) { const { gx, gy } = Py.cell(x, y); if (Py.inGrid(gx, gy) && (gx || gy)) s.sq[key(gx, gy)] = 1; }
       G.save.outposts = [];
     }
+    for (const k of Object.keys(s.sq)) { const [gx, gy] = k.split(",").map(Number); if (onCross(gx, gy)) delete s.sq[k]; } // the cross is stairway now
     Py.setHeld(Object.keys(s.sq));
   };
   // The squares held (from the save on the host, from a snapshot on a friend's device).
   Py.setHeld = function (keys) {
-    held = new Set(["0,0", ...keys]);
+    held = new Set(["0,0", ...keys.filter((k) => { const [gx, gy] = k.split(",").map(Number); return !onCross(gx, gy); })]);
+    raise();
     Py.ver++;
   };
   Py.ver = 0; // bumped whenever the held squares change, so world objects re-check whether they show
@@ -110,7 +127,7 @@
      are hidden, and each bed has its own few (World.gen makes them, o.bed = the square's key). The camp square
      keeps its ground and nodes as before. */
   Py.beds = function (gx, gy) {
-    if (!(gx || gy) || !Py.inGrid(gx, gy)) return [];
+    if (!(gx || gy) || onCross(gx, gy) || !Py.inGrid(gx, gy)) return [];
     const c = Py.center(gx, gy), B = P.beds;
     return B.at.map(([ax, ay], i) => ({
       x: c.x + ax * B.off + (DL.hash(gx, gy, 3100 + i) - 0.5) * B.jitter,
@@ -121,14 +138,14 @@
   // Paved: on a held square (not the camp's) and outside its marsh beds.
   Py.paved = function (x, y) {
     const { gx, gy } = Py.cell(x, y);
-    return !!(gx || gy) && Py.has(gx, gy) && !inBed(x, y, gx, gy);
+    return !!(gx || gy) && raised.has(key(gx, gy)) && !inBed(x, y, gx, gy);
   };
   // Whether a world object is hidden: wild nodes under a held square's paving, and bed nodes of unheld squares.
   Py.hides = function (o) {
     if (o.bed) return !held.has(o.bed);
     if (!o.wild) return false;
     const { gx, gy } = Py.cell(o.x, o.y);
-    return !!(gx || gy) && held.has(key(gx, gy));
+    return !!(gx || gy) && raised.has(key(gx, gy));
   };
 
   /* ---------------- buildings ---------------- */
@@ -311,12 +328,12 @@
   /* ---------------- drawing ---------------- */
   // Each square's drawn height eases toward its real one, so a square (or the whole pyramid) rises.
   Py.update = function (dt) {
-    for (const k of held) if (!shown.has(k)) shown.set(k, 0);
+    for (const k of raised) if (!shown.has(k)) shown.set(k, 0);
     for (const [k, v] of shown) {
       const [gx, gy] = k.split(",").map(Number), h = Py.height(gx, gy);
       if (v === h) continue;
       const nv = v < h ? Math.min(h, v + dt * P.riseSpeed) : Math.max(h, v - dt * P.riseSpeed);
-      if (nv <= 0 && !held.has(k)) shown.delete(k); else shown.set(k, nv);
+      if (nv <= 0 && !raised.has(k)) shown.delete(k); else shown.set(k, nv);
     }
     Py.updateChampions(dt);
   };
@@ -343,7 +360,6 @@
         lane(c, x + a, y - P.stairW / 2, HALF - a, P.stairW, true); lane(c, L, y - P.stairW / 2, HALF - a, P.stairW, true);
       } else if (gx === 0 || gy === 0) {
         if (gx === 0) lane(c, x - P.stairW / 2, T, P.stairW, CELL, false); else lane(c, L, y - P.stairW / 2, CELL, P.stairW, true);
-        landing(c, x, y); // the square's fire stands on a round landing in the stairway
       }
     }
     for (let gy = g0y; gy <= g1y; gy++) for (let gx = g0x; gx <= g1x; gx++) {
@@ -369,16 +385,6 @@
     if (!m) pats.set(c, (m = {}));
     if (!m[n]) { m[n] = c.createPattern(img, "repeat"); m[n].setTransform(new DOMMatrix().scale(2)); }
     return m[n];
-  }
-  // A round flagstone landing with a kerb, where a square's fire stands in the stairway.
-  function landing(c, x, y) {
-    const flags = pattern(c, "campFlags");
-    c.beginPath(); c.arc(x, y, 92, 0, Math.PI * 2);
-    c.fillStyle = "rgba(38,32,25,0.95)"; c.fill();
-    c.beginPath(); c.arc(x, y, 84, 0, Math.PI * 2);
-    c.fillStyle = flags || "#5a5446"; c.fill();
-    c.fillStyle = "rgba(0,0,0,0.15)"; c.fill();
-    c.strokeStyle = "rgba(190,175,140,0.3)"; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 90, Math.PI * 1.1, Math.PI * 1.9); c.stroke();
   }
   function paveSquare(c, gx, gy, L, T) {
     const flags = pattern(c, "campFlags"), marsh = pattern(c, "grass");
