@@ -77,6 +77,7 @@
         if (frHere && DL.Fred.clears(x, y)) continue;
         if (wnHere && DL.Wyvern.clears(x, y)) continue;
         if (fnHere && DL.Finale.clears(x, y)) continue;
+        if (DL.Terrain.bare(x, y)) continue; // nothing grows on a cliff's rock face (Four heights land, src/terrain.js)
         objs.push(this.makeObj(type, x, y, `${cx},${cy},${i}`, ozi, DL.hash(cx, cy, i * 5 + 4)));
       }
       // The blooms of this chunk's grove that stand inside it.
@@ -274,6 +275,7 @@
         }
       }
       const f = 1 - depth * 0.35;
+      if (DL.Terrain.on()) [r, g, b] = DL.Terrain.shade(x, y, [r, g, b]); // levels, cliffs and ramps (src/terrain.js)
       return [Math.max(0, r * f), Math.max(0, g * f), Math.max(0, b * f * (1 + depth * 0.25))];
     },
   });

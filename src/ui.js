@@ -81,6 +81,11 @@
       G.persist();
       UI.updateCombatLabel();
     });
+    $("btnTerrain").addEventListener("click", () => {
+      if (DL.Net && DL.Net.role) { UI.toast("The land can only be changed outside co-op."); return; } // friends share the host's land
+      DL.Terrain.toggle();
+      UI.updateCombatLabel();
+    });
     $("btnPause").addEventListener("click", () => UI.pause());
     $("campBtn").addEventListener("click", () => UI.campAction());
 
@@ -365,6 +370,7 @@
 
   UI.updateCombatLabel = function () {
     $("btnCombat").textContent = "Combat: " + (DL.Game.save.attackMode === "manual" ? "Manual attack" : "Auto-attack");
+    $("btnTerrain").textContent = DL.Terrain.label();
   };
 
   UI.updateViewLabel = function () {
