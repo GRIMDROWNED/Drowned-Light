@@ -342,8 +342,9 @@
      2. The Central Flame needs nights survived (FLAME_NIGHTS), and every building's levels hang off the Flame.
      3. Kit levels are locked in bands behind camp structures (KIT_BANDS). */
   DL.COST_SCALE = 2;
-  // Keep the original 1 / 3 / 6 / 10 nights at levels 2–5, then continue the same progression.
-  DL.FLAME_NIGHTS = Array.from({ length: DL.FLAME.max + 1 }, (_, l) => l * (l - 1) / 2);
+  // The original 1 / 3 / 6 / 10 nights at levels 2–5, then 2 more nights per level (Robert, 2026-11-03):
+  // flame 10 at 20 nights, 17 (enough squares for 80% of the map) at 34, 20 at 40.
+  DL.FLAME_NIGHTS = Array.from({ length: DL.FLAME.max + 1 }, (_, l) => (l <= 5 ? l * (l - 1) / 2 : 10 + 2 * (l - 5)));
   DL.KIT_BANDS = [
     { upTo: 5, req: { forge: 1 } },
     { upTo: 10, req: { forge: 2, flame: 3 } },
