@@ -93,6 +93,148 @@
     held = new Set(["0,0", ...keys]);
   };
 
+  /* ---------------- buildings ---------------- */
+  // A numeric 1 is an older held square. Widen it only when adding a building, preserving siege HP.
+  Py.cleanBuildings = function (b) {
+    const out = {};
+    for (const [id, def] of Object.entries(P.build)) out[id] = Math.max(0, Math.min(def.max, Math.floor(Number(b && b[id]) || 0)));
+    return out;
+  };
+  Py.buildings = function (gx, gy) {
+    const o = G.isGuest() && G.outposts.find((q) => q.gx === gx && q.gy === gy);
+    const s = G.save.pyramid && G.save.pyramid.sq[key(gx, gy)];
+    return Py.cleanBuildings(o ? o.b : s && s.b);
+  };
+  Py.buildCost = (gx, gy, id) => {
+    const def = P.build[id], lv = Py.buildings(gx, gy)[id];
+    return def && lv < def.max ? DL.scaleCost({ ...def.costs[lv] }) : null;
+  };
+  Py.buildLock = function (gx, gy, id, actor = G.player) {
+    if (!Number.isInteger(gx) || !Number.isInteger(gy) || !Py.inGrid(gx, gy) || !(gx || gy) || !Py.has(gx, gy)) return "Build at a square you hold";
+    const c = Py.center(gx, gy);
+    if (G.cave || !actor || actor.down || actor.downT > 0 || !Number.isFinite(actor.x) || !Number.isFinite(actor.y) || DL.dist(actor.x, actor.y, c.x, c.y) > P.buildR) return "Stand at this square's fire to build";
+    const def = Object.prototype.hasOwnProperty.call(P.build, id) && P.build[id];
+    if (!def) return "Unknown building";
+    const lv = Py.buildings(gx, gy)[id];
+    if (lv >= def.max) return "Complete";
+    if (G.save.up.flame < def.reqFlame[lv]) return `Needs Central Flame ${def.reqFlame[lv]}`;
+    if (!G.canAfford(Py.buildCost(gx, gy, id))) return "Not enough in the camp's stash";
+    return null;
+  };
+  Py.buildHost = function (gx, gy, id, actor = G.player) {
+    if (G.isGuest() || Py.buildLock(gx, gy, id, actor)) return false;
+    const b = Py.buildings(gx, gy), cost = Py.buildCost(gx, gy, id), k = key(gx, gy);
+    G.pay(cost);
+    const s = G.save.pyramid.sq[k];
+    const state = typeof s === "object" && s ? s : (G.save.pyramid.sq[k] = {});
+    b[id]++;
+    state.b = b;
+    G.persist();
+    DL.Outposts.reset();
+    sfx("build");
+    const message = `${P.build[id].name} level ${b[id]} built on square ${gx}, ${gy}.`;
+    say(message, "good"); DL.Net.say(message, "good");
+    return true;
+  };
+  Py.build = function (id) {
+    const o = G.atOutpost;
+    if (!o || Py.buildLock(o.gx, o.gy, id)) return false;
+    if (G.isGuest()) { DL.Net.event({ t: "squareBuild", gx: o.gx, gy: o.gy, id }); return true; }
+    return Py.buildHost(o.gx, o.gy, id);
+  };
+
+  // Camp's four corner towers and gate-side pylons, translated to this square's centre.
+  Py.layout = function (gx, gy) {
+    const c = Py.center(gx, gy), b = Py.buildings(gx, gy), r = P.wallR, corner = r - 56;
+    const towers = [[-1, -1], [1, -1], [-1, 1], [1, 1]].slice(0, DL.Camp.towerCount(b.tower)).map(([x, y]) => ({ x: c.x + x * corner, y: c.y + y * corner }));
+    const gates = [[0, -1, -96], [0, 1, 96], [1, 0, -96], [-1, 0, 96], [0, -1, 96], [0, 1, -96]];
+    const pylons = gates.slice(0, b.pylon * 2).map(([x, y, along]) => ({ x: c.x + x * (r - 20) - y * along, y: c.y + y * (r - 20) + x * along }));
+    return { ...c, r, b, towers, pylons, barracks: b.barracks ? { x: c.x - 100, y: c.y + 115 } : null };
+  };
+  Py.refreshBuildings = function (o) {
+    o.b = Py.buildings(o.gx, o.gy);
+    const L = Py.layout(o.gx, o.gy), old = o.pylons || [];
+    o.pylons = L.pylons.map((q, i) => Object.assign(old[i] || { kind: "pylon", square: true, hp: P.pylonHp, max: P.pylonHp, lit: true, hitT: 0, rad: 8 }, q));
+    o.towerCd = o.towerCd || [];
+  };
+  Py.pylons = () => G.outposts.flatMap((o) => o.pylons || []);
+  Py.collide = function (ent, r) {
+    if (G.cave) return;
+    for (const o of G.outposts) {
+      if (DL.Camp.sq(ent.x - o.x, ent.y - o.y) > P.wallR + r + 10) continue;
+      const L = Py.layout(o.gx, o.gy);
+      if (L.b.wall) DL.Camp.collideSquareWalls(ent, r, o.x, o.y, P.wallR, P.gateHalf);
+      for (const q of [...L.towers.map((q) => ({ ...q, r: 14 })), ...(o.pylons || []).map((q) => ({ ...q, r: 6 }))]) {
+        const dx = ent.x - q.x, dy = ent.y - q.y, d = Math.hypot(dx, dy), m = q.r + r;
+        if (d > 0.01 && d < m) { ent.x = q.x + dx / d * m; ent.y = q.y + dy / d * m; }
+      }
+    }
+  };
+  Py.route = function (x, y, tx, ty) {
+    // Leave the square we stand in first; otherwise enter the nearest wall square along the route.
+    const sorted = G.outposts.filter((o) => o.b && o.b.wall).sort((a, b) => {
+      const ai = DL.Camp.sq(x - a.x, y - a.y) < P.wallR, bi = DL.Camp.sq(x - b.x, y - b.y) < P.wallR;
+      return (bi - ai) || (DL.dist(x, y, a.x, a.y) - DL.dist(x, y, b.x, b.y));
+    });
+    for (const o of sorted) {
+      if (!o.b || !o.b.wall) continue;
+      const q = DL.Camp.routeSquare(x, y, tx, ty, o.x, o.y, P.wallR, P.gateHalf);
+      if (q) return q;
+    }
+    return null;
+  };
+  Py.updateBuildings = function (dt) {
+    if (G.isGuest() || !G.night || G.cave) return;
+    for (const e of G.enemies) e.squareStakeT = Math.max(0, (e.squareStakeT || 0) - dt);
+    for (const o of G.outposts) {
+      const L = Py.layout(o.gx, o.gy);
+      if (L.b.wall) for (const e of G.enemies) {
+        if (e.removed || e.rise > 0 || e.def.fly || e.squareStakeT > 0) continue;
+        const x = e.x - o.x, y = e.y - o.y, along = Math.abs(x) >= Math.abs(y) ? y : x;
+        if (Math.abs(DL.Camp.sq(x, y) - P.wallR) > e.def.radius + 14 || Math.abs(along) < P.gateHalf) continue;
+        e.squareStakeT = P.wallEvery;
+        G.hitEnemy(e, P.wallDamagePerLevel * L.b.wall, Math.atan2(y, x), 0);
+      }
+      L.towers.forEach((t, i) => {
+        o.towerCd[i] = Math.max(0, (o.towerCd[i] || 0) - dt);
+        if (o.towerCd[i] > 0) return;
+        let enemy = null, best = P.towerRange;
+        for (const e of G.enemies) {
+          if (e.rise > 0 || e.dormant || e.removed) continue;
+          const d = DL.dist(t.x, t.y, e.x, e.y);
+          if (d < best) { enemy = e; best = d; }
+        }
+        if (!enemy) return;
+        o.towerCd[i] = P.towerEvery;
+        const y = t.y - (DL.Art.sprites.tower1 ? [0, 106, 112, 118][L.b.tower] : 56);
+        const a = Math.atan2(enemy.y - 20 - y, enemy.x - t.x);
+        G.projectiles.push({ x: t.x, y, vx: Math.cos(a) * P.towerSpeed, vy: Math.sin(a) * P.towerSpeed, life: 1.3, dmg: P.towerDamage + P.towerPerLevel * L.b.tower, hostile: false, kind: "bolt", col: "255,190,110" });
+      });
+    }
+  };
+  Py.buildingLights = function (L) {
+    for (const q of Py.pylons()) if (q.lit) L.push({ x: q.x, y: q.y - 40, r: P.pylonLight * G.diff().light, s: 1, col: "255,170,80", a: 0.85, flick: 1, kind: "human" });
+  };
+  Py.pushBuildings = function (list, c, t, view, sprite, fire) {
+    for (const o of G.outposts) {
+      if (o.x < view.left - CELL || o.x > view.right + CELL || o.y < view.top - CELL || o.y > view.bottom + CELL) continue;
+      const L = Py.layout(o.gx, o.gy);
+      if (L.b.wall) for (const q of DL.Camp.ring(P.wallR, P.wallStep)) {
+        const along = Math.abs(q.x) === P.wallR ? q.y : q.x;
+        if (Math.abs(along) < P.gateHalf) continue;
+        const x = o.x + q.x, y = o.y + q.y;
+        const side = Math.abs(q.x) === P.wallR, suffix = L.b.wall >= 3 ? "2" : "";
+        const name = side && DL.Art.sprites["palisadeSide" + suffix] ? "palisadeSide" + suffix : "palisade" + suffix;
+        list.push({ y, f: () => sprite(c, name, x, y + 2, q.x < 0) });
+      }
+      for (const q of L.towers) list.push({ y: q.y, f: () => sprite(c, "tower" + L.b.tower, q.x, q.y + 4) });
+      for (const q of o.pylons || []) list.push({ y: q.y, f: () => {
+        sprite(c, "pylon" + L.b.pylon, q.x, q.y + 4);
+        if (q.lit) fire(c, q.x, q.y - 70, 0.55, t);
+      } });
+    }
+  };
+
   /* ---------------- climbing ---------------- */
   const faceH = (d) => Math.min(P.maxFace, d) * P.face; // px of rock face for a drop of d levels
   // The drop across the edge of square (gx, gy) toward (dx, dy): its height minus the neighbour's (>0: a drop).
@@ -199,3 +341,4 @@
   /* ---------------- HUD ---------------- */
   Py.line = () => `${Py.count()} / ${Py.limit()} squares held · ${Math.round(Py.coverage() * 100)}% of the land (${Math.round(P.win * 100)}% wakes the Drowned Gate)`;
 })(window.DL);
+

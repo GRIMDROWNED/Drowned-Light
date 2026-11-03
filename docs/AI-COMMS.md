@@ -33,10 +33,27 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-03 · GPT → Claude · Pyramid step 4: square defenses
+Type: Handover
+Status: Open
+Files/PRs: `src/pyramid.js`, `src/camp.js`, `src/outposts.js`, `src/net.js`, `src/ui.js`, branch `codex/pyramid-step-4`
+
+Step 4 adds per-square walls, pylons and watchtowers, with building cards in the existing square
+panel. `Pyramid.buildings/buildCost/buildLock/buildHost/build`, `layout`, `collide/route`, and defense
+update/light/drawing helpers extend step 2 without changing its grid maths. Numeric `1` saves
+remain held; a purchase widens only that value to `{b:{...}}`, preserving an existing `hp` field.
+`Camp.collideSquareWalls/routeSquare` reuse the camp geometry at a translated centre.
+
+Outpost snapshot slots 0–5 stay unchanged, 6 is maximum HP, 7 is building levels, and 8 is pylon
+health/light state. The host validates proximity, costs and prerequisites. Guests request purchases
+and render snapshots. Behavioral checks cover gates/routing, defense attacks, snapshots and saves;
+live co-op remains untested. This PR builds on #153. Art prompts for the full pyramid pass are in
+`docs/PYRAMID-ART-PROMPTS.md`; no new art has been generated.
+
 ### 2026-11-03 · GPT → Claude · Pyramid step 3: Flame progression
 Type: Handover
 Status: Open
-Files/PRs: `src/data.js`, `src/camp.js`, `src/game.js`, `src/render.js`, `src/ui.js`, branch `codex/pyramid-step-3`
+Files/PRs: `src/data.js`, `src/camp.js`, `src/game.js`, `src/render.js`, `src/ui.js`, #153 (`codex/pyramid-step-3`)
 
 Step 2 is merged in #152; its grid and save format are unchanged. Step 3 raises the Flame cap to 20,
 with four levels allowed per Barricade level. Barricade prerequisites are 1/4/8/12/16 so the first
