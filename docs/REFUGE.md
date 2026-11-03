@@ -16,9 +16,9 @@ Status: **built on a branch for Robert to try (v0.15.203)**. Robert asked for it
 - The **refuge level is the Central Flame level** (1–20). Each level changes the fortress (table below). Losing flame
   levels in a siege shrinks it again.
 - The Central Flame stays at (0, 0). The camp's half-side `DL.WALL_R` is the outermost wall: 260 (levels 1–5),
-  300/340 (6–10), 470 (11–17), 540 (18–20).
-- **Terraces:** nested square walls, each one level of drop with Robert's stone face hanging below its south edge
-  (reusing `assets/sprites/pyramid/step-*.png`). They are **solid**; only stairs pass. Sanctum (flame platform) from
+  300/340 (6–10), 490 (11–17), 540 (18–20).
+- **Terraces:** nested square walls, each one level of drop (46 px face hanging below its south edge), drawn with
+  Robert's terrace picture (see "Drawn kit" below). They are **solid**; only stairs pass. Sanctum (flame platform) from
   level 4, district terrace from 6, outer terrace from 11.
 - **Stairs:** every wall has a central stair on each side (an avenue runs through all of them). The district terrace
   gets two more per side at level 9, the outer terrace two more per side at level 15: **12 stairs round the outside at
@@ -48,7 +48,7 @@ Status: **built on a branch for Robert to try (v0.15.203)**. Robert asked for it
 | 8 | Reinforced Walls | Corner bastions on the outermost wall |
 | 9 | Secondary Access | Two side stairs on every side of the district terrace |
 | 10 | Inner Ring | Sanctum 150 with coping, terrace 340, four banners; flame look 10 |
-| 11 | Outer Terrace | Outer terrace, half-side 470, central stairs |
+| 11 | Outer Terrace | Outer terrace, half-side 490, central stairs |
 | 12 | Defensive Expansion | Braziers on the district terrace corners; barracks level 2 |
 | 13 | Resource Network | Alchemy Station (placeholder), torches along the avenues |
 | 14 | Living Quarters | Survivor Quarters (placeholder), two more tents |
@@ -78,7 +78,9 @@ Positions depend only on the levels in `save.up`, so co-op peers see the same re
   there).
 - A built building always stands, even if the refuge is too small for it yet (it squeezes in at its scaled spot).
   With every building built (sandbox), levels 1–9 are crowded; normal play has far fewer buildings that early.
-- A refuge structure that finds no room waits for a bigger level (none do at present).
+- A refuge structure that finds no room waits for a bigger level. In normal play none do. With every building built
+  (sandbox) the Salvage Yard waits from level 7 to 11. At levels 14–17 the outer band is narrow, so the Survivor
+  Quarters may stand just south of the east avenue until the outer ring grows at 18.
 
 ## Save migration
 
@@ -98,10 +100,23 @@ Positions depend only on the levels in `save.up`, so co-op peers see the same re
   stairs), `src/world.js` (no water under the fortress), `src/finale.js`, `src/siege.js`, `src/ui.js` (switch, HUD,
   help text), `index.html`, `sw.js`.
 
+## Drawn kit (Robert's four pictures, 2026-11-03)
+
+Robert's pictures are in `/mnt/project-files/refuge/returned/` and cut by `tools/cut_refuge.py` into
+`assets/sprites/refuge/` (pieces keep their source crop boxes; `KIT` in `src/refuge.js` mirrors them, 0.3 world px per
+source px):
+
+- `foundation.png` (L1): the hearth's stone base, levels 1–3.
+- `plaza.png` (L2): the bordered plaza round the hearth at levels 2–3, and the stone plot under every building.
+- `low-*.png` (L3): the low walls, corners plus tiling runs, cut open at the four openings.
+- `terrace-*.png` (L4): every raised terrace (sanctum, district, outer): corners, tiling edge runs, the four stairs
+  (stretched only along the treads to each stair's width) and `terrace-floor.png`, the terrace paving.
+
+Nothing is flipped or stretched as a whole building. Missing pieces fall back to the coded flagstones and faces.
+
 ## Art manifest
 
-Reused now: stone faces `pyramid/step-*.png`, south stair `pyramid/stair-south.png`, avenue and N/E/W stairs
-`pyramid/stairway-lane.png`, flagstones `campFlags` / `campPaving`, every camp building, barracks1–3, tents, banners,
+Reused now: Robert's refuge kit above, avenue `pyramid/stairway-lane.png` (north–south), flagstones `campFlags` / `campPaving`, every camp building, barracks1–3, tents, banners,
 braziers, torches, palisade, towers, pylons, flame looks.
 
 Needed (prompts in `/mnt/project-files/art-prompts/refuge-prompts.md`; until then a hatched plot with the
@@ -118,7 +133,6 @@ name shows, which is the placeholder):
 | Research Archive | `refugeArchive` | ~76 × 72 |
 | Summoning Circle | `refugeCircle` | ~88 × 84 |
 | East/west avenue (treads running left-right) | `pyramid/avenue-east.png` | strip, 112 px tall |
-| Short north stair for terrace edges | `pyramid/stair-north-short.png` | 112 × 60 |
 | Corner bastion | `refugeBastion` | 48 × 48 + height |
 | Wall coping / battlement strip | `pyramid/coping-*.png` | strips |
 | Beacon brazier (sanctum corners) | `refugeBeacon` | ~30 × 60 |
@@ -129,6 +143,6 @@ name shows, which is the placeholder):
 - Co-op on two devices is untested (the switch and layout travel in `up`; champions are host-run as before).
 - Real gamepad untested for the new pause button (it is a plain menu button like Zoom).
 - Kindle travel between squares has nothing to travel to in fortress mode (only the gate at the end).
-- The E/W avenues use the stairway strip turned on its side, which reads like planks: needs its own art.
+- The E/W avenues are a plain paved road with kerbs for now; an east–west stair strip would look better.
 - If Robert later picks "fortress replaces only the camp", the grid comes back around a refuge capped at the centre
   square; the code for both is already here.

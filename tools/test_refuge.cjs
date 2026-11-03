@@ -42,7 +42,7 @@ for (let lv = 1; lv <= 20; lv++) for (const full of [true, false]) {
   for (const it of L.items) assert.ok(reach(it.x, it.y + 24), `${tag}: ${it.id} can be reached`);
   for (const k of DL.Refuge.BUILDINGS) if (L[k]) assert.ok(DL.Camp.sq(L[k].x, L[k].y) < R, `${tag}: ${k} inside the walls`);
   for (let a = 0; a < 8; a++) {
-    const fx = Math.cos(a * Math.PI / 4) * (R + 220), fy = Math.sin(a * Math.PI / 4) * (R + 220);
+    const k = (R + 130) / Math.max(Math.abs(Math.cos(a * Math.PI / 4)), Math.abs(Math.sin(a * Math.PI / 4))), fx = Math.cos(a * Math.PI / 4) * k, fy = Math.sin(a * Math.PI / 4) * k; // 130 px outside the walls
     for (const [sx, sy, tx, ty] of [[fx, fy, 0, 30], [3, 40, fx, fy]]) {
       const e = { x: sx, y: sy };
       for (let t = 0; t < 1400 && Math.hypot(e.x - tx, e.y - ty) >= 40; t++) {

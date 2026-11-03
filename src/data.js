@@ -729,10 +729,11 @@
     lowWall: 3,                                  // low stone walls round the camp from this level (gaps at the four paths)
     sanctum: [[4, 95], [10, 150]],               // the flame's raised platform (First Terrace, Inner Ring)
     main: [[6, 300], [10, 340]],                 // the district terrace (Expanded Terrace, Inner Ring)
-    outer: [[11, 470], [18, 540]],               // the outer terrace (Outer Terrace, Outer Ring)
-    centralW: [[1, 80], [15, 112]],              // the central stairs and avenues (Great Stairways widen them)
-    mainSide: { from: 9, at: 205, w: 58 },       // Secondary Access: two more stairs on each side of the district terrace
-    outerSide: { from: 15, at: 330, w: 66 },     // Great Stairways: two more on each side of the outer terrace
+    outer: [[11, 490], [18, 540]],               // the outer terrace (Outer Terrace, Outer Ring)
+    centralW: [[1, 56], [15, 72]],               // the central stairs and avenues (Great Stairways widen them); 56 fits Robert's drawn flight
+    mainSide: { from: 9, at: 205, w: 52 },       // Secondary Access: two more stairs on each side of the district terrace
+    outerSide: { from: 15, at: 330, w: 56 },     // Great Stairways: two more on each side of the outer terrace
+    face: 46,                                    // a terrace wall's south face, as tall as Robert's drawn one (tools/cut_refuge.py)
     barracks: [[5, 1], [12, 2], [17, 3]],        // the refuge's barracks level (its champions defend the refuge)
     towerIn: 34,                                 // watchtowers stand this far in from the outermost wall's corners
     levels: [

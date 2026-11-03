@@ -18,7 +18,7 @@
   const Refuge = (DL.Refuge = {});
   const SIDES = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // N E S W
   const at = (list, lv) => { let v = null; for (const [l, x] of list) if (lv >= l) v = x; return v; };
-  const FACE = () => DL.PYRAMID.face;
+  const FACE = () => RF.face;
 
   Refuge.on = (up) => { const u = up || (DL.Game.save && DL.Game.save.up); return !u || u.fortress !== 0; };
   Refuge.level = (up) => Math.max(1, Math.min(DL.FLAME.max, (up || DL.Game.save.up).flame || 1));
@@ -40,10 +40,10 @@
       return out;
     };
     const outer = at(RF.outer, lv), main = at(RF.main, lv), sanct = at(RF.sanctum, lv);
-    if (outer) rings.push({ id: "outer", half: outer, face: FACE(), thick: 7, stairs: stairs(lv >= RF.outerSide.from && RF.outerSide) });
-    if (main) rings.push({ id: "main", half: main, face: FACE(), thick: 7, stairs: stairs(lv >= RF.mainSide.from && RF.mainSide) });
-    else if (lv >= RF.lowWall) rings.push({ id: "low", half: RF.camp, face: 0, thick: 6, stairs: stairs(null) });
-    if (sanct) rings.push({ id: "sanctum", half: sanct, face: FACE(), thick: 7, stairs: stairs(null) });
+    if (outer) rings.push({ id: "outer", half: outer, face: FACE(), thick: 14, stairs: stairs(lv >= RF.outerSide.from && RF.outerSide) });
+    if (main) rings.push({ id: "main", half: main, face: FACE(), thick: 14, stairs: stairs(lv >= RF.mainSide.from && RF.mainSide) });
+    else if (lv >= RF.lowWall) rings.push({ id: "low", half: RF.camp, face: 0, thick: 12, stairs: stairs(null) });
+    if (sanct) rings.push({ id: "sanctum", half: sanct, face: FACE(), thick: 14, stairs: stairs(null) });
     const R = outer || main || RF.camp;
     const g = { lv, R, cw, rings, outerRing: rings[0] && rings[0].half === R ? rings[0] : null };
     geoCache.set(lv, g);
@@ -147,13 +147,14 @@
   // Is a footprint box free at this geometry?
   function free(g, box, placed, towers) {
     const [x0, y0, x1, y1] = box, R = g.R, lane = g.cw / 2 + 12;
-    if (x0 < -R + 14 || x1 > R - 14 || y0 < -R + 14 || y1 > R - 14) return false;
+    if (x0 < -R + 34 || x1 > R - 34 || y0 < -R + 34 || y1 > R - 34) return false;
     if (x1 > -lane && x0 < lane) return false; // the avenues
     if (y1 > -lane && y0 < lane) return false;
     const cx = (x0 + x1) / 2, cy = y1 - 4;
     for (const ring of g.rings) {
-      if (inside(ring, cx, cy)) { if (ring.id === "sanctum") return false; if (x0 < -ring.half + 14 || x1 > ring.half - 14 || y0 < -ring.half + 14 || y1 > ring.half - 14) return false; }
-      else if (x1 > -ring.half - 16 && x0 < ring.half + 16 && y1 > -ring.half - 16 && y0 < ring.half + ring.face + 16) return false;
+      const m = ring.thick + 20; // the wall's own width and room to walk past it
+      if (inside(ring, cx, cy)) { if (ring.id === "sanctum") return false; if (x0 < -ring.half + m || x1 > ring.half - m || y0 < -ring.half + m || y1 > ring.half - m) return false; }
+      else if (x1 > -ring.half - m && x0 < ring.half + m && y1 > -ring.half - m && y0 < ring.half + ring.face + m) return false;
       for (const q of ring.stairs) { // keep the stair's landing and foot clear
         const e = stairEnds(ring, q, 0), [nx] = SIDES[q.s], half = q.w / 2 + 26;
         const px0 = Math.min(e.inn.x, e.out.x) - (nx ? 70 : half), px1 = Math.max(e.inn.x, e.out.x) + (nx ? 70 : half);
@@ -205,7 +206,7 @@
     for (const p of placed) {
       const it = RF.items[p.id], isB = BUILDINGS.includes(p.id);
       if (isB && up[p.id] > 0) L[p.id] = { x: p.x, y: p.y };
-      else if (isB) L.plots.push({ x: p.x, y: p.y, hw: p.hw, reserved: true });
+      else if (isB) { if (lv >= 6) L.plots.push({ x: p.x, y: p.y, hw: p.hw, reserved: true }); } // empty plots once the districts' terrace is built
       else L.items.push({ id: p.id, x: p.x, y: p.y, hw: p.hw, ph: it.ph, sprite: it.sprite, flip: it.flip });
       if (!isB || up[p.id] > 0) L.plots.push({ x: p.x, y: p.y, hw: p.hw });
     }
@@ -223,7 +224,7 @@
     L.solids = [{ x: 0, y: 0, r: 16 }];
     for (const t of L.towers) L.solids.push({ x: t.x, y: t.y, r: 14 });
     for (const t of L.pylons) L.solids.push({ x: t.x, y: t.y, r: 6 });
-    for (const p of placed) if (!L.plots.some((q) => q.reserved && q.x === p.x && q.y === p.y)) L.solids.push({ x: p.x, y: p.y - 6, r: Math.max(10, Math.round(p.hw * 0.55)) });
+    for (const p of placed) if (!BUILDINGS.includes(p.id) || up[p.id] > 0) L.solids.push({ x: p.x, y: p.y - 6, r: Math.max(10, Math.round(p.hw * 0.55)) });
     // the refuge's lit pieces: braziers on the terrace corners, lamps at the stairs, beacons round the sanctum
     L.fires = [];
     const ring = (id) => g.rings.find((r) => r.id === id);
@@ -259,8 +260,77 @@
     if (dark) { c.fillStyle = `rgba(0,0,0,${dark})`; c.fillRect(x, y, w, h); }
   }
   const P = () => DL.Pyramid.art || {};
+
+  /* Robert's drawn refuge pieces (tools/cut_refuge.py, 2026-11-03): the hearth's base, the bordered plaza (also each
+     building's plot), the low walls and the terrace (corners, wall runs, four stairs, floor). Kit pieces keep their
+     crop boxes from his pictures (KIT, source px; S world px per source px), so they line up by source coordinates:
+     `edge` = the source lines laid on the wall's outer north/west/east edge and on its south edge. */
+  const S = 0.3, IMG = {};
+  const KIT = {
+    terrace: { edge: { n: 118, w: 300, e: 1232, s: 735 }, out: 10, sIn: 8, tread: { n: [680, 855], s: [685, 850], w: [380, 575], e: [380, 575] },
+      box: { nw: [305, 100, 455, 265], ne: [1080, 100, 1230, 265], sw: [300, 670, 455, 908], se: [1080, 670, 1235, 908],
+        n: [455, 118, 625, 232], s: [455, 730, 625, 908], w: [298, 262, 422, 338], e: [1108, 262, 1232, 338],
+        stN: [625, 95, 910, 282], stS: [622, 712, 912, 936], stW: [236, 330, 442, 628], stE: [1094, 330, 1302, 628] } },
+    low: { edge: { n: 345, w: 165, e: 1092, s: 840 }, out: 10, sIn: 8,
+      box: { nw: [158, 335, 268, 458], ne: [990, 335, 1098, 458], sw: [158, 805, 268, 966], se: [990, 805, 1098, 966],
+        n: [268, 358, 490, 455], s: [268, 832, 475, 962], w: [170, 458, 257, 528], e: [998, 458, 1087, 528] } },
+  };
+  if (typeof Image !== "undefined") {
+    const names = ["foundation", "plaza", "terrace-floor"];
+    for (const k of ["terrace", "low"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
+    for (const n of names) { const img = new Image(); img.onload = () => { IMG[n] = img; }; img.src = DL.asset("assets/sprites/refuge/" + n + ".png"); }
+  }
+  Refuge.art = IMG;
+  // Draw one kit wall ring of half-side h, with its stairs (or openings) where `ring.stairs` says.
+  function kitRing(c, ring, kind) {
+    const K = KIT[kind], E = K.edge, h = ring.half, B = K.box, img = (n) => IMG[kind + "-" + n];
+    if (!["nw", "ne", "sw", "se", "n", "s", "w", "e"].every(img)) return false;
+    const X = { w: (ix) => -h - K.out + (ix - E.w) * S, e: (ix) => h + K.out - (E.e - ix) * S };
+    const Y = { n: (iy) => -h - K.out + (iy - E.n) * S, s: (iy) => h - K.sIn + (iy - E.s) * S };
+    const put = (n, x, y, sx = 1, sy = 1) => { const b = B[n]; c.drawImage(img(n), x, y, (b[2] - b[0]) * S * sx, (b[3] - b[1]) * S * sy); };
+    const gaps = (si) => ring.stairs.filter((q) => q.s === si);
+    // wall runs: tiled between the corners, broken at the openings (stairs are drawn over theirs)
+    const run = (n, horiz, a0, a1, pos, si) => {
+      const b = B[n], len = (horiz ? b[2] - b[0] : b[3] - b[1]) * S;
+      c.save(); c.beginPath();
+      let from = a0;
+      const cuts = kind === "low" ? gaps(si).map((q) => [q.at - q.w / 2, q.at + q.w / 2]).sort((u, v) => u[0] - v[0]) : [];
+      const spans = [];
+      for (const [u, v] of cuts) { if (u > from) spans.push([from, u]); from = Math.max(from, v); }
+      if (from < a1) spans.push([from, a1]);
+      for (const [u, v] of spans) horiz ? c.rect(u, pos - 200, v - u, 400) : c.rect(pos - 200, u, 400, v - u);
+      c.clip();
+      for (let a = a0; a < a1; a += len - 0.5) horiz ? put(n, a, pos) : put(n, pos, a);
+      c.restore();
+    };
+    const L = X.w(B.nw[2]), R = X.e(B.ne[0]), T = Y.n(B.nw[3]), D = Y.s(B.sw[1]);
+    run("n", true, L, R, Y.n(B.n[1]), 0);
+    run("s", true, X.w(B.sw[2]), X.e(B.se[0]), Y.s(B.s[1]), 2);
+    run("w", false, T, D, X.w(B.w[0]), 3);
+    run("e", false, Y.n(B.ne[3]), Y.s(B.se[1]), X.e(B.e[0]), 1);
+    put("nw", X.w(B.nw[0]), Y.n(B.nw[1])); put("ne", X.e(B.ne[0]), Y.n(B.ne[1]));
+    put("sw", X.w(B.sw[0]), Y.s(B.sw[1])); put("se", X.e(B.se[0]), Y.s(B.se[1]));
+    if (kind !== "terrace") return true;
+    for (const q of ring.stairs) { // Robert's flights, stretched across so their treads span the stair's width
+      const side = "nesw"[q.s], n = "st" + side.toUpperCase(), b = B[n], tr = K.tread[side];
+      if (!img(n)) continue;
+      const k = q.w / ((tr[1] - tr[0]) * S), mid = (tr[0] + tr[1]) / 2;
+      if (side === "n" || side === "s") put(n, q.at - (mid - b[0]) * S * k, (side === "n" ? Y.n : Y.s)(b[1]), k, 1);
+      else put(n, (side === "w" ? X.w : X.e)(b[0]), q.at - (mid - b[1]) * S * k, 1, k);
+    }
+    return true;
+  }
+  // A drawn picture centred at (x, y) and `w` world px wide.
+  const pic = (c, n, x, y, w, dark) => {
+    const im = IMG[n]; if (!im) return false;
+    const h = (w * im.height) / im.width;
+    c.drawImage(im, x - w / 2, y - h / 2, w, h);
+    if (dark) { c.fillStyle = `rgba(0,0,0,${dark})`; c.fillRect(x - w / 2, y - h / 2, w, h); }
+    return true;
+  };
   // The four faces of a ring: drawn rock courses on the south (stairs in the gaps), lips on the other three.
   function faces(c, ring, t) {
+    if (kitRing(c, ring, ring.id === "low" ? "low" : "terrace")) return;
     const h = ring.half, A = P(), F = ring.face;
     const gaps = (s) => ring.stairs.filter((q) => q.s === s);
     const spans = (s) => {
@@ -310,6 +380,7 @@
   }
   // A kerbed plot of flagstones under a building; a reserved one stays bare, with no name (the secrecy rule).
   function plot(c, p, flags) {
+    if (pic(c, "plaza", p.x, p.y - Math.round(p.hw * 0.45), 2 * p.hw + 34, p.reserved ? 0.4 : 0.1)) return;
     const w = p.hw + 14, top = p.y - Math.round(p.hw * 0.95) - 12, bottom = p.y + 14;
     c.fillStyle = "rgba(30,25,20,0.9)"; c.fillRect(p.x - w - 4, top - 4, 2 * w + 8, bottom - top + 8);
     if (flags) { c.fillStyle = flags; c.fillRect(p.x - w, top, 2 * w, bottom - top); }
@@ -331,6 +402,12 @@
     c.fillText(it.ph, it.x + 1, top + h / 2 + 5); c.fillStyle = "#f2dca8"; c.fillText(it.ph, it.x, top + h / 2 + 4);
   };
 
+  const floorPats = new WeakMap();
+  function floorPat(c) {
+    let p = floorPats.get(c);
+    if (!p) { p = c.createPattern(IMG["terrace-floor"], "repeat"); p.setTransform(new DOMMatrix().scale(S / 0.6)); floorPats.set(c, p); }
+    return p;
+  }
   Refuge.drawGround = function (c, L, t) {
     const g = L.geo, lv = L.lv, flags = pattern(c, "campFlags"), paving = pattern(c, "campPaving");
     // the camp yard (packed earth with a dashed edge at first, flagstones once walled), and the hearth's foundation
@@ -340,7 +417,11 @@
     const terr = g.rings.filter((r) => r.id !== "low");
     for (const r of terr) {
       const dark = r.id === "outer" ? 0.3 : r.id === "main" ? 0.2 : 0.08;
-      fill(c, r.id === "sanctum" ? "campPaving" : "campFlags", -r.half, -r.half, 2 * r.half, 2 * r.half, dark, "#4a4438");
+      if (IMG["terrace-floor"]) { // the drawn terrace floor, repeated; each ring down a shade darker
+        const p = floorPat(c);
+        c.fillStyle = p; c.fillRect(-r.half, -r.half, 2 * r.half, 2 * r.half);
+        c.fillStyle = `rgba(0,0,0,${dark + 0.12})`; c.fillRect(-r.half, -r.half, 2 * r.half, 2 * r.half);
+      } else fill(c, r.id === "sanctum" ? "campPaving" : "campFlags", -r.half, -r.half, 2 * r.half, 2 * r.half, dark, "#4a4438");
       if (lv >= 8 && r === terr[0] && r.id !== "sanctum") { // Reinforced Walls: corner bastions
         for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
           const x = sx * r.half - (sx > 0 ? 44 : 0), y = sy * r.half - (sy > 0 ? 44 : 0);
@@ -350,7 +431,10 @@
         }
       }
     }
-    if (lv < 4) { // the stone foundation round the hearth
+    if (lv < 4 && IMG.foundation) { // Robert's stone base under the hearth, and from level 2 his bordered plaza round it
+      if (lv >= 2) pic(c, "plaza", 0, 2, 250, 0.12);
+      pic(c, "foundation", 0, 6, 120, 0.08);
+    } else if (lv < 4) { // the stone foundation round the hearth
       const f = 54 + (lv >= 2 ? 16 : 0);
       c.fillStyle = "#26211b"; c.fillRect(-f - 4, -f - 4, 2 * f + 8, 2 * f + 8);
       fill(c, "campPaving", -f, -f, 2 * f, 2 * f, 0.1, "#655c4a");
@@ -360,7 +444,13 @@
     const inner = s0 ? s0.half + s0.face : 60, reach = g.R + 30;
     if (lv >= 2) for (const [nx, ny] of SIDES) {
       const w = g.cw;
-      if (nx) DL.Pyramid.lane(c, nx > 0 ? inner - 8 : -reach, -w / 2, reach - inner + 8, w, true, w);
+      if (nx && IMG["terrace-floor"]) { // east-west: a paved road between kerbs (the stair strip turned on its side read as planks)
+        const x0 = nx > 0 ? inner - 8 : -reach, len = reach - inner + 8;
+        c.fillStyle = floorPat(c); c.fillRect(x0, -w / 2, len, w);
+        c.fillStyle = "rgba(255,235,190,0.08)"; c.fillRect(x0, -w / 2, len, w);
+        c.fillStyle = "rgba(30,24,18,0.9)"; c.fillRect(x0, -w / 2 - 5, len, 5); c.fillRect(x0, w / 2, len, 6);
+        c.fillStyle = "rgba(220,195,140,0.45)"; c.fillRect(x0, -w / 2 - 5, len, 2);
+      } else if (nx) DL.Pyramid.lane(c, nx > 0 ? inner - 8 : -reach, -w / 2, reach - inner + 8, w, true, w);
       else DL.Pyramid.lane(c, -w / 2, ny > 0 ? inner - 8 : -reach, w, reach - inner + 8, false, w);
     }
     for (const r of g.rings) faces(c, r, t);
