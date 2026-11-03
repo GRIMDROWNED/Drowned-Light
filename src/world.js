@@ -7,6 +7,7 @@
   const CAMP_DRY = 380;   // and no water
   // waterVal below WATER is water (about a tenth of the land), up to SHORE is its muddy edge, where reeds grow.
   const WATER = 0.31, SHORE = 0.345;
+  const RIM_SHORE = 420; // px of Abyss shore inside the black water at the world's edge
   const GROUND_K = 0.62; // drawn ground textures are darkened by this to stay under the characters and props
 
   // The map's grid ends GRID px out (Camp.sq); past it a rim of Abyss shore, then black water to EDGE, where the
@@ -188,7 +189,7 @@
     tex: {},
     canvases: {},
     loadGround() {
-      for (const n of ["campEarth", "campFlags", "campPaving", "grass", "dirt", "shore", "shallow", "deep", "boardwalk", "caveFloor"]) {
+      for (const n of ["campEarth", "campFlags", "campPaving", "grass", "dirt", "shore", "shallow", "deep", "boardwalk", "caveFloor", "rimDeep", "rimShore"]) {
         const img = new Image();
         img.onload = () => {
           const c = document.createElement("canvas");
@@ -240,7 +241,7 @@
       const out = DL.Camp.sq(x, y) > GRID ? this.shoreOut(x, y) : -1;
       if (out > 0) {
         // the black water at the world's end, darkening out to nothing
-        const k = Math.min(1, out / 600), dp = this.texel("deep", x, y, 0.55 * (1 - k));
+        const k = Math.min(1, out / 600), dp = this.texel("rimDeep", x, y, 1.1 * (1 - k)) || this.texel("deep", x, y, 0.55 * (1 - k));
         if (dp) return dp;
         return [6 * (1 - k), 12 * (1 - k), 16 * (1 - k)];
       }
@@ -289,6 +290,9 @@
           else if (h < 0.04) { r -= 9; g -= 9; b -= 8; }
           if (w < SHORE + 0.025 && h > 0.6) { r -= 5; g -= 2; b += 2; }
         }
+        // the Abyss shore: the last stretch of land before the black water turns to wet black mud
+        const so2 = DL.Camp.sq(x, y) > GRID && out > -RIM_SHORE && this.texel("rimShore", x, y, GROUND_K);
+        if (so2) { const t = Math.min(1, (out + RIM_SHORE) / (RIM_SHORE * 0.6)); r = DL.lerp(r, so2[0], t); g = DL.lerp(g, so2[1], t); b = DL.lerp(b, so2[2], t); }
         if (d < 300) {
           const t = (300 - d) / 65;
           r = DL.lerp(r, er, t); g = DL.lerp(g, eg, t); b = DL.lerp(b, eb, t);
