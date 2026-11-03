@@ -219,6 +219,45 @@ Proposed `pyramid/rim-shore.png`: 1024 × 1024 source. Generate this as a materi
 existing noise/shore blend can use it. A directional foam or shoreline overlay, if wanted,
 needs a separate approved renderer plan; it is not baked into this tile.
 
+## 7. Barracks champion (character, added by Claude)
+
+The champions the barracks trains still borrow the Lantern Knight's sprites with a gold ring under
+them. They need their own character, made the same way as every other knight and enemy: **two
+6-pose sheets (3 × 2) plus a 4-frame front walk and a 4-frame back walk**, magenta background. Attach
+the Lantern Knight image (`kit-refs/knight-front.png`) as the style and scale reference.
+
+Design: a **Pyramid Champion**, the refuge's sworn guard. Heavier and broader than a player knight,
+in tarnished bronze plate over dark chainmail, with a closed great-helm with a thin vertical visor
+slit and a short ember-orange plume. A tall rectangular tower shield of riveted dark timber, bound in
+bronze, with a simple stepped-pyramid emblem in pale stone (a shape, not letters). A short heavy
+war-axe. Faded ember-brown tabard. It must read as an ally at a glance: warm bronze and ember
+colours, no cyan, no Drowned rot.
+
+Sheet A prompt:
+
+> A pixel-art character sprite sheet for Drowned Light, detailed dark-fantasy pixel art matching the
+> attached knight reference in style, outline and scale. A Pyramid Champion: a broad, heavily armoured
+> guard in tarnished bronze plate over dark chainmail, closed great-helm with a thin vertical visor
+> slit and a short ember-orange plume, a tall rectangular riveted timber tower shield bound in bronze
+> with a pale stone stepped-pyramid emblem, a short heavy war-axe, a faded ember-brown tabard. Six
+> poses in a 3 × 2 grid, each in its own cell with blank margin, the same size and feet on the same
+> line: 1 standing facing the viewer, 2 standing seen from behind, 3 standing facing right in side
+> view, 4 to 6 walking facing right in side view, legs in sharply different positions (front leg far
+> forward, legs passing, back leg far behind). Fixed three-quarter overhead camera, light from the
+> upper left. Uniform flat pure magenta background RGB 255, 0, 255, no ground, no shadow, no text.
+
+Sheet B prompt: the same character and grid, poses: 1 shield raised and axe drawn back (attack
+wind-up, facing right), 2 axe swung through (attack strike, facing right), 3 shield bash forward
+(facing right), 4 recoiling hurt (facing right), 5 down on one knee, defeated (facing right),
+6 standing guard with the shield planted in front (facing the viewer).
+
+Walk sheets: "The same Pyramid Champion walking **toward the viewer** / **away from the viewer**,
+four frames in one row, four sharply different leg positions, same size and feet on the same line,
+pure magenta background."
+
+Proposed folder `returned/pyramid-champion/`, cut like the other characters (a `SETS` entry in
+`tools/cut_ai_sprites.py`). The game shows it at 0.85 × knight scale (`DL.PYRAMID.champion.scale`).
+
 ## Delivery and art-pass checks
 
 - Keep the original returned PNGs and their prompt/reference notes in the project art sources.

@@ -1,6 +1,6 @@
 # The Pyramid: plan for Level 1's new goal
 
-Status: **plan, not built yet** (Robert answered the open questions 2026-11-03). Robert decides design; Claude owns the architecture below
+Status: **steps 1–7 built** (Robert answered the open questions 2026-11-03); step 8 is next. Robert decides design; Claude owns the architecture below
 (see [`AGENTS.md`](../AGENTS.md)). Questions and hand-offs go in [`AI-COMMS.md`](AI-COMMS.md).
 Numbers marked *(proposed)* are Claude's starting values and go in `src/data.js` so they can be tuned.
 
@@ -89,7 +89,7 @@ Numbers marked *(proposed)* are Claude's starting values and go in `src/data.js`
 | 3 | Central Flame levels to 20, max set by Barricade, look change every 5 levels | GPT (Claude reviews) |
 | 4 | Per-square buildings: walls, pylons, watchtowers (camp code made reusable in step 2) | GPT |
 | 5 | Sieges every 5 nights against squares, square HP, lost squares lower the flame, lose rule | GPT (Claude reviews) |
-| 6 | Coverage HUD, the 80% trigger for the Sunken King, cutting the escort march (answer 4) | Claude |
+| 6 | Coverage HUD, the 80% trigger for the Sunken King, cutting the escort march (answer 4) (**done**, v0.15.177: `Finale.ready` uses coverage, `Finale.begin` sends the Bearer to the hearth, gate travel destination) | Claude |
 | 7 | Barracks that makes champions | GPT |
 | 8 | Level 2 unlock screen (placeholder until Level 2 exists) | GPT |
 

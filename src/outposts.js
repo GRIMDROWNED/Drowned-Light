@@ -104,13 +104,14 @@
     const out = [];
     if (!G.inCamp) out.push({ id: "camp", name: "The camp", x: 0, y: 70, lit: true });
     G.outposts.forEach((o, i) => { if (o !== here) out.push({ id: i, name: name(o), x: o.x, y: o.y + 40, lit: o.lit, dir: compass(o.x, o.y), m: Math.round(Math.hypot(o.x, o.y) / 10) }); });
+    if (DL.Finale.stage() === 3) { const h = DL.Finale.hearth(); out.push({ id: "gate", name: "the Drowned Gate", x: h.x, y: h.y + 160, lit: true, dir: compass(h.x, h.y), m: Math.round(Math.hypot(h.x, h.y) / 10) }); } // where the Fire Bearer waits
     for (const d of out) d.far = Math.round(dist(p.x, p.y, d.x, d.y) / 10);
     return out;
   };
   // Why you can't travel now (null when you can).
   Outposts.travelLock = function () {
     if (G.save.up.flame <= 0) return "The Central Flame is lost. This world has fallen";
-    if (!DL.Kindle.lit()) return "You need a guide who knows the old paths. Something lost in the Mire still remembers them";
+    if (!DL.Kindle.lit() && DL.Finale.stage() < 1) return "You need a guide who knows the old paths. Something lost in the Mire still remembers them";
     if (G.night && G.enemies.some((e) => !e.removed && e.rise <= 0 && dist(e.x, e.y, G.player.x, G.player.y) < O.safeR)) return "The Drowned are too close";
     return null;
   };
@@ -125,7 +126,7 @@
     if (!G.isGuest()) for (const list of [G.hounds, G.golems, G.wraiths, G.kindles || []]) for (const m of list) if (m.owner === 0) { m.x = p.x + rand(-30, 30); m.y = p.y + rand(5, 20); }
     for (let i = 0; i < 16; i++) G.puff(p.x + rand(-10, 10), p.y - rand(0, 40), "rgba(255,190,110,0.6)", 50, 0.8, -30);
     sfx("torch");
-    say(`Your Kindle leads you along the old paths to ${d.id === "camp" ? "the camp" : d.name}.`, "good");
+    say(`${DL.Finale.stage() >= 1 ? "The Fire Bearer's light" : "Your Kindle"} leads you along the old paths to ${d.id === "camp" ? "the camp" : d.name}.`, "good");
     return true;
   };
 
