@@ -5,9 +5,14 @@
   const W = DL.World;
   const CYC = DL.CYCLE;
   // Three save slots. The very first save (before slots existed) becomes slot 1.
+  /* Sandbox (Robert, 2026-11-03: test the Pyramid build without playing the whole game): open the game with ?sandbox
+     (or the title screen's Sandbox button). Supplies never run out and the Central Flame needs no nights survived.
+     It keeps its own save slots and unlocks, so the real games are never touched. */
+  DL.SANDBOX = typeof location !== "undefined" && /[?&]sandbox\b/.test(location.search);
+  const SB = DL.SANDBOX ? "sandbox-" : "";
   const LEGACY_KEY = "drowned-light-save-v1";
-  const SLOT_KEY = (n) => "drowned-light-save-slot-" + n;
-  const CURRENT_SLOT = "drowned-light-slot";
+  const SLOT_KEY = (n) => "drowned-light-" + SB + "save-slot-" + n;
+  const CURRENT_SLOT = "drowned-light-" + SB + "slot";
   const say = (m, k) => DL.UI && DL.UI.toast(m, k);
   const sfx = (n) => DL.Sound.play(n);
   const emptyRes = () => ({ wood: 0, stone: 0, resin: 0, iron: 0, pearl: 0, black: 0 });
@@ -94,7 +99,7 @@
   G.slot = 1;
   G.load = function (slot) {
     try {
-      if (!localStorage.getItem(SLOT_KEY(1)) && localStorage.getItem(LEGACY_KEY)) {
+      if (!DL.SANDBOX && !localStorage.getItem(SLOT_KEY(1)) && localStorage.getItem(LEGACY_KEY)) {
         localStorage.setItem(SLOT_KEY(1), localStorage.getItem(LEGACY_KEY));
         localStorage.removeItem(LEGACY_KEY);
       }
@@ -149,7 +154,7 @@
   G.kit = () => DL.KITS[G.save.kit] || DL.KITS.lanternBlade;
   /* Secret kits (DL.KITS[id].secret): hidden behind "???" until earned in any world on this device, then open to every
      new game. Earned so far: the Rose Paladin, for the Deadly Rose slain and her Rose Heart grown to its last level. */
-  const UNLOCKS = "drowned-light-unlocks";
+  const UNLOCKS = "drowned-light-" + SB + "unlocks";
   let unlocks = null;
   const readUnlocks = () => { try { return JSON.parse(localStorage.getItem(UNLOCKS)) || {}; } catch (e) { return {}; } };
   G.kitOpen = (id) => !DL.KITS[id].secret || !!(unlocks || (unlocks = readUnlocks()))[id];
@@ -205,6 +210,7 @@
     }
     G.startLife();
     for (const k of DL.RES_KEYS) G.player.carried[k] = G.save.carried[k] || 0;
+    if (DL.SANDBOX) for (const k of DL.RES_KEYS) G.save.stash[k] = Math.max(G.save.stash[k] || 0, 9999);
     if (!G.isGuest() && G.save.up.flame === 0) G.campFallen();
   };
 
@@ -1741,10 +1747,11 @@
 
   /* ---------------- camp actions (called by the camp menu) ---------------- */
   G.canAfford = function (cost) {
+    if (DL.SANDBOX) return true; // endless supplies
     for (const k in cost) if ((G.save.stash[k] || 0) < cost[k]) return false;
     return true;
   };
-  function pay(cost) { for (const k in cost) G.save.stash[k] -= cost[k]; }
+  function pay(cost) { if (!DL.SANDBOX) for (const k in cost) G.save.stash[k] -= cost[k]; }
   G.pay = pay;
 
   // Why the next level of a building can't be built yet (null when it can, cost aside).
@@ -1758,7 +1765,7 @@
     if (u.id === "flame") {
       if (lvl + 1 > G.flameCap()) return `Needs Barricade ${Math.ceil((lvl + 1) / DL.FLAME.perBarricade)} (Flame limit ${G.flameCap()})`;
       const nights = DL.FLAME_NIGHTS[lvl + 1] || 0;
-      if (G.save.nights < nights) return `Needs ${nights} night${nights > 1 ? "s" : ""} survived (${G.save.nights} so far)`;
+      if (G.save.nights < nights && !DL.SANDBOX) return `Needs ${nights} night${nights > 1 ? "s" : ""} survived (${G.save.nights} so far)`;
     }
     return null;
   };
