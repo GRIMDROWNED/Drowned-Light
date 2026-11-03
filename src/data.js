@@ -684,7 +684,7 @@
      most `maxFace` levels drawn), rising `riseSpeed` levels a second. Stairs run only along the cross of stairways
      (the gx = 0 and gy = 0 lines, `stairW` px wide); off them, crossing a step goes at `climb` of full speed. `win` of the squares held wakes the Drowned Gate. */
   DL.PYRAMID = {
-    perFlame: 4, claimR: 170, face: 18, maxFace: 5, riseSpeed: 1.5, stairW: 110, climb: 0.35, win: 0.8, hp: 320,
+    perFlame: 4, claimR: 170, face: 54, course: 18, maxFace: 4, riseSpeed: 1.5, stairW: 110, climb: 0.35, win: 0.8, hp: 320,
     wallR: 350, gateHalf: 55, wallStep: 28, buildR: 90, wallDamagePerLevel: 3, wallEvery: 0.6,
     towerRange: 300, towerEvery: 1.1, towerSpeed: 520, towerDamage: 10, towerPerLevel: 6,
     pylonHp: 80, pylonLight: 118,

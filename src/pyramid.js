@@ -361,7 +361,7 @@
   function southFace(c, L, foot, d, stair) {
     const H = faceH(d), top = foot - H, sx = L + HALF - P.stairW / 2;
     if (ART.south) {
-      strip(c, ART.south, L, top, CELL, H, P.face, false);
+      strip(c, ART.south, L, top, CELL, H, P.course || 18, false); // three drawn courses a level
       const sg = c.createLinearGradient(0, foot, 0, foot + 18);
       sg.addColorStop(0, "rgba(0,0,0,0.45)"); sg.addColorStop(1, "rgba(0,0,0,0)");
       c.fillStyle = sg; c.fillRect(L, foot, CELL, 18);
