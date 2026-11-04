@@ -333,7 +333,7 @@
       box: { nw: [20, 10, 190, 300], n: [185, 95, 300, 240], stN: [480, 10, 773, 245], w: [50, 410, 170, 450], stW: [50, 500, 170, 640], sw: [10, 840, 180, 1215], s: [180, 900, 290, 1200], stS: [460, 800, 793, 1238], ne: [1063, 10, 1233, 300], se: [1073, 840, 1243, 1215], e: [1083, 410, 1203, 450], stE: [1083, 500, 1203, 640] } },
   };
   if (typeof Image !== "undefined") {
-    const names = ["foundation", "plaza", "terrace-floor", "avenue-ew", "avenue-ns"];
+    const names = ["foundation", "plaza", "terrace-floor", "avenue-ew", "avenue-ns", "floor-sanctum", "floor-flags", "floor-cobble", "plot-s", "plot-m", "plot-l"];
     for (const k of ["terrace", "low", "rim", "tier", "sanct", "court", "ward", "mward", "lward", "curt", "great"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
     for (const n of names) { const img = new Image(); img.onload = () => { IMG[n] = img; }; img.src = DL.asset("assets/sprites/refuge/" + n + ".png"); }
   }
@@ -440,6 +440,13 @@
   }
   // A kerbed plot of flagstones under a building; a reserved one stays bare, with no name (the secrecy rule).
   function plot(c, p, flags) {
+    const pn = p.hw < 26 ? "plot-s" : p.hw < 36 ? "plot-m" : "plot-l", im = IMG[pn];
+    if (im) { // Robert's plinths (S4): top edge just above the footprint, steps hanging below the front
+      const w = 2 * p.hw + 30, h = (w * im.height) / im.width, top = p.y - Math.round(p.hw * 0.95) - 16;
+      c.drawImage(im, p.x - w / 2, top, w, h);
+      if (p.reserved) { c.fillStyle = "rgba(0,0,0,0.3)"; c.fillRect(p.x - w / 2 + 6, top + 6, w - 12, h * 0.7); }
+      return;
+    }
     if (pic(c, "plaza", p.x, p.y - Math.round(p.hw * 0.45), 2 * p.hw + 34, p.reserved ? 0.4 : 0.1)) return;
     const w = p.hw + 14, top = p.y - Math.round(p.hw * 0.95) - 12, bottom = p.y + 14;
     c.fillStyle = "rgba(30,25,20,0.9)"; c.fillRect(p.x - w - 4, top - 4, 2 * w + 8, bottom - top + 8);
@@ -477,7 +484,13 @@
     const terr = g.rings.filter((r) => r.id !== "low");
     for (const r of terr) {
       const dark = r.id === "sanctum" ? 0.08 : r.id === "main" ? 0.2 : 0.3;
-      if (IMG["terrace-floor"]) { // the drawn terrace floor, repeated; each ring down a shade darker
+      const fl = IMG[r.id === "sanctum" ? "floor-sanctum" : r.id === "main" || r.id === "outer" ? "floor-flags" : "floor-cobble"];
+      if (fl) { // Robert's floors (S3): mosaic on the sanctum (centred on the flame), flagstones on the court and middle ward, cobbles on the outer wards
+        const p = c.createPattern(fl, "repeat"), k = (r.id === "sanctum" ? 2 * r.half : 190) / fl.width;
+        p.setTransform(new DOMMatrix().translate(r.id === "sanctum" ? -r.half : 0, r.id === "sanctum" ? -r.half : 0).scale(k));
+        c.fillStyle = p; c.fillRect(-r.half, -r.half, 2 * r.half, 2 * r.half);
+        c.fillStyle = `rgba(0,0,0,${dark})`; c.fillRect(-r.half, -r.half, 2 * r.half, 2 * r.half);
+      } else if (IMG["terrace-floor"]) { // the drawn terrace floor, repeated; each ring down a shade darker
         const p = floorPat(c);
         c.fillStyle = p; c.fillRect(-r.half, -r.half, 2 * r.half, 2 * r.half);
         c.fillStyle = `rgba(0,0,0,${dark + 0.12})`; c.fillRect(-r.half, -r.half, 2 * r.half, 2 * r.half);

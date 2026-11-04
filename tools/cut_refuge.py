@@ -99,3 +99,18 @@ crop = rgba[y0:y1, 83:326]
 im = Image.fromarray(crop).convert('RGBa').resize((round(243 * 0.3), round((y1 - y0) * 0.3)), Image.BOX).convert('RGBA')
 a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
 Image.fromarray(a).save(os.path.join(OUT, 'avenue-ns.png')); print('avenue-ns', im.size)
+
+# S3 (2026-11-04): three seamless floors (sanctum mosaic, terrace flagstones, ward cobbles), trimmed inside their edges
+src = np.asarray(Image.open(os.path.join(SRC, 'S3-floors.png')).convert('RGB'))
+for n, (x0, x1) in zip(['floor-sanctum', 'floor-flags', 'floor-cobble'], [(46, 679), (774, 1398), (1497, 2126)]):
+    crop = src[39:671, x0:x1]
+    im = Image.fromarray(crop).resize((round((x1 - x0) * 0.3), round(632 * 0.3)), Image.BOX)
+    im.save(os.path.join(OUT, n + '.png')); print(n, im.size)
+
+# S4 (2026-11-04): building plinths, small / medium / large, cut whole
+rgba = keyed('S4-plots')
+for n, (x0, y0, x1, y1) in {'plot-s': (67, 397, 371, 741), 'plot-m': (492, 246, 958, 750), 'plot-l': (1075, 38, 1802, 763)}.items():
+    crop = rgba[y0:y1, x0:x1]
+    im = Image.fromarray(crop).convert('RGBa').resize((round((x1 - x0) * 0.3), round((y1 - y0) * 0.3)), Image.BOX).convert('RGBA')
+    a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
+    Image.fromarray(a).save(os.path.join(OUT, n + '.png')); print(n, im.size)
