@@ -142,6 +142,7 @@
     // the bosses' minions (src/minions.js): Robert's drawings replace their stand-in looks as they come in
     minion("drakeling", "drakeling", 4, [[73, 106], [73, 114], [70, 114]]), // the Carrion Drakeling: wing beats every way
     minion("tideleech", "tideleech", 4, [[140, 105], [80, 141], [80, 137]]), // the Sunken King's Tide Leech
+    minion("thornling", "thornling", 4, [[45, 87], [43, 82], [46, 83]]), // the Deadly Rose's Thornling Swarm Stalker
     minion("tidestalker", "tidestalker", 4, [[109, 123], [87, 134], [92, 138]]), // the Sunken King's Tide Stalker
     minion("wisp", "wisp", 4, [[108, 182], [112, 197], null]), // the Sunken Wisp: its front shows going away too (Robert)
     wyvern("wyvern_f1", "wyvern-f1", [125, 160], [123, 173], [111, 189]), // David (level 5), 37 px
