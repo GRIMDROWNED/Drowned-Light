@@ -704,7 +704,7 @@
     // the companions' homes (a picture per level) and the Abyss trophies
     for (const k of ["kennel", "workshop", "shrine", "toadstool", "roost"]) if (L[k]) put(L[k].y, () => building(L[k], k + u[k]));
     if (L.bell) put(L.bell.y, () => building(L.bell, "bellTower"));
-    if (L.roseheart) put(L.roseheart.y, () => drawRoseHeart(c, L.roseheart, u.roseheart, night, t));
+    if (L.roseheart) put(L.roseheart.y, () => drawRoseHeart(c, L.roseheart, u.roseheart, night, t, L.fortress));
     for (const tw of L.towers) put(tw.y, () => { const n = drawn ? "tower" + u.tower : "tower"; groundShadow(c, n, tw.x, tw.y + 4, false, 20, 6); sprite(c, n, tw.x, tw.y + 4); });
     const pyl = drawn ? "pylon" + u.pylon : "pylon", lamps = drawn ? PYLON_LAMPS[u.pylon] : [[-11, -77], [11, -77]];
     for (const q of G.pylons) put(q.y, () => {
@@ -863,7 +863,8 @@
 
   /* The Rose Heart: Robert's drawing of each level once it's in (roseHeart1–3); till then the Deadly Rose's own bud,
      smaller, in a ring of stones, swelling with each level and breathing slowly. */
-  function drawRoseHeart(c, h, lvl, night, t) {
+  function drawRoseHeart(c, h, lvl, night, t, fort) {
+    if (fort && DL.Refuge.drawBuilding(c, "roseheart", lvl, h.x, h.y)) return;
     const own = Art.sprites["roseHeart" + lvl];
     if (own) return sprite(c, "roseHeart" + lvl, h.x, h.y + 4);
     for (let i = 0; i < 9; i++) {
