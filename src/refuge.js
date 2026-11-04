@@ -219,8 +219,10 @@
     const g = Refuge.geo(lv), R = g.R, k = Math.min(1, R / RF.spotR);
     const L = { tier: DL.Camp.tier(up), R, lv, geo: g, fortress: true, items: [], plots: [], missing: [] };
     const ti = Math.min(R, RF.spotR) - RF.towerIn; // the outer wards have their own drawn corner towers
-    L.towers = [[-1, -1], [1, -1], [-1, 1], [1, 1]].slice(0, DL.Camp.towerCount(up.tower)).map(([sx, sy]) => ({ x: sx * ti, y: sy * ti }));
-    const towerSpots = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sy]) => ({ x: sx * ti, y: sy * ti }));
+    // north towers sit further in, as their tall picture would otherwise stand up over the north wall
+    const tSpot = ([sx, sy]) => ({ x: sx * ti, y: sy * (sy < 0 ? ti - 50 : ti) });
+    L.towers = [[-1, -1], [1, -1], [-1, 1], [1, 1]].slice(0, DL.Camp.towerCount(up.tower)).map(tSpot);
+    const towerSpots = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(tSpot);
     const placed = [];
     // built buildings first (they keep the best ground), then the refuge's own pieces by level, then empty plots
     const ids = [...BUILDINGS.filter((id) => up[id] > 0), ...Object.keys(RF.items).filter((id) => !BUILDINGS.includes(id) && lv >= (RF.items[id].from || 1)), ...BUILDINGS.filter((id) => !(up[id] > 0))];
@@ -250,7 +252,7 @@
     L.banners = [[-1, -1], [1, -1]].map(([sx, sy]) => ({ x: sx * (s - 22), y: sy * (s - 18) }));
     if (lv >= 10) L.banners.push(...[[-1, 1], [1, 1]].map(([sx, sy]) => ({ x: sx * (s - 22), y: sy * (s - 26) })));
     L.pylons = [[-Math.PI / 2, -1], [Math.PI / 2, -1], [0, -1], [Math.PI, -1], [-Math.PI / 2, 1], [Math.PI / 2, 1]].slice(0, up.pylon * 2)
-      .map(([a, o]) => DL.Camp.gatePoint(a, o * (g.cw / 2 + 26), -20));
+      .map(([a, o]) => DL.Camp.gatePoint(a, o * (g.cw / 2 + 30), a < -1 ? -95 : -60)); // on open ground inside, off the wall
     L.boardwalks = false;
     L.solids = [{ x: 0, y: 0, r: 16 }];
     for (const t of L.towers) L.solids.push({ x: t.x, y: t.y, r: 14 });
@@ -276,7 +278,7 @@
       if (!r.beds) return;
       const inner = g.rings[i + 1], d = inner.half + inner.face + 70;
       SIDES.forEach(([nx, ny], si) => { for (const sg of [-1, 1]) {
-        const x = nx * d + (ny ? sg * (g.cw / 2 + 60) : 0), y = ny * d + (nx ? sg * (g.cw / 2 + 60) : 0), hw = 22;
+        const x = nx * d + (ny ? sg * (g.cw / 2 + 115) : 0), y = ny * d + (nx ? sg * (g.cw / 2 + 115) : 0), hw = 22;
         if (!free(g, footprint(x, y, hw), [...placed, ...beds], [])) continue;
         L.decor.push({ x, y, kind: KINDS[(si * 2 + (sg > 0) + i) % KINDS.length] });
         L.solids.push({ x, y: y - 6, r: 12 });
@@ -352,8 +354,8 @@
   }
   Refuge.art = IMG;
   // Buildings Robert redrew on their own plinths (B02-B18): id -> levels. Drawn at BS world px per source px.
-  Refuge.BUILT = { forge: 4, armory: 4, garden: 3, alchemy: 1, quarters: 1, lodge: 1, archive: 1, circle: 1, tent: 2, barracks: 3, roseheart: 3, bell: 1, roost: 3, shrine: 3, toadstool: 3, workshop: 3, kennel: 3, pylon: 3 };
-  const BSCALE = { alchemy: 1.6, quarters: 1.6, lodge: 1.6, archive: 1.6, circle: 1.6, tent: 0.6, barracks: 0.75, roseheart: 0.8, bell: 0.6, shrine: 0.85, toadstool: 0.85, kennel: 0.75, pylon: 0.65 }; // B18 was drawn smaller
+  Refuge.BUILT = { forge: 4, armory: 4, garden: 3, alchemy: 1, quarters: 1, lodge: 1, archive: 1, circle: 1, tent: 2, barracks: 3, roseheart: 3, bell: 1, roost: 3, shrine: 3, toadstool: 3, workshop: 3, kennel: 3, pylon: 3, tower: 3 };
+  const BSCALE = { alchemy: 1.6, quarters: 1.6, lodge: 1.6, archive: 1.6, circle: 1.6, tent: 0.6, barracks: 0.75, roseheart: 0.8, bell: 0.6, shrine: 0.85, toadstool: 0.85, kennel: 0.75, pylon: 0.65, tower: 0.7 }; // B18 was drawn smaller
   const BS = 0.2;
   if (typeof Image !== "undefined") for (const [id, n] of Object.entries(Refuge.BUILT)) for (let i = 1; i <= n; i++) {
     const img = new Image(); img.onload = () => { IMG["b-" + id + i] = img; }; img.src = DL.asset("assets/sprites/refuge/b-" + id + i + ".png");

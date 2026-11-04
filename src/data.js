@@ -744,7 +744,7 @@
     centralW: [[1, 56], [15, 72]],               // the central stairs and avenues (Great Stairways widen them); 56 fits Robert's drawn flight
     face: 46,                                    // a terrace wall's south face, as tall as Robert's drawn one (tools/cut_refuge.py)
     barracks: [[5, 1], [12, 2], [17, 3]],        // the refuge's barracks level (its champions defend the refuge)
-    towerIn: 34,                                 // watchtowers stand this far in from the outermost wall's corners
+    towerIn: 70,                                 // watchtowers stand this far in from the outermost wall's corners
     levels: [
       null,
       { name: "First Flame", text: "A small hearth on a stone foundation." },
