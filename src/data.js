@@ -731,12 +731,12 @@
     // ([level, value] list), side = the level its two extra stairs per side open, at sideAt x its half from the middle.
     terraces: [
       { id: "sanctum", from: 2, half: [[2, 110], [10, 150]] },          // the flame's platform
-      { id: "main", from: 5, half: [[5, 460], [10, 520]], side: 7 },    // Inner Court: the districts
-      { id: "outer", from: 8, half: [[8, 780]], side: 10 },             // Middle Ward
-      { id: "ward4", from: 11, half: [[11, 1020]], side: 13, beds: true },  // Outer Ward
-      { id: "ward5", from: 14, half: [[14, 1280]], side: 16, beds: true }, // Low Ward
-      { id: "ward6", from: 17, half: [[17, 1540]], side: 19, beds: true }, // Curtain Terrace
-      { id: "ward7", from: 20, half: [[20, 1800]], side: 20, beds: true }, // Great Wall
+      { id: "main", from: 5, half: [[5, 500], [7, 580]], side: 7 },    // Inner Court: the districts
+      { id: "outer", from: 8, half: [[8, 880]], side: 10 },             // Middle Ward
+      { id: "ward4", from: 11, half: [[11, 1120]], side: 13, beds: true },  // Outer Ward
+      { id: "ward5", from: 14, half: [[14, 1350]], side: 16, beds: true }, // Low Ward
+      { id: "ward6", from: 17, half: [[17, 1600]], side: 19, beds: true }, // Curtain Terrace
+      { id: "ward7", from: 20, half: [[20, 1860]], side: 20, beds: true }, // Great Wall
     ],
     sideAt: 0.62, sideW: 54,
     spotR: 780,                                  // buildings' level-20 spots (items.at) are laid out inside this half-side

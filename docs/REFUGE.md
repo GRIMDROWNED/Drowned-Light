@@ -16,7 +16,7 @@ Status: **built on a branch for Robert to try (v0.15.203)**. Robert asked for it
 - The **refuge level is the Central Flame level** (1–20). Each level changes the fortress (table below). Losing flame
   levels in a siege shrinks it again.
 - The Central Flame stays at (0, 0). The camp's half-side `DL.WALL_R` is the outermost wall: 420 (levels 1–4),
-  460 (5–7), 780 (8–10), 1020 (11–13), 1280 (14–16), 1540 (17–19), 1800 (20). Widened 2026-11-04 so every
+  500 (5–6), 580 (7), 880 (8–10), 1120 (11–13), 1350 (14–16), 1600 (17–19), 1860 (20). Widened 2026-11-04 so every
   building's biggest drawn picture has room (see "Placement" below).
 - **Terraces:** nested square walls, each one level of drop (46 px face hanging below its south edge), drawn with
   Robert's terrace picture (see "Drawn kit" below). They are **solid**; only stairs pass. Sanctum (flame platform) from
@@ -181,3 +181,11 @@ levels up. tools/test_refuge.cjs fails if any built building lacks room from lev
   5 stone -> 2 iron, 10 iron -> 1 amethyst).
 - Training Grounds (7): drilled champions, health and damage x1.25.
 - Supply Pile (2): at dusk, a torch (up to your satchel) and a quarter of your lantern's oil.
+
+## Barracks posts (Robert, 2026-11-04)
+
+From Flame 5 the refuge has a barracks beside every stair of its outermost wall (4, then 12 once side stairs open),
+inside the wall, moving out as each new terrace rises (`L.posts` in Refuge.layout; the old single district barracks
+is gone). Each post trains its own champions (count, training time and strength from DL.PYRAMID.champion at the
+refuge's barracks level 1/2/3), who hold their stair within `defend` px and close in round the flame. A camp
+champion's slot is post * 4 + n (src/pyramid.js). Terraces were widened again so every post fits.

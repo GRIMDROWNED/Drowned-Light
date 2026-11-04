@@ -254,12 +254,31 @@
       .map(([a, o]) => { const along = o * (g.cw / 2 + 30), out = a < -1 ? -95 : -60; return { x: ux(a) * (R + out) - uy(a) * along, y: uy(a) * (R + out) + ux(a) * along }; });
     const obstacles = [...towerSpots.map((t) => picBox("tower", t.x, t.y)), ...pylonSpots.map((t) => picBox("pylon", t.x, t.y)),
       ...L.fires.map((f) => [f.x - 10, f.y - 34, f.x + 10, f.y + 6]), ...Refuge.bedsAt(lv).map((b) => [b.x - b.half, b.y - b.half, b.x + b.half, b.y + b.half])];
+    // Barracks posts (Robert, 2026-11-04): one barracks beside every stair of the outermost wall, on its inner side,
+    // each training its own champions to hold that stair (src/pyramid.js). They move out as new terraces rise.
+    L.posts = [];
+    const outer = g.rings[0];
+    if (Refuge.barracks(up) && outer && outer.id !== "sanctum" && outer.id !== "low") for (const q of [...outer.stairs].sort((a, b) => !!a.main - !!b.main)) { // side stairs first: the central ones have more room past their pylons
+      const [nx, ny] = SIDES[q.s], h = outer.half, [W, H] = PIC.barracks;
+      const deep0 = ny < 0 ? H + 40 : ny > 0 ? 60 : W + 50; // clear of the wall: north pictures rise toward it
+      let at = null;
+      for (const [deep, gap] of [0, 120].flatMap((d) => [0, 8, 30, 60, 100, 150, 210].map((gp) => [deep0 + d, gp]))) { // a second row in if the wall is full
+        for (const sg of [1, -1]) {
+          // along the wall, just past the stair's landing (on the east and west sides the picture's height runs along it)
+          const al = q.at + (nx ? (sg > 0 ? q.w / 2 + 30 + H - 16 + gap : -(q.w / 2 + 30 + 16 + gap)) : sg * (q.w / 2 + 30 + W + gap));
+          const x = nx ? nx * (h - deep) : al, y = ny ? ny * (h - deep) : al;
+          if (free(g, picBox("barracks", x, y), L.posts.map((p) => ({ box: picBox("barracks", p.x, p.y) })), obstacles)) { at = { x, y, s: q.s, at: q.at }; break; }
+        }
+        if (at) break;
+      }
+      if (at) { L.posts.push(at); obstacles.push(picBox("barracks", at.x, at.y)); }
+    }
     const placed = [];
     // built buildings first (they keep the best ground), then the refuge's own pieces by level, then empty plots
     const ids = [...BUILDINGS.filter((id) => up[id] > 0), ...Object.keys(RF.items).filter((id) => !BUILDINGS.includes(id) && lv >= (RF.items[id].from || 1)), ...BUILDINGS.filter((id) => !(up[id] > 0))];
     for (const id of ids) {
       const it = RF.items[id];
-      if (id === "barracks" && !Refuge.barracks(up)) continue;
+      if (id === "barracks" && (!Refuge.barracks(up) || L.posts.length)) continue; // the posts by the stairs replace it
       const px = Math.round(it.at[0] * k), py = Math.round(it.at[1] * k);
       const spot = findSpot(g, px, py, id, QUAD[it.d], placed, obstacles) || findSpot(g, px, py, id, null, placed, obstacles);
       const built = BUILDINGS.includes(id) ? up[id] > 0 : true;
@@ -276,7 +295,7 @@
     }
     for (const id of BUILDINGS) if (!L[id]) L[id] = null;
     const b = L.items.find((i) => i.id === "barracks");
-    L.barracks = b ? { x: b.x, y: b.y } : null;
+    L.barracks = b ? { x: b.x, y: b.y } : L.posts[0] || null;
     L.tents = L.items.filter((i) => i.sprite === "tent").map((i) => ({ x: i.x, y: i.y, flip: !!i.flip }));
     // banners at the sanctum's corners (or round the hearth before it), more as it grows
     L.banners = [[-1, -1], [1, -1]].map(([sx, sy]) => ({ x: sx * (s - 22), y: sy * (s - 18) }));
@@ -286,6 +305,7 @@
     L.solids = [{ x: 0, y: 0, r: 16 }];
     for (const t of L.towers) L.solids.push({ x: t.x, y: t.y, r: 14 });
     for (const t of L.pylons) L.solids.push({ x: t.x, y: t.y, r: 6 });
+    for (const b of L.posts) L.solids.push({ x: b.x, y: b.y - 6, r: 30 });
     for (const p of placed) if (!BUILDINGS.includes(p.id) || up[p.id] > 0) L.solids.push({ x: p.x, y: p.y - 6, r: Math.max(10, Math.round(p.hw * 0.55)) });
     // Robert's decor (D2) on the outer wards: by each central stair's landing, inside the ward, clear of the beds
     L.decor = [];

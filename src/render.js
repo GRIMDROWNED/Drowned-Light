@@ -812,8 +812,11 @@
      every stair. */
   function pushRefuge(list, c, L, u, t) {
     const put = (y, f) => list.push({ y, f });
+    // a barracks beside every outer stair (Refuge.layout posts), each training that stair's champions
+    if (L.posts && L.posts.length) { const lv = DL.Refuge.barracks(u); for (const b of L.posts) put(b.y, () => { if (!DL.Refuge.drawBuilding(c, "barracks", lv, b.x, b.y)) drawBarracks(c, b.x, b.y, lv); }); }
     for (const it of L.items) {
       if (it.sprite === "tent") continue; // drawn with the tents
+      if (it.id === "barracks" && L.posts.length) continue;
       if (it.id === "barracks") { const lv = DL.Refuge.barracks(u); put(it.y, () => { if (!DL.Refuge.drawBuilding(c, "barracks", lv, it.x, it.y)) drawBarracks(c, it.x, it.y, lv); }); continue; }
       if (it.id === "supplies") {
         put(it.y, () => {
