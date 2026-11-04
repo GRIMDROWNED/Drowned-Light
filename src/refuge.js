@@ -193,19 +193,30 @@
         if (x1 > px0 && x0 < px1 && y1 > py0 && y0 < py1) return false;
       }
     }
-    for (const t of towers) if (x1 > t.x - 30 && x0 < t.x + 30 && y1 > t.y - 34 && y0 < t.y + 14) return false;
+    for (const t of towers) if (x1 + 8 > t[0] && x0 - 8 < t[2] && y1 + 8 > t[1] && y0 - 8 < t[3]) return false;
     for (const p of placed) if (x1 + 10 > p.box[0] && x0 - 10 < p.box[2] && y1 + 10 > p.box[1] && y0 - 10 < p.box[3]) return false;
     return true;
   }
   const footprint = (x, y, hw) => [x - hw, y - Math.round(hw * 0.95), x + hw, y + 4];
+  /* Robert's drawn buildings at their biggest level: half-width and height in world px above the plinth's front edge
+     (drawn at y + 16). Placement keeps the whole picture clear of walls, stairs and other buildings, so a building
+     never has to move as it levels up (measured from assets/sprites/refuge/b-*.png; re-measure when art changes). */
+  const PIC = { forge: [54, 132], armory: [56, 130], workbench: [54, 118], garden: [77, 134], alchemy: [46, 121], quarters: [43, 133],
+    lodge: [53, 142], archive: [42, 133], circle: [45, 72], tent: [45, 99], barracks: [57, 98], roseheart: [55, 107], bell: [55, 152],
+    roost: [52, 138], shrine: [56, 123], toadstool: [49, 118], workshop: [51, 144], kennel: [52, 100], pylon: [29, 91], tower: [30, 98],
+    storehouse: [49, 96], salvage: [43, 98], training: [45, 94], supplies: [39, 87] };
+  Refuge.PIC = PIC;
+  const picBox = (k, x, y) => { const [w, h] = PIC[k]; return [x - w, y + 16 - h, x + w, y + 16]; };
+  const itemBox = (id, x, y) => { const it = RF.items[id], k = it.sprite || id; return PIC[k] ? picBox(k, x, y) : footprint(x, y, it.hw); };
+  Refuge.itemBox = itemBox;
   // The nearest free spot to (px, py) in quadrant q (a spiral of 6 px steps), or anywhere, or null.
-  function findSpot(g, px, py, hw, q, placed, towers) {
-    for (let r = 0; r <= 260; r += 6) {
+  function findSpot(g, px, py, id, q, placed, towers) {
+    for (let r = 0; r <= 420; r += 6) {
       const n = Math.max(1, Math.round((2 * Math.PI * r) / 6));
       for (let i = 0; i < n; i++) {
         const a = (i / n) * Math.PI * 2, x = Math.round(px + Math.cos(a) * r), y = Math.round(py + Math.sin(a) * r);
         if (q && (Math.sign(x) !== q[0] || Math.sign(y) !== q[1])) continue;
-        if (free(g, footprint(x, y, hw), placed, towers)) return { x, y };
+        if (free(g, itemBox(id, x, y), placed, towers)) return { x, y };
       }
     }
     return null;
@@ -223,41 +234,7 @@
     const tSpot = ([sx, sy]) => ({ x: sx * ti, y: sy * (sy < 0 ? ti - 50 : ti) });
     L.towers = [[-1, -1], [1, -1], [-1, 1], [1, 1]].slice(0, DL.Camp.towerCount(up.tower)).map(tSpot);
     const towerSpots = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(tSpot);
-    const placed = [];
-    // built buildings first (they keep the best ground), then the refuge's own pieces by level, then empty plots
-    const ids = [...BUILDINGS.filter((id) => up[id] > 0), ...Object.keys(RF.items).filter((id) => !BUILDINGS.includes(id) && lv >= (RF.items[id].from || 1)), ...BUILDINGS.filter((id) => !(up[id] > 0))];
-    for (const id of ids) {
-      const it = RF.items[id];
-      if (id === "barracks" && !Refuge.barracks(up)) continue;
-      const px = Math.round(it.at[0] * k), py = Math.round(it.at[1] * k);
-      const spot = findSpot(g, px, py, it.hw, QUAD[it.d], placed, towerSpots) || findSpot(g, px, py, it.hw, null, placed, towerSpots);
-      const built = BUILDINGS.includes(id) ? up[id] > 0 : true;
-      // no room: a built building still stands (squeezed in where it would go), a refuge piece waits for more ground
-      if (!spot) { if (built && BUILDINGS.includes(id)) placed.push({ id, x: px, y: py, hw: it.hw, box: footprint(px, py, it.hw), crowded: true }); L.missing.push(id); continue; }
-      placed.push({ id, x: spot.x, y: spot.y, hw: it.hw, box: footprint(spot.x, spot.y, it.hw) });
-    }
-    for (const p of placed) {
-      const it = RF.items[p.id], isB = BUILDINGS.includes(p.id);
-      if (isB && up[p.id] > 0) L[p.id] = { x: p.x, y: p.y };
-      else if (isB) { if (lv >= 6) L.plots.push({ x: p.x, y: p.y, hw: p.hw, reserved: true }); } // empty plots once the districts' terrace is built
-      else L.items.push({ id: p.id, x: p.x, y: p.y, hw: p.hw, ph: it.ph, sprite: it.sprite, flip: it.flip });
-      if (!isB || up[p.id] > 0) L.plots.push({ x: p.x, y: p.y, hw: p.hw, id: p.id });
-    }
-    for (const id of BUILDINGS) if (!L[id]) L[id] = null;
-    const b = L.items.find((i) => i.id === "barracks");
-    L.barracks = b ? { x: b.x, y: b.y } : null;
-    L.tents = L.items.filter((i) => i.sprite === "tent").map((i) => ({ x: i.x, y: i.y, flip: !!i.flip }));
-    // banners at the sanctum's corners (or round the hearth before it), more as it grows
     const s0r = g.rings.find((r) => r.id === "sanctum"), s = s0r ? s0r.half : 70;
-    L.banners = [[-1, -1], [1, -1]].map(([sx, sy]) => ({ x: sx * (s - 22), y: sy * (s - 18) }));
-    if (lv >= 10) L.banners.push(...[[-1, 1], [1, 1]].map(([sx, sy]) => ({ x: sx * (s - 22), y: sy * (s - 26) })));
-    L.pylons = [[-Math.PI / 2, -1], [Math.PI / 2, -1], [0, -1], [Math.PI, -1], [-Math.PI / 2, 1], [Math.PI / 2, 1]].slice(0, up.pylon * 2)
-      .map(([a, o]) => DL.Camp.gatePoint(a, o * (g.cw / 2 + 30), a < -1 ? -95 : -60)); // on open ground inside, off the wall
-    L.boardwalks = false;
-    L.solids = [{ x: 0, y: 0, r: 16 }];
-    for (const t of L.towers) L.solids.push({ x: t.x, y: t.y, r: 14 });
-    for (const t of L.pylons) L.solids.push({ x: t.x, y: t.y, r: 6 });
-    for (const p of placed) if (!BUILDINGS.includes(p.id) || up[p.id] > 0) L.solids.push({ x: p.x, y: p.y - 6, r: Math.max(10, Math.round(p.hw * 0.55)) });
     // the refuge's lit pieces: braziers on the terrace corners, lamps at the stairs, beacons round the sanctum
     L.fires = [];
     const ring = (id) => g.rings.find((r) => r.id === id);
@@ -271,6 +248,45 @@
       for (const sg of [-1, 1]) L.fires.push({ x: e.inn.x + (nx ? 0 : sg * (q.w / 2 + 8)), y: e.inn.y + (nx ? sg * (q.w / 2 + 8) : 0), kind: "torch" });
     }
     if (lv >= 20) for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) L.fires.push({ x: sx * (s + 4), y: sy * (s + 4) - (sy > 0 ? 0 : 0), kind: "beacon" });
+    // fixed pieces the buildings keep clear of: watchtowers, the pylons by the gates, fires, marsh beds
+    const ux = (a) => Math.round(Math.cos(a)), uy = (a) => Math.round(Math.sin(a));
+    const pylonSpots = [[-Math.PI / 2, -1], [Math.PI / 2, -1], [0, -1], [Math.PI, -1], [-Math.PI / 2, 1], [Math.PI / 2, 1]]
+      .map(([a, o]) => { const along = o * (g.cw / 2 + 30), out = a < -1 ? -95 : -60; return { x: ux(a) * (R + out) - uy(a) * along, y: uy(a) * (R + out) + ux(a) * along }; });
+    const obstacles = [...towerSpots.map((t) => picBox("tower", t.x, t.y)), ...pylonSpots.map((t) => picBox("pylon", t.x, t.y)),
+      ...L.fires.map((f) => [f.x - 10, f.y - 34, f.x + 10, f.y + 6]), ...Refuge.bedsAt(lv).map((b) => [b.x - b.half, b.y - b.half, b.x + b.half, b.y + b.half])];
+    const placed = [];
+    // built buildings first (they keep the best ground), then the refuge's own pieces by level, then empty plots
+    const ids = [...BUILDINGS.filter((id) => up[id] > 0), ...Object.keys(RF.items).filter((id) => !BUILDINGS.includes(id) && lv >= (RF.items[id].from || 1)), ...BUILDINGS.filter((id) => !(up[id] > 0))];
+    for (const id of ids) {
+      const it = RF.items[id];
+      if (id === "barracks" && !Refuge.barracks(up)) continue;
+      const px = Math.round(it.at[0] * k), py = Math.round(it.at[1] * k);
+      const spot = findSpot(g, px, py, id, QUAD[it.d], placed, obstacles) || findSpot(g, px, py, id, null, placed, obstacles);
+      const built = BUILDINGS.includes(id) ? up[id] > 0 : true;
+      // no room: a built building still stands (squeezed in where it would go), a refuge piece waits for more ground
+      if (!spot) { if (built && BUILDINGS.includes(id)) placed.push({ id, x: px, y: py, hw: it.hw, box: itemBox(id, px, py), crowded: true }); L.missing.push(id); continue; }
+      placed.push({ id, x: spot.x, y: spot.y, hw: it.hw, box: itemBox(id, spot.x, spot.y) });
+    }
+    for (const p of placed) {
+      const it = RF.items[p.id], isB = BUILDINGS.includes(p.id);
+      if (isB && up[p.id] > 0) L[p.id] = { x: p.x, y: p.y };
+      else if (isB) { if (lv >= 6) L.plots.push({ x: p.x, y: p.y, hw: p.hw, reserved: true }); } // empty plots once the districts' terrace is built
+      else L.items.push({ id: p.id, x: p.x, y: p.y, hw: p.hw, ph: it.ph, sprite: it.sprite, flip: it.flip });
+      if (!isB || up[p.id] > 0) L.plots.push({ x: p.x, y: p.y, hw: p.hw, id: p.id });
+    }
+    for (const id of BUILDINGS) if (!L[id]) L[id] = null;
+    const b = L.items.find((i) => i.id === "barracks");
+    L.barracks = b ? { x: b.x, y: b.y } : null;
+    L.tents = L.items.filter((i) => i.sprite === "tent").map((i) => ({ x: i.x, y: i.y, flip: !!i.flip }));
+    // banners at the sanctum's corners (or round the hearth before it), more as it grows
+    L.banners = [[-1, -1], [1, -1]].map(([sx, sy]) => ({ x: sx * (s - 22), y: sy * (s - 18) }));
+    if (lv >= 10) L.banners.push(...[[-1, 1], [1, 1]].map(([sx, sy]) => ({ x: sx * (s - 22), y: sy * (s - 26) })));
+    L.pylons = pylonSpots.slice(0, up.pylon * 2); // on open ground inside each gate, off the wall
+    L.boardwalks = false;
+    L.solids = [{ x: 0, y: 0, r: 16 }];
+    for (const t of L.towers) L.solids.push({ x: t.x, y: t.y, r: 14 });
+    for (const t of L.pylons) L.solids.push({ x: t.x, y: t.y, r: 6 });
+    for (const p of placed) if (!BUILDINGS.includes(p.id) || up[p.id] > 0) L.solids.push({ x: p.x, y: p.y - 6, r: Math.max(10, Math.round(p.hw * 0.55)) });
     // Robert's decor (D2) on the outer wards: by each central stair's landing, inside the ward, clear of the beds
     L.decor = [];
     const KINDS = ["statue", "well", "rack", "crates", "planter", "statue", "crates", "rack"], beds = Refuge.bedsAt(lv).map((b) => ({ box: [b.x - b.half, b.y - b.half, b.x + b.half, b.y + b.half] }));
@@ -354,8 +370,8 @@
   }
   Refuge.art = IMG;
   // Buildings Robert redrew on their own plinths (B02-B18): id -> levels. Drawn at BS world px per source px.
-  Refuge.BUILT = { forge: 4, armory: 4, garden: 3, alchemy: 1, quarters: 1, lodge: 1, archive: 1, circle: 1, tent: 2, barracks: 3, roseheart: 3, bell: 1, roost: 3, shrine: 3, toadstool: 3, workshop: 3, kennel: 3, pylon: 3, tower: 3 };
-  const BSCALE = { alchemy: 1.6, quarters: 1.6, lodge: 1.6, archive: 1.6, circle: 1.6, tent: 0.6, barracks: 0.75, roseheart: 0.8, bell: 0.6, shrine: 0.85, toadstool: 0.85, kennel: 0.75, pylon: 0.65, tower: 0.7 }; // B18 was drawn smaller
+  Refuge.BUILT = { forge: 4, armory: 4, garden: 3, alchemy: 1, quarters: 1, lodge: 1, archive: 1, circle: 1, tent: 2, barracks: 3, roseheart: 3, bell: 1, roost: 3, shrine: 3, toadstool: 3, workshop: 3, kennel: 3, pylon: 3, tower: 3, workbench: 4, storehouse: 1, salvage: 1, training: 1, supplies: 1 };
+  const BSCALE = { alchemy: 1.6, quarters: 1.6, lodge: 1.6, archive: 1.6, circle: 1.6, tent: 0.6, barracks: 0.75, roseheart: 0.8, bell: 0.6, shrine: 0.85, toadstool: 0.85, kennel: 0.75, pylon: 0.65, tower: 0.7, workbench: 0.9, storehouse: 1.2, salvage: 1.2, training: 1.2, supplies: 1.2 }; // B18 was drawn smaller
   const BS = 0.2;
   if (typeof Image !== "undefined") for (const [id, n] of Object.entries(Refuge.BUILT)) for (let i = 1; i <= n; i++) {
     const img = new Image(); img.onload = () => { IMG["b-" + id + i] = img; }; img.src = DL.asset("assets/sprites/refuge/b-" + id + i + ".png");

@@ -160,6 +160,8 @@ BUILD = {
     'B08-bone-kennel': ('kennel', [(117, 18, 630, 692), (735, 18, 1303, 692), (1395, 18, 2110, 692)]),
     'B07-lantern-pylon': ('pylon', [(188, 5, 620, 713), (853, 5, 1294, 713), (1486, 5, 1945, 713)]),
     'B06-watchtower': ('tower', [(228, 6, 669, 711), (868, 6, 1306, 711), (1480, 6, 1925, 711)]),
+    'B04-workbench': ('workbench', [(43, 25, 444, 688), (497, 25, 960, 688), (1012, 25, 1470, 688), (1520, 25, 2133, 688)]),
+    'B17-yards': ('yards', [(28, 200, 451, 669), (482, 200, 857, 669), (887, 200, 1275, 669), (1305, 200, 1643, 669)]),
     'B03-armory': ('armory', [(38, 265, 453, 684), (503, 161, 943, 684), (995, 122, 1507, 684), (1562, 31, 2131, 684)]),
 }
 for f, (key, boxes) in BUILD.items():
@@ -169,6 +171,6 @@ for f, (key, boxes) in BUILD.items():
         rgba = np.zeros((y1 - y0, x1 - x0, 4), 'uint8'); rgba[..., :3] = src[y0:y1, x0:x1] * fgm[y0:y1, x0:x1, None]; rgba[..., 3] = fgm[y0:y1, x0:x1] * 255
         im = Image.fromarray(rgba).convert('RGBa').resize((round((x1 - x0) * 0.4), round((y1 - y0) * 0.4)), Image.BOX).convert('RGBA')
         a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
-        name = ['alchemy', 'quarters', 'lodge', 'archive', 'circle'][i] + '1' if key == 'upper' else f'{key}{i + 1}'
+        name = ['alchemy', 'quarters', 'lodge', 'archive', 'circle'][i] + '1' if key == 'upper' else ['storehouse', 'salvage', 'training', 'supplies'][i] + '1' if key == 'yards' else f'{key}{i + 1}'
         Image.fromarray(a).save(os.path.join(OUT, f'b-{name}.png'))
     print(f, len(boxes))

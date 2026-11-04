@@ -725,21 +725,21 @@
      (earlier levels scale it in and the placer nudges it to the nearest free ground in its district); `hw` = half
      its footprint's width; `from` = the refuge level a decor piece appears; `ph` = placeholder until art is drawn. */
   DL.REFUGE = {
-    camp: 260,                                   // the camp's half-side before the terraces (levels 1-4)
+    camp: 420,                                   // the camp's half-side before the terraces (levels 1-4)
     lowWall: 3,                                  // low stone walls round the camp from this level until the Inner Court rises
     // Robert, 2026-11-04: a new terrace rises every 3 Central Flame levels, each covering more of the map. half = half-side
     // ([level, value] list), side = the level its two extra stairs per side open, at sideAt x its half from the middle.
     terraces: [
       { id: "sanctum", from: 2, half: [[2, 110], [10, 150]] },          // the flame's platform
-      { id: "main", from: 5, half: [[5, 300], [10, 340]], side: 7 },    // Inner Court: the districts
-      { id: "outer", from: 8, half: [[8, 540]], side: 10 },             // Middle Ward
-      { id: "ward4", from: 11, half: [[11, 780]], side: 13, beds: true },  // Outer Ward
-      { id: "ward5", from: 14, half: [[14, 1080]], side: 16, beds: true }, // Low Ward
-      { id: "ward6", from: 17, half: [[17, 1420]], side: 19, beds: true }, // Curtain Terrace
+      { id: "main", from: 5, half: [[5, 460], [10, 520]], side: 7 },    // Inner Court: the districts
+      { id: "outer", from: 8, half: [[8, 780]], side: 10 },             // Middle Ward
+      { id: "ward4", from: 11, half: [[11, 1020]], side: 13, beds: true },  // Outer Ward
+      { id: "ward5", from: 14, half: [[14, 1280]], side: 16, beds: true }, // Low Ward
+      { id: "ward6", from: 17, half: [[17, 1540]], side: 19, beds: true }, // Curtain Terrace
       { id: "ward7", from: 20, half: [[20, 1800]], side: 20, beds: true }, // Great Wall
     ],
     sideAt: 0.62, sideW: 54,
-    spotR: 540,                                  // buildings' level-20 spots (items.at) are laid out inside this half-side
+    spotR: 780,                                  // buildings' level-20 spots (items.at) are laid out inside this half-side
     bed: { half: 70, gap: 360 },                 // marsh beds on the outer wards: resources grow only in them
     centralW: [[1, 56], [15, 72]],               // the central stairs and avenues (Great Stairways widen them); 56 fits Robert's drawn flight
     face: 46,                                    // a terrace wall's south face, as tall as Robert's drawn one (tools/cut_refuge.py)
@@ -771,23 +771,23 @@
     // district: nw military and crafting, ne champions and operations, sw familiars and cultivation, se boss rewards
     items: {
       // existing camp buildings (canonical ids from DL.UPGRADES; shown when built, a reserved plot otherwise)
-      forge: { d: "nw", at: [-250, -100], hw: 38 }, armory: { d: "nw", at: [-100, -250], hw: 38 }, workbench: { d: "nw", at: [-290, -250], hw: 30 },
-      garden: { d: "sw", at: [-250, 110], hw: 40 }, kennel: { d: "sw", at: [-110, 262], hw: 30 }, shrine: { d: "sw", at: [-230, 232], hw: 27 },
-      toadstool: { d: "sw", at: [-298, 300], hw: 26 }, workshop: { d: "sw", at: [-405, 140], hw: 28 }, roost: { d: "sw", at: [-160, 445], hw: 34 },
-      bell: { d: "se", at: [110, 240], hw: 28 }, roseheart: { d: "se", at: [250, 250], hw: 30 },
+      forge: { d: "nw", at: [-361, -144], hw: 38 }, armory: { d: "nw", at: [-144, -361], hw: 38 }, workbench: { d: "nw", at: [-419, -361], hw: 30 },
+      garden: { d: "sw", at: [-361, 159], hw: 40 }, kennel: { d: "sw", at: [-159, 378], hw: 30 }, shrine: { d: "sw", at: [-332, 335], hw: 27 },
+      toadstool: { d: "sw", at: [-430, 433], hw: 26 }, workshop: { d: "sw", at: [-585, 202], hw: 28 }, roost: { d: "sw", at: [-231, 643], hw: 34 },
+      bell: { d: "se", at: [159, 347], hw: 28 }, roseheart: { d: "se", at: [361, 361], hw: 30 },
       // refuge structures, by refuge level
-      barracks: { d: "ne", at: [230, -120], hw: 44, from: 5 },
-      tentA: { d: "ne", at: [110, -250], hw: 26, from: 2, sprite: "tent" }, tentB: { d: "ne", at: [290, -280], hw: 26, from: 2, sprite: "tent", flip: true },
-      supplies: { d: "ne", at: [190, -230], hw: 18, from: 2 },
-      storehouse: { d: "ne", at: [410, -260], hw: 36, from: 7, ph: "Storehouse" },
-      salvage: { d: "sw", at: [-280, 380], hw: 36, from: 7, ph: "Salvage Yard" },
-      training: { d: "nw", at: [-400, -150], hw: 40, from: 7, ph: "Training Grounds" },
-      alchemy: { d: "nw", at: [-150, -405], hw: 30, from: 13, ph: "Alchemy Station" },
-      quarters: { d: "ne", at: [400, -130], hw: 40, from: 14, ph: "Survivor Quarters" },
-      tentC: { d: "ne", at: [150, -410], hw: 26, from: 14, sprite: "tent" }, tentD: { d: "ne", at: [250, -420], hw: 26, from: 14, sprite: "tent", flip: true },
-      lodge: { d: "ne", at: [410, -400], hw: 38, from: 16, ph: "Expedition Lodge" },
-      archive: { d: "se", at: [260, 110], hw: 38, from: 16, ph: "Research Archive" },
-      circle: { d: "se", at: [400, 210], hw: 44, from: 20, ph: "Summoning Circle" },
+      barracks: { d: "ne", at: [332, -173], hw: 44, from: 5 },
+      tentA: { d: "ne", at: [159, -361], hw: 26, from: 2, sprite: "tent" }, tentB: { d: "ne", at: [419, -404], hw: 26, from: 2, sprite: "tent", flip: true },
+      supplies: { d: "ne", at: [274, -332], hw: 18, from: 2 },
+      storehouse: { d: "ne", at: [592, -376], hw: 36, from: 7, ph: "Storehouse" },
+      salvage: { d: "sw", at: [-404, 549], hw: 36, from: 7, ph: "Salvage Yard" },
+      training: { d: "nw", at: [-578, -217], hw: 40, from: 7, ph: "Training Grounds" },
+      alchemy: { d: "nw", at: [-217, -585], hw: 30, from: 13, ph: "Alchemy Station" },
+      quarters: { d: "ne", at: [578, -188], hw: 40, from: 14, ph: "Survivor Quarters" },
+      tentC: { d: "ne", at: [217, -592], hw: 26, from: 14, sprite: "tent" }, tentD: { d: "ne", at: [361, -607], hw: 26, from: 14, sprite: "tent", flip: true },
+      lodge: { d: "ne", at: [592, -578], hw: 38, from: 16, ph: "Expedition Lodge" },
+      archive: { d: "se", at: [376, 159], hw: 38, from: 16, ph: "Research Archive" },
+      circle: { d: "se", at: [578, 303], hw: 44, from: 20, ph: "Summoning Circle" },
     },
   };
 

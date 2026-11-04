@@ -15,8 +15,9 @@ Status: **built on a branch for Robert to try (v0.15.203)**. Robert asked for it
 
 - The **refuge level is the Central Flame level** (1–20). Each level changes the fortress (table below). Losing flame
   levels in a siege shrinks it again.
-- The Central Flame stays at (0, 0). The camp's half-side `DL.WALL_R` is the outermost wall: 260 (levels 1–5),
-  300/340 (6–10), 490 (11–17), 540 (18–20).
+- The Central Flame stays at (0, 0). The camp's half-side `DL.WALL_R` is the outermost wall: 420 (levels 1–4),
+  460 (5–7), 780 (8–10), 1020 (11–13), 1280 (14–16), 1540 (17–19), 1800 (20). Widened 2026-11-04 so every
+  building's biggest drawn picture has room (see "Placement" below).
 - **Terraces:** nested square walls, each one level of drop (46 px face hanging below its south edge), drawn with
   Robert's terrace picture (see "Drawn kit" below). They are **solid**; only stairs pass. Sanctum (flame platform) from
   level 4, district terrace from 6, outer terrace from 11.
@@ -163,3 +164,12 @@ name shows, which is the placeholder):
 **Familiars, one at a time** (Robert, 2026-11-04): a knight brings one familiar (two with the Summoning Circle), chosen with
 **Bring along** on its Kit card (`save.fams`). A familiar just won comes along at once. Homes can still be built and
 levelled for their effects. Co-op guests' familiars are not limited yet.
+
+## Placement (2026-11-04)
+
+Robert asked that no building cover a wall or anything else. `Refuge.PIC` (src/refuge.js) holds each drawn
+building's biggest picture (half-width, height above the plinth's front edge), measured from
+assets/sprites/refuge/b-*.png; re-measure it when art changes. The placer keeps that whole picture clear of terrace
+walls and faces, stairs, avenues, watchtowers, gate pylons, fires and marsh beds, so a building never moves as it
+levels up. tools/test_refuge.cjs fails if any built building lacks room from level 5 on. Before the Inner Court
+(levels 1-4) only the early buildings are expected; a sandbox with every building built crowds there.

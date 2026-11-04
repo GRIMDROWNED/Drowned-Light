@@ -817,6 +817,7 @@
       if (it.id === "barracks") { const lv = DL.Refuge.barracks(u); put(it.y, () => { if (!DL.Refuge.drawBuilding(c, "barracks", lv, it.x, it.y)) drawBarracks(c, it.x, it.y, lv); }); continue; }
       if (it.id === "supplies") {
         put(it.y, () => {
+          if (DL.Refuge.drawBuilding(c, "supplies", 1, it.x, it.y)) return;
           const piles = ["resWood", "resStone", "resWood", "resIron", "resResin"];
           piles.forEach((n, i) => { if (Art.sprites[n]) sprite(c, n, it.x - 14 + (i % 3) * 14, it.y - 8 + Math.floor(i / 3) * 10); });
         });
