@@ -877,7 +877,7 @@
       ev.waveT -= dt;
       if (ev.waveT <= 0) {
         ev.waveT = 12;
-        spawnWave(ev.obj.x, ev.obj.y, DL.ZONES[ev.obj.zi].pool, 4 + ev.obj.zi + Math.floor(G.save.day * 0.5), ev.obj, 520, ev.obj.zi);
+        spawnWave(ev.obj.x, ev.obj.y, DL.Minions.pool(ev.obj.zi), 4 + ev.obj.zi + Math.floor(G.save.day * 0.5), ev.obj, 520, ev.obj.zi);
       }
       if (dist(p.x, p.y, ev.obj.x, ev.obj.y) < 650) return; // the knight at the root gets waves, not roamers
     }
@@ -888,8 +888,9 @@
     if (G.spawnT > 0) return;
     G.spawnT = Math.max(0.8, (G.night ? 3.2 : 6.5) - p.zi * 0.35 - G.save.day * 0.06) / G.diff().spawn;
     const shelter = G.bloomShelter(p.x, p.y);
-    const type = pickType(Z.pool);
-    const count = type === "revenant" ? 4 + ((Math.random() * 3) | 0) : type === "squire" ? 2 + ((Math.random() * 2) | 0) : 1;
+    const type = pickType(DL.Minions.pool(Math.max(1, p.zi))); // the zone's Drowned, and the minions of the bosses slain (src/minions.js)
+    const pk = DL.ENEMIES[type].pack; // a boss's swarming minions come in packs
+    const count = pk ? pk[0] + ((Math.random() * (pk[1] - pk[0] + 1)) | 0) : type === "revenant" ? 4 + ((Math.random() * 3) | 0) : type === "squire" ? 2 + ((Math.random() * 2) | 0) : 1;
     let x, y;
     for (let tries = 0; tries < 6; tries++) {
       const a = rand(0, TAU), r = type === "revenant" ? rand(200, 320) : rand(460, 620);
@@ -1020,7 +1021,7 @@
         if (dp < (e.def.den ? DL.DEN.wake : e.def.wake || 170) || e.hp < e.maxHp) { e.dormant = false; if (e.isSelf) say("Your drowned self rises to meet you.", "danger"); }
         else continue;
       }
-      if (e.lord && DL.Minions.busy(e, dt)) continue; // a Tide Leech under the causeway (src/minions.js)
+      if (e.def.burrow && DL.Minions.busy(e, dt)) continue; // a Tide Leech under the ground (src/minions.js)
 
       // Choose what to chase.
       let goal = null;

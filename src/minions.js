@@ -64,22 +64,29 @@
         }
       }
     }
-    for (const e of G.enemies) {
-      if (!e.lord || e.removed) continue;
-      const b = lordOf(e);
-      if (!b) { crumble(e); continue; } // its boss is slain or gone back to sleep
-      if (e.type === "screecher" && e.rise <= 0) {
-        e.callT = (e.callT == null ? 3 : e.callT) - dt;
-        if (e.callT <= 0) {
-          e.callT = M.wyvern.screecher.callEvery;
-          if (e.state === "move") e.stun = 0.5; // it rears back to shriek
-          G.text(e.x, e.y - 60, "SCREECH", "#ff9a8a", 0.9);
-          DL.Sound.play("growl");
-          call(b, "drakeling", M.wyvern.screecher.call, () => ({ x: e.x + rand(-40, 40), y: e.y + rand(-30, 30) }));
-        }
-      }
+    for (const e of G.enemies.slice()) {
+      if (e.removed) continue;
+      const b = e.lord ? lordOf(e) : null;
+      if (e.lord && !b) { crumble(e); continue; } // its boss is slain or gone back to sleep
+      if (e.type === "screecher" && e.rise <= 0 && !e.dormant) screech(e, b, dt);
     }
   };
+  // A Screecher shrieks for Drakelings: its boss's own, or (roaming wild, its boss long slain) a few of its own, never
+  // more than `wildMax` near it
+  function screech(e, b, dt) {
+    const S = M.wyvern.screecher;
+    if (!b && !G.knights().some((k) => dist(k.x, k.y, e.x, e.y) < 500)) return;
+    e.callT = (e.callT == null ? 3 : e.callT) - dt;
+    if (e.callT > 0) return;
+    e.callT = S.callEvery;
+    if (e.state === "move") e.stun = 0.5; // it rears back to shriek
+    G.text(e.x, e.y - 60, "SCREECH", "#ff9a8a", 0.9);
+    DL.Sound.play("growl");
+    const at = () => ({ x: e.x + rand(-40, 40), y: e.y + rand(-30, 30) });
+    if (b) return call(b, "drakeling", S.call, at);
+    const near = G.enemies.filter((q) => q.type === "drakeling" && !q.removed && dist(q.x, q.y, e.x, e.y) < 500).length;
+    for (let i = 0; i < Math.min(S.call, S.wildMax - near); i++) { const o = at(); G.enemies.push(G.makeEnemy("drakeling", o.x, o.y, e.zi, { rise: 0.9 })); }
+  }
   // Tide Leech: every `burrow` s it dives into the causeway and bursts up under the knight it hunts
   function burrow(e, dt) {
     if (e.dive) {
@@ -153,6 +160,20 @@
       if (f < low) { low = f; pick = k; }
     }
     return pick;
+  };
+
+  // The Drowned that roam zone `zi`: its own pool, plus the minions of every boss slain in this world whose home is
+  // that zone or nearer the camp (DL.MINIONS.wild)
+  Minions.pool = function (zi) {
+    const Z = DL.ZONES[zi] || DL.ZONES[0], A = G.save.archive || {};
+    let pool = Z.pool;
+    for (const boss in M.wild) {
+      const w = M.wild[boss];
+      if (!A[boss] || zi < w.zone) continue;
+      if (pool === Z.pool) pool = Object.assign({}, Z.pool);
+      for (const t in w.pool) pool[t] = (pool[t] || 0) + w.pool[t];
+    }
+    return pool;
   };
 
   /* ---------------- drawing ---------------- */

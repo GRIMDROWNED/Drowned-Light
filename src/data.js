@@ -136,7 +136,7 @@
        `hang`: keeps that far off; `drain`: each bite heals its boss that share of the boss's health; `ward`: its boss
        takes that much less damage while it lives. */
     drakeling: { name: "Carrion Drakeling", hp: 16, speed: 125, dmg: 6, range: 28, windup: 0.3, cd: 1.2, scale: 1, radius: 9, mass: 0.4,
-      fly: true, lunge: 360, retreat: 0.8, minion: true, look: "wyvern_f0", lookScale: 1.1, tint: "#b0202a", tintK: 0.35, drop: {} },
+      fly: true, lunge: 360, retreat: 0.8, minion: true, look: "wyvern_f0", lookScale: 1.1, tint: "#b0202a", tintK: 0.35, pack: [2, 3], drop: {} },
     raptor: { name: "Bonepicker Raptor", hp: 36, speed: 128, dmg: 9, range: 32, windup: 0.35, cd: 1.1, scale: 1, radius: 12, mass: 0.8,
       lunge: 380, zigzag: true, prey: "egg", minion: true, look: "boneHound", lookScale: 1, tint: "#c0282a", tintK: 0.3, drop: {} },
     screecher: { name: "Red Marrow Screecher", hp: 60, speed: 52, dmg: 9, range: 36, windup: 0.5, cd: 1.6, scale: 1, radius: 13, mass: 1,
@@ -152,16 +152,16 @@
     tollwretch: { name: "Toll Wretch", hp: 45, speed: 56, dmg: 8, range: 32, windup: 0.45, cd: 1.4, scale: 1, radius: 12, mass: 0.9,
       hang: 240, minion: true, look: "hexbearer", lookScale: 1, tint: "#d8cdb0", tintK: 0.4, drop: { resin: 0.5 } },
     skitterer: { name: "Chapel Skitterer", hp: 18, speed: 112, dmg: 6, range: 26, windup: 0.28, cd: 0.95, scale: 1, radius: 9, mass: 0.5,
-      surround: true, minion: true, look: "bell", lookScale: 0.5, tint: "#6a5030", tintK: 0.3, drop: {} },
+      surround: true, minion: true, look: "bell", lookScale: 0.5, tint: "#6a5030", tintK: 0.3, pack: [2, 4], drop: {} },
     handmaiden: { name: "Briar Handmaiden", hp: 85, speed: 62, dmg: 12, range: 64, windup: 0.55, cd: 1.6, scale: 1, radius: 13, mass: 1.2,
       lunge: 300, minion: true, look: "rose", lookScale: 0.55, tint: "#e8c8b8", tintK: 0.2, drop: { resin: 0.5 } },
     rosewretch: { name: "Rose Wretch", hp: 48, speed: 76, dmg: 9, range: 32, windup: 0.4, cd: 1.2, scale: 1, radius: 12, mass: 1,
       prey: "hurt", drain: 0.01, minion: true, look: "revenant", lookScale: 1.4, tint: "#9c1a1e", tintK: 0.45, drop: {} },
     thornling: { name: "Thornling Swarm Stalker", hp: 10, speed: 126, dmg: 4, range: 22, windup: 0.22, cd: 0.8, scale: 1, radius: 7, mass: 0.3,
-      surround: true, minion: true, look: "revenant", lookScale: 0.75, tint: "#6a4a2a", tintK: 0.45, drop: {} },
+      surround: true, minion: true, look: "revenant", lookScale: 0.75, tint: "#6a4a2a", tintK: 0.45, pack: [3, 5], drop: {} },
     // the Sunken King's (Robert's sheet, 2026-11-04). `burrow`: dives into the causeway and bursts up under a knight that often
     tidestalker: { name: "Tide Stalker", hp: 26, speed: 100, dmg: 8, range: 28, windup: 0.3, cd: 1.0, scale: 1, radius: 11, mass: 0.7,
-      zigzag: true, minion: true, look: "revenant", lookScale: 1.15, tint: "#566f2a", tintK: 0.4, drop: {} },
+      zigzag: true, minion: true, look: "revenant", lookScale: 1.15, tint: "#566f2a", tintK: 0.4, pack: [2, 3], drop: {} },
     wisp: { name: "Sunken Wisp", hp: 40, speed: 60, dmg: 7, range: 230, windup: 0.7, cd: 2.2, scale: 1, radius: 11, mass: 0.6,
       ranged: true, keep: 200, fly: true, minion: true, look: "abigail", lookScale: 0.8, tint: "#4fe6f0", tintK: 0.35, drop: {} },
     tideleech: { name: "Tide Leech", hp: 70, speed: 50, dmg: 13, range: 34, windup: 0.5, cd: 1.6, scale: 1, radius: 14, mass: 2,
@@ -619,7 +619,7 @@
     wyvern: {
       drakeling: { max: 6, every: 9, every2: 7, n: 2, party: true },
       raptor: { max: 4, start: 2, phase2: 2 },
-      screecher: { max: 2, start: 1, phase2: 1, call: 2, callEvery: 8 },
+      screecher: { max: 2, start: 1, phase2: 1, call: 2, callEvery: 8, wildMax: 4 },
     },
     // the Sunken King's: his own "call" move (DL.FINALE.king.call) now brings Tide Stalkers; while a Wisp lives the
     // Fire Bearer gathers its flame only `slow` as fast
@@ -629,6 +629,16 @@
       tideleech: { max: 3, every: 14, every2: 10, n: 1, party: true },
     },
     near: 1400, // a boss more than this far from every knight is left alone (no calling)
+    /* Robert (2026-11-04): once a boss has been slain (save.archive), its minions also roam as ordinary Drowned at
+       night, from its home zone (`zone`, DL.ZONES index) outward, with these weights added to the zone's pool.
+       The swarming ones come in a `pack` (DL.ENEMIES). Away from their boss they don't call, ward or heal. */
+    wild: {
+      colossus: { zone: 2, pool: { cairn: 1.5, servitor: 0.4, siltfist: 0.15 } },
+      wyvern: { zone: 3, pool: { drakeling: 1.2, raptor: 1, screecher: 0.3 } },
+      bell: { zone: 4, pool: { skitterer: 1.2, leech: 1, tollwretch: 0.4 } },
+      rose: { zone: 4, pool: { thornling: 1.2, rosewretch: 0.8, handmaiden: 0.4 } },
+      king: { zone: 4, pool: { tidestalker: 1.2, wisp: 0.4, tideleech: 0.4 } },
+    },
   };
   /* Last stand (src/game.js hurtPlayer): a blow that would kill you while your health is above `above` of its maximum
      leaves you at 1 health instead, safe from harm for `inv` s. A blow taken at or below that line kills as usual. */
