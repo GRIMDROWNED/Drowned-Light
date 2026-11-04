@@ -110,6 +110,18 @@
           objs.push(o);
         }
       }
+      // The Refuge's marsh beds on its outer wards (src/refuge.js): seen once their ward stands.
+      if (DL.Refuge && DL.Refuge.beds) for (const b of DL.Refuge.beds()) for (let k = 0; k < B.nodes; k++) {
+        const a = (k / B.nodes) * Math.PI * 2 + DL.hash(b.i, 7, 3600) * 6.28, r = b.half * 0.5;
+        const x = b.x + Math.cos(a) * r, y = b.y + Math.sin(a) * r;
+        if (Math.floor(x / CH) !== cx || Math.floor(y / CH) !== cy) continue;
+        const bzi = Math.max(1, this.zoneIndex(x, y)), table = {};
+        for (const [t, w] of Object.entries(DL.SPAWN_TABLE[bzi])) if (t !== "gap" && t !== "reeds") table[t] = w;
+        const type = DL.weighted(table, DL.hash(b.i * 7, k, 3700));
+        const o = this.makeObj(type, x, y, `${cx},${cy},rbed${b.i}_${k}`, bzi, DL.hash(b.i, k, 3800));
+        o.rbed = b.ring;
+        objs.push(o);
+      }
       // The blooms of this chunk's grove that stand inside it.
       if (grove) for (const g of grove.items) {
         if (Math.floor(g.x / CH) === cx && Math.floor(g.y / CH) === cy && !DL.Cave.clears(g.x, g.y)) {

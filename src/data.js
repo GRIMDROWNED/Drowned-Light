@@ -725,39 +725,48 @@
      (earlier levels scale it in and the placer nudges it to the nearest free ground in its district); `hw` = half
      its footprint's width; `from` = the refuge level a decor piece appears; `ph` = placeholder until art is drawn. */
   DL.REFUGE = {
-    camp: 260,                                   // the camp's half-side before the terraces (levels 1-5)
-    lowWall: 3,                                  // low stone walls round the camp from this level (gaps at the four paths)
-    sanctum: [[4, 95], [10, 150]],               // the flame's raised platform (First Terrace, Inner Ring)
-    main: [[6, 300], [10, 340]],                 // the district terrace (Expanded Terrace, Inner Ring)
-    outer: [[11, 490], [18, 540]],               // the outer terrace (Outer Terrace, Outer Ring)
+    camp: 260,                                   // the camp's half-side before the terraces (levels 1-4)
+    lowWall: 3,                                  // low stone walls round the camp from this level until the Inner Court rises
+    // Robert, 2026-11-04: a new terrace rises every 3 Central Flame levels, each covering more of the map. half = half-side
+    // ([level, value] list), side = the level its two extra stairs per side open, at sideAt x its half from the middle.
+    terraces: [
+      { id: "sanctum", from: 2, half: [[2, 110], [10, 150]] },          // the flame's platform
+      { id: "main", from: 5, half: [[5, 300], [10, 340]], side: 7 },    // Inner Court: the districts
+      { id: "outer", from: 8, half: [[8, 540]], side: 10 },             // Middle Ward
+      { id: "ward4", from: 11, half: [[11, 780]], side: 13, beds: true },  // Outer Ward
+      { id: "ward5", from: 14, half: [[14, 1080]], side: 16, beds: true }, // Low Ward
+      { id: "ward6", from: 17, half: [[17, 1420]], side: 19, beds: true }, // Curtain Terrace
+      { id: "ward7", from: 20, half: [[20, 1800]], side: 20, beds: true }, // Great Wall
+    ],
+    sideAt: 0.62, sideW: 54,
+    spotR: 540,                                  // buildings' level-20 spots (items.at) are laid out inside this half-side
+    bed: { half: 70, gap: 360 },                 // marsh beds on the outer wards: resources grow only in them
     centralW: [[1, 56], [15, 72]],               // the central stairs and avenues (Great Stairways widen them); 56 fits Robert's drawn flight
-    mainSide: { from: 9, at: 205, w: 52 },       // Secondary Access: two more stairs on each side of the district terrace
-    outerSide: { from: 15, at: 330, w: 56 },     // Great Stairways: two more on each side of the outer terrace
     face: 46,                                    // a terrace wall's south face, as tall as Robert's drawn one (tools/cut_refuge.py)
     barracks: [[5, 1], [12, 2], [17, 3]],        // the refuge's barracks level (its champions defend the refuge)
     towerIn: 34,                                 // watchtowers stand this far in from the outermost wall's corners
     levels: [
       null,
       { name: "First Flame", text: "A small hearth on a stone foundation." },
-      { name: "Survivor Camp", text: "Tents and a supply pile round the fire." },
+      { name: "Raised Hearth", text: "The flame stands on a raised platform with four stairs; tents gather round it." },
       { name: "Fortified Camp", text: "Low stone walls with four openings." },
-      { name: "First Terrace", text: "The flame stands on a raised platform with four stairs." },
-      { name: "Barracks", text: "The first permanent building, and a better brazier." },
-      { name: "Expanded Terrace", text: "A wide paved terrace for the districts." },
-      { name: "Resource Yards", text: "A storehouse, a salvage yard and training grounds." },
+      { name: "Survivor Camp", text: "Banners round the flame, a paved camp." },
+      { name: "Inner Court", text: "A walled terrace for the districts, and the barracks." },
+      { name: "Expanded Court", text: "More room on the Inner Court for new buildings." },
+      { name: "Court Stairs", text: "Two more stairs on every side of the Inner Court; the resource yards." },
+      { name: "Middle Ward", text: "A second terrace rises round the Inner Court." },
       { name: "Reinforced Walls", text: "Corner bastions on the outer wall." },
-      { name: "Secondary Access", text: "Two more stairs on every side." },
-      { name: "Inner Ring", text: "A wider, walled sanctum round the flame." },
-      { name: "Outer Terrace", text: "A second terrace opens round the districts." },
-      { name: "Defensive Expansion", text: "Watch fires on the terrace corners; the barracks grows." },
-      { name: "Resource Network", text: "An alchemy station and lit avenues." },
-      { name: "Living Quarters", text: "Survivor quarters and more tents." },
-      { name: "Great Stairways", text: "Grand central stairs and two more on every outer side." },
-      { name: "Upper Works", text: "An expedition lodge and a research archive." },
-      { name: "Champion Wing", text: "The barracks' last form, and guard banners." },
-      { name: "Outer Ring", text: "The outer terrace reaches its full size." },
-      { name: "Final Reinforcement", text: "Lamps at every stair and banners on the walls." },
-      { name: "Completed Refuge", text: "The summoning circle, beacons and the crowned flame." },
+      { name: "Inner Ring", text: "A wider sanctum and Inner Court; more stairs on the Middle Ward." },
+      { name: "Outer Ward", text: "A third terrace, with marsh beds where resources grow." },
+      { name: "Defensive Expansion", text: "Watch fires on the Inner Court's corners; the barracks grows." },
+      { name: "Resource Network", text: "An alchemy station, lit avenues, more stairs on the Outer Ward." },
+      { name: "Low Ward", text: "A fourth terrace reaches into the marsh, with more beds." },
+      { name: "Great Stairways", text: "Grand central stairs; survivor quarters and more tents." },
+      { name: "Upper Works", text: "An expedition lodge and a research archive; more Low Ward stairs." },
+      { name: "Curtain Terrace", text: "A fifth terrace, and the barracks' last form." },
+      { name: "Outer Ring", text: "The wards fill with life." },
+      { name: "Final Reinforcement", text: "Lamps at the inner stairs, a star round the flame, more Curtain stairs." },
+      { name: "Great Wall", text: "The last terrace, the summoning circle, beacons and the crowned flame." },
     ],
     // district: nw military and crafting, ne champions and operations, sw familiars and cultivation, se boss rewards
     items: {

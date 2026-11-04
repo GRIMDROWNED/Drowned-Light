@@ -14,7 +14,7 @@
     const r = fort(up) ? DL.Refuge.wallR(up) : Math.max(DL.WALL_SIZES[up.stakes] || DL.WALL_SIZES[0], DL.WALL_TIER[Camp.tier(up)] || 0);
     if (r === R) return;
     R = DL.WALL_R = r;
-    DL.CAMP_RADIUS = R - 30;
+    DL.CAMP_RADIUS = (fort(up) ? Math.min(R, DL.REFUGE.spotR) : R) - 30; // the Refuge's outer wards are fortress, not camp
     buildWalls();
     if (DL.World) DL.World.ground.clear(); // the camp earth reaches out to the new walls
   };

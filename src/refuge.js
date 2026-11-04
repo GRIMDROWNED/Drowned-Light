@@ -39,12 +39,16 @@
       }
       return out;
     };
-    const outer = at(RF.outer, lv), main = at(RF.main, lv), sanct = at(RF.sanctum, lv);
-    if (outer) rings.push({ id: "outer", half: outer, face: FACE(), thick: 14, stairs: stairs(lv >= RF.outerSide.from && RF.outerSide) });
-    if (main) rings.push({ id: "main", half: main, face: FACE(), thick: 14, stairs: stairs(lv >= RF.mainSide.from && RF.mainSide) });
-    else if (lv >= RF.lowWall) rings.push({ id: "low", half: RF.camp, face: 0, thick: 12, stairs: stairs(null) });
-    if (sanct) rings.push({ id: "sanctum", half: sanct, face: FACE(), thick: 14, stairs: stairs(null) });
-    const R = outer || main || RF.camp;
+    // terraces from the outside in; the low wall stands round the camp until the Inner Court rises
+    for (const T of [...RF.terraces].reverse()) {
+      if (lv < T.from) continue;
+      const half = at(T.half, lv);
+      if (T.id === "sanctum" && lv >= RF.lowWall && !rings.some((r) => r.id === "main")) rings.push({ id: "low", half: RF.camp, face: 0, thick: 12, stairs: stairs(null) });
+      rings.push({ id: T.id, half, face: FACE(), thick: 14, beds: !!T.beds, stairs: stairs(T.side && lv >= T.side && { at: Math.round(half * RF.sideAt), w: RF.sideW }) });
+    }
+    if (lv >= RF.lowWall && !rings.some((r) => r.id === "main" || r.id === "low")) rings.push({ id: "low", half: RF.camp, face: 0, thick: 12, stairs: stairs(null) });
+    const outer = rings[0] && rings[0].id !== "sanctum" && rings[0].id !== "low" ? rings[0].half : 0;
+    const R = Math.max(outer, RF.camp);
     const g = { lv, R, cw, rings, outerRing: rings[0] && rings[0].half === R ? rings[0] : null };
     geoCache.set(lv, g);
     return g;
@@ -63,6 +67,33 @@
     return [{ id: "palisade", half: g.R, face: 0, thick: 7, stairs: [0, 1, 2, 3].map((s) => ({ s, at: 0, w: DL.Camp.GATE_HALF * 2 + 10, main: true })) }, ...g.rings];
   }
   Refuge.blockers = blockers;
+
+  /* Marsh beds (Robert, 2026-11-04): the outer wards are paved over the near zones, so their resources grow only in
+     kerbed beds of marsh. Fixed spots from the level-20 layout (they never move); a bed shows once its ward stands.
+     World.gen makes each bed's nodes (o.rbed = the ward's id); Pyramid.hides hides them until then. */
+  let bedList = null;
+  Refuge.beds = function () {
+    if (bedList) return bedList;
+    const g = Refuge.geo(DL.FLAME.max), B = RF.bed, out = [];
+    g.rings.forEach((ring, i) => {
+      if (!ring.beds) return;
+      const inner = g.rings[i + 1], lo = inner.half + inner.face, mid = Math.round((lo + ring.half) / 2);
+      const half = Math.min(B.half, Math.floor((ring.half - lo) / 2 - 46));
+      const n = Math.max(2, Math.floor((2 * mid) / B.gap) + 1), cand = [];
+      for (let k = 0; k < n; k++) {
+        const a = -mid + (2 * mid * k) / (n - 1);
+        cand.push([a, -mid], [a, mid]);
+        if (k > 0 && k < n - 1) cand.push([-mid, a], [mid, a]);
+      }
+      for (const [x, y] of cand) {
+        const h = half + 10;
+        if (free(g, [x - h, y - h, x + h, y + h], [], [])) out.push({ x, y, half, ring: ring.id, i: out.length });
+      }
+    });
+    return (bedList = out);
+  };
+  Refuge.bedsAt = (lv) => { const ids = new Set(Refuge.geo(lv).rings.map((r) => r.id)); return Refuge.beds().filter((b) => ids.has(b.ring)); };
+  Refuge.inBed = (x, y, up) => Refuge.bedsAt(Refuge.level(up)).some((b) => Math.abs(x - b.x) < b.half && Math.abs(y - b.y) < b.half);
 
   // A ring's wall as boxes [x0, y0, x1, y1] with the stair gaps cut out. The south wall is its whole hanging face.
   function wallBoxes(ring) {
@@ -185,7 +216,7 @@
     const lv = Refuge.level(up);
     const key = JSON.stringify(up);
     if (key === cacheKey) return cache;
-    const g = Refuge.geo(lv), R = g.R, k = Math.min(1, R / at(RF.outer, DL.FLAME.max));
+    const g = Refuge.geo(lv), R = g.R, k = Math.min(1, R / RF.spotR);
     const L = { tier: DL.Camp.tier(up), R, lv, geo: g, fortress: true, items: [], plots: [], missing: [] };
     const ti = R - RF.towerIn;
     L.towers = [[-1, -1], [1, -1], [-1, 1], [1, 1]].slice(0, DL.Camp.towerCount(up.tower)).map(([sx, sy]) => ({ x: sx * ti, y: sy * ti }));
@@ -215,7 +246,7 @@
     L.barracks = b ? { x: b.x, y: b.y } : null;
     L.tents = L.items.filter((i) => i.sprite === "tent").map((i) => ({ x: i.x, y: i.y, flip: !!i.flip }));
     // banners at the sanctum's corners (or round the hearth before it), more as it grows
-    const s = at(RF.sanctum, lv) || 70;
+    const s0r = g.rings.find((r) => r.id === "sanctum"), s = s0r ? s0r.half : 70;
     L.banners = [[-1, -1], [1, -1]].map(([sx, sy]) => ({ x: sx * (s - 22), y: sy * (s - 18) }));
     if (lv >= 10) L.banners.push(...[[-1, 1], [1, 1]].map(([sx, sy]) => ({ x: sx * (s - 22), y: sy * (s - 26) })));
     L.pylons = [[-Math.PI / 2, -1], [Math.PI / 2, -1], [0, -1], [Math.PI, -1], [-Math.PI / 2, 1], [Math.PI / 2, 1]].slice(0, up.pylon * 2)
@@ -233,7 +264,7 @@
       const d = (ring("sanctum").half + r.half) / 2;
       L.fires.push({ x: nx * d + (ny ? sg * (g.cw / 2 + 12) : 0), y: ny * d + (nx ? sg * (g.cw / 2 + 12) : 0), kind: "torch" });
     }
-    if (lv >= 19) for (const r of g.rings) if (r.id !== "sanctum") for (const q of r.stairs) {
+    if (lv >= 19) for (const r of g.rings) if (r.id !== "sanctum" && r.half <= RF.spotR) for (const q of r.stairs) {
       const e = stairEnds(r, q, 12), [nx] = SIDES[q.s];
       for (const sg of [-1, 1]) L.fires.push({ x: e.inn.x + (nx ? 0 : sg * (q.w / 2 + 8)), y: e.inn.y + (nx ? sg * (q.w / 2 + 8) : 0), kind: "torch" });
     }
@@ -305,7 +336,9 @@
       if (from < a1) spans.push([from, a1]);
       for (const [u, v] of spans) horiz ? c.rect(u, pos - 200, v - u, 400) : c.rect(pos - 200, u, 400, v - u);
       c.clip();
-      for (let a = a0; a < a1; a += len - 0.5) horiz ? put(n, a, pos) : put(n, pos, a);
+      const V = DL.Render && DL.Render.vis, lo = V ? (horiz ? V.left : V.top) - len - 60 : -Infinity, hi = V ? (horiz ? V.right : V.bottom) + 60 : Infinity;
+      if (V && (horiz ? pos < V.top - 260 || pos > V.bottom + 60 : pos < V.left - 260 || pos > V.right + 60)) { c.restore(); return; }
+      for (let a = a0; a < a1; a += len - 0.5) if (a > lo && a < hi) horiz ? put(n, a, pos) : put(n, pos, a);
       c.restore();
     };
     const L = X.w(B.nw[2]), R = X.e(B.ne[0]), T = Y.n(B.nw[3]), D = Y.s(B.sw[1]);
@@ -335,7 +368,7 @@
   };
   // The four faces of a ring: drawn rock courses on the south (stairs in the gaps), lips on the other three.
   function faces(c, ring, t) {
-    const kit = { low: "low", sanctum: "tier", outer: "rim" }[ring.id] || "terrace";
+    const kit = { low: "low", sanctum: "tier", outer: "rim", ward5: "rim", ward7: "rim" }[ring.id] || "terrace";
     if (kitRing(c, ring, kit) || (kit !== "terrace" && kit !== "low" && kitRing(c, ring, "terrace"))) return;
     const h = ring.half, A = P(), F = ring.face;
     const gaps = (s) => ring.stairs.filter((q) => q.s === s);
@@ -422,7 +455,7 @@
     // terraces, outermost first, each with its faces; the sanctum gets the Beacon's paving
     const terr = g.rings.filter((r) => r.id !== "low");
     for (const r of terr) {
-      const dark = r.id === "outer" ? 0.3 : r.id === "main" ? 0.2 : 0.08;
+      const dark = r.id === "sanctum" ? 0.08 : r.id === "main" ? 0.2 : 0.3;
       if (IMG["terrace-floor"]) { // the drawn terrace floor, repeated; each ring down a shade darker
         const p = floorPat(c);
         c.fillStyle = p; c.fillRect(-r.half, -r.half, 2 * r.half, 2 * r.half);
@@ -458,6 +491,16 @@
         c.fillStyle = "rgba(220,195,140,0.45)"; c.fillRect(x0, -w / 2 - 5, len, 2);
       } else if (nx) DL.Pyramid.lane(c, nx > 0 ? inner - 8 : -reach, -w / 2, reach - inner + 8, w, true, w);
       else DL.Pyramid.lane(c, -w / 2, ny > 0 ? inner - 8 : -reach, w, reach - inner + 8, false, w);
+    }
+    const marsh = pattern(c, "grass"), V = DL.Render && DL.Render.vis;
+    if (marsh) for (const b of Refuge.bedsAt(lv)) { // the marsh beds, kerbed
+      if (V && (b.x + b.half < V.left - 20 || b.x - b.half > V.right + 20 || b.y + b.half < V.top - 20 || b.y - b.half > V.bottom + 20)) continue;
+      const x = b.x - b.half, y = b.y - b.half, w = b.half * 2;
+      c.fillStyle = "rgba(34,32,30,0.95)"; c.fillRect(x - 8, y - 8, w + 16, w + 16);
+      c.fillStyle = "rgba(200,195,180,0.35)"; c.fillRect(x - 8, y - 8, w + 16, 3);
+      c.fillStyle = marsh; c.fillRect(x, y, w, w);
+      c.fillStyle = "rgba(0,0,0,0.16)"; c.fillRect(x, y, w, w);
+      c.fillStyle = "rgba(0,0,0,0.35)"; c.fillRect(x, y, w, 6);
     }
     for (const r of g.rings) faces(c, r, t);
     if (lv >= 10 && s0) { // the Inner Ring's coping round the sanctum

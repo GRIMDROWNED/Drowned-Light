@@ -164,12 +164,13 @@
   // Paved: on a held square (not the camp's) and outside its marsh beds.
   const faceH = (d) => Math.min(P.maxFace, d) * P.face; // px of rock face for a drop of d levels
   Py.paved = function (x, y) {
-    if (fortress()) return DL.Camp.sq(x, y) < DL.Refuge.clearR();
+    if (fortress()) return DL.Camp.sq(x, y) < DL.Refuge.clearR() && !DL.Refuge.inBed(x, y);
     const { gx, gy } = Py.cell(x, y);
     return !!(gx || gy) && raised.has(key(gx, gy)) && !inBed(x, y, gx, gy);
   };
   // Whether a world object is hidden: wild nodes under a held square's paving, and bed nodes of unheld squares.
   Py.hides = function (o) {
+    if (o.rbed) return !fortress() || !DL.Refuge.geo(DL.Refuge.level()).rings.some((r) => r.id === o.rbed); // a ward's marsh bed
     if (fortress()) return !!o.bed || (!!o.wild && DL.Camp.sq(o.x, o.y) < DL.Refuge.clearR()); // under the Refuge's terraces
     if (o.bed) return !held.has(o.bed);
     if (!o.wild) return false;

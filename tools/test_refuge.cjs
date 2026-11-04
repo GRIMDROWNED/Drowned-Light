@@ -41,6 +41,7 @@ for (let lv = 1; lv <= 20; lv++) for (const full of [true, false]) {
   for (const k of DL.Refuge.BUILDINGS) if (L[k]) assert.ok(reach(L[k].x, L[k].y + 26), `${tag}: ${k} can be reached`);
   for (const it of L.items) assert.ok(reach(it.x, it.y + 24), `${tag}: ${it.id} can be reached`);
   for (const k of DL.Refuge.BUILDINGS) if (L[k]) assert.ok(DL.Camp.sq(L[k].x, L[k].y) < R, `${tag}: ${k} inside the walls`);
+  for (const b of DL.Refuge.bedsAt(lv)) assert.ok(reach(b.x, b.y) && ok(b.x, b.y) && !L.items.concat(L.plots).some((p) => Math.abs(p.x - b.x) < b.half + p.hw && Math.abs(p.y - b.y) < b.half + p.hw), `${tag}: marsh bed ${b.i} is open ground`);
   for (let a = 0; a < 8; a++) {
     const k = (R + 130) / Math.max(Math.abs(Math.cos(a * Math.PI / 4)), Math.abs(Math.sin(a * Math.PI / 4))), fx = Math.cos(a * Math.PI / 4) * k, fy = Math.sin(a * Math.PI / 4) * k; // 130 px outside the walls
     for (const [sx, sy, tx, ty] of [[fx, fy, 0, 30], [3, 40, fx, fy]]) {
@@ -63,4 +64,4 @@ for (let lv = 2; lv <= 20; lv++) {
 }
 assert.equal(DL.Refuge.on({ flame: 3 }), true, "an old save with no switch gets the Refuge");
 assert.equal(DL.Refuge.on({ fortress: 0 }), false, "fortress 0 is the old squares");
-console.log(`Refuge checks passed: ${checked} layouts (levels 1-20, all built and none): reachability, 12 outer stairs, routing in and out, the switch.`);
+console.log(`Refuge checks passed: ${checked} layouts (levels 1-20, all built and none): reachability, marsh beds, 12 outer stairs, routing in and out, the switch.`);

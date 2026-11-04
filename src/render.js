@@ -128,6 +128,7 @@
     const vw = R.W / z, vh = R.H / z, left = cam.x - vw / 2, top = cam.y - vh / 2;
     const view = { left, top, right: left + vw, bottom: top + vh };
     R.view = { left, top, z }; // for turning the mouse position into a world aim
+    R.vis = view; // the world rect on screen (the Refuge culls its long walls by it)
     const t = G.t;
 
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
