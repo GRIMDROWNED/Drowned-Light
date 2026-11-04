@@ -122,7 +122,7 @@
   Abigail.reset = function () {
     G.wraiths = [];
     near = false;
-    if (!G.isGuest() && G.save.abigail && G.player) spawn(0, G.player.x + 24, G.player.y - 6);
+    if (!G.isGuest() && G.save.abigail && G.player && (!DL.Works || DL.Works.brings("wraith"))) spawn(0, G.player.x + 24, G.player.y - 6);
   };
   // Host: a friend who won her (here or in any world) brings her along.
   Abigail.join = function (owner) {
@@ -333,4 +333,7 @@
     }
     Abigail.gather();
   };
+  // The host knight's familiar called to their side (src/works.js: one at a time, two with the Summoning Circle).
+  Abigail.summonMine = function () { if (!G.isGuest() && G.player && !G.wraiths.some((m) => m.owner === 0 && !m.gone)) spawn(0, G.player.x + 24, G.player.y - 6); };
 })(window.DL);
+

@@ -26,7 +26,7 @@
   G.defaultSave = () => ({
     v: 1, day: 1, nights: 0, deepest: 0, muted: false,
     stash: emptyRes(),
-    up: { flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, roost: 0, bell: 0, roseheart: 0 },
+    up: { fortress: 1, flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, roost: 0, bell: 0, roseheart: 0 },
     kit: "lanternBlade",
     kitLevel: 1,
     difficulty: "dark",
@@ -335,6 +335,7 @@
     DL.Abigail.update(dt);
     DL.Fred.update(dt);
     DL.Wyvern.update(dt);
+    DL.Works.update(dt);
     DL.Finale.update(dt);
     DL.Finale.local();
     updateDefenses(dt);
@@ -406,6 +407,7 @@
     G.siegeT = 4;
     DL.Siege.nightfall();
     DL.Finale.nightfall();
+    DL.Works.nightfall();
     if (G.save.nights === 0) setTimeout(() => say("Cyan Refuge Blooms halt corruption. Firelight reverses it."), 3500);
   }
 
@@ -422,6 +424,7 @@
     DL.Fred.dawn();
     DL.Wyvern.dawn();
     DL.Finale.dawn();
+    DL.Works.dawn();
     if (G.rootEvent) {
       const o = G.rootEvent.obj;
       if (!o.dead) {
@@ -479,6 +482,7 @@
     }
     if (lay.forge) L.push({ x: lay.forge.x - 4, y: lay.forge.y - 14, r: 60, s: 0.6, col: "255,120,40", a: 0.7, flick: 1 });
     if (lay.workbench) L.push({ x: lay.workbench.x + 8, y: lay.workbench.y - 26, r: 45, s: 0.5, col: "255,190,100", a: 0.5, flick: 1 });
+    for (const f of lay.fires || []) L.push({ x: f.x, y: f.y - (f.kind === "torch" ? 26 : 30), r: f.kind === "torch" ? 70 : f.kind === "beacon" ? 110 : 90, s: 0.7, col: "255,160,70", a: 0.8, flick: 1, kind: "human" });
     if (lay.garden && G.nightAmt > 0.3) L.push({ x: lay.garden.x, y: lay.garden.y - 12, r: 60 + 12 * G.save.up.garden, s: 0.6, col: "80,230,240", a: 0.8 });
     if (G.save.up.stakes >= 3) {
       for (const g of DL.Camp.GATES) for (const sgn of [-1, 1]) {
@@ -777,7 +781,7 @@
   G.collideCamp = (ent, r) => collideCamp(ent, r);
   function collideCamp(ent, r) {
     DL.Pyramid.collide(ent, r);
-    if (DL.Camp.sq(ent.x, ent.y) > 280) return;
+    if (DL.Camp.sq(ent.x, ent.y) > DL.WALL_R + 80) return; // the Refuge's south face hangs below its edge
     DL.Camp.collideWall(ent, r, G.save.up);
     for (const s of G.campSolids()) {
       const dx = ent.x - s.x, dy = ent.y - s.y, d = Math.hypot(dx, dy), m = s.r + r;
@@ -1400,6 +1404,7 @@
       for (let i = 0; i < 4; i++) spark(e.x + Math.cos(e.angle) * 14, e.y - 24, "200,230,235", 90);
     } else if (!e.def.shield && G.enemies.some((b) => b.def.guard && !b.removed && dist(b.x, b.y, e.x, e.y) < b.def.guard)) d *= 0.75; // guarded by a Bulwark
     d *= 1 - (e.def.armor || 0);
+    d *= DL.Works.dmgMult(e); // the Research Archive: bosses slain, and their kind
     if (e.cursed) d *= 1 + (e.curseK || DL.ABIGAIL.curse); // weakened by one of Abigail's orbs
     if (e.brittle > 0) d *= 1 + DL.ICE.brittle; // made brittle by the Frostweaver
     if (e.def.king) d = DL.Finale.cap(e, d);
@@ -1425,6 +1430,7 @@
     if (e.removed || G.isGuest()) return;
     e.removed = true;
     DL.Kits.shatter(e); // frozen by a Frostweaver at Shatter: it bursts and freezes the Drowned near it
+    DL.Works.slain(e); // a boss goes into the Research Archive
     if (e.def.den) { DL.Den.slain(e); return; } // a Bone Wolf leaves its carcass
     if (e.def.bell) DL.Bell.slain(e);
     if (e.def.rose) DL.Rose.slain(e);
@@ -1730,7 +1736,7 @@
     G.dying = 0;
     DL.Wyvern.fell(0); // carrying a wyvern egg: its mother takes it back
     sfx("death");
-    const lost = { ...p.carried };
+    const lost = { ...p.carried }, kept = DL.Works ? DL.Works.keep(lost) : null; // the Storehouse keeps half safe
     p.carried = emptyRes(); // they stay with your drowned self
     G.save.carried = emptyRes();
     const any = DL.RES_KEYS.some((k) => lost[k] > 0);
@@ -1741,7 +1747,7 @@
       G.enemies = G.enemies.filter((e) => !e.isSelf);
     }
     G.persist();
-    G.deathInfo = { cause, hit: cause === "wounds" ? G.lastHit : null, lost, any, hadSelf, zone: DL.ZONES[p.zi].name, day: G.save.day, nights: G.save.nights };
+    G.deathInfo = { cause, hit: cause === "wounds" ? G.lastHit : null, lost, kept, any, hadSelf, zone: DL.ZONES[p.zi].name, day: G.save.day, nights: G.save.nights };
     for (let i = 0; i < 40; i++) puff(p.x + rand(-12, 12), p.y - rand(0, 60), "rgba(60,220,230,0.7)", 50, 1.6, -30);
   }
 
@@ -1785,8 +1791,12 @@
     if (id === "workbench") G.player.oil = st.maxOil;
     if (id === "pylon" || id === "stakes") G.resetPylons();
     if (id === "roseheart") checkUnlocks(false);
-    if (id === "stakes" && lvl + 1 >= 4) setTimeout(() => say("The walls go up farther out. Your camp grows.", "good"), 300);
-    if (id === "flame" && DL.Camp.tier(G.save.up) !== DL.Camp.tier({ ...G.save.up, flame: lvl })) {
+    if (id === "flame" && DL.Refuge && DL.Refuge.on()) { // the Refuge takes its next form (src/refuge.js)
+      G.resetPylons();
+      const info = DL.Refuge.info(DL.Refuge.level());
+      setTimeout(() => say(`The refuge grows: ${info.name}. ${info.text}`, "good"), 300);
+    } else if (id === "stakes" && lvl + 1 >= 4) setTimeout(() => say("The walls go up farther out. Your camp grows.", "good"), 300);
+    if (id === "flame" && !(DL.Refuge && DL.Refuge.on()) && DL.Camp.tier(G.save.up) !== DL.Camp.tier({ ...G.save.up, flame: lvl })) {
       setTimeout(() => say(`Your camp grows: ${DL.TIER_NAMES[DL.Camp.tier(G.save.up)]}.`, "good"), 300);
     }
     G.persist();

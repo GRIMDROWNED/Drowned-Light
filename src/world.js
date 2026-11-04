@@ -5,6 +5,8 @@
   const GS = 128;      // ground texture resolution per chunk (1 texel = 2 world px)
   const CAMP_CLEAR = 420; // no trees or rocks this close (camp-square distance): room for the walls at their widest
   const CAMP_DRY = 380;   // and no water
+  // ...nor under the Refuge's terraces, which reach farther out (src/refuge.js)
+  const dry = () => (DL.Refuge && DL.Game.save && DL.Refuge.on() ? Math.max(CAMP_DRY, DL.Refuge.clearR()) : CAMP_DRY);
   // waterVal below WATER is water (about a tenth of the land), up to SHORE is its muddy edge, where reeds grow.
   const WATER = 0.31, SHORE = 0.345;
   const RIM_SHORE = 420; // px of Abyss shore inside the black water at the world's edge
@@ -33,8 +35,8 @@
     zone(x, y) { return DL.ZONES[this.zoneIndex(x, y)]; },
 
     waterVal(x, y) { return DL.fbm(x / 260, y / 260, 11); },
-    isWater(x, y) { return DL.Camp.sq(x, y) > CAMP_DRY && !DL.Cave.inRegion(x, y) && (this.waterVal(x, y) < WATER || this.beyond(x, y)); },
-    isShore(x, y) { const w = this.waterVal(x, y); return DL.Camp.sq(x, y) > CAMP_DRY && !DL.Cave.inRegion(x, y) && w >= WATER && w < SHORE; },
+    isWater(x, y) { return DL.Camp.sq(x, y) > dry() && !DL.Cave.inRegion(x, y) && (this.waterVal(x, y) < WATER || this.beyond(x, y)); },
+    isShore(x, y) { const w = this.waterVal(x, y); return DL.Camp.sq(x, y) > dry() && !DL.Cave.inRegion(x, y) && w >= WATER && w < SHORE; },
 
     chunk(cx, cy) {
       const key = cx + "," + cy;
@@ -107,6 +109,18 @@
           o.bed = gx + "," + gy;
           objs.push(o);
         }
+      }
+      // The Refuge's marsh beds on its outer wards (src/refuge.js): seen once their ward stands.
+      if (DL.Refuge && DL.Refuge.beds) for (const b of DL.Refuge.beds()) for (let k = 0; k < B.nodes; k++) {
+        const a = (k / B.nodes) * Math.PI * 2 + DL.hash(b.i, 7, 3600) * 6.28, r = b.half * 0.5;
+        const x = b.x + Math.cos(a) * r, y = b.y + Math.sin(a) * r;
+        if (Math.floor(x / CH) !== cx || Math.floor(y / CH) !== cy) continue;
+        const bzi = Math.max(1, this.zoneIndex(x, y)), table = {};
+        for (const [t, w] of Object.entries(DL.SPAWN_TABLE[bzi])) if (t !== "gap" && t !== "reeds") table[t] = w;
+        const type = DL.weighted(table, DL.hash(b.i * 7, k, 3700));
+        const o = this.makeObj(type, x, y, `${cx},${cy},rbed${b.i}_${k}`, bzi, DL.hash(b.i, k, 3800));
+        o.rbed = b.ring;
+        objs.push(o);
       }
       // The blooms of this chunk's grove that stand inside it.
       if (grove) for (const g of grove.items) {

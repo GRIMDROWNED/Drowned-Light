@@ -717,6 +717,98 @@
     spawnX: 38, spawnY: 32, spacing: 28, knockback: 60, scale: 0.85, barracksRadius: 26,
   };
 
+  /* The Refuge (Robert, 2026-11-03; src/refuge.js): the camp grows into a terraced fortress over the Central Flame's
+     20 levels, in place of the grid of squares. Switched in the pause menu (save.up.fortress: 0 = the old squares).
+     Half-sides are in world px round the flame; [level, value] lists take the last entry at or below the level.
+     Each terrace wall is one level of drop: a south face `face` px tall hangs below it (like the pyramid's steps).
+     Stairs: `at` = offset along the side from its middle, `w` = width. Items: `at` = where it stands at level 20
+     (earlier levels scale it in and the placer nudges it to the nearest free ground in its district); `hw` = half
+     its footprint's width; `from` = the refuge level a decor piece appears; `ph` = placeholder until art is drawn. */
+  DL.REFUGE = {
+    camp: 420,                                   // the camp's half-side before the terraces (levels 1-4)
+    lowWall: 3,                                  // low stone walls round the camp from this level until the Inner Court rises
+    // Robert, 2026-11-04: a new terrace rises every 3 Central Flame levels, each covering more of the map. half = half-side
+    // ([level, value] list), side = the level its two extra stairs per side open, at sideAt x its half from the middle.
+    terraces: [
+      { id: "sanctum", from: 2, half: [[2, 110], [10, 150]] },          // the flame's platform
+      { id: "main", from: 5, half: [[5, 460], [10, 520]], side: 7 },    // Inner Court: the districts
+      { id: "outer", from: 8, half: [[8, 780]], side: 10 },             // Middle Ward
+      { id: "ward4", from: 11, half: [[11, 1020]], side: 13, beds: true },  // Outer Ward
+      { id: "ward5", from: 14, half: [[14, 1280]], side: 16, beds: true }, // Low Ward
+      { id: "ward6", from: 17, half: [[17, 1540]], side: 19, beds: true }, // Curtain Terrace
+      { id: "ward7", from: 20, half: [[20, 1800]], side: 20, beds: true }, // Great Wall
+    ],
+    sideAt: 0.62, sideW: 54,
+    spotR: 780,                                  // buildings' level-20 spots (items.at) are laid out inside this half-side
+    bed: { half: 70, gap: 360 },                 // marsh beds on the outer wards: resources grow only in them
+    centralW: [[1, 56], [15, 72]],               // the central stairs and avenues (Great Stairways widen them); 56 fits Robert's drawn flight
+    face: 46,                                    // a terrace wall's south face, as tall as Robert's drawn one (tools/cut_refuge.py)
+    barracks: [[5, 1], [12, 2], [17, 3]],        // the refuge's barracks level (its champions defend the refuge)
+    towerIn: 70,                                 // watchtowers stand this far in from the outermost wall's corners
+    levels: [
+      null,
+      { name: "First Flame", text: "A small hearth on a stone foundation." },
+      { name: "Raised Hearth", text: "The flame stands on a raised platform with four stairs; tents gather round it." },
+      { name: "Fortified Camp", text: "Low stone walls with four openings." },
+      { name: "Survivor Camp", text: "Banners round the flame, a paved camp." },
+      { name: "Inner Court", text: "A walled terrace for the districts, and the barracks." },
+      { name: "Expanded Court", text: "More room on the Inner Court for new buildings." },
+      { name: "Court Stairs", text: "Two more stairs on every side of the Inner Court; the resource yards." },
+      { name: "Middle Ward", text: "A second terrace rises round the Inner Court." },
+      { name: "Reinforced Walls", text: "Corner bastions on the outer wall." },
+      { name: "Inner Ring", text: "A wider sanctum and Inner Court; more stairs on the Middle Ward." },
+      { name: "Outer Ward", text: "A third terrace, with marsh beds where resources grow." },
+      { name: "Defensive Expansion", text: "Watch fires on the Inner Court's corners; the barracks grows." },
+      { name: "Resource Network", text: "An alchemy station, lit avenues, more stairs on the Outer Ward." },
+      { name: "Low Ward", text: "A fourth terrace reaches into the marsh, with more beds." },
+      { name: "Great Stairways", text: "Grand central stairs; survivor quarters and more tents." },
+      { name: "Upper Works", text: "An expedition lodge and a research archive; more Low Ward stairs." },
+      { name: "Curtain Terrace", text: "A fifth terrace, and the barracks' last form." },
+      { name: "Outer Ring", text: "The wards fill with life." },
+      { name: "Final Reinforcement", text: "Lamps at the inner stairs, a star round the flame, more Curtain stairs." },
+      { name: "Great Wall", text: "The last terrace, the summoning circle, beacons and the crowned flame." },
+    ],
+    // district: nw military and crafting, ne champions and operations, sw familiars and cultivation, se boss rewards
+    items: {
+      // existing camp buildings (canonical ids from DL.UPGRADES; shown when built, a reserved plot otherwise)
+      forge: { d: "nw", at: [-361, -144], hw: 38 }, armory: { d: "nw", at: [-144, -361], hw: 38 }, workbench: { d: "nw", at: [-419, -361], hw: 30 },
+      garden: { d: "sw", at: [-361, 159], hw: 40 }, kennel: { d: "sw", at: [-159, 378], hw: 30 }, shrine: { d: "sw", at: [-332, 335], hw: 27 },
+      toadstool: { d: "sw", at: [-430, 433], hw: 26 }, workshop: { d: "sw", at: [-585, 202], hw: 28 }, roost: { d: "sw", at: [-231, 643], hw: 34 },
+      bell: { d: "se", at: [159, 347], hw: 28 }, roseheart: { d: "se", at: [361, 361], hw: 30 },
+      // refuge structures, by refuge level
+      barracks: { d: "ne", at: [332, -173], hw: 44, from: 5 },
+      tentA: { d: "ne", at: [159, -361], hw: 26, from: 2, sprite: "tent" }, tentB: { d: "ne", at: [419, -404], hw: 26, from: 2, sprite: "tent", flip: true },
+      supplies: { d: "ne", at: [274, -332], hw: 18, from: 2 },
+      storehouse: { d: "ne", at: [592, -376], hw: 36, from: 7, ph: "Storehouse" },
+      salvage: { d: "sw", at: [-404, 549], hw: 36, from: 7, ph: "Salvage Yard" },
+      training: { d: "nw", at: [-578, -217], hw: 40, from: 7, ph: "Training Grounds" },
+      alchemy: { d: "nw", at: [-217, -585], hw: 30, from: 13, ph: "Alchemy Station" },
+      quarters: { d: "ne", at: [578, -188], hw: 40, from: 14, ph: "Survivor Quarters" },
+      tentC: { d: "ne", at: [217, -592], hw: 26, from: 14, sprite: "tent" }, tentD: { d: "ne", at: [361, -607], hw: 26, from: 14, sprite: "tent", flip: true },
+      lodge: { d: "ne", at: [592, -578], hw: 38, from: 16, ph: "Expedition Lodge" },
+      archive: { d: "se", at: [376, 159], hw: 38, from: 16, ph: "Research Archive" },
+      circle: { d: "se", at: [578, 303], hw: 44, from: 20, ph: "Summoning Circle" },
+    },
+  };
+
+  // What the Refuge's upper works do (Robert's picks, 2026-11-04; src/works.js). Each works once its refuge level stands.
+  DL.WORKS = {
+    alchemy: { resin: 4, max: 3 },                       // each dawn brews a lantern-oil flask from 4 resin (holds 3); an empty lantern drinks one
+    quarters: { give: { wood: 6, stone: 6, iron: 2 }, mend: 0.015 }, // survivors bring supplies each dawn; on siege nights they mend the flame and pylons (share of max hp a second)
+    lodge: { loot: { pearl: [2, 4], iron: [2, 5] }, black: 0.35 }, // an expedition leaves at dusk and comes back at dawn with rare loot
+    archive: { bonus: 0.1, kin: { bell: [], rose: [], colossus: [], wyvern: [], champion: [] } }, // +10% damage to a slain boss's kind (its kin: new enemy types to come)
+    circle: { slots: 2 },
+    // the yards (Robert's picks, 2026-11-04)
+    storehouse: { keep: 0.5 },                          // when you fall, half of what you carry is kept safe in the stash
+    salvage: { trades: [                                // a converter in the camp menu: give -> get, from the stash
+      { give: { wood: 4 }, get: { stone: 3 } }, { give: { stone: 4 }, get: { wood: 3 } },
+      { give: { wood: 5 }, get: { resin: 2 } }, { give: { stone: 5 }, get: { iron: 2 } },
+      { give: { iron: 10 }, get: { pearl: 1 } }] },
+    training: { champion: 1.25 },                       // the barracks' champions are drilled: health and damage x this
+    supplies: { torches: 1, oil: 0.25 },                // at dusk: a torch (up to your satchel) and a share of your lantern's oil                                 // familiars that can walk with you at once (1 without the circle)
+  };
+  DL.FAMILIARS = ["hound", "golem", "wraith", "fred", "wyvern"];
+
   // Camp buildings. costs[level] = price to go from `level` to `level + 1`.
   // reqFlame(target) = Central Flame level needed to build that level.
   DL.UPGRADES = [

@@ -39,6 +39,7 @@ Neither assistant sees the other's chats, so anything the other one needs to kno
   hidden by the old offline cache). Never load an image by a bare path.
 - **Numbers live in `src/data.js`** (`DL.HOUND`, `DL.GOLEM`, `DL.GROVE`, `DL.SPAWN_TABLE`, ...),
   not scattered through logic.
+- **Camp layout:** with the Refuge on (`DL.Refuge.on()`, the default) the camp is the terraced fortress in `src/refuge.js`; new camp buildings go in `DL.REFUGE.items` with a district and spot, and walkers route with `DL.Camp.route`. See `docs/REFUGE.md`.
 - **Camp distance:** the camp is a square. Use `DL.Camp.sq` / `DL.Camp.inside` /
   `DL.Camp.gatePoint` (`src/camp.js`), not `Math.hypot`.
 - **Damage to the player** goes through `G.hurtPlayer(dmg, ang, by)` with a readable name in

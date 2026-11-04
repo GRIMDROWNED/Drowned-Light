@@ -76,6 +76,18 @@
     for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) mine.addEventListener(ev, () => { DL.Input.mineBtn = false; });
     mine.addEventListener("contextmenu", (e) => e.preventDefault());
     for (const id of ["btnView", "btnView2"]) $(id).addEventListener("click", () => { DL.View.cycle(); UI.updateViewLabel(); });
+    // The Refuge switch (src/refuge.js): the new terraced fortress, or the old grid of squares. Saved squares are kept.
+    $("btnRefuge").addEventListener("click", () => {
+      if (G.isGuest()) return UI.toast("Only the host can switch the refuge.", "warn");
+      G.save.up.fortress = DL.Refuge.on() ? 0 : 1;
+      DL.Camp.sync(G.save.up);
+      DL.Outposts.reset();
+      G.resetPylons();
+      if (DL.World.ground) DL.World.ground.clear();
+      DL.Pyramid.ver++;
+      G.persist();
+      UI.updateRefugeLabel();
+    });
     $("btnZoom").addEventListener("click", () => { $("btnZoom").textContent = "Zoom: " + DL.Render.cycleZoom(); });
     $("btnCombat").addEventListener("click", () => {
       G.save.attackMode = G.save.attackMode === "manual" ? "auto" : "manual";
@@ -214,6 +226,8 @@
       else if (act === "squareBuild") DL.Pyramid.build(arg);
       else if (act === "train") { const r = DL.Kits.train(); UI.justReached = r && r.milestone ? r.level : 0; }
       else if (act === "trainSummon") DL.Summons.train(arg);
+      else if (act === "bringFam") DL.Works.bring(arg);
+      else if (act === "salvage") DL.Works.trade(+arg);
       else if (act === "fredPath") DL.Summons.choose(arg);
       else if (act === "fredRepick") DL.Summons.repick();
       else if (act === "wyvPath") DL.Summons.choose(arg, "wyvern");
@@ -290,6 +304,7 @@
   UI.coopStatus = function (msg) { $("coopStatus").textContent = msg || ""; };
 
   UI.pause = function () {
+    UI.updateRefugeLabel();
     const G = DL.Game;
     if (G.state !== "play") return;
     $("btnLeaveCoop").classList.toggle("hidden", !DL.Net.role);
@@ -421,6 +436,8 @@
       ? "<p class=\"muted\">This world is lost. Begin a new game from the title screen to kindle another flame.</p>" : info.any
       ? `<p>Your drowned self now wanders <b>${info.zone}</b>, carrying:</p><div class="chips">${lost}</div><p class="muted">Slay it to reclaim your supplies.${info.hadSelf ? " Your previous drowned self has sunk into the deep — its supplies are gone." : ""}</p>`
       : `<p class="muted">You carried nothing. Your stored supplies and camp are safe.${info.hadSelf ? " Your drowned self still waits where you last fell." : ""}</p>`;
+    const kept = info.kept && DL.RES_KEYS.filter((k) => info.kept[k] > 0).map((k) => chip(k, info.kept[k])).join("");
+    if (kept && info.cause !== "camp") $("deathLost").innerHTML += `<p>The Storehouse kept half of it safe:</p><div class="chips">${kept}</div>`;
     $("deathStats").textContent = `Day ${info.day} · nights survived: ${info.nights}`;
     $("screenDeath").classList.remove("hidden");
   };
@@ -619,6 +636,8 @@
   };
 
   /* ---------------- camp menu ---------------- */
+  UI.updateRefugeLabel = () => { const b = $("btnRefuge"); if (b) b.textContent = "Refuge: " + (DL.Refuge.on() ? "Fortress" : "Squares"); };
+
   // The camp button (and the C key): enter the camp, open a square's paths, or claim the square you stand in (src/pyramid.js).
   UI.campLabel = function () {
     const G = DL.Game;
@@ -667,6 +686,10 @@
     let html = "";
     if (UI.campTab === "build") {
       html += DL.Finale.card(); // the Fire Bearer, once it has risen (src/finale.js)
+      const trades = DL.Works.trades(); // the Salvage Yard's converter (src/works.js)
+      if (trades.length) html += `<article class="card"><header><h3>Salvage Yard</h3></header>
+        <p>Break down what you have too much of into what you need. Trades come from your stash.</p>
+        ${trades.map((t, i) => `<footer><div class="cost">${costHtml(t.give)} → ${costHtml(t.get)}</div><button data-act="salvage:${i}" ${G.canAfford(t.give) ? "" : "disabled"}>Trade</button></footer>`).join("")}</article>`;
       let hidden = 0;
       for (const u of DL.UPGRADES) {
         const lvl = s.up[u.id], max = lvl >= u.max;
@@ -762,7 +785,8 @@
           ${DL.Finale.guideLine() ? `<li>${DL.Finale.guideLine()}</li>` : ""}
           <li><b>Black Pearls</b> are found only in the Abyss: in clams half sunk in its mud, now and then on its Drowned, and on its great bosses. The last levels of the camp need them.</li>
           <li>${DL.Siege.line()}${s.trophies.bell ? " Your Bell Tower, hung with the Starved Bell's clapper, warns of every wave." : ""}</li>
-          <li>Grow the <b>Pyramid</b>: stand near the middle of a square next to your land and claim it. It rises out of the marsh with a fire at its heart, and every Central Flame level lets you hold ${DL.PYRAMID.perFlame} more. ${DL.Pyramid.line()}. Supplies brought to a square's fire go home${DL.Kindle.lit() ? ", and with your Kindle lit you can travel between your squares and the camp" : ". Something lost in the Mire still remembers the old paths between them"}.</li>
+          ${DL.Refuge.on() ? `<li>Grow the <b>Refuge</b>: every Central Flame level builds the fortress round it, from a hearth to a terraced stronghold with stairs on every side. ${DL.Refuge.line()}. At level ${DL.FLAME.max} the refuge is complete.</li>` : ""}
+          ${DL.Refuge.on() ? "" : `<li>Grow the <b>Pyramid</b>: stand near the middle of a square next to your land and claim it. It rises out of the marsh with a fire at its heart, and every Central Flame level lets you hold ${DL.PYRAMID.perFlame} more. ${DL.Pyramid.line()}. Supplies brought to a square's fire go home${DL.Kindle.lit() ? ", and with your Kindle lit you can travel between your squares and the camp" : ". Something lost in the Mire still remembers the old paths between them"}.</li>`}
           <li>Fall, and your <b>drowned self</b> keeps your supplies. Slay it to get them back.</li>
         </ul></article>`;
     }
@@ -806,7 +830,10 @@
     if (info.max) action = `<span class="maxed">Fully grown</span>`;
     else action = `<div class="cost">${costHtml(info.cost)}</div>` + (info.lock ? `<span class="req">${info.lock}</span>` : "") +
       `<button data-act="trainSummon:${kind}" ${info.ok ? "" : "disabled"}>Train to level ${L + 1}</button>`;
-    return `<p class="effect"><b>${K.forms[f]}</b> · level ${L} of ${S.max} · ${K.powers[f]}.${next}</p>${track}<footer class="train">${action}</footer>`;
+    const W = DL.Works, n = W.slots();
+    const bring = DL.Game.isGuest() || !W.owned(kind) ? "" : W.brings(kind) ? `<span class="maxed">Walking with you${n > 1 ? ` · ${n} familiars at once (Summoning Circle)` : ""}</span>`
+      : `<button data-act="bringFam:${kind}">Bring along${n > 1 ? "" : " (the other stays home)"}</button>`;
+    return `<p class="effect"><b>${K.forms[f]}</b> · level ${L} of ${S.max} · ${K.powers[f]}.${next}</p>${track}<footer class="train">${action}</footer>${bring ? `<footer class="train">${bring}</footer>` : ""}`;
   }
 
   // Reuses the camp panel and its controller/back controls; no new input action or screen.
@@ -1050,7 +1077,7 @@
     set($("coopChip"), "hidden", !coopText);
     const d = Math.hypot(p.x, p.y);
     set($("homeArrow"), "transform", `rotate(${(Math.atan2(-p.y, -p.x) * 180) / Math.PI}deg)`);
-    set($("homeDist"), "text", (DL.SANDBOX ? "SANDBOX · " : "") + (G.cave ? "Camp: far above" : (DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`) + (DL.Finale.stage() >= 1 ? "" : ` · Pyramid ${Math.floor(DL.Pyramid.coverage() * 100)}% of ${Math.round(DL.PYRAMID.win * 100)}%`)));
+    set($("homeDist"), "text", (DL.SANDBOX ? "SANDBOX · " : "") + (G.cave ? "Camp: far above" : (DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`) + (DL.Finale.stage() >= 1 ? "" : DL.Refuge.on() ? ` · Refuge ${DL.Refuge.level()} of ${DL.FLAME.max}` : ` · Pyramid ${Math.floor(DL.Pyramid.coverage() * 100)}% of ${Math.round(DL.PYRAMID.win * 100)}%`)));
     // the way to Derek's Hollow, once found, until you've won him
     const cn = DL.Cave.showNav();
     set($("caveNav"), "hidden", !cn);

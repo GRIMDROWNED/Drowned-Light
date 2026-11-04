@@ -34,7 +34,7 @@
     G.golems = [];
     G.stoneWalls = [];
     if (G.isGuest()) return;
-    if (G.save.golem && G.player) spawn(0, G.player.x + 28, G.player.y + 8);
+    if (G.save.golem && G.player && (!DL.Works || DL.Works.brings("golem"))) spawn(0, G.player.x + 28, G.player.y + 8);
     for (const a of G.allies) if (friends.includes(a.id)) spawn(a.id, a.x + 28, a.y + 8);
   };
 
@@ -205,4 +205,7 @@
     }
     G.stoneWalls = G.stoneWalls.filter((w) => !w.dead);
   };
+  // The host knight's familiar called to their side (src/works.js: one at a time, two with the Summoning Circle).
+  Golems.summonMine = function () { if (!G.isGuest() && G.player && !G.golems.some((m) => m.owner === 0 && !m.gone)) spawn(0, G.player.x + 28, G.player.y + 8); };
 })(window.DL);
+

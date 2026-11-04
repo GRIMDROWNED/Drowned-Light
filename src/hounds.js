@@ -37,7 +37,7 @@
   // A new life (or a reload) brings your hound back to your side at the camp.
   Hounds.reset = function () {
     G.hounds = [];
-    if (!G.isGuest() && G.save.hound && G.player) spawn(0, G.player.x - 26, G.player.y + 8);
+    if (!G.isGuest() && G.save.hound && G.player && (!DL.Works || DL.Works.brings("hound"))) spawn(0, G.player.x - 26, G.player.y + 8);
   };
   // Host: a friend who won a hound (in any world) brings it along when they join.
   Hounds.join = function (owner) {
@@ -80,6 +80,7 @@
      run straight through along the gate's line until past the wall, so it never scrapes along the stakes.
      Outside, it runs around the wall rather than into it. */
   function gateWay(h, tx, ty) {
+    if (DL.Refuge && DL.Refuge.on()) return DL.Camp.route(h.x, h.y, tx, ty, G.save.up); // the Refuge's stairs (src/refuge.js)
     if (!DL.Camp.walled(G.save.up)) return null;
     const C = DL.Camp, R = DL.WALL_R, inside = C.inside(h.x, h.y);
     // the way round the outside keeps well off the corners, so a straight leg never clips one;
@@ -256,4 +257,7 @@
     }
     return best;
   };
+  // The host knight's familiar called to their side (src/works.js: one at a time, two with the Summoning Circle).
+  Hounds.summonMine = function () { if (!G.isGuest() && G.player && !G.hounds.some((m) => m.owner === 0 && !m.gone)) spawn(0, G.player.x - 26, G.player.y + 8); };
 })(window.DL);
+

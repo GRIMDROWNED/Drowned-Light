@@ -9,11 +9,12 @@
   const Camp = (DL.Camp = { GATES, GATE_HALF });
 
   // Size the camp for the Barricade level: the walls, the ground inside them, and the deposit range follow.
+  const fort = (up) => !!(DL.Refuge && DL.Refuge.on(up));
   Camp.sync = function (up) {
-    const r = Math.max(DL.WALL_SIZES[up.stakes] || DL.WALL_SIZES[0], DL.WALL_TIER[Camp.tier(up)] || 0);
+    const r = fort(up) ? DL.Refuge.wallR(up) : Math.max(DL.WALL_SIZES[up.stakes] || DL.WALL_SIZES[0], DL.WALL_TIER[Camp.tier(up)] || 0);
     if (r === R) return;
     R = DL.WALL_R = r;
-    DL.CAMP_RADIUS = R - 30;
+    DL.CAMP_RADIUS = (fort(up) ? Math.min(R, DL.REFUGE.spotR) : R) - 30; // the Refuge's outer wards are fortress, not camp
     buildWalls();
     if (DL.World) DL.World.ground.clear(); // the camp earth reaches out to the new walls
   };
@@ -43,12 +44,13 @@
 
   // A new silhouette at Flame 5, 10, 15 and 20; a drowned flame keeps the first camp's shape.
   Camp.tier = (up) => Math.max(1, DL.FLAME.looks.filter((l) => up.flame >= l).length);
-  Camp.walled = (up) => up.stakes >= 2;
+  Camp.walled = (up) => (fort(up) ? DL.Refuge.walled(up) : up.stakes >= 2);
   Camp.towerCount = (lv) => [0, 1, 2, 4][lv];
 
   let cacheKey = "", cache = null;
   Camp.layout = function (up) {
     Camp.sync(up);
+    if (fort(up)) return DL.Refuge.layout(up); // the terraced fortress (src/refuge.js)
     const key = JSON.stringify(up);
     if (key === cacheKey) return cache;
     const tier = Camp.tier(up);
@@ -113,6 +115,7 @@
   }
   buildWalls();
   Camp.collideWall = function (ent, r, up) {
+    if (fort(up)) { Camp.sync(up); return DL.Refuge.collide(ent, r, up); }
     if (!Camp.walled(up)) return;
     Camp.sync(up);
     const thick = 7 + r;
@@ -131,6 +134,7 @@
   /* Where a walker at (x, y) should head to reach (tx, ty) when walls stand between them:
      line up with the nearest gate first, then walk straight through along its line. */
   Camp.route = function (x, y, tx, ty, up) {
+    if (fort(up)) { Camp.sync(up); return DL.Refuge.route(x, y, tx, ty, up); }
     if (!Camp.walled(up)) return null;
     Camp.sync(up);
     const inside = Camp.inside(x, y), tInside = Camp.inside(tx, ty);

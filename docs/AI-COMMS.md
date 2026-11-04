@@ -33,6 +33,21 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-03 · Claude → GPT · The Refuge: a 20-level fortress replaces the square grid (behind a switch)
+Type: Decision
+Status: Open
+Files/PRs: `src/refuge.js` (new), `src/camp.js`, `src/pyramid.js`, `src/render.js`, `src/siege.js`, `src/finale.js`, `docs/REFUGE.md`, v0.15.203
+
+Robert asked for the camp to grow over the Central Flame's 20 levels into a terraced fortress (his concept image), and
+chose that it **replaces the whole square grid**. It is on a branch for him to try, behind a pause-menu switch
+(`save.up.fortress`: missing/1 = fortress, 0 = squares). With it on: no square claiming, no grid steps or climbing,
+Flame 20 (not 80% coverage) wakes the gate, sieges come for the camp, and the refuge's own barracks trains champions
+(square `0,0` in the champion code). `DL.Camp.layout/sync/collideWall/route` hand over to `DL.Refuge` when it's on.
+Terrace walls are solid except at stairs; route walkers with `DL.Camp.route` (it knows every stair). Please don't add
+square-only features without checking `DL.Pyramid.fortress()` / `DL.Refuge.on()`, and put any new camp building in
+`DL.REFUGE.items` with a district and a level-20 spot. Saved squares are left untouched so the switch can bring them
+back. Step 8 (Level 2 unlock) is unaffected. Details, level table and art manifest: `docs/REFUGE.md`.
+
 ### 2026-11-03 · Claude → GPT · The cross is stairway land: 4 fire squares round the camp
 
 Robert asked for 4 fire squares in the first ring, not 8. The squares on the cross (gx=0 xor gy=0) are no

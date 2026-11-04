@@ -128,6 +128,7 @@
     const vw = R.W / z, vh = R.H / z, left = cam.x - vw / 2, top = cam.y - vh / 2;
     const view = { left, top, right: left + vw, bottom: top + vh };
     R.view = { left, top, z }; // for turning the mouse position into a world aim
+    R.vis = view; // the world rect on screen (the Refuge culls its long walls by it)
     const t = G.t;
 
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -599,6 +600,7 @@
   /* ---------- base camp: a new form every five Flame levels ---------- */
   function drawCampGround(c, G) {
     const L = DL.Camp.layout(G.save.up), R = DL.WALL_R;
+    if (L.fortress) return DL.Refuge.drawGround(c, L, G.time); // the Refuge's terraces and stairs (src/refuge.js)
     if (L.tier === 1) {
       c.strokeStyle = "rgba(90,75,55,0.35)";
       c.lineWidth = 3;
@@ -674,11 +676,17 @@
   function pushCamp(list, G, c, t) {
     const u = G.save.up, L = DL.Camp.layout(u), R = DL.WALL_R, night = G.nightAmt;
     const put = (y, f) => list.push({ y, f });
-    for (const tn of L.tents) put(tn.y, () => { groundShadow(c, "tent", tn.x, tn.y + 4, tn.flip, 26, 7); sprite(c, "tent", tn.x, tn.y + 4, tn.flip); });
-    for (const b of L.banners) put(b.y, () => { shadow(c, b.x, b.y + 1, 6, 2); sprite(c, "banner", b.x, b.y + 2); });
+    for (const tn of L.tents) put(tn.y, () => { if (L.fortress && DL.Refuge.drawBuilding(c, "tent", tn.flip ? 2 : 1, tn.x, tn.y)) return; groundShadow(c, "tent", tn.x, tn.y + 4, tn.flip, 26, 7); sprite(c, "tent", tn.x, tn.y + 4, tn.flip); });
+    const pil = L.fortress && DL.Refuge.art["d-pillar"]; // Robert's banner pillar (D1) in the refuge
+    for (const b of L.banners) put(b.y, () => {
+      if (pil) { const w = 22, h = (w * pil.height) / pil.width; c.drawImage(pil, b.x - w / 2, b.y + 4 - h, w, h); return; }
+      shadow(c, b.x, b.y + 1, 6, 2); sprite(c, "banner", b.x, b.y + 2);
+    });
     // drawn buildings have a picture per level; the coded ones are the fallback
     const drawn = Art.sprites.forge1;
-    const building = (b, name) => { groundShadow(c, name, b.x, b.y + 4, false, Art.sprites[name].w * 0.75, 7); sprite(c, name, b.x, b.y + 4); };
+    const building = (b, name) => {
+      const m = L.fortress && /^([a-z]+)(\d)$/.exec(name);
+      if (m && DL.Refuge.drawBuilding(c, m[1], +m[2], b.x, b.y)) return; groundShadow(c, name, b.x, b.y + 4, false, Art.sprites[name].w * 0.75, 7); sprite(c, name, b.x, b.y + 4); };
     if (L.forge) put(L.forge.y, () => building(L.forge, drawn ? "forge" + u.forge : "forge"));
     if (L.armory) put(L.armory.y, () => {
       if (drawn) return building(L.armory, "armory" + u.armory);
@@ -692,21 +700,28 @@
       if (L.tier >= 2) sprite(c, "awning", L.workbench.x, L.workbench.y + 4, true);
       sprite(c, "workbench", L.workbench.x, L.workbench.y + 4);
     });
-    if (L.garden) put(L.garden.y - 20, () => drawGarden(c, L.garden, u.garden, night, t));
+    if (L.garden) put(L.garden.y - 20, () => { if (!(L.fortress && DL.Refuge.drawBuilding(c, "garden", u.garden, L.garden.x, L.garden.y))) drawGarden(c, L.garden, u.garden, night, t); });
     // the companions' homes (a picture per level) and the Abyss trophies
     for (const k of ["kennel", "workshop", "shrine", "toadstool", "roost"]) if (L[k]) put(L[k].y, () => building(L[k], k + u[k]));
-    if (L.bell) put(L.bell.y, () => building(L.bell, "bellTower"));
-    if (L.roseheart) put(L.roseheart.y, () => drawRoseHeart(c, L.roseheart, u.roseheart, night, t));
-    for (const tw of L.towers) put(tw.y, () => { const n = drawn ? "tower" + u.tower : "tower"; groundShadow(c, n, tw.x, tw.y + 4, false, 20, 6); sprite(c, n, tw.x, tw.y + 4); });
+    if (L.bell) put(L.bell.y, () => { if (!(L.fortress && DL.Refuge.drawBuilding(c, "bell", 1, L.bell.x, L.bell.y))) building(L.bell, "bellTower"); });
+    if (L.roseheart) put(L.roseheart.y, () => drawRoseHeart(c, L.roseheart, u.roseheart, night, t, L.fortress));
+    for (const tw of L.towers) put(tw.y, () => { if (L.fortress && DL.Refuge.drawBuilding(c, "tower", u.tower, tw.x, tw.y)) return; const n = drawn ? "tower" + u.tower : "tower"; groundShadow(c, n, tw.x, tw.y + 4, false, 20, 6); sprite(c, n, tw.x, tw.y + 4); });
     const pyl = drawn ? "pylon" + u.pylon : "pylon", lamps = drawn ? PYLON_LAMPS[u.pylon] : [[-11, -77], [11, -77]];
     for (const q of G.pylons) put(q.y, () => {
+      if (L.fortress && DL.Refuge.drawBuilding(c, "pylon", u.pylon, q.x, q.y)) {
+        // Robert's B07 pylons have their lanterns drawn lit; an unlit pylon dims them
+        if (!q.lit) for (const [ox, oy] of REF_PYLON_LAMPS[u.pylon]) { c.fillStyle = "rgba(18,10,8,0.78)"; c.fillRect(Math.round(q.x + ox) - 4, Math.round(q.y + oy) - 5, 8, 10); }
+        if (q.hp < q.max) bar(c, q.x, q.y - 120, 24, q.hp / q.max, "#ffb35a");
+        return;
+      }
       groundShadow(c, pyl, q.x, q.y + 4, false, 10, 3);
       sprite(c, pyl, q.x, q.y + 4);
       if (q.lit) for (const [ox, oy] of lamps) lampFlame(c, q.x + ox, q.y + oy);
       if (q.hp < q.max) bar(c, q.x, q.y - 120, 24, q.hp / q.max, "#ffb35a");
     });
+    if (L.fortress) pushRefuge(list, c, L, u, t);
     // barricade: stakes, then a palisade with four gates
-    if (u.stakes === 1) {
+    else if (u.stakes === 1) {
       DL.Camp.ring(R - 10, 52).forEach(({ x, y }, i) => put(y, () => sprite(c, "stake", x, y + 2, i % 2 === 0)));
     } else if (u.stakes >= 2) {
       const rf = u.stakes >= 3 && Art.sprites.palisade2 ? "2" : "";
@@ -761,7 +776,12 @@
       const lvl = u.flame;
       let fy = 2;
       const artTier = Math.min(3, L.tier), look = [0, 1, 5, 10, 15, 20][L.tier], drawnLook = L.tier >= 2 && Art.sprites["flame" + look];
-      if (drawnLook) { // Robert's milestone looks (flame 5, 10, 15, 20; tools/cut_pyramid.py)
+      const hl = [1, 5, 10, 15, 20].filter((v) => lvl >= v).pop(), HI = L.fortress && DL.Refuge.art["hearth" + hl], HD = HI && DL.Refuge.HEARTH[hl];
+      if (HI) { // Robert's refuge hearths (B01): the picture's foot just below the flame, the fire in its bowl
+        const h = (HD.w * HI.height) / HI.width, top = 26 - h;
+        c.drawImage(HI, -HD.w * HD.bx, top, HD.w, h);
+        fy = top + h * HD.by + 6;
+      } else if (drawnLook) { // Robert's milestone looks (flame 5, 10, 15, 20; tools/cut_pyramid.py)
         sprite(c, "flame" + look, 0, 12);
         fy = FLAME_FIRE[look];
       } else if (L.tier >= 4) {
@@ -776,7 +796,7 @@
           for (const x of [-40, -22, -4, 14, 32]) c.fillRect(x, -108, 8, 15);
         }
       }
-      if (drawnLook) {}
+      if (drawnLook || HI) {}
       else if (Art.sprites["flame" + artTier]) { const y = [10, 14, 12][artTier - 1]; sprite(c, "flame" + artTier, 0, y); fy = FLAME_FIRE[artTier]; }
       else if (L.tier === 1) sprite(c, "firering", 0, 10);
       else if (L.tier === 2) { sprite(c, "firepit2", 0, 14); fy = -2; }
@@ -787,9 +807,71 @@
     });
   }
 
+  /* The Refuge's own pieces (src/refuge.js): its barracks, tents, supply pile, placeholder plots for buildings not yet
+     drawn, watch fires, lamps and beacons; and the Barricade's stakes or palisade along the outermost wall, broken at
+     every stair. */
+  function pushRefuge(list, c, L, u, t) {
+    const put = (y, f) => list.push({ y, f });
+    for (const it of L.items) {
+      if (it.sprite === "tent") continue; // drawn with the tents
+      if (it.id === "barracks") { const lv = DL.Refuge.barracks(u); put(it.y, () => { if (!DL.Refuge.drawBuilding(c, "barracks", lv, it.x, it.y)) drawBarracks(c, it.x, it.y, lv); }); continue; }
+      if (it.id === "supplies") {
+        put(it.y, () => {
+          if (DL.Refuge.drawBuilding(c, "supplies", 1, it.x, it.y)) return;
+          const piles = ["resWood", "resStone", "resWood", "resIron", "resResin"];
+          piles.forEach((n, i) => { if (Art.sprites[n]) sprite(c, n, it.x - 14 + (i % 3) * 14, it.y - 8 + Math.floor(i / 3) * 10); });
+        });
+        continue;
+      }
+      if (it.ph) put(it.y, () => { if (!DL.Refuge.drawBuilding(c, it.id, 1, it.x, it.y)) DL.Refuge.drawPlaceholder(c, it); });
+    }
+    const A = DL.Refuge.art, img = (n, x, y, w) => { const im = A[n]; if (!im) return 0; const h = (w * im.height) / im.width; c.drawImage(im, x - w / 2, y - h, w, h); return h; };
+    for (const d of L.decor || []) put(d.y, () => img("d-" + d.kind, d.x, d.y + 4, { statue: 34, well: 46, rack: 32, crates: 46, planter: 36 }[d.kind] || 34));
+    for (const f of L.fires) put(f.y, () => {
+      if (f.kind === "torch" && A["d-lantern"]) { const h = img("d-lantern", f.x, f.y + 4, 22); Art.drawFire(c, f.x - 7, f.y + 4 - h * 0.6, 0.35, t); return; }
+      if (f.kind === "beacon" && A["d-beacon"]) { const h = img("d-beacon", f.x, f.y + 4, 30); Art.drawFire(c, f.x, f.y + 4 - h * 0.8, 1.4, t); return; }
+      if (f.kind === "brazier" && A["d-bowl"]) { const h = img("d-bowl", f.x, f.y + 4, 30); Art.drawFire(c, f.x, f.y + 4 - h * 0.55, 1.0, t); return; }
+      if (f.kind === "torch") { sprite(c, "torch", f.x, f.y + 2); Art.drawFire(c, f.x, f.y + 10 - Art.sprites.torch.h * PS, 0.7, t); return; }
+      sprite(c, "brazier", f.x, f.y + 2, false);
+      Art.drawFire(c, f.x, f.y + 14 - Art.sprites.brazier.h * PS, f.kind === "beacon" ? 1.5 : 1.1, t);
+    });
+    if (!u.stakes || L.geo.outerRing) return; // once a terrace is the outer wall, its own drawn wall replaces the palisade
+    const g = L.geo, R = L.R, ring = DL.Refuge.blockers(u).find((r) => r.half === R);
+    const gaps = ring ? ring.stairs : [];
+    const open = (s, along) => gaps.some((q) => q.s === s && Math.abs(along - q.at) < q.w / 2 + 14);
+    const rf = u.stakes >= 3 && Art.sprites.palisade2 ? "2" : "";
+    if (u.stakes === 1) {
+      DL.Camp.ring(R - 10, 52).forEach(({ x, y }, i) => {
+        const s = Math.abs(y) >= Math.abs(x) ? (y < 0 ? 0 : 2) : (x > 0 ? 1 : 3);
+        if (!open(s, s % 2 ? y : x)) put(y, () => sprite(c, "stake", x, y + 2, i % 2 === 0));
+      });
+      return;
+    }
+    const n = Math.round((2 * R) / 46);
+    for (let i = 1; i < n; i++) for (const [y, s] of [[-R, 0], [R, 2]]) {
+      const x = -R + (2 * R * i) / n;
+      if (!open(s, x)) put(y, () => sprite(c, "palisade" + rf, x, y + 4, i % 2 === 0));
+    }
+    const m = Math.round((2 * R) / SIDE_STEP);
+    for (let i = 1; i < m; i++) for (const [x, s] of [[-R, 3], [R, 1]]) {
+      const y = -R + (2 * R * i) / m;
+      if (open(s, y) || (y > 0 && open(s, y - 51))) continue; // a side strip stands 51 px tall: keep it off the stair south of it
+      put(y, () => sprite(c, (Art.sprites.palisadeSide ? "palisadeSide" : "palisade") + rf, x, y + 4, x > 0));
+    }
+    for (const x of [-R, R]) for (const y of [-R, R]) put(y + 1, () => sprite(c, "cornerPost" + rf, x, y + 4, x > 0));
+    for (const q of gaps) { // gate posts either side of each stair
+      const [nx, ny] = [[0, -1], [1, 0], [0, 1], [-1, 0]][q.s];
+      for (const sg of [-1, 1]) {
+        const x = nx ? nx * R : q.at + sg * (q.w / 2 + 6), y = ny ? ny * R : q.at + sg * (q.w / 2 + 6);
+        put(y + 1, () => sprite(c, u.stakes >= 3 && Art.sprites.gatePost2 ? "gatePost2" : "gatePost", x, y + 4, sg > 0));
+      }
+    }
+  }
+
   /* The Rose Heart: Robert's drawing of each level once it's in (roseHeart1–3); till then the Deadly Rose's own bud,
      smaller, in a ring of stones, swelling with each level and breathing slowly. */
-  function drawRoseHeart(c, h, lvl, night, t) {
+  function drawRoseHeart(c, h, lvl, night, t, fort) {
+    if (fort && DL.Refuge.drawBuilding(c, "roseheart", lvl, h.x, h.y)) return;
     const own = Art.sprites["roseHeart" + lvl];
     if (own) return sprite(c, "roseHeart" + lvl, h.x, h.y + 4);
     for (let i = 0; i < 9; i++) {
@@ -807,6 +889,7 @@
   // level and on the reinforced gate post, relative to where they stand.
   const FLAME_FIRE = { 1: -12, 2: -34, 3: -68, 5: -56, 10: -78, 15: -82, 20: -84 };
   const PYLON_LAMPS = { 1: [[-20, -74], [17, -58]], 2: [[-19, -71], [17, -62]], 3: [[-24, -71], [23, -63]] };
+  const REF_PYLON_LAMPS = { 1: [[13, -33]], 2: [[-19, -34], [17, -34]], 3: [[-17, -48], [17, -48], [-22, -25], [22, -25]] };
   const GATE_LAMP = [31, -56];
   const SIDE_STEP = 18; // ground each side-on wall strip covers, north to south
   function lampFlame(c, x, y) {

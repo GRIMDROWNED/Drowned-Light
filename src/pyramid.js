@@ -17,6 +17,8 @@
   const say = (m, k) => { if (DL.UI) DL.UI.toast(m, k); };
   const sfx = (n) => DL.Sound.play(n);
   const Py = (DL.Pyramid = {});
+  const fortress = () => !!(DL.Refuge && G.save && DL.Refuge.on(G.save.up));
+  Py.fortress = fortress;
   const key = (gx, gy) => gx + "," + gy;
   let held = new Set(["0,0"]);  // the squares the knights hold (the camp always)
   let raised = new Set(["0,0"]); // those, and the stairway squares of the cross that are up with them
@@ -56,7 +58,7 @@
   const touches = (gx, gy) => (Math.abs(gx) === 1 && Math.abs(gy) === 1) || SIDES.some(([dx, dy]) => Py.raised(gx + dx, gy + dy));
   // The unclaimed square a knight at (x, y) could claim, standing near its middle: next to one the knights hold.
   Py.claimable = function (x, y) {
-    if (G.cave) return null;
+    if (G.cave || fortress()) return null;
     const { gx, gy } = Py.cell(x, y), c = Py.center(gx, gy);
     if (!Py.inGrid(gx, gy) || onCross(gx, gy) || Py.has(gx, gy) || !touches(gx, gy)) return null;
     if (Math.abs(x - c.x) > P.claimR || Math.abs(y - c.y) > P.claimR) return null;
@@ -71,7 +73,7 @@
   };
   // The host claims a square (a friend's claim comes as an "outpost" event, src/net.js).
   Py.claimHost = function (gx, gy, mine) {
-    if (!Py.inGrid(gx, gy) || onCross(gx, gy) || Py.has(gx, gy) || !touches(gx, gy)) return false;
+    if (fortress() || !Py.inGrid(gx, gy) || onCross(gx, gy) || Py.has(gx, gy) || !touches(gx, gy)) return false;
     const lock = Py.lock(gx, gy);
     if (lock) { if (mine) { sfx("deny"); say(lock + ".", "warn"); } return false; }
     G.pay(Py.cost(gx, gy));
@@ -115,6 +117,7 @@
   };
   // The squares held (from the save on the host, from a snapshot on a friend's device).
   Py.setHeld = function (keys) {
+    if (fortress()) keys = []; // the Refuge replaces the squares (src/refuge.js); saved squares are kept for the switch back
     held = new Set(["0,0", ...keys.filter((k) => { const [gx, gy] = k.split(",").map(Number); return !onCross(gx, gy); })]);
     raise();
     Py.ver++;
@@ -161,11 +164,14 @@
   // Paved: on a held square (not the camp's) and outside its marsh beds.
   const faceH = (d) => Math.min(P.maxFace, d) * P.face; // px of rock face for a drop of d levels
   Py.paved = function (x, y) {
+    if (fortress()) return DL.Camp.sq(x, y) < DL.Refuge.clearR() && !DL.Refuge.inBed(x, y);
     const { gx, gy } = Py.cell(x, y);
     return !!(gx || gy) && raised.has(key(gx, gy)) && !inBed(x, y, gx, gy);
   };
   // Whether a world object is hidden: wild nodes under a held square's paving, and bed nodes of unheld squares.
   Py.hides = function (o) {
+    if (o.rbed) return !fortress() || !DL.Refuge.geo(DL.Refuge.level()).rings.some((r) => r.id === o.rbed); // a ward's marsh bed
+    if (fortress()) return !!o.bed || (!!o.wild && DL.Camp.sq(o.x, o.y) < DL.Refuge.clearR()); // under the Refuge's terraces
     if (o.bed) return !held.has(o.bed);
     if (!o.wild) return false;
     const { gx, gy } = Py.cell(o.x, o.y);
@@ -333,7 +339,7 @@
      over the low square (v0.15.199, so the high square's walls and buildings stand on its flagstones), so there
      the low side's band is the whole face. */
   Py.speedMult = function (ent) {
-    if (G.cave || DL.Cave.inRegion(ent.x, ent.y)) return 1;
+    if (fortress() || G.cave || DL.Cave.inRegion(ent.x, ent.y)) return 1;
     const { gx, gy } = Py.cell(ent.x, ent.y), c = Py.center(gx, gy);
     const lx = ent.x - c.x, ly = ent.y - c.y; // -HALF..HALF
     for (const [dx, dy] of SIDES) {
@@ -370,7 +376,7 @@
 
   // Rock faces, lips and stairs on the ground layer (src/render.js), for the squares in view.
   Py.drawGround = function (c, view) {
-    if (G.cave) return;
+    if (G.cave || fortress()) return; // the Refuge draws its own terraces (src/refuge.js)
     const g0x = Math.round(view.left / CELL) - 1, g1x = Math.round(view.right / CELL) + 1;
     const g0y = Math.round(view.top / CELL) - 1, g1y = Math.round(view.bottom / CELL) + 1;
     // first the tops and the paved stairways of the cross, then the faces over them
@@ -440,9 +446,9 @@
   }
   /* A stretch of the cross's stairways across a held square: a paved lane of shallow treads between low kerbs
      (coded; one long flight a level, the drawn flights sit at the drops). */
-  function lane(c, x, y, w, h, horiz) {
+  function lane(c, x, y, w, h, horiz, sw = P.stairW) {
     if (ART.lane) { // Robert's stairway strip (v0.15.191), kerbs included, so a little wider than stairW; turned for east-west
-      const W = ART.lane.width / 2, pad = (W - P.stairW) / 2;
+      const W = ART.lane.width / 2 * sw / P.stairW, pad = (W - sw) / 2;
       if (!horiz) return strip(c, ART.lane, x - pad, y, W, h, W, true);
       c.save(); c.translate(x, y + h / 2); c.rotate(-Math.PI / 2);
       strip(c, ART.lane, -W / 2, 0, W, w, W, true);
@@ -459,6 +465,7 @@
   }
   // Robert's drawn stone strips (tools/cut_pyramid.py, 2 file px per world px). Until they load, the coded stone shows.
   const ART = {};
+  Py.art = ART; Py.strip = (...a) => strip(...a); Py.lane = (...a) => lane(...a); // shared with the Refuge's terraces
   for (const n of ["south", "north", "east", "west", "stairS", "stairN", "stairE", "stairW", "lane"]) {
     if (typeof Image === "undefined") break; // the node tests have no images
     const img = new Image();
@@ -573,15 +580,16 @@
   // Live defenders are rebuilt from the barracks, like camp defenses; only the building level is saved.
   G.champions = [];
   const training = new Map();
-  const barracksLevel = (gx, gy) => Math.min(P.build.barracks.max, Math.max(0, Py.buildings(gx, gy).barracks || 0));
+  const barracksLevel = (gx, gy) => (!gx && !gy ? DL.Refuge.barracks() : fortress() ? 0 : Math.min(P.build.barracks.max, Math.max(0, Py.buildings(gx, gy).barracks || 0)));
   const champHome = (h) => {
-    const c = Py.layout(h.gx, h.gy).barracks, C = P.champion;
+    const c = !h.gx && !h.gy ? DL.Camp.layout(G.save.up).barracks || { x: 0, y: 0 } : Py.layout(h.gx, h.gy).barracks, C = P.champion;
     return { x: c.x + C.spawnX + h.slot * C.spacing, y: c.y + C.spawnY };
   };
   const alive = (h) => G.save.up.flame > 0 && h && h.hp > 0 && Py.has(h.gx, h.gy) && barracksLevel(h.gx, h.gy) > 0;
+  const lit = (gx, gy) => (!gx && !gy ? G.flame && G.flame.lit : G.outposts.some((o) => o.gx === gx && o.gy === gy && o.lit));
   const inGuard = (e, gx, gy) => {
-    const c = Py.center(gx, gy);
-    return Math.max(Math.abs(e.x - c.x), Math.abs(e.y - c.y)) <= P.champion.defend;
+    const c = Py.center(gx, gy), r = !gx && !gy ? Math.max(P.champion.defend, DL.WALL_R + 120) : P.champion.defend;
+    return Math.max(Math.abs(e.x - c.x), Math.abs(e.y - c.y)) <= r;
   };
   Py.resetChampions = function () { G.champions = []; training.clear(); };
   Py.updateChampions = function (dt) {
@@ -590,20 +598,19 @@
     G.champions = G.champions.filter(alive);
     const homes = new Set();
     Py.each((gx, gy) => {
-      if (!gx && !gy) return;
+      if (!gx && !gy && !fortress()) return; // the Refuge's own barracks trains champions for the camp
       const level = barracksLevel(gx, gy);
       if (!level) return;
       const id = key(gx, gy); homes.add(id);
       // An extinguished square cannot train until its fire is restored.
-      const fire = G.outposts.find((o) => o.gx === gx && o.gy === gy);
-      if (!fire || !fire.lit) return;
+      if (!lit(gx, gy)) return;
       const count = G.champions.filter((h) => h.gx === gx && h.gy === gy).length;
       if (count >= C.count[level]) { training.delete(id); return; }
       const left = (training.has(id) ? training.get(id) : C.train[level]) - dt;
       if (left > 0) { training.set(id, left); return; }
       const slots = G.champions.filter((h) => h.gx === gx && h.gy === gy).map((h) => h.slot);
       let slot = 0; while (slots.includes(slot)) slot++;
-      const h = { id: ++G.eid, champion: true, gx, gy, slot, hp: C.hp[level], maxHp: C.hp[level],
+      const h = { id: ++G.eid, champion: true, gx, gy, slot, hp: C.hp[level] * (DL.Works ? DL.Works.drill() : 1), maxHp: C.hp[level] * (DL.Works ? DL.Works.drill() : 1),
         angle: Math.PI / 2, moving: false, animT: 0, flash: 0, cd: 0, swing: 0, hit: false, tgt: null };
       Object.assign(h, champHome(h)); G.champions.push(h);
       training.set(id, C.train[level]);
@@ -612,7 +619,7 @@
     for (const id of training.keys()) if (!homes.has(id)) training.delete(id);
     for (const h of G.champions) {
       const level = barracksLevel(h.gx, h.gy), home = champHome(h);
-      h.maxHp = C.hp[level]; h.hp = Math.min(h.hp, h.maxHp);
+      h.maxHp = C.hp[level] * (DL.Works ? DL.Works.drill() : 1); h.hp = Math.min(h.hp, h.maxHp);
       h.animT += dt; h.flash = Math.max(0, h.flash - dt); h.cd = Math.max(0, h.cd - dt); h.moving = false;
       const valid = (e) => e && !e.removed && e.hp > 0 && e.rise <= 0 && !e.dormant && !(e.mind > 0) && inGuard(e, h.gx, h.gy);
       if (h.swing > 0) {
@@ -621,7 +628,7 @@
         if (!h.hit && before > C.hitAt && h.swing <= C.hitAt) {
           h.hit = true;
           if (valid(e) && DL.dist(h.x, h.y, e.x, e.y) <= C.reach + e.def.radius + C.radius) {
-            G.hitEnemy(e, C.dmg[level], h.angle, C.knockback, 0, true);
+            G.hitEnemy(e, C.dmg[level] * (DL.Works ? DL.Works.drill() : 1), h.angle, C.knockback, 0, true);
             G.effects.push({ type: "slash", x: h.x, y: h.y - 20, ang: h.angle, arc: 1.7,
               r: C.reach, t: 0, max: C.swing, col: "255,195,100", w: 5 });
           }
@@ -635,7 +642,7 @@
       }
       h.tgt = target;
       if (!target && DL.dist(h.x, h.y, home.x, home.y) < C.guard) {
-        if (G.outposts.some((o) => o.gx === h.gx && o.gy === h.gy && o.lit)) h.hp = Math.min(h.maxHp, h.hp + C.regen * dt);
+        if (lit(h.gx, h.gy)) h.hp = Math.min(h.maxHp, h.hp + C.regen * dt);
         continue;
       }
       const tx = target ? target.x : home.x, ty = target ? target.y : home.y;
@@ -644,12 +651,12 @@
         if (!h.cd) { h.swing = C.swing; h.hit = false; h.cd = C.cd; }
         continue;
       }
-      const waypoint = Py.route ? Py.route(h.x, h.y, tx, ty) : null;
+      const waypoint = (Py.route ? Py.route(h.x, h.y, tx, ty) : null) || (DL.Camp.route ? DL.Camp.route(h.x, h.y, tx, ty, G.save.up) : null);
       const dx = (waypoint ? waypoint.x : tx) - h.x, dy = (waypoint ? waypoint.y : ty) - h.y, d = Math.hypot(dx, dy) || 1;
       const step = Math.min(d, C.speed * Py.speedMult(h) * dt);
       h.x += dx / d * step; h.y += dy / d * step; h.moving = true;
       DL.World.collide(h, C.radius);
-      if (Py.collide) Py.collide(h, C.radius);
+      if (G.collideCamp) G.collideCamp(h, C.radius); else if (Py.collide) Py.collide(h, C.radius);
       DL.Finale.collide(h);
     }
   };
@@ -697,6 +704,6 @@
   };
 
   /* ---------------- HUD ---------------- */
-  Py.line = () => `${Py.count()} / ${Py.limit()} squares held · ${Math.round(Py.coverage() * 100)}% of the land (${Math.round(P.win * 100)}% wakes the Drowned Gate)`;
+  Py.line = () => fortress() ? DL.Refuge.line() : `${Py.count()} / ${Py.limit()} squares held · ${Math.round(Py.coverage() * 100)}% of the land (${Math.round(P.win * 100)}% wakes the Drowned Gate)`;
 })(window.DL);
 
