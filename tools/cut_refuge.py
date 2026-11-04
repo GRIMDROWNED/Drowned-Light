@@ -148,6 +148,7 @@ for n, (x0, y0, x1, y1) in {'hearth1': (40, 344, 374, 654), 'hearth5': (431, 344
 BUILD = {
     'B02-forge': ('forge', [(41, 250, 408, 681), (490, 146, 923, 681), (1005, 117, 1502, 681), (1583, 18, 2129, 681)]),
     'B05-cultivation-plot': ('garden', [(105, 255, 597, 695), (676, 138, 1213, 696), (1318, 26, 2088, 696)]),
+    'B18-upper-works': ('upper', [(41, 288, 325, 697), (369, 272, 642, 697), (683, 249, 1014, 697), (1044, 280, 1315, 697), (1354, 461, 1637, 697)]),
     'B03-armory': ('armory', [(38, 265, 453, 684), (503, 161, 943, 684), (995, 122, 1507, 684), (1562, 31, 2131, 684)]),
 }
 for f, (key, boxes) in BUILD.items():
@@ -157,5 +158,6 @@ for f, (key, boxes) in BUILD.items():
         rgba = np.zeros((y1 - y0, x1 - x0, 4), 'uint8'); rgba[..., :3] = src[y0:y1, x0:x1] * fgm[y0:y1, x0:x1, None]; rgba[..., 3] = fgm[y0:y1, x0:x1] * 255
         im = Image.fromarray(rgba).convert('RGBa').resize((round((x1 - x0) * 0.4), round((y1 - y0) * 0.4)), Image.BOX).convert('RGBA')
         a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
-        Image.fromarray(a).save(os.path.join(OUT, f'b-{key}{i + 1}.png'))
+        name = ['alchemy', 'quarters', 'lodge', 'archive', 'circle'][i] + '1' if key == 'upper' else f'{key}{i + 1}'
+        Image.fromarray(a).save(os.path.join(OUT, f'b-{name}.png'))
     print(f, len(boxes))

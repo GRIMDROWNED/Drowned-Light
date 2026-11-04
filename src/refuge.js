@@ -352,7 +352,8 @@
   }
   Refuge.art = IMG;
   // Buildings Robert redrew on their own plinths (B02-B18): id -> levels. Drawn at BS world px per source px.
-  Refuge.BUILT = { forge: 4, armory: 4, garden: 3 };
+  Refuge.BUILT = { forge: 4, armory: 4, garden: 3, alchemy: 1, quarters: 1, lodge: 1, archive: 1, circle: 1 };
+  const BSCALE = { alchemy: 1.6, quarters: 1.6, lodge: 1.6, archive: 1.6, circle: 1.6 }; // B18 was drawn smaller
   const BS = 0.2;
   if (typeof Image !== "undefined") for (const [id, n] of Object.entries(Refuge.BUILT)) for (let i = 1; i <= n; i++) {
     const img = new Image(); img.onload = () => { IMG["b-" + id + i] = img; }; img.src = DL.asset("assets/sprites/refuge/b-" + id + i + ".png");
@@ -360,7 +361,7 @@
   // Draw a redrawn building (its plinth's front edge a little below its spot); false if its art isn't in.
   Refuge.drawBuilding = function (c, id, lvl, x, y) {
     const im = IMG["b-" + id + lvl]; if (!im) return false;
-    const w = im.width * BS / 0.4, h = im.height * BS / 0.4;
+    const k = (BS / 0.4) * (BSCALE[id] || 1), w = im.width * k, h = im.height * k;
     c.drawImage(im, x - w / 2, y + 16 - h, w, h);
     return true;
   };

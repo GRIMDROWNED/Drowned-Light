@@ -816,7 +816,7 @@
         });
         continue;
       }
-      if (it.ph) put(it.y, () => DL.Refuge.drawPlaceholder(c, it));
+      if (it.ph) put(it.y, () => { if (!DL.Refuge.drawBuilding(c, it.id, 1, it.x, it.y)) DL.Refuge.drawPlaceholder(c, it); });
     }
     const A = DL.Refuge.art, img = (n, x, y, w) => { const im = A[n]; if (!im) return 0; const h = (w * im.height) / im.width; c.drawImage(im, x - w / 2, y - h, w, h); return h; };
     for (const d of L.decor || []) put(d.y, () => img("d-" + d.kind, d.x, d.y + 4, { statue: 34, well: 46, rack: 32, crates: 46, planter: 36 }[d.kind] || 34));
