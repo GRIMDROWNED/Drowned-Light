@@ -708,6 +708,12 @@
     for (const tw of L.towers) put(tw.y, () => { const n = drawn ? "tower" + u.tower : "tower"; groundShadow(c, n, tw.x, tw.y + 4, false, 20, 6); sprite(c, n, tw.x, tw.y + 4); });
     const pyl = drawn ? "pylon" + u.pylon : "pylon", lamps = drawn ? PYLON_LAMPS[u.pylon] : [[-11, -77], [11, -77]];
     for (const q of G.pylons) put(q.y, () => {
+      if (L.fortress && DL.Refuge.drawBuilding(c, "pylon", u.pylon, q.x, q.y)) {
+        // Robert's B07 pylons have their lanterns drawn lit; an unlit pylon dims them
+        if (!q.lit) for (const [ox, oy] of REF_PYLON_LAMPS[u.pylon]) { c.fillStyle = "rgba(18,10,8,0.78)"; c.fillRect(Math.round(q.x + ox) - 4, Math.round(q.y + oy) - 5, 8, 10); }
+        if (q.hp < q.max) bar(c, q.x, q.y - 120, 24, q.hp / q.max, "#ffb35a");
+        return;
+      }
       groundShadow(c, pyl, q.x, q.y + 4, false, 10, 3);
       sprite(c, pyl, q.x, q.y + 4);
       if (q.lit) for (const [ox, oy] of lamps) lampFlame(c, q.x + ox, q.y + oy);
@@ -882,6 +888,7 @@
   // level and on the reinforced gate post, relative to where they stand.
   const FLAME_FIRE = { 1: -12, 2: -34, 3: -68, 5: -56, 10: -78, 15: -82, 20: -84 };
   const PYLON_LAMPS = { 1: [[-20, -74], [17, -58]], 2: [[-19, -71], [17, -62]], 3: [[-24, -71], [23, -63]] };
+  const REF_PYLON_LAMPS = { 1: [[13, -33]], 2: [[-19, -34], [17, -34]], 3: [[-17, -48], [17, -48], [-22, -25], [22, -25]] };
   const GATE_LAMP = [31, -56];
   const SIDE_STEP = 18; // ground each side-on wall strip covers, north to south
   function lampFlame(c, x, y) {
