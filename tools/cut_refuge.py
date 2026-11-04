@@ -83,3 +83,11 @@ for name, boxes in BOXES.items():
         a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
         Image.fromarray(a).save(os.path.join(OUT, f'{pre}-{piece}.png'))
     print(name, len(boxes), 'pieces')
+
+# S1 (2026-11-04): the east-west stair strip, one repeat from pillar centre to pillar centre (the avenues tile it)
+rgba = keyed('S1-grand-stairs')
+x0, x1 = 696, 957
+crop = rgba[398:687, x0:x1]
+im = Image.fromarray(crop).convert('RGBa').resize((round((x1 - x0) * 0.3), round(289 * 0.3)), Image.BOX).convert('RGBA')
+a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
+Image.fromarray(a).save(os.path.join(OUT, 'avenue-ew.png')); print('avenue-ew', im.size)

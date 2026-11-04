@@ -333,7 +333,7 @@
       box: { nw: [20, 10, 190, 300], n: [185, 95, 300, 240], stN: [480, 10, 773, 245], w: [50, 410, 170, 450], stW: [50, 500, 170, 640], sw: [10, 840, 180, 1215], s: [180, 900, 290, 1200], stS: [460, 800, 793, 1238], ne: [1063, 10, 1233, 300], se: [1073, 840, 1243, 1215], e: [1083, 410, 1203, 450], stE: [1083, 500, 1203, 640] } },
   };
   if (typeof Image !== "undefined") {
-    const names = ["foundation", "plaza", "terrace-floor"];
+    const names = ["foundation", "plaza", "terrace-floor", "avenue-ew"];
     for (const k of ["terrace", "low", "rim", "tier", "sanct", "court", "ward", "mward", "lward", "curt", "great"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
     for (const n of names) { const img = new Image(); img.onload = () => { IMG[n] = img; }; img.src = DL.asset("assets/sprites/refuge/" + n + ".png"); }
   }
@@ -504,7 +504,11 @@
     const inner = s0 ? s0.half + s0.face : 60, reach = g.R + 30;
     if (lv >= 2) for (const [nx, ny] of SIDES) {
       const w = g.cw;
-      if (nx && IMG["terrace-floor"]) { // east-west: a paved road between kerbs (the stair strip turned on its side read as planks)
+      if (nx && IMG["avenue-ew"]) { // east-west: Robert's stair strip (S1), its kerbs just outside the avenue
+        const im = IMG["avenue-ew"], h = w + 18, k = h / im.height, x0 = nx > 0 ? inner - 8 : -reach, len = reach - inner + 8;
+        const p = c.createPattern(im, "repeat"); p.setTransform(new DOMMatrix().translate(0, -h / 2).scale(k));
+        c.fillStyle = p; c.fillRect(x0, -h / 2, len, h);
+      } else if (nx && IMG["terrace-floor"]) { // east-west: a paved road between kerbs (the stair strip turned on its side read as planks)
         const x0 = nx > 0 ? inner - 8 : -reach, len = reach - inner + 8;
         c.fillStyle = floorPat(c); c.fillRect(x0, -w / 2, len, w);
         c.fillStyle = "rgba(255,235,190,0.08)"; c.fillRect(x0, -w / 2, len, w);
