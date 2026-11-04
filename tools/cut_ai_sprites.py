@@ -85,6 +85,10 @@ GRIDS = {
     'carrion-drakeling/poses-b.png': (3, 2, POSES_B),
     'tide-stalker/poses-a.png': (3, 2, POSES_A),
     'thornling/poses-a.png': (3, 2, POSES_A),
+    'rose-wretch/poses-a.png': (3, 2, POSES_A),
+    'rose-wretch/poses-b.png': (3, 2, POSES_B),
+    'briar-handmaiden/poses-a.png': (3, 2, POSES_A),
+    'briar-handmaiden/poses-b.png': (3, 2, POSES_B),
     'thornling/poses-b.png': (3, 2, POSES_B),
     'tide-stalker/poses-b.png': (3, 2, POSES_B),
     'sunken-wisp/poses-a.png': (3, 2, POSES_A),
@@ -189,6 +193,8 @@ FRED0_H = 80  # Fred the Sprout (Fred's first form, src/fred.js), res 4: 20 art 
 FRED1_H = 107  # Fred (level 5), a third taller than the Sprout
 FRED2_H = 164  # Weeping Fred (level 10), about the knight's height
 FRED3_H = 210  # Fred the Rotwalker (level 15), a hulking stalker taller than the knight
+ROSEWRETCH_H = 136  # the Deadly Rose's Rose Wretch, res 4: 68 world px (a knight's chest) with its stalks
+HANDMAIDEN_H = 230  # the Deadly Rose's Briar Handmaiden, res 4: 115 world px, a little taller than a knight
 THORNLING_H = 80  # the Deadly Rose's Thornling (a boss minion), res 4: 40 world px tall with its tail up
 TIDESTALKER_H = 104  # the Tide Stalker (a boss minion), res 4: 52 world px tall
 WISP_H = 180  # the Sunken Wisp (a boss minion), res 4: 90 world px tall, tendrils included
@@ -337,6 +343,8 @@ SETS = {
     # the Sunken King's Tide Leech, res 4: 30 art px tall head on (about a knight's chest), twice that long side on
     # the Sunken King's Sunken Wisp, res 4: about 90 world px tall floating, tendrils and all
     # the Sunken King's Tide Stalker, res 4: about half a knight tall
+    'rose-wretch': ('minions/rosewretch', 'rose-wretch/01_front.png', ROSEWRETCH_H, 1, twelve('rose-wretch', TWELVE_FILES)),
+    'briar-handmaiden': ('minions/handmaiden', 'briar-handmaiden/01_front.png', HANDMAIDEN_H, 1, twelve('briar-handmaiden', TWELVE_FILES)),
     'thornling': ('minions/thornling', 'thornling/01_front.png', THORNLING_H, 1, twelve('thornling', TWELVE_FILES)),
     'tide-stalker': ('minions/tidestalker', 'tide-stalker/01_front.png', TIDESTALKER_H, 1, twelve('tide-stalker', TWELVE_FILES)),
     'sunken-wisp': ('minions/wisp', 'sunken-wisp/01_front.png', WISP_H, 1, twelve('sunken-wisp', TWELVE_FILES)),
@@ -537,6 +545,14 @@ SHEETS = {
     ],
     # his flap cycles toward and away from you; the first frame has the wings raised, so it stands taller
     # the Carrion Drakeling: four wing beats side on, toward and away from you
+    'rose-wretch': [
+        ('rose-wretch/walk-side-4.png', 4, 1, 110, 'side/walk'),
+        ('rose-wretch/walk-front.png', 4, 1, 136, 'walkF'),
+        ('rose-wretch/walk-back.png', 4, 1, 136, 'walkB'),
+    ],
+    'briar-handmaiden': [
+        ('briar-handmaiden/walk-side-4.png', 4, 1, 218, 'side/walk'),
+    ],
     'thornling': [
         ('thornling/walk-side-4.png', 4, 1, 70, 'side/walk'),
         ('thornling/walk-front.png', 4, 1, 80, 'walkF'),
