@@ -141,6 +141,7 @@
     wyvern("wyvern_f0", "wyvern-f0", [90, 117], [81, 116], [82, 122]),
     // the bosses' minions (src/minions.js): Robert's drawings replace their stand-in looks as they come in
     minion("drakeling", "drakeling", 4, [[73, 106], [73, 114], [70, 114]]), // the Carrion Drakeling: wing beats every way
+    minion("tideleech", "tideleech", 4, [[140, 105], [80, 141], [80, 137]]), // the Sunken King's Tide Leech
     wyvern("wyvern_f1", "wyvern-f1", [125, 160], [123, 173], [111, 189]), // David (level 5), 37 px
     wyvern("wyvern_f2", "wyvern-f2", [144, 210], [139, 267], [141, 261]), // Great David (level 10), 47 px
     wyvern("wyvern_f3", "wyvern-f3", [160, 257], [152, 289], [157, 287]), // David the Bloodwing (level 15), 52 px

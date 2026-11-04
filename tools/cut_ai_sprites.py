@@ -83,6 +83,8 @@ GRIDS = {
     # the bosses' minions (src/minions.js, prompts in art-prompts/boss-minions-prompts.md)
     'carrion-drakeling/poses-a.png': (3, 2, POSES_A),
     'carrion-drakeling/poses-b.png': (3, 2, POSES_B),
+    'tide-leech/poses-a.png': (3, 2, POSES_A),
+    'tide-leech/poses-b.png': (3, 2, POSES_B),
     'wyvern-f0/poses-a.png': (3, 2, POSES_A),
     'wyvern-f0/poses-b.png': (3, 2, POSES_B),
     'wyvern-f1/poses-a.png': (3, 2, POSES_A),
@@ -181,6 +183,7 @@ FRED0_H = 80  # Fred the Sprout (Fred's first form, src/fred.js), res 4: 20 art 
 FRED1_H = 107  # Fred (level 5), a third taller than the Sprout
 FRED2_H = 164  # Weeping Fred (level 10), about the knight's height
 FRED3_H = 210  # Fred the Rotwalker (level 15), a hulking stalker taller than the knight
+TIDELEECH_H = 120  # the Tide Leech (a boss minion), res 4: 30 art px tall head on
 DRAKELING_H = 104  # the Carrion Drakeling (a boss minion), res 4: 26 art px tall with its wings spread
 WYV0_H = 96  # David the Hatchling (src/wyvern.js), res 4: 24 art px from wing tip to tail, wings as wide as the knight is tall
 WYV1_H = 150  # David (his second form), res 4: 37 art px from wing tip to tail, wings about 1.2 times the Hatchling's
@@ -322,6 +325,8 @@ SETS = {
     # David: poses A put his breath (rear back), his spit and his shriek where the attacks go
     'wyvern-f0': ('wyvern-f0', 'wyvern-f0/01_front.png', WYV0_H, 1, twelve('wyvern-f0', TWELVE_FILES)),
     # the Mother Wyvern's Carrion Drakeling, res 4: 26 art px tall wings spread (about half the knight)
+    # the Sunken King's Tide Leech, res 4: 30 art px tall head on (about a knight's chest), twice that long side on
+    'tide-leech': ('minions/tideleech', 'tide-leech/01_front.png', TIDELEECH_H, 1, twelve('tide-leech', TWELVE_FILES)),
     'carrion-drakeling': ('minions/drakeling', 'carrion-drakeling/01_front.png', DRAKELING_H, 1, twelve('carrion-drakeling', TWELVE_FILES)),
     'wyvern-f1': ('wyvern-f1', 'wyvern-f1/01_front.png', WYV1_H, 1, twelve('wyvern-f1', TWELVE_FILES)),
     'wyvern-f2': ('wyvern-f2', 'wyvern-f2/01_front.png', WYV2_H, 1, twelve('wyvern-f2', TWELVE_FILES)),
@@ -518,6 +523,11 @@ SHEETS = {
     ],
     # his flap cycles toward and away from you; the first frame has the wings raised, so it stands taller
     # the Carrion Drakeling: four wing beats side on, toward and away from you
+    'tide-leech': [
+        ('tide-leech/walk-side-4.png', 4, 1, 80, 'side/walk'),
+        ('tide-leech/walk-front.png', 4, 1, 104, 'walkF'),
+        ('tide-leech/walk-back.png', 4, 1, 100, 'walkB'),
+    ],
     'carrion-drakeling': [
         ('carrion-drakeling/walk-side-4.png', 4, 1, 104, 'side/walk'),
         ('carrion-drakeling/walk-front.png', 4, 1, 112, 'walkF'),
