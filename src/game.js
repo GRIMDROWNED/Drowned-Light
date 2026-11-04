@@ -920,10 +920,15 @@
   function makeEnemy(type, x, y, zi, extra) {
     const def = DL.ENEMIES[type], Z = DL.ZONES[Math.max(1, zi)], day = G.save.day;
     const D = G.diff();
-    const hp = def.hp * Z.hp * (1 + 0.08 * (day - 1)) * D.enemyHp * (1 + 0.15 * G.allies.length);
+    // the horde grows fast to night DL.GROWTH.until, then slowly; the great bosses have their own health and growth (DL.BOSS)
+    const H = DL.GROWTH, B = DL.BOSS, n = day - 1, early = Math.min(n, H.until - 1), late = Math.max(0, n - (H.until - 1));
+    const big = B.hp[type];
+    const hp = big
+      ? big * Z.hp * (1 + B.perNight * n) * D.enemyHp * (1 + B.perAlly * G.allies.length)
+      : def.hp * Z.hp * (1 + H.hp * early + H.lateHp * late) * D.enemyHp * (1 + 0.15 * G.allies.length);
     return Object.assign({
       id: ++G.eid, type, def, x, y, kx: 0, ky: 0, hp, maxHp: hp,
-      dmg: def.dmg * Z.dmg * (1 + 0.05 * (day - 1)) * D.enemyDmg,
+      dmg: def.dmg * Z.dmg * (big ? 1 + B.dmgNight * n : 1 + H.dmg * early + H.lateDmg * late) * D.enemyDmg,
       speed: def.speed * rand(0.9, 1.1), angle: Math.PI / 2, moving: false, animT: rand(0, 1),
       state: "move", stT: 0, cd: rand(0.3, 1), flash: 0, burn: 0, burnDps: 0, slow: 0,
       rise: def.crawl ? 0.9 : 0, goal: null, staked: false, summonT: 6, spikeT: 4, zi,
@@ -1424,6 +1429,15 @@
     if (e.hp <= 0) kill(e, true);
   }
   G.hitEnemy = hitEnemy;
+  /* Stagger a Drowned for `t` s (the kits' stuns). A boss has poise (DL.BOSS): it staggers at most `stun` s, and then no
+     stun takes hold for `immune` s, so no kit can lock it down. `root` (the Chain Reaper's snare and gyre) never holds a boss. */
+  G.stun = function (e, t, root) {
+    if (!e.def.boss) { e.stun = Math.max(e.stun || 0, t); return; }
+    if (root || (e.poiseT || 0) > G.t) return;
+    const s = Math.min(t, DL.BOSS.stun);
+    e.stun = Math.max(e.stun || 0, s);
+    e.poiseT = G.t + s + DL.BOSS.immune;
+  };
   G.kill = (e) => { if (!G.isGuest()) kill(e, true); };
 
   function kill(e, drops) {

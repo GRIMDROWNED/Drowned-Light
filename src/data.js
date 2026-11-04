@@ -197,7 +197,7 @@
       name: "Frostweaver", tag: "Kit 04", motto: "Even the dark can freeze.", roles: ["Ranged", "Area damage", "Crowd control"],
       weapon: "Crystal staff", color: "150,215,255",
       desc: "A masked mage in a white witch's hat. Frost bolts from a crystal staff, and an Ice Bomb that bursts over a wide area and freezes the Drowned.",
-      attack: { type: "frost", name: "Frost Bolt", dmg: 11, range: 240, cd: 0.6, speed: 460 },
+      attack: { type: "frost", name: "Frost Bolt", dmg: 13, range: 240, cd: 0.6, speed: 460 },
       dash: { type: "plain" },
       // lobbed `throw` px (or at the nearest Drowned in reach), it lands after `flight` s and bursts over `radius` px
       ability: { id: "icebomb", name: "Ice Bomb", oil: 14, cd: 12, radius: 150, dmg: 30, kb: 140, throw: 200, reach: 300, flight: 0.55,
@@ -289,7 +289,7 @@
       weapon: "Thorn greatsword and rose shield", color: "220,40,60", secret: true,
       desc: "The Deadly Rose's last knight, in thorned bronze and rose-red. His thorn sword lashes like her whip across a huge arc in front of him, and he whirls into her waltz.",
       // `lash`: drawn as her whip cracking round the arc (src/render.js)
-      attack: { type: "arc", lash: true, name: "Thorn Lash", dmg: 22, range: 128, arc: 3.4, cd: 1.1, kb: 230 },
+      attack: { type: "arc", lash: true, name: "Thorn Lash", dmg: 22, range: 128, arc: 3.4, cd: 0.95, kb: 230 },
       dash: { type: "plain" },
       // his rose shield takes `aegis` off every blow, and a Drowned that strikes him is pricked for `thorns` x its blow
       passive: { aegis: 0.15, thorns: 0.5 },
@@ -538,6 +538,19 @@
     lashKb: 260, lashShow: 0.4, phase2: 0.5, fast: 1.2, rate: 1.35, respawnDays: 4, maxVines: 30,
     waltz: { first: 5, every: 9, windup: 0.9, spin: 1.3, r: 170, drift: 0.6, hits: 3, dmg: 0.45, kb: 240 },
     briar: { first: 3, every: 11, windup: 0.6, delay: 0.5, reach: 480, n: 5, step: 58, r: 34, dmg: 0.7, life: 4, sting: 0.12 },
+  };
+  /* How the Drowned grow night by night (src/game.js makeEnemy). Up to night `until` each one gains `hp` health and `dmg`
+     damage a night; after it only `lateHp` and `lateDmg` (balance pass, Robert 2026-11-04: the Flame runs to night 40
+     but a knight's power tops out near night 15, so the horde must not turn into sponges). Waves still grow in number. */
+  DL.GROWTH = { until: 10, hp: 0.08, dmg: 0.05, lateHp: 0.02, lateDmg: 0.01 };
+  /* The great bosses (balance pass, 2026-11-04). Their health is `hp[type]` (in place of DL.ENEMIES' hp) x zone x
+     difficulty, growing `perNight` a night (not DL.GROWTH) and `perAlly` more for every friend in co-op (the horde gets
+     +15%). Their blows keep growing `dmgNight` a night. Poise: a stun from a kit or familiar holds any boss (the
+     Sovereign too) at most `stun` s, and then none takes hold for `immune` s (src/game.js G.stun). */
+  DL.BOSS = {
+    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600 },
+    perNight: 0.04, dmgNight: 0.05, perAlly: 0.6,
+    stun: 0.3, immune: 3,
   };
   /* Last stand (src/game.js hurtPlayer): a blow that would kill you while your health is above `above` of its maximum
      leaves you at 1 health instead, safe from harm for `inv` s. A blow taken at or below that line kills as usual. */
