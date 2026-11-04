@@ -326,7 +326,7 @@
     Object.assign(Wyv, { boostT: 0, healT: 0 });
     near = 0;
     if (G.isGuest()) return;
-    if (G.save.wyvern && G.player) spawn(0, G.player.x, G.player.y);
+    if (G.save.wyvern && G.player && (!DL.Works || DL.Works.brings("wyvern"))) spawn(0, G.player.x, G.player.y);
     for (const a of G.allies) if (friends.includes(a.id)) spawn(a.id, a.x, a.y);
   };
   // Host: a friend who won him (here or in any world) brings him along; one who leaves takes him away (and any egg goes home).
@@ -884,4 +884,7 @@
     for (const [x, y] of eyes(0, 0, o)) glow(g, x, y, 4, BLOOD, 0.8);
     g.restore();
   };
+  // The host knight's familiar called to their side (src/works.js: one at a time, two with the Summoning Circle).
+  Wyv.summonMine = function () { if (!G.isGuest() && G.player && !G.wyverns.some((m) => m.owner === 0 && !m.gone)) spawn(0, G.player.x, G.player.y); };
 })(window.DL);
+

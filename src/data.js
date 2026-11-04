@@ -791,6 +791,16 @@
     },
   };
 
+  // What the Refuge's upper works do (Robert's picks, 2026-11-04; src/works.js). Each works once its refuge level stands.
+  DL.WORKS = {
+    alchemy: { resin: 4, max: 3 },                       // each dawn brews a lantern-oil flask from 4 resin (holds 3); an empty lantern drinks one
+    quarters: { give: { wood: 6, stone: 6, iron: 2 }, mend: 0.015 }, // survivors bring supplies each dawn; on siege nights they mend the flame and pylons (share of max hp a second)
+    lodge: { loot: { pearl: [2, 4], iron: [2, 5] }, black: 0.35 }, // an expedition leaves at dusk and comes back at dawn with rare loot
+    archive: { bonus: 0.1, kin: { bell: [], rose: [], colossus: [], wyvern: [], champion: [] } }, // +10% damage to a slain boss's kind (its kin: new enemy types to come)
+    circle: { slots: 2 },                                 // familiars that can walk with you at once (1 without the circle)
+  };
+  DL.FAMILIARS = ["hound", "golem", "wraith", "fred", "wyvern"];
+
   // Camp buildings. costs[level] = price to go from `level` to `level + 1`.
   // reqFlame(target) = Central Flame level needed to build that level.
   DL.UPGRADES = [

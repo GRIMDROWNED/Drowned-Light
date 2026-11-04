@@ -226,6 +226,7 @@
       else if (act === "squareBuild") DL.Pyramid.build(arg);
       else if (act === "train") { const r = DL.Kits.train(); UI.justReached = r && r.milestone ? r.level : 0; }
       else if (act === "trainSummon") DL.Summons.train(arg);
+      else if (act === "bringFam") DL.Works.bring(arg);
       else if (act === "fredPath") DL.Summons.choose(arg);
       else if (act === "fredRepick") DL.Summons.repick();
       else if (act === "wyvPath") DL.Summons.choose(arg, "wyvern");
@@ -822,7 +823,10 @@
     if (info.max) action = `<span class="maxed">Fully grown</span>`;
     else action = `<div class="cost">${costHtml(info.cost)}</div>` + (info.lock ? `<span class="req">${info.lock}</span>` : "") +
       `<button data-act="trainSummon:${kind}" ${info.ok ? "" : "disabled"}>Train to level ${L + 1}</button>`;
-    return `<p class="effect"><b>${K.forms[f]}</b> · level ${L} of ${S.max} · ${K.powers[f]}.${next}</p>${track}<footer class="train">${action}</footer>`;
+    const W = DL.Works, n = W.slots();
+    const bring = DL.Game.isGuest() || !W.owned(kind) ? "" : W.brings(kind) ? `<span class="maxed">Walking with you${n > 1 ? ` · ${n} familiars at once (Summoning Circle)` : ""}</span>`
+      : `<button data-act="bringFam:${kind}">Bring along${n > 1 ? "" : " (the other stays home)"}</button>`;
+    return `<p class="effect"><b>${K.forms[f]}</b> · level ${L} of ${S.max} · ${K.powers[f]}.${next}</p>${track}<footer class="train">${action}</footer>${bring ? `<footer class="train">${bring}</footer>` : ""}`;
   }
 
   // Reuses the camp panel and its controller/back controls; no new input action or screen.

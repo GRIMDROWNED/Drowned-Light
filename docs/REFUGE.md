@@ -149,3 +149,17 @@ name shows, which is the placeholder):
 - The E/W avenues are a plain paved road with kerbs for now; an east–west stair strip would look better.
 - If Robert later picks "fortress replaces only the camp", the grid comes back around a refuge capped at the centre
   square; the code for both is already here.
+
+## What the upper works do (Robert's picks, 2026-11-04; `src/works.js`, numbers in `DL.WORKS`)
+
+| Work | Refuge level | Effect |
+|---|---|---|
+| Alchemy Station | 13 | Each dawn brews a lantern-oil flask from 4 resin (holds 3). An empty lantern away from the fire drinks one. |
+| Survivor Quarters | 14 | Each dawn survivors bring 6 wood, 6 stone, 2 iron. On siege nights they mend the Central Flame and pylons. |
+| Expedition Lodge | 16 | An expedition leaves at dusk and returns at dawn with 2-4 amethyst, 2-5 iron, 35% a Black Pearl. |
+| Research Archive | 16 | Each boss slain (recorded in `save.archive`) gives +10% damage against that boss and its kin (`DL.WORKS.archive.kin`, empty until new enemy types are made for each boss). |
+| Summoning Circle | 20 | Two familiars can walk with you at once. |
+
+**Familiars, one at a time** (Robert, 2026-11-04): a knight brings one familiar (two with the Summoning Circle), chosen with
+**Bring along** on its Kit card (`save.fams`). A familiar just won comes along at once. Homes can still be built and
+levelled for their effects. Co-op guests' familiars are not limited yet.

@@ -335,6 +335,7 @@
     DL.Abigail.update(dt);
     DL.Fred.update(dt);
     DL.Wyvern.update(dt);
+    DL.Works.update(dt);
     DL.Finale.update(dt);
     DL.Finale.local();
     updateDefenses(dt);
@@ -406,6 +407,7 @@
     G.siegeT = 4;
     DL.Siege.nightfall();
     DL.Finale.nightfall();
+    DL.Works.nightfall();
     if (G.save.nights === 0) setTimeout(() => say("Cyan Refuge Blooms halt corruption. Firelight reverses it."), 3500);
   }
 
@@ -422,6 +424,7 @@
     DL.Fred.dawn();
     DL.Wyvern.dawn();
     DL.Finale.dawn();
+    DL.Works.dawn();
     if (G.rootEvent) {
       const o = G.rootEvent.obj;
       if (!o.dead) {
@@ -1401,6 +1404,7 @@
       for (let i = 0; i < 4; i++) spark(e.x + Math.cos(e.angle) * 14, e.y - 24, "200,230,235", 90);
     } else if (!e.def.shield && G.enemies.some((b) => b.def.guard && !b.removed && dist(b.x, b.y, e.x, e.y) < b.def.guard)) d *= 0.75; // guarded by a Bulwark
     d *= 1 - (e.def.armor || 0);
+    d *= DL.Works.dmgMult(e); // the Research Archive: bosses slain, and their kind
     if (e.cursed) d *= 1 + (e.curseK || DL.ABIGAIL.curse); // weakened by one of Abigail's orbs
     if (e.brittle > 0) d *= 1 + DL.ICE.brittle; // made brittle by the Frostweaver
     if (e.def.king) d = DL.Finale.cap(e, d);
@@ -1426,6 +1430,7 @@
     if (e.removed || G.isGuest()) return;
     e.removed = true;
     DL.Kits.shatter(e); // frozen by a Frostweaver at Shatter: it bursts and freezes the Drowned near it
+    DL.Works.slain(e); // a boss goes into the Research Archive
     if (e.def.den) { DL.Den.slain(e); return; } // a Bone Wolf leaves its carcass
     if (e.def.bell) DL.Bell.slain(e);
     if (e.def.rose) DL.Rose.slain(e);

@@ -808,7 +808,7 @@
     const put = (y, f) => list.push({ y, f });
     for (const it of L.items) {
       if (it.sprite === "tent") continue; // drawn with the tents
-      if (it.id === "barracks") { const lv = DL.Refuge.barracks(u); put(it.y, () => drawBarracks(c, it.x, it.y, lv)); continue; }
+      if (it.id === "barracks") { const lv = DL.Refuge.barracks(u); put(it.y, () => { if (!DL.Refuge.drawBuilding(c, "barracks", lv, it.x, it.y)) drawBarracks(c, it.x, it.y, lv); }); continue; }
       if (it.id === "supplies") {
         put(it.y, () => {
           const piles = ["resWood", "resStone", "resWood", "resIron", "resResin"];

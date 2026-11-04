@@ -37,7 +37,7 @@
   // A new life (or a reload) brings your hound back to your side at the camp.
   Hounds.reset = function () {
     G.hounds = [];
-    if (!G.isGuest() && G.save.hound && G.player) spawn(0, G.player.x - 26, G.player.y + 8);
+    if (!G.isGuest() && G.save.hound && G.player && (!DL.Works || DL.Works.brings("hound"))) spawn(0, G.player.x - 26, G.player.y + 8);
   };
   // Host: a friend who won a hound (in any world) brings it along when they join.
   Hounds.join = function (owner) {
@@ -257,4 +257,7 @@
     }
     return best;
   };
+  // The host knight's familiar called to their side (src/works.js: one at a time, two with the Summoning Circle).
+  Hounds.summonMine = function () { if (!G.isGuest() && G.player && !G.hounds.some((m) => m.owner === 0 && !m.gone)) spawn(0, G.player.x - 26, G.player.y + 8); };
 })(window.DL);
+

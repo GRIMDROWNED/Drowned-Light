@@ -294,7 +294,7 @@
     trial = null;
     near = false;
     if (G.isGuest()) return;
-    if (G.save.fred && G.player) spawn(0, G.player.x - 20, G.player.y + 14);
+    if (G.save.fred && G.player && (!DL.Works || DL.Works.brings("fred"))) spawn(0, G.player.x - 20, G.player.y + 14);
     for (const a of G.allies) if (friends.includes(a.id)) spawn(a.id, a.x - 20, a.y + 14);
   };
   // Host: a friend who won him (here or in any world) brings him along; one who leaves takes him away.
@@ -846,4 +846,7 @@
     figureGlow(g, 0, 0, f, "down", false, Fred.won() ? "idle" : "sleep", t, 1, Fred.col());
     g.restore();
   };
+  // The host knight's familiar called to their side (src/works.js: one at a time, two with the Summoning Circle).
+  Fred.summonMine = function () { if (!G.isGuest() && G.player && !G.freds.some((m) => m.owner === 0 && !m.gone)) spawn(0, G.player.x - 20, G.player.y + 14); };
 })(window.DL);
+
