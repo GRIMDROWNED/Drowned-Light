@@ -676,7 +676,7 @@
   function pushCamp(list, G, c, t) {
     const u = G.save.up, L = DL.Camp.layout(u), R = DL.WALL_R, night = G.nightAmt;
     const put = (y, f) => list.push({ y, f });
-    for (const tn of L.tents) put(tn.y, () => { groundShadow(c, "tent", tn.x, tn.y + 4, tn.flip, 26, 7); sprite(c, "tent", tn.x, tn.y + 4, tn.flip); });
+    for (const tn of L.tents) put(tn.y, () => { if (L.fortress && DL.Refuge.drawBuilding(c, "tent", tn.flip ? 2 : 1, tn.x, tn.y)) return; groundShadow(c, "tent", tn.x, tn.y + 4, tn.flip, 26, 7); sprite(c, "tent", tn.x, tn.y + 4, tn.flip); });
     const pil = L.fortress && DL.Refuge.art["d-pillar"]; // Robert's banner pillar (D1) in the refuge
     for (const b of L.banners) put(b.y, () => {
       if (pil) { const w = 22, h = (w * pil.height) / pil.width; c.drawImage(pil, b.x - w / 2, b.y + 4 - h, w, h); return; }
