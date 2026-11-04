@@ -109,7 +109,9 @@ source px):
 - `foundation.png` (L1): the hearth's stone base, levels 1–3.
 - `plaza.png` (L2): the bordered plaza round the hearth at levels 2–3, and the stone plot under every building.
 - `low-*.png` (L3): the low walls, corners plus tiling runs, cut open at the four openings.
-- `terrace-*.png` (L4): every raised terrace (sanctum, district, outer): corners, tiling edge runs, the four stairs
+- `tier-*.png` and `rim-*.png` (L5-two-tier, 2026-11-04): the sanctum uses the tall inner terrace (`tier`), the outer
+  terrace the outer wall ring (`rim`).
+- `terrace-*.png` (L4): the district terrace (and any ring without its own kit): corners, tiling edge runs, the four stairs
   (stretched only along the treads to each stair's width) and `terrace-floor.png`, the terrace paving.
 
 Nothing is flipped or stretched as a whole building. Missing pieces fall back to the coded flagstones and faces.

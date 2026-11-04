@@ -5,6 +5,7 @@ Usage: python3 tools/cut_refuge.py [folder]   (default /mnt/project-files/refuge
 - L2-plaza.png: the bordered plaza, cut whole (the plaza round the hearth, and each building's plot).
 - L3-walls.png: the low walls, cut into corners, tiling wall runs and the posts at the openings.
 - L4-terrace.png: the raised terrace, cut into corners, tiling wall runs, its four stairs and its floor.
+- L5-two-tier.png: two kits in one picture, `rim` (the outer wall ring) and `tier` (the tall inner terrace).
 Kit pieces keep their crop boxes exactly (BOXES, mirrored in KIT in src/refuge.js) at K file px per source px,
 so the game can line them up from the source coordinates. 2 file px = 1 world px."""
 import os, sys
@@ -27,6 +28,16 @@ BOXES = {
         'nw': (158, 335, 268, 458), 'ne': (990, 335, 1098, 458), 'sw': (158, 805, 268, 966), 'se': (990, 805, 1098, 966),
         'n': (268, 358, 490, 455), 's': (268, 832, 475, 962), 'w': (170, 458, 257, 528), 'e': (998, 458, 1087, 528),
     },
+    'L5-two-tier/rim': {  # the outer wall ring (outer terrace)
+        'nw': (175, 22, 320, 300), 'ne': (1215, 22, 1360, 300), 'sw': (175, 785, 310, 1004), 'se': (1225, 785, 1360, 1004),
+        'n': (320, 22, 520, 108), 's': (310, 890, 510, 1004), 'w': (175, 590, 245, 785), 'e': (1290, 590, 1360, 785),
+        'stN': (645, 20, 890, 125), 'stS': (645, 890, 890, 1004), 'stW': (175, 360, 270, 570), 'stE': (1265, 360, 1360, 570),
+    },
+    'L5-two-tier/tier': {  # the raised inner terrace (sanctum)
+        'nw': (390, 158, 525, 360), 'ne': (1010, 158, 1145, 360), 'sw': (385, 600, 530, 845), 'se': (1005, 600, 1150, 845),
+        'n': (525, 175, 645, 250), 's': (530, 678, 650, 845), 'w': (395, 250, 470, 355), 'e': (1065, 250, 1140, 355),
+        'stN': (645, 155, 890, 305), 'stS': (645, 655, 890, 845), 'stW': (325, 370, 510, 610), 'stE': (1025, 370, 1210, 610),
+    },
 }
 WHOLE = {'L1-foundation': 0.5, 'L2-plaza': 0.6}  # file px per source px
 
@@ -43,8 +54,9 @@ for name, k in WHOLE.items():
     im = shrink(rgba[ys.min():ys.max() + 1, xs.min():xs.max() + 1], k, colors=48)
     im.save(os.path.join(OUT, name.split('-')[1] + '.png')); print(name, im.size)
 for name, boxes in BOXES.items():
-    rgba = keyed(name)
-    pre = 'terrace' if name.startswith('L4') else 'low'
+    src, _, pre = name.partition('/')
+    rgba = keyed(src)
+    pre = pre or ('terrace' if name.startswith('L4') else 'low')
     for piece, (x0, y0, x1, y1) in boxes.items():
         crop = rgba[y0:y1, x0:x1]
         w, h = round((x1 - x0) * K), round((y1 - y0) * K)

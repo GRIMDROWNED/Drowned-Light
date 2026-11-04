@@ -274,10 +274,19 @@
     low: { edge: { n: 345, w: 165, e: 1092, s: 840 }, out: 10, sIn: 8,
       box: { nw: [158, 335, 268, 458], ne: [990, 335, 1098, 458], sw: [158, 805, 268, 966], se: [990, 805, 1098, 966],
         n: [268, 358, 490, 455], s: [268, 832, 475, 962], w: [170, 458, 257, 528], e: [998, 458, 1087, 528] } },
+    // Robert's two-tier picture (2026-11-04): `rim` = its outer wall ring (the outer terrace), `tier` = its tall inner terrace (the sanctum)
+    rim: { edge: { n: 46, w: 185, e: 1351, s: 900 }, out: 6, sIn: 8, tread: { n: [700, 835], s: [700, 835], w: [410, 525], e: [410, 525] },
+      box: { nw: [175, 22, 320, 300], ne: [1215, 22, 1360, 300], sw: [175, 785, 310, 1004], se: [1225, 785, 1360, 1004],
+        n: [320, 22, 520, 108], s: [310, 890, 510, 1004], w: [175, 590, 245, 785], e: [1290, 590, 1360, 785],
+        stN: [645, 20, 890, 125], stS: [645, 890, 890, 1004], stW: [175, 360, 270, 570], stE: [1265, 360, 1360, 570] } },
+    tier: { edge: { n: 165, w: 395, e: 1140, s: 688 }, out: 6, sIn: 8, tread: { n: [700, 835], s: [700, 835], w: [425, 520], e: [425, 520] },
+      box: { nw: [390, 158, 525, 360], ne: [1010, 158, 1145, 360], sw: [385, 600, 530, 845], se: [1005, 600, 1150, 845],
+        n: [525, 175, 645, 250], s: [530, 678, 650, 845], w: [395, 250, 470, 355], e: [1065, 250, 1140, 355],
+        stN: [645, 155, 890, 305], stS: [645, 655, 890, 845], stW: [325, 370, 510, 610], stE: [1025, 370, 1210, 610] } },
   };
   if (typeof Image !== "undefined") {
     const names = ["foundation", "plaza", "terrace-floor"];
-    for (const k of ["terrace", "low"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
+    for (const k of ["terrace", "low", "rim", "tier"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
     for (const n of names) { const img = new Image(); img.onload = () => { IMG[n] = img; }; img.src = DL.asset("assets/sprites/refuge/" + n + ".png"); }
   }
   Refuge.art = IMG;
@@ -310,7 +319,7 @@
     run("e", false, Y.n(B.ne[3]), Y.s(B.se[1]), X.e(B.e[0]), 1);
     put("nw", X.w(B.nw[0]), Y.n(B.nw[1])); put("ne", X.e(B.ne[0]), Y.n(B.ne[1]));
     put("sw", X.w(B.sw[0]), Y.s(B.sw[1])); put("se", X.e(B.se[0]), Y.s(B.se[1]));
-    if (kind !== "terrace") return true;
+    if (kind === "low") return true;
     for (const q of ring.stairs) { // Robert's flights, stretched across so their treads span the stair's width
       const side = "nesw"[q.s], n = "st" + side.toUpperCase(), b = B[n], tr = K.tread[side];
       if (!img(n)) continue;
@@ -330,7 +339,8 @@
   };
   // The four faces of a ring: drawn rock courses on the south (stairs in the gaps), lips on the other three.
   function faces(c, ring, t) {
-    if (kitRing(c, ring, ring.id === "low" ? "low" : "terrace")) return;
+    const kit = { low: "low", sanctum: "tier", outer: "rim" }[ring.id] || "terrace";
+    if (kitRing(c, ring, kit) || (kit !== "terrace" && kit !== "low" && kitRing(c, ring, "terrace"))) return;
     const h = ring.half, A = P(), F = ring.face;
     const gaps = (s) => ring.stairs.filter((q) => q.s === s);
     const spans = (s) => {
