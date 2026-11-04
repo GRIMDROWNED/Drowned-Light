@@ -143,7 +143,7 @@
     minion("drakeling", "drakeling", 4, [[73, 106], [73, 114], [70, 114]]), // the Carrion Drakeling: wing beats every way
     minion("tideleech", "tideleech", 4, [[140, 105], [80, 141], [80, 137]]), // the Sunken King's Tide Leech
     minion("rosewretch", "rosewretch", 4, [[102, 126], [85, 155], [88, 157]]), // the Deadly Rose's Rose Wretch
-    minion("handmaiden", "handmaiden", 4), // the Deadly Rose's Briar Handmaiden: no front or back walk drawn yet, so she glides on her stills
+    minion("handmaiden", "handmaiden", 4, [[147, 233], [132, 240], [134, 239]]), // the Deadly Rose's Briar Handmaiden
     minion("thornling", "thornling", 4, [[45, 87], [43, 82], [46, 83]]), // the Deadly Rose's Thornling Swarm Stalker
     minion("tidestalker", "tidestalker", 4, [[109, 123], [87, 134], [92, 138]]), // the Sunken King's Tide Stalker
     minion("wisp", "wisp", 4, [[108, 182], [112, 197], null]), // the Sunken Wisp: its front shows going away too (Robert)

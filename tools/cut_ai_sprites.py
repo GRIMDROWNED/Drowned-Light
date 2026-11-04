@@ -552,6 +552,8 @@ SHEETS = {
     ],
     'briar-handmaiden': [
         ('briar-handmaiden/walk-side-4.png', 4, 1, 218, 'side/walk'),
+        ('briar-handmaiden/walk-front.png', 4, 1, 232, 'walkF'),
+        ('briar-handmaiden/walk-back.png', 4, 1, 232, 'walkB'),
     ],
     'thornling': [
         ('thornling/walk-side-4.png', 4, 1, 70, 'side/walk'),
