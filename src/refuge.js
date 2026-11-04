@@ -310,10 +310,13 @@
       box: { nw: [150, 20, 335, 190], n: [335, 12, 520, 125], stN: [640, 22, 900, 160], w: [150, 400, 262, 520], stW: [145, 185, 265, 350], sw: [145, 790, 330, 1016], s: [330, 880, 530, 1016], stS: [640, 870, 900, 1016], ne: [1202, 20, 1387, 190], se: [1207, 790, 1392, 1016], e: [1275, 400, 1387, 520], stE: [1272, 185, 1392, 350] } },
     tier: { edge: { n: 200, w: 422, e: 1115, s: 662 }, out: 6, sIn: 8, tread: { n: [715, 825], s: [720, 830], w: [445, 525], e: [445, 525] },
       box: { nw: [415, 185, 545, 355], n: [545, 200, 665, 280], stN: [665, 190, 875, 335], w: [462, 570, 522, 640], stW: [355, 380, 530, 600], sw: [415, 590, 560, 805], s: [560, 650, 665, 805], stS: [665, 635, 880, 805], ne: [992, 185, 1122, 355], se: [977, 590, 1122, 805], e: [1015, 570, 1075, 640], stE: [1007, 380, 1182, 600] } },
+    // Robert's T1 sanctum (2026-11-04, art-prompts/terrace-fortress-prompts.md)
+    sanct: { edge: { n: 150, w: 165, e: 1149, s: 775 }, out: 6, sIn: 8, tread: { n: [610, 705], s: [610, 705], w: [415, 560], e: [415, 560] },
+      box: { nw: [150, 85, 380, 340], n: [372, 120, 540, 290], stN: [540, 85, 775, 300], w: [150, 290, 335, 340], stW: [85, 340, 345, 720], sw: [120, 680, 375, 1062], s: [375, 760, 545, 1062], stS: [540, 740, 775, 1080], ne: [934, 85, 1164, 340], se: [939, 680, 1194, 1062], e: [979, 290, 1164, 340], stE: [969, 340, 1229, 720] } },
   };
   if (typeof Image !== "undefined") {
     const names = ["foundation", "plaza", "terrace-floor"];
-    for (const k of ["terrace", "low", "rim", "tier"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
+    for (const k of ["terrace", "low", "rim", "tier", "sanct"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
     for (const n of names) { const img = new Image(); img.onload = () => { IMG[n] = img; }; img.src = DL.asset("assets/sprites/refuge/" + n + ".png"); }
   }
   Refuge.art = IMG;
@@ -368,8 +371,8 @@
   };
   // The four faces of a ring: drawn rock courses on the south (stairs in the gaps), lips on the other three.
   function faces(c, ring, t) {
-    const kit = { low: "low", sanctum: "tier", outer: "rim", ward5: "rim", ward7: "rim" }[ring.id] || "terrace";
-    if (kitRing(c, ring, kit) || (kit !== "terrace" && kit !== "low" && kitRing(c, ring, "terrace"))) return;
+    const kit = { low: "low", sanctum: "sanct", outer: "rim", ward5: "rim", ward7: "rim" }[ring.id] || "terrace";
+    if (kitRing(c, ring, kit) || (kit === "sanct" && kitRing(c, ring, "tier")) || (kit !== "terrace" && kit !== "low" && kitRing(c, ring, "terrace"))) return;
     const h = ring.half, A = P(), F = ring.face;
     const gaps = (s) => ring.stairs.filter((q) => q.s === s);
     const spans = (s) => {

@@ -5,6 +5,7 @@ Usage: python3 tools/cut_refuge.py [folder]   (default /mnt/project-files/refuge
 - L2-plaza.png: the bordered plaza, cut whole (the plaza round the hearth, and each building's plot).
 - L3-walls.png: the low walls, cut into corners, tiling wall runs and the posts at the openings.
 - L4-terrace.png: the raised terrace, cut into corners, tiling wall runs, its four stairs and its floor.
+- T1-sanctum.png etc. (terrace-fortress-prompts.md): one terrace each, kept in their own colours.
 - L7-tall-tier.png (earlier L5-two-tier.png): two kits in one picture, `rim` (the outer wall ring) and `tier` (the tall inner terrace).
 Kit pieces keep their crop boxes exactly (BOXES, mirrored in KIT in src/refuge.js) at K file px per source px,
 so the game can line them up from the source coordinates. 2 file px = 1 world px."""
@@ -31,6 +32,7 @@ BOXES = {
     # Robert's taller-walled picture (2026-11-04) replaced the first two-tier one (L5-two-tier.png, kept in returned/)
     'L7-tall-tier/rim': { 'nw': (150, 20, 335, 190), 'n': (335, 12, 520, 125), 'stN': (640, 22, 900, 160), 'w': (150, 400, 262, 520), 'stW': (145, 185, 265, 350), 'sw': (145, 790, 330, 1016), 's': (330, 880, 530, 1016), 'stS': (640, 870, 900, 1016), 'ne': (1202, 20, 1387, 190), 'se': (1207, 790, 1392, 1016), 'e': (1275, 400, 1387, 520), 'stE': (1272, 185, 1392, 350) },  # the outer wall ring (outer terrace)
     'L7-tall-tier/tier': { 'nw': (415, 185, 545, 355), 'n': (545, 200, 665, 280), 'stN': (665, 190, 875, 335), 'w': (462, 570, 522, 640), 'stW': (355, 380, 530, 600), 'sw': (415, 590, 560, 805), 's': (560, 650, 665, 805), 'stS': (665, 635, 880, 805), 'ne': (992, 185, 1122, 355), 'se': (977, 590, 1122, 805), 'e': (1015, 570, 1075, 640), 'stE': (1007, 380, 1182, 600) },  # the raised inner terrace (sanctum)
+    'T1-sanctum/sanct': { 'nw': (150, 85, 380, 340), 'n': (372, 120, 540, 290), 'stN': (540, 85, 775, 300), 'w': (150, 290, 335, 340), 'stW': (85, 340, 345, 720), 'sw': (120, 680, 375, 1062), 's': (375, 760, 545, 1062), 'stS': (540, 740, 775, 1080), 'ne': (934, 85, 1164, 340), 'se': (939, 680, 1194, 1062), 'e': (979, 290, 1164, 340), 'stE': (969, 340, 1229, 720) },  # T1 (2026-11-04): the flame's platform, kept in its own colours
 }
 WHOLE = {'L1-foundation': 0.5, 'L2-plaza': 0.6}  # file px per source px
 
@@ -55,7 +57,7 @@ def to_grey(a, fg):
 def keyed(name):
     a = np.asarray(Image.open(os.path.join(SRC, name + '.png')).convert('RGB')).astype(int)
     fg = key_mask(a, tol=120, fringe=1)
-    a = to_grey(a, fg.astype(bool))
+    if not name.startswith('T'): a = to_grey(a, fg.astype(bool))  # the T pictures are drawn in the final colours
     rgba = np.zeros(a.shape[:2] + (4,), 'uint8')
     rgba[..., :3] = a * fg[..., None]; rgba[..., 3] = fg * 255
     return rgba
