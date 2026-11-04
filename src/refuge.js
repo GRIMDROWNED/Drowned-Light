@@ -352,8 +352,8 @@
   }
   Refuge.art = IMG;
   // Buildings Robert redrew on their own plinths (B02-B18): id -> levels. Drawn at BS world px per source px.
-  Refuge.BUILT = { forge: 4, armory: 4, garden: 3, alchemy: 1, quarters: 1, lodge: 1, archive: 1, circle: 1, tent: 2, barracks: 3, roseheart: 3, bell: 1, roost: 3, shrine: 3, toadstool: 3, workshop: 3 };
-  const BSCALE = { alchemy: 1.6, quarters: 1.6, lodge: 1.6, archive: 1.6, circle: 1.6, tent: 0.6, barracks: 0.75, roseheart: 0.8, bell: 0.6, shrine: 0.85, toadstool: 0.85 }; // B18 was drawn smaller
+  Refuge.BUILT = { forge: 4, armory: 4, garden: 3, alchemy: 1, quarters: 1, lodge: 1, archive: 1, circle: 1, tent: 2, barracks: 3, roseheart: 3, bell: 1, roost: 3, shrine: 3, toadstool: 3, workshop: 3, kennel: 3 };
+  const BSCALE = { alchemy: 1.6, quarters: 1.6, lodge: 1.6, archive: 1.6, circle: 1.6, tent: 0.6, barracks: 0.75, roseheart: 0.8, bell: 0.6, shrine: 0.85, toadstool: 0.85, kennel: 0.75 }; // B18 was drawn smaller
   const BS = 0.2;
   if (typeof Image !== "undefined") for (const [id, n] of Object.entries(Refuge.BUILT)) for (let i = 1; i <= n; i++) {
     const img = new Image(); img.onload = () => { IMG["b-" + id + i] = img; }; img.src = DL.asset("assets/sprites/refuge/b-" + id + i + ".png");
