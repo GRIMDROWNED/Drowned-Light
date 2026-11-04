@@ -173,3 +173,11 @@ assets/sprites/refuge/b-*.png; re-measure it when art changes. The placer keeps 
 walls and faces, stairs, avenues, watchtowers, gate pylons, fires and marsh beds, so a building never moves as it
 levels up. tools/test_refuge.cjs fails if any built building lacks room from level 5 on. Before the Inner Court
 (levels 1-4) only the early buildings are expected; a sandbox with every building built crowds there.
+
+## The yards (Robert's picks, 2026-11-04; src/works.js, DL.WORKS)
+
+- Storehouse (refuge 7): when you fall, half of each carried resource goes safely to the stash (shown on the death screen).
+- Salvage Yard (7): a converter card on the camp's Build tab (4 wood -> 3 stone, 4 stone -> 3 wood, 5 wood -> 2 resin,
+  5 stone -> 2 iron, 10 iron -> 1 amethyst).
+- Training Grounds (7): drilled champions, health and damage x1.25.
+- Supply Pile (2): at dusk, a torch (up to your satchel) and a quarter of your lantern's oil.

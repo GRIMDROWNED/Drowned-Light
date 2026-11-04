@@ -1736,7 +1736,7 @@
     G.dying = 0;
     DL.Wyvern.fell(0); // carrying a wyvern egg: its mother takes it back
     sfx("death");
-    const lost = { ...p.carried };
+    const lost = { ...p.carried }, kept = DL.Works ? DL.Works.keep(lost) : null; // the Storehouse keeps half safe
     p.carried = emptyRes(); // they stay with your drowned self
     G.save.carried = emptyRes();
     const any = DL.RES_KEYS.some((k) => lost[k] > 0);
@@ -1747,7 +1747,7 @@
       G.enemies = G.enemies.filter((e) => !e.isSelf);
     }
     G.persist();
-    G.deathInfo = { cause, hit: cause === "wounds" ? G.lastHit : null, lost, any, hadSelf, zone: DL.ZONES[p.zi].name, day: G.save.day, nights: G.save.nights };
+    G.deathInfo = { cause, hit: cause === "wounds" ? G.lastHit : null, lost, kept, any, hadSelf, zone: DL.ZONES[p.zi].name, day: G.save.day, nights: G.save.nights };
     for (let i = 0; i < 40; i++) puff(p.x + rand(-12, 12), p.y - rand(0, 60), "rgba(60,220,230,0.7)", 50, 1.6, -30);
   }
 

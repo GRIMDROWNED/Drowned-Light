@@ -610,7 +610,7 @@
       if (left > 0) { training.set(id, left); return; }
       const slots = G.champions.filter((h) => h.gx === gx && h.gy === gy).map((h) => h.slot);
       let slot = 0; while (slots.includes(slot)) slot++;
-      const h = { id: ++G.eid, champion: true, gx, gy, slot, hp: C.hp[level], maxHp: C.hp[level],
+      const h = { id: ++G.eid, champion: true, gx, gy, slot, hp: C.hp[level] * (DL.Works ? DL.Works.drill() : 1), maxHp: C.hp[level] * (DL.Works ? DL.Works.drill() : 1),
         angle: Math.PI / 2, moving: false, animT: 0, flash: 0, cd: 0, swing: 0, hit: false, tgt: null };
       Object.assign(h, champHome(h)); G.champions.push(h);
       training.set(id, C.train[level]);
@@ -619,7 +619,7 @@
     for (const id of training.keys()) if (!homes.has(id)) training.delete(id);
     for (const h of G.champions) {
       const level = barracksLevel(h.gx, h.gy), home = champHome(h);
-      h.maxHp = C.hp[level]; h.hp = Math.min(h.hp, h.maxHp);
+      h.maxHp = C.hp[level] * (DL.Works ? DL.Works.drill() : 1); h.hp = Math.min(h.hp, h.maxHp);
       h.animT += dt; h.flash = Math.max(0, h.flash - dt); h.cd = Math.max(0, h.cd - dt); h.moving = false;
       const valid = (e) => e && !e.removed && e.hp > 0 && e.rise <= 0 && !e.dormant && !(e.mind > 0) && inGuard(e, h.gx, h.gy);
       if (h.swing > 0) {
@@ -628,7 +628,7 @@
         if (!h.hit && before > C.hitAt && h.swing <= C.hitAt) {
           h.hit = true;
           if (valid(e) && DL.dist(h.x, h.y, e.x, e.y) <= C.reach + e.def.radius + C.radius) {
-            G.hitEnemy(e, C.dmg[level], h.angle, C.knockback, 0, true);
+            G.hitEnemy(e, C.dmg[level] * (DL.Works ? DL.Works.drill() : 1), h.angle, C.knockback, 0, true);
             G.effects.push({ type: "slash", x: h.x, y: h.y - 20, ang: h.angle, arc: 1.7,
               r: C.reach, t: 0, max: C.swing, col: "255,195,100", w: 5 });
           }

@@ -797,7 +797,15 @@
     quarters: { give: { wood: 6, stone: 6, iron: 2 }, mend: 0.015 }, // survivors bring supplies each dawn; on siege nights they mend the flame and pylons (share of max hp a second)
     lodge: { loot: { pearl: [2, 4], iron: [2, 5] }, black: 0.35 }, // an expedition leaves at dusk and comes back at dawn with rare loot
     archive: { bonus: 0.1, kin: { bell: [], rose: [], colossus: [], wyvern: [], champion: [] } }, // +10% damage to a slain boss's kind (its kin: new enemy types to come)
-    circle: { slots: 2 },                                 // familiars that can walk with you at once (1 without the circle)
+    circle: { slots: 2 },
+    // the yards (Robert's picks, 2026-11-04)
+    storehouse: { keep: 0.5 },                          // when you fall, half of what you carry is kept safe in the stash
+    salvage: { trades: [                                // a converter in the camp menu: give -> get, from the stash
+      { give: { wood: 4 }, get: { stone: 3 } }, { give: { stone: 4 }, get: { wood: 3 } },
+      { give: { wood: 5 }, get: { resin: 2 } }, { give: { stone: 5 }, get: { iron: 2 } },
+      { give: { iron: 10 }, get: { pearl: 1 } }] },
+    training: { champion: 1.25 },                       // the barracks' champions are drilled: health and damage x this
+    supplies: { torches: 1, oil: 0.25 },                // at dusk: a torch (up to your satchel) and a share of your lantern's oil                                 // familiars that can walk with you at once (1 without the circle)
   };
   DL.FAMILIARS = ["hound", "golem", "wraith", "fred", "wyvern"];
 

@@ -24,6 +24,13 @@
   // Dusk: the expedition sets out.
   Works.nightfall = function () {
     if (G().isGuest()) return;
+    if (Works.has("supplies")) { // the supply pile: a torch and some oil for the night
+      const S = W.supplies, p = G().player, cap = G().stats().torchMax, gave = [];
+      if (G().save.torches < cap) { G().save.torches = Math.min(cap, G().save.torches + S.torches); gave.push("a torch"); }
+      const max = G().stats().maxOil;
+      if (p && p.oil < max) { p.oil = Math.min(max, p.oil + max * S.oil); gave.push("lantern oil"); }
+      if (gave.length) setTimeout(() => say(`From the supply pile: ${gave.join(" and ")}.`, "good"), 3000);
+    }
     if (Works.has("lodge")) { st().away = true; setTimeout(() => say("An expedition sets out from the lodge into the dark.", "info"), 4500); }
   };
   // Dawn: the flask, the survivors' haul, the expedition's return.
@@ -62,6 +69,28 @@
     if (g.flame && g.flame.lit) g.flame.hp = Math.min(g.flame.max, g.flame.hp + g.flame.max * m);
     for (const q of g.pylons || []) if (q.lit) q.hp = Math.min(q.max, q.hp + q.max * m);
   };
+  /* ---------------- the yards ---------------- */
+  // Storehouse: when you fall, half of each carried resource (rounded down) goes to the stash; the rest stays with your
+  // drowned self. Takes it out of `lost` and returns what was kept (or null).
+  Works.keep = function (lost) {
+    if (!Works.has("storehouse") || G().isGuest()) return null;
+    const kept = {};
+    for (const k of DL.RES_KEYS) { const n = Math.floor((lost[k] || 0) * W.storehouse.keep); if (n > 0) { kept[k] = n; lost[k] -= n; add(k, n); } }
+    return Object.keys(kept).length ? kept : null;
+  };
+  // Salvage Yard: trade stash supplies for others (the camp menu's card).
+  Works.trades = () => (Works.has("salvage") ? W.salvage.trades : []);
+  Works.trade = function (i) {
+    const t = Works.trades()[i], g = G();
+    if (!t || !g.canAfford(t.give)) return false;
+    if (!DL.SANDBOX) for (const [k, n] of Object.entries(t.give)) g.save.stash[k] -= n;
+    for (const [k, n] of Object.entries(t.get)) add(k, n);
+    g.persist();
+    return true;
+  };
+  // Training Grounds: the champions' health and damage multiplier.
+  Works.drill = () => (Works.has("training") ? W.training.champion : 1);
+
   Works.flasks = () => (G().save && G().save.works ? G().save.works.flasks : 0);
 
   /* ---------------- Research Archive ---------------- */
