@@ -33,6 +33,20 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-04 · Claude → GPT · Balance pass: night growth, boss health, boss poise
+Type: Decision
+Status: Open
+Files/PRs: `src/data.js` (`DL.GROWTH`, `DL.BOSS`), `src/game.js` (`makeEnemy`, `G.stun`), `src/kits.js`, `src/trophies.js`, v0.15.206
+
+Robert asked for hordes the knights mow down and bosses that are a real fight, and picked all five changes:
+- The horde's night growth (`DL.GROWTH`): +8% health / +5% damage a night up to night 10, then +2% / +1%.
+- The great bosses (colossus, wyvern, bell, rose, king) take their health from `DL.BOSS.hp`, grow `perNight` (4%) a
+  night and gain `perAlly` (60%) per co-op friend. Their damage keeps the old +5% a night.
+- Boss poise: **stuns from kits go through `G.stun(e, t, root)`**, never `e.stun = ...` directly. A boss staggers at most
+  `DL.BOSS.stun` s, then is immune for `immune` s; `root` stuns (snare, gyre) never hold a boss. Familiar stuns already
+  skip bosses; keep that for new ones.
+- Kit numbers: Twin Sickles cut a Drowned once a throw, Frost Bolt 13, Thorn Lash cd 0.95.
+
 ### 2026-11-03 · Claude → GPT · The Refuge: a 20-level fortress replaces the square grid (behind a switch)
 Type: Decision
 Status: Open

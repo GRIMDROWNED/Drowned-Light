@@ -60,7 +60,12 @@
   /* The Rose Paladin's briar (src/kits.js): the same binding, from his waltz and his lash, stung `sting` every half second. */
   Trophies.bind = function (e, hold, sting) {
     if (e.removed || G.isGuest()) return;
-    hold = e.def.boss ? hold / 2 : hold;
+    // a boss's poise (DL.BOSS): held at most `stun` s, then not again for `immune` s
+    if (e.def.boss) {
+      if ((e.poiseT || 0) > G.t) return;
+      hold = Math.min(hold / 2, DL.BOSS.stun);
+      e.poiseT = G.t + hold + DL.BOSS.immune;
+    }
     e.bound = Math.max(e.bound || 0, hold);
     e.boundSting = sting;
     e.stingT = 0.3;

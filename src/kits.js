@@ -302,7 +302,7 @@
         const ad = Math.abs(angleDiff(ang, Math.atan2(e.y - p.y, e.x - p.x)));
         if (d <= range && (ad <= arc / 2 || d < 8)) {
           hit(e, dmg, ang, kb, burn);
-          if (jade && K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
+          if (jade && K.has(10)) G.stun(e, 0.6);
           if (a.lash && K.has(10) && !e.removed) { e.bleedN = Math.min(3, (e.bleed > 0 ? e.bleedN || 0 : 0) + 1); e.bleed = 3; }
           if (binds) K.bind(e, 1.2, kit.ability.sting * pw);
         }
@@ -320,7 +320,7 @@
         const rx = e.x - p.x, ry = e.y - p.y, along = rx * ux + ry * uy, perp = Math.abs(rx * uy - ry * ux);
         if (along > -6 && along < range + e.def.radius && perp < a.width / 2 + e.def.radius) {
           hit(e, a.dmg * pw * (K.steady(p) ? kit.passive.stance.dmg : 1), ang, a.kb);
-          if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
+          if (K.has(10)) G.stun(e, 0.6);
         }
       }
       if (K.has(20)) shoot(p, ang, { kind: "spear", speed: 720, life: 0.38, dmg: a.dmg * pw * 0.6, pierce: 99, r: 16 });
@@ -338,7 +338,9 @@
     } else if (a.type === "chain") {
       // Sickle Throw: the sickle cuts along its line on the way out; the swing tears it back halfway (K.update).
       const angs = K.has(10) ? [ang - 0.22, ang + 0.22] : [ang];
-      for (const g of angs) for (const e of onLine(p, g, range, a.width)) reap(e, a.dmg * pw, g, a.kb);
+      // Twin Sickles (10): two lines, but a Drowned is cut once a throw however many of them it stands in (balance pass, 2026-11-04)
+      const cut = new Set();
+      for (const g of angs) for (const e of onLine(p, g, range, a.width)) if (!cut.has(e)) { cut.add(e); reap(e, a.dmg * pw, g, a.kb); }
       Object.assign(swing, { dur: 0.32, angs, back: false, dmg: a.dmg * a.back * pw, width: a.width });
       sfx("swing");
     } else if (a.type === "frost") {
@@ -372,7 +374,7 @@
           p.dashHit.add(e);
           if (G.kit().passive && G.kit().passive.rush) reap(e, d.dmg * pw, ang, 120);
           else hit(e, d.dmg * pw, ang, d.type === "slam" ? 260 : 120);
-          if (d.stun) e.stun = Math.max(e.stun || 0, d.stun);
+          if (d.stun) G.stun(e, d.stun);
         }
       }
     }
@@ -387,7 +389,7 @@
       for (const e of G.enemies.slice()) {
         if (e.rise > 0 || dist(p.x, p.y, e.x, e.y) > 110 + e.def.radius) continue;
         hit(e, d.dmg * pw * 0.6, Math.atan2(e.y - p.y, e.x - p.x), 220);
-        e.stun = Math.max(e.stun || 0, 0.8);
+        G.stun(e, 0.8);
       }
     }
   };
@@ -448,7 +450,7 @@
       for (const e of G.enemies.slice()) {
         if (e.rise > 0 || e.removed || dist(p.x, p.y, e.x, e.y) > r + e.def.radius) continue;
         reap(e, ab.dmg * pw, Math.atan2(e.y - p.y, e.x - p.x), 60);
-        e.stun = Math.max(e.stun || 0, ab.root);
+        G.stun(e, ab.root, true); // a boss is cut but not held
         e.snareT = ab.root;
       }
       if (K.has(20)) gyres.push({ x: p.x, y: p.y, r, t: 4, max: 4 });
@@ -634,7 +636,7 @@
       if (e.rise > 0 || e.removed || d.hit.has(e) || dist(p.x, p.y, e.x, e.y) > e.def.radius + 28) continue;
       d.hit.add(e);
       hit(e, kit.attack.dmg * pw * G.corruptBonus() * ch.bonus, d.ang, ch.kb * jadeKb());
-      if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
+      if (K.has(10)) G.stun(e, 0.6);
     }
     if (d.t <= 0) {
       p.tideDash = null;
@@ -658,7 +660,7 @@
           if (e.rise > 0 || e.removed || c.hit.has(e) || dist(c.x, c.y, e.x, e.y) > c.r + e.def.radius) continue;
           c.hit.add(e);
           hit(e, c.dmg, c.ang, ab.kb * (K.has(5) ? 1.2 : 1) * jadeKb());
-          if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
+          if (K.has(10)) G.stun(e, 0.6);
           // Jade Cascade: the host (or solo) knows when a blow kills, so the guest's crystals don't cascade
           if (K.has(20) && cas && c.gen < cas.gens && (e.removed || e.hp <= 0) && !G.isGuest()) falls.push({ x: e.x, y: e.y, c });
         }
@@ -698,7 +700,7 @@
         if (e.rise > 0 || e.removed || d.hit.has(e) || dist(j.x, j.y, e.x, e.y) > ab.r + e.def.radius) continue;
         d.hit.add(e);
         hit(e, d.dmg, d.ang, ab.kb);
-        if (K.has(10)) e.stun = Math.max(e.stun || 0, 0.6);
+        if (K.has(10)) G.stun(e, 0.6);
       }
       clearArrows(j.x, j.y - 20, ab.r + 10);
       if (K.has(15) && j.u - d.trailD > 34 && j.u < d.reach) { d.trailD = j.u; lightZone(j.x, j.y, 44, 3, { fire: true, dps: 8 * K.power() }); }
@@ -748,7 +750,8 @@
     const sw = p.swing;
     if (sw && sw.kind === "chain" && !sw.back && sw.t >= sw.dur / 2) {
       sw.back = true;
-      for (const g of sw.angs) for (const e of onLine(p, g, sw.range, sw.width)) reap(e, sw.dmg, g + Math.PI, 40);
+      const cut = new Set(); // once each on the pull back too
+      for (const g of sw.angs) for (const e of onLine(p, g, sw.range, sw.width)) if (!cut.has(e)) { cut.add(e); reap(e, sw.dmg, g + Math.PI, 40); }
     }
     if (gyreLife !== p) { gyres = []; gyreLife = p; } // a new life clears them
     for (const g of gyres) {
@@ -757,7 +760,7 @@
         if (e.rise > 0 || e.removed || (e.gyreT || 0) > G.t || Math.abs(dist(g.x, g.y, e.x, e.y) - g.r * 0.85) > 22 + e.def.radius) continue;
         e.gyreT = G.t + 1; // each Drowned cut at most once a second
         reap(e, kit.ability.dmg * 0.5 * K.power() * st.dmgMult, Math.atan2(e.y - g.y, e.x - g.x), 40);
-        e.stun = Math.max(e.stun || 0, 1);
+        G.stun(e, 1, true);
         e.snareT = Math.max(e.snareT || 0, 1);
       }
     }
