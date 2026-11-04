@@ -5,7 +5,7 @@ Usage: python3 tools/cut_refuge.py [folder]   (default /mnt/project-files/refuge
 - L2-plaza.png: the bordered plaza, cut whole (the plaza round the hearth, and each building's plot).
 - L3-walls.png: the low walls, cut into corners, tiling wall runs and the posts at the openings.
 - L4-terrace.png: the raised terrace, cut into corners, tiling wall runs, its four stairs and its floor.
-- L5-two-tier.png: two kits in one picture, `rim` (the outer wall ring) and `tier` (the tall inner terrace).
+- L7-tall-tier.png (earlier L5-two-tier.png): two kits in one picture, `rim` (the outer wall ring) and `tier` (the tall inner terrace).
 Kit pieces keep their crop boxes exactly (BOXES, mirrored in KIT in src/refuge.js) at K file px per source px,
 so the game can line them up from the source coordinates. 2 file px = 1 world px."""
 import os, sys
@@ -28,16 +28,9 @@ BOXES = {
         'nw': (158, 335, 268, 458), 'ne': (990, 335, 1098, 458), 'sw': (158, 805, 268, 966), 'se': (990, 805, 1098, 966),
         'n': (268, 358, 490, 455), 's': (268, 832, 475, 962), 'w': (170, 458, 257, 528), 'e': (998, 458, 1087, 528),
     },
-    'L5-two-tier/rim': {  # the outer wall ring (outer terrace)
-        'nw': (175, 22, 320, 300), 'ne': (1215, 22, 1360, 300), 'sw': (175, 785, 310, 1004), 'se': (1225, 785, 1360, 1004),
-        'n': (320, 22, 520, 108), 's': (310, 890, 510, 1004), 'w': (175, 590, 245, 785), 'e': (1290, 590, 1360, 785),
-        'stN': (645, 20, 890, 125), 'stS': (645, 890, 890, 1004), 'stW': (175, 360, 270, 570), 'stE': (1265, 360, 1360, 570),
-    },
-    'L5-two-tier/tier': {  # the raised inner terrace (sanctum)
-        'nw': (390, 158, 525, 360), 'ne': (1010, 158, 1145, 360), 'sw': (385, 600, 530, 845), 'se': (1005, 600, 1150, 845),
-        'n': (525, 175, 645, 250), 's': (530, 678, 650, 845), 'w': (395, 250, 470, 355), 'e': (1065, 250, 1140, 355),
-        'stN': (645, 155, 890, 305), 'stS': (645, 655, 890, 845), 'stW': (325, 370, 510, 610), 'stE': (1025, 370, 1210, 610),
-    },
+    # Robert's taller-walled picture (2026-11-04) replaced the first two-tier one (L5-two-tier.png, kept in returned/)
+    'L7-tall-tier/rim': { 'nw': (150, 20, 335, 190), 'n': (335, 12, 520, 125), 'stN': (640, 22, 900, 160), 'w': (150, 400, 262, 520), 'stW': (145, 185, 265, 350), 'sw': (145, 790, 330, 1016), 's': (330, 880, 530, 1016), 'stS': (640, 870, 900, 1016), 'ne': (1202, 20, 1387, 190), 'se': (1207, 790, 1392, 1016), 'e': (1275, 400, 1387, 520), 'stE': (1272, 185, 1392, 350) },  # the outer wall ring (outer terrace)
+    'L7-tall-tier/tier': { 'nw': (415, 185, 545, 355), 'n': (545, 200, 665, 280), 'stN': (665, 190, 875, 335), 'w': (462, 570, 522, 640), 'stW': (355, 380, 530, 600), 'sw': (415, 590, 560, 805), 's': (560, 650, 665, 805), 'stS': (665, 635, 880, 805), 'ne': (992, 185, 1122, 355), 'se': (977, 590, 1122, 805), 'e': (1015, 570, 1075, 640), 'stE': (1007, 380, 1182, 600) },  # the raised inner terrace (sanctum)
 }
 WHOLE = {'L1-foundation': 0.5, 'L2-plaza': 0.6}  # file px per source px
 
