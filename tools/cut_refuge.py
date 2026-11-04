@@ -42,9 +42,27 @@ BOXES = {
 WHOLE = {'L1-foundation': 0.5, 'L2-plaza': 0.6}  # file px per source px
 
 os.makedirs(OUT, exist_ok=True)
+# Robert chose grey stone everywhere (2026-11-04, from his grey two-tier picture): every picture is recoloured onto
+# GREY's colours by luminance rank, so the tan pictures keep their shading but take the grey stone's palette.
+GREY = 'L6-two-tier-grey'
+def grey_ramp():
+    a = np.asarray(Image.open(os.path.join(SRC, GREY + '.png')).convert('RGB')).astype(float)
+    m = key_mask(a.astype(int), tol=120, fringe=1).astype(bool)
+    px = a[m]; lum = px @ [0.3, 0.59, 0.11]
+    order = np.argsort(lum); px = px[order]
+    n = 256  # the grey stone's colour at each of 256 luminance ranks
+    return np.array([px[int(i * len(px) / n):int((i + 1) * len(px) / n)].mean(0) for i in range(n)])
+RAMP = grey_ramp()
+def to_grey(a, fg):
+    lum = a @ [0.3, 0.59, 0.11]
+    vals = lum[fg]; rank = np.empty(len(vals)); rank[np.argsort(vals, kind='stable')] = np.arange(len(vals))
+    out = a.copy().astype(float)
+    out[fg] = RAMP[np.minimum(255, (rank * 256 / len(vals)).astype(int))]
+    return out.round().astype(int)
 def keyed(name):
     a = np.asarray(Image.open(os.path.join(SRC, name + '.png')).convert('RGB')).astype(int)
     fg = key_mask(a, tol=120, fringe=1)
+    a = to_grey(a, fg.astype(bool))
     rgba = np.zeros(a.shape[:2] + (4,), 'uint8')
     rgba[..., :3] = a * fg[..., None]; rgba[..., 3] = fg * 255
     return rgba

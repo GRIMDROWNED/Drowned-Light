@@ -114,7 +114,8 @@ source px):
 - `terrace-*.png` (L4): the district terrace (and any ring without its own kit): corners, tiling edge runs, the four stairs
   (stretched only along the treads to each stair's width) and `terrace-floor.png`, the terrace paving.
 
-Nothing is flipped or stretched as a whole building. Missing pieces fall back to the coded flagstones and faces.
+All pieces are recoloured to the grey stone of `L6-two-tier-grey.png` (Robert chose grey everywhere, 2026-11-04;
+the cutter maps each picture onto the grey palette by brightness). Nothing is flipped or stretched as a whole building. Missing pieces fall back to the coded flagstones and faces.
 
 ## Art manifest
 
