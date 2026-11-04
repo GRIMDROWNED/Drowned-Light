@@ -163,7 +163,7 @@
     tidestalker: { name: "Tide Stalker", hp: 26, speed: 100, dmg: 8, range: 28, windup: 0.3, cd: 1.0, scale: 1, radius: 11, mass: 0.7,
       zigzag: true, minion: true, look: "revenant", lookScale: 1.15, tint: "#566f2a", tintK: 0.4, pack: [2, 3], drop: {} },
     wisp: { name: "Sunken Wisp", hp: 40, speed: 60, dmg: 7, range: 230, windup: 0.7, cd: 2.2, scale: 1, radius: 11, mass: 0.6,
-      ranged: true, keep: 200, fly: true, minion: true, look: "abigail", lookScale: 0.8, tint: "#4fe6f0", tintK: 0.35, drop: {} },
+      ranged: true, keep: 200, fly: true, shot: "wispBolt", minion: true, look: "abigail", lookScale: 0.8, tint: "#4fe6f0", tintK: 0.35, drop: {} },
     tideleech: { name: "Tide Leech", hp: 70, speed: 50, dmg: 13, range: 34, windup: 0.5, cd: 1.6, scale: 1, radius: 14, mass: 2,
       armor: 0.2, burrow: 6, minion: true, look: "revenant", lookScale: 1.4, tint: "#2d302c", tintK: 0.45, drop: {} },
   };

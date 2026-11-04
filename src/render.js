@@ -1835,7 +1835,7 @@
       c.restore();
       return;
     }
-    const bolt = b.kind === "bolt" && !b.hostile && Art.sprites[b.flare ? "arbFlareBolt" : "arbBolt"];
+    const bolt = (b.kind === "bolt" && !b.hostile && Art.sprites[b.flare ? "arbFlareBolt" : "arbBolt"]) || (b.kind === "wispBolt" && Art.sprites.wispBolt); // or a Sunken Wisp's orb
     if (bolt) {
       // the Ashen Arbalist's drawn bolt, its head at the front, turned the way it flies
       const w = bolt.w * PS, h = bolt.h * PS;

@@ -142,6 +142,7 @@
     // the bosses' minions (src/minions.js): Robert's drawings replace their stand-in looks as they come in
     minion("drakeling", "drakeling", 4, [[73, 106], [73, 114], [70, 114]]), // the Carrion Drakeling: wing beats every way
     minion("tideleech", "tideleech", 4, [[140, 105], [80, 141], [80, 137]]), // the Sunken King's Tide Leech
+    minion("wisp", "wisp", 4, [[108, 182], [112, 197], null]), // the Sunken Wisp: its front shows going away too (Robert)
     wyvern("wyvern_f1", "wyvern-f1", [125, 160], [123, 173], [111, 189]), // David (level 5), 37 px
     wyvern("wyvern_f2", "wyvern-f2", [144, 210], [139, 267], [141, 261]), // Great David (level 10), 47 px
     wyvern("wyvern_f3", "wyvern-f3", [160, 257], [152, 289], [157, 287]), // David the Bloodwing (level 15), 52 px
@@ -288,11 +289,17 @@
     return set;
   }
 
-  /* A boss's minion from the enemy prompt's two sheets (stills, attack, side walk, hurt, death), at `res`. Until its
+  /* A boss's minion from the enemy prompt's two sheets (stills, attack, side walk, hurt, death), at `res`. With no back
+     walk (`feet[2]` null) its front stills and walk serve going away too. Until its
      walk-toward and walk-away sheets are in, it moves toward or away from you in its still front or back pose; with
      them (`feet`: the side, front and back walk sheets' foot points, as the cutter prints them) it walks every way. */
   function minion(type, folder, res, feet) {
     const keys = { path: "assets/sprites/minions/" + folder + "/", keys: { [type]: [0, false] }, own: true };
+    if (feet && !feet[2]) { // no back drawn: it shows its front going away too
+      const set = Object.assign(walking(type, feet[0], feet[1], feet[1], res), keys);
+      set.views.up = set.views.down;
+      return set;
+    }
     if (feet) return Object.assign(walking(type, feet[0], feet[1], feet[2], res), keys);
     const steady = (p) => ({ walk: [p + "@-"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] });
     return Object.assign(keys, { res,
@@ -374,7 +381,7 @@
   }
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
-  const PLANTS = ["refugeOn", "refugeOff", "sentinelOn", "sentinelOff", "rootOn", "rootOff", "sproutOn", "sproutOff", "sproutOn2", "sproutOff2", "sproutBare", "husk", "gardenOn", "gardenOff",
+  const PLANTS = ["wispBolt", "refugeOn", "refugeOff", "sentinelOn", "sentinelOff", "rootOn", "rootOff", "sproutOn", "sproutOff", "sproutOn2", "sproutOff2", "sproutBare", "husk", "gardenOn", "gardenOff",
     "reeds1", "reeds2", "reeds3", "reeds4", "reeds5", "reeds6", "gardenBed1", "gardenBed2", "gardenBed3",
     "swampTree11", "swampTree12", "swampTree13", "swampTree14", "swampTree21", "swampTree22", "swampTree23", "swampTree24", "swampTree31", "swampTree32", "swampTree33", "swampTree34",
     "boulder11", "boulder12", "boulder13", "boulder21", "boulder22", "boulder23", "boulder31", "boulder32", "boulder33", "boulder41", "boulder42", "boulder43",

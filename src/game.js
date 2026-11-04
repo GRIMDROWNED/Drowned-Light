@@ -1293,7 +1293,8 @@
       const n = e.def.spread && (e.shots = (e.shots || 0) + 1) % 2 === 0 ? e.def.spread : 1; // every other shot fans out
       for (let i = 0; i < n; i++) {
         const a = base + (i - (n - 1) / 2) * 0.22;
-        G.projectiles.push({ x: e.x, y: e.y - 22, vx: Math.cos(a) * 330, vy: Math.sin(a) * 330, life: 1.4, dmg, by: e.def.name, hostile: true, kind: "arrow", col: "90,235,245" });
+        const sp = e.def.shot ? 240 : 330; // a Sunken Wisp's orb (e.def.shot) drifts slower than an arrow
+        G.projectiles.push({ x: e.x, y: e.y - (e.def.shot ? 45 : 22), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 330 * 1.4 / sp, dmg, by: e.def.name, hostile: true, kind: e.def.shot || "arrow", col: "90,235,245" });
       }
       sfx("arrow");
       return;

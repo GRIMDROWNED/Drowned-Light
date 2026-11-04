@@ -83,6 +83,8 @@ GRIDS = {
     # the bosses' minions (src/minions.js, prompts in art-prompts/boss-minions-prompts.md)
     'carrion-drakeling/poses-a.png': (3, 2, POSES_A),
     'carrion-drakeling/poses-b.png': (3, 2, POSES_B),
+    'sunken-wisp/poses-a.png': (3, 2, POSES_A),
+    'sunken-wisp/poses-b.png': (3, 2, POSES_B),
     'tide-leech/poses-a.png': (3, 2, POSES_A),
     'tide-leech/poses-b.png': (3, 2, POSES_B),
     'wyvern-f0/poses-a.png': (3, 2, POSES_A),
@@ -148,7 +150,7 @@ CELL_SCALE.update({'derek-f0/' + n: 0.88 for n in POSES_B})
 
 # Cells cut off at a share of their width (key colour painted over the rest): the Chain Reaper's throw keeps
 # its arm and loses the chain and sickle stretched out ahead, which the game draws flying (src/render.js).
-CELL_CROP = {'chain-reaper/09_attackB': 0.58}
+CELL_CROP = {'chain-reaper/09_attackB': 0.58, 'sunken-wisp/09_attackB': 0.69}  # the Wisp's bolt flies off on its own (prop wispBolt)
 
 # Cells redrawn on their own after a sheet came back: cell -> (redrawn image, cell whose figure height it takes).
 # The redraw is shrunk to that height before it is cut, so it matches the rest of its sheet.
@@ -183,6 +185,7 @@ FRED0_H = 80  # Fred the Sprout (Fred's first form, src/fred.js), res 4: 20 art 
 FRED1_H = 107  # Fred (level 5), a third taller than the Sprout
 FRED2_H = 164  # Weeping Fred (level 10), about the knight's height
 FRED3_H = 210  # Fred the Rotwalker (level 15), a hulking stalker taller than the knight
+WISP_H = 180  # the Sunken Wisp (a boss minion), res 4: 90 world px tall, tendrils included
 TIDELEECH_H = 120  # the Tide Leech (a boss minion), res 4: 30 art px tall head on
 DRAKELING_H = 104  # the Carrion Drakeling (a boss minion), res 4: 26 art px tall with its wings spread
 WYV0_H = 96  # David the Hatchling (src/wyvern.js), res 4: 24 art px from wing tip to tail, wings as wide as the knight is tall
@@ -326,6 +329,8 @@ SETS = {
     'wyvern-f0': ('wyvern-f0', 'wyvern-f0/01_front.png', WYV0_H, 1, twelve('wyvern-f0', TWELVE_FILES)),
     # the Mother Wyvern's Carrion Drakeling, res 4: 26 art px tall wings spread (about half the knight)
     # the Sunken King's Tide Leech, res 4: 30 art px tall head on (about a knight's chest), twice that long side on
+    # the Sunken King's Sunken Wisp, res 4: about 90 world px tall floating, tendrils and all
+    'sunken-wisp': ('minions/wisp', 'sunken-wisp/01_front.png', WISP_H, 1, twelve('sunken-wisp', TWELVE_FILES)),
     'tide-leech': ('minions/tideleech', 'tide-leech/01_front.png', TIDELEECH_H, 1, twelve('tide-leech', TWELVE_FILES)),
     'carrion-drakeling': ('minions/drakeling', 'carrion-drakeling/01_front.png', DRAKELING_H, 1, twelve('carrion-drakeling', TWELVE_FILES)),
     'wyvern-f1': ('wyvern-f1', 'wyvern-f1/01_front.png', WYV1_H, 1, twelve('wyvern-f1', TWELVE_FILES)),
@@ -523,6 +528,10 @@ SHEETS = {
     ],
     # his flap cycles toward and away from you; the first frame has the wings raised, so it stands taller
     # the Carrion Drakeling: four wing beats side on, toward and away from you
+    'sunken-wisp': [
+        ('sunken-wisp/walk-side-4.png', 4, 1, 162, 'side/walk'),
+        ('sunken-wisp/walk-front.png', 4, 1, 190, 'walkF'),
+    ],
     'tide-leech': [
         ('tide-leech/walk-side-4.png', 4, 1, 80, 'side/walk'),
         ('tide-leech/walk-front.png', 4, 1, 104, 'walkF'),
@@ -1105,3 +1114,13 @@ if not only or 'ice-mage' in only:
             done.append(im)
             print(dst, im.size)
     if done: contact(done, os.path.join(SRC, 'ice-owl-preview.png'))
+
+# The Sunken Wisp's bolt, clipped from its attack sheet (cell 5, where the orb has left it) as a prop at res 2
+WISP_BOLT = ('sunken-wisp/poses-a.png', (845, 650, 1010, 780), 32)  # sheet, box, width in file px (a knight's hand or so)
+_p = os.path.join(SRC, WISP_BOLT[0])
+if os.path.exists(_p) and (not only or 'sunken-wisp' in only):
+    _img = Image.open(_p).convert('RGB').crop(WISP_BOLT[1])
+    _w = cut_keyed(_img, 1, fringe=1).width
+    _im = cut_keyed(_img, WISP_BOLT[2] / _w, fringe=1)
+    _im.save(os.path.join(OUT, PROP_OUT, 'wispBolt.png'))
+    print('props/wispBolt', _im.size)
