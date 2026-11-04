@@ -703,7 +703,7 @@
     if (L.garden) put(L.garden.y - 20, () => { if (!(L.fortress && DL.Refuge.drawBuilding(c, "garden", u.garden, L.garden.x, L.garden.y))) drawGarden(c, L.garden, u.garden, night, t); });
     // the companions' homes (a picture per level) and the Abyss trophies
     for (const k of ["kennel", "workshop", "shrine", "toadstool", "roost"]) if (L[k]) put(L[k].y, () => building(L[k], k + u[k]));
-    if (L.bell) put(L.bell.y, () => building(L.bell, "bellTower"));
+    if (L.bell) put(L.bell.y, () => { if (!(L.fortress && DL.Refuge.drawBuilding(c, "bell", 1, L.bell.x, L.bell.y))) building(L.bell, "bellTower"); });
     if (L.roseheart) put(L.roseheart.y, () => drawRoseHeart(c, L.roseheart, u.roseheart, night, t, L.fortress));
     for (const tw of L.towers) put(tw.y, () => { const n = drawn ? "tower" + u.tower : "tower"; groundShadow(c, n, tw.x, tw.y + 4, false, 20, 6); sprite(c, n, tw.x, tw.y + 4); });
     const pyl = drawn ? "pylon" + u.pylon : "pylon", lamps = drawn ? PYLON_LAMPS[u.pylon] : [[-11, -77], [11, -77]];
