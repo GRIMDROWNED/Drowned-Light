@@ -239,7 +239,7 @@
       if (isB && up[p.id] > 0) L[p.id] = { x: p.x, y: p.y };
       else if (isB) { if (lv >= 6) L.plots.push({ x: p.x, y: p.y, hw: p.hw, reserved: true }); } // empty plots once the districts' terrace is built
       else L.items.push({ id: p.id, x: p.x, y: p.y, hw: p.hw, ph: it.ph, sprite: it.sprite, flip: it.flip });
-      if (!isB || up[p.id] > 0) L.plots.push({ x: p.x, y: p.y, hw: p.hw });
+      if (!isB || up[p.id] > 0) L.plots.push({ x: p.x, y: p.y, hw: p.hw, id: p.id });
     }
     for (const id of BUILDINGS) if (!L[id]) L[id] = null;
     const b = L.items.find((i) => i.id === "barracks");
@@ -351,6 +351,19 @@
     for (const n of names) { const img = new Image(); img.onload = () => { IMG[n] = img; }; img.src = DL.asset("assets/sprites/refuge/" + n + ".png"); }
   }
   Refuge.art = IMG;
+  // Buildings Robert redrew on their own plinths (B02-B18): id -> levels. Drawn at BS world px per source px.
+  Refuge.BUILT = { forge: 4, armory: 4, garden: 3 };
+  const BS = 0.2;
+  if (typeof Image !== "undefined") for (const [id, n] of Object.entries(Refuge.BUILT)) for (let i = 1; i <= n; i++) {
+    const img = new Image(); img.onload = () => { IMG["b-" + id + i] = img; }; img.src = DL.asset("assets/sprites/refuge/b-" + id + i + ".png");
+  }
+  // Draw a redrawn building (its plinth's front edge a little below its spot); false if its art isn't in.
+  Refuge.drawBuilding = function (c, id, lvl, x, y) {
+    const im = IMG["b-" + id + lvl]; if (!im) return false;
+    const w = im.width * BS / 0.4, h = im.height * BS / 0.4;
+    c.drawImage(im, x - w / 2, y + 16 - h, w, h);
+    return true;
+  };
   // Robert's hearths (B01): world width, and where the bowl sits as a fraction of the picture (the game's fire goes there)
   Refuge.HEARTH = { 1: { w: 70, bx: 0.5, by: 0.43 }, 5: { w: 70, bx: 0.49, by: 0.27 }, 10: { w: 74, bx: 0.49, by: 0.28 }, 15: { w: 80, bx: 0.47, by: 0.11 }, 20: { w: 98, bx: 0.5, by: 0.19 } };
   // Draw one kit wall ring of half-side h, with its stairs (or openings) where `ring.stairs` says.
@@ -570,7 +583,7 @@
       for (let i = 0; i <= 16; i++) { const a = (i / 16) * Math.PI * 2 - Math.PI / 2, r = i % 2 ? 46 : 84; c[i ? "lineTo" : "moveTo"](Math.cos(a) * r, Math.sin(a) * r * 0.75 + 4); }
       c.stroke();
     }
-    for (const p of L.plots) plot(c, p, flags);
+    for (const p of L.plots) if (!(p.id && IMG["b-" + p.id + "1"] && !p.reserved)) plot(c, p, flags);
   };
 
   /* ---------------- HUD / text ---------------- */

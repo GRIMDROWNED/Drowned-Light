@@ -771,8 +771,8 @@
     // district: nw military and crafting, ne champions and operations, sw familiars and cultivation, se boss rewards
     items: {
       // existing camp buildings (canonical ids from DL.UPGRADES; shown when built, a reserved plot otherwise)
-      forge: { d: "nw", at: [-250, -100], hw: 32 }, armory: { d: "nw", at: [-100, -250], hw: 31 }, workbench: { d: "nw", at: [-290, -250], hw: 30 },
-      garden: { d: "sw", at: [-250, 110], hw: 32 }, kennel: { d: "sw", at: [-110, 262], hw: 24 }, shrine: { d: "sw", at: [-230, 232], hw: 27 },
+      forge: { d: "nw", at: [-250, -100], hw: 38 }, armory: { d: "nw", at: [-100, -250], hw: 38 }, workbench: { d: "nw", at: [-290, -250], hw: 30 },
+      garden: { d: "sw", at: [-250, 110], hw: 40 }, kennel: { d: "sw", at: [-110, 262], hw: 24 }, shrine: { d: "sw", at: [-230, 232], hw: 27 },
       toadstool: { d: "sw", at: [-298, 300], hw: 26 }, workshop: { d: "sw", at: [-405, 140], hw: 28 }, roost: { d: "sw", at: [-160, 445], hw: 30 },
       bell: { d: "se", at: [110, 240], hw: 21 }, roseheart: { d: "se", at: [250, 250], hw: 23 },
       // refuge structures, by refuge level

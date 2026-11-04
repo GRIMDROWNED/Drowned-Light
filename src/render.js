@@ -684,7 +684,9 @@
     });
     // drawn buildings have a picture per level; the coded ones are the fallback
     const drawn = Art.sprites.forge1;
-    const building = (b, name) => { groundShadow(c, name, b.x, b.y + 4, false, Art.sprites[name].w * 0.75, 7); sprite(c, name, b.x, b.y + 4); };
+    const building = (b, name) => {
+      const m = L.fortress && /^([a-z]+)(\d)$/.exec(name);
+      if (m && DL.Refuge.drawBuilding(c, m[1], +m[2], b.x, b.y)) return; groundShadow(c, name, b.x, b.y + 4, false, Art.sprites[name].w * 0.75, 7); sprite(c, name, b.x, b.y + 4); };
     if (L.forge) put(L.forge.y, () => building(L.forge, drawn ? "forge" + u.forge : "forge"));
     if (L.armory) put(L.armory.y, () => {
       if (drawn) return building(L.armory, "armory" + u.armory);
@@ -698,7 +700,7 @@
       if (L.tier >= 2) sprite(c, "awning", L.workbench.x, L.workbench.y + 4, true);
       sprite(c, "workbench", L.workbench.x, L.workbench.y + 4);
     });
-    if (L.garden) put(L.garden.y - 20, () => drawGarden(c, L.garden, u.garden, night, t));
+    if (L.garden) put(L.garden.y - 20, () => { if (!(L.fortress && DL.Refuge.drawBuilding(c, "garden", u.garden, L.garden.x, L.garden.y))) drawGarden(c, L.garden, u.garden, night, t); });
     // the companions' homes (a picture per level) and the Abyss trophies
     for (const k of ["kennel", "workshop", "shrine", "toadstool", "roost"]) if (L[k]) put(L[k].y, () => building(L[k], k + u[k]));
     if (L.bell) put(L.bell.y, () => building(L.bell, "bellTower"));

@@ -143,3 +143,19 @@ for n, (x0, y0, x1, y1) in {'hearth1': (40, 344, 374, 654), 'hearth5': (431, 344
     im = Image.fromarray(rgba).convert('RGBa').resize((round((x1 - x0) * 0.4), round((y1 - y0) * 0.4)), Image.BOX).convert('RGBA')
     a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
     Image.fromarray(a).save(os.path.join(OUT, n + '.png')); print(n, im.size)
+
+# Buildings on their own plinths (B02-B18, 2026-11-04): BUILD[file] = boxes of each level, left to right, cut whole at 0.4
+BUILD = {
+    'B02-forge': ('forge', [(41, 250, 408, 681), (490, 146, 923, 681), (1005, 117, 1502, 681), (1583, 18, 2129, 681)]),
+    'B05-cultivation-plot': ('garden', [(105, 255, 597, 695), (676, 138, 1213, 696), (1318, 26, 2088, 696)]),
+    'B03-armory': ('armory', [(38, 265, 453, 684), (503, 161, 943, 684), (995, 122, 1507, 684), (1562, 31, 2131, 684)]),
+}
+for f, (key, boxes) in BUILD.items():
+    src = np.asarray(Image.open(os.path.join(SRC, f + '.png')).convert('RGB')).astype(int)
+    fgm = key_mask(src, tol=120, fringe=1)
+    for i, (x0, y0, x1, y1) in enumerate(boxes):
+        rgba = np.zeros((y1 - y0, x1 - x0, 4), 'uint8'); rgba[..., :3] = src[y0:y1, x0:x1] * fgm[y0:y1, x0:x1, None]; rgba[..., 3] = fgm[y0:y1, x0:x1] * 255
+        im = Image.fromarray(rgba).convert('RGBa').resize((round((x1 - x0) * 0.4), round((y1 - y0) * 0.4)), Image.BOX).convert('RGBA')
+        a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
+        Image.fromarray(a).save(os.path.join(OUT, f'b-{key}{i + 1}.png'))
+    print(f, len(boxes))
