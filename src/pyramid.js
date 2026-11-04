@@ -581,13 +581,27 @@
   G.champions = [];
   const training = new Map();
   const barracksLevel = (gx, gy) => (!gx && !gy ? DL.Refuge.barracks() : fortress() ? 0 : Math.min(P.build.barracks.max, Math.max(0, Py.buildings(gx, gy).barracks || 0)));
+  // The Refuge has a barracks by every outer stair (Refuge.layout posts): a camp champion's slot is post * PER + n.
+  const PER = 4;
+  const posts = () => (fortress() && DL.Camp.layout(G.save.up).posts) || [];
+  const isPost = (h) => !h.gx && !h.gy && fortress();
   const champHome = (h) => {
-    const c = !h.gx && !h.gy ? DL.Camp.layout(G.save.up).barracks || { x: 0, y: 0 } : Py.layout(h.gx, h.gy).barracks, C = P.champion;
+    const C = P.champion;
+    if (isPost(h)) {
+      const c = posts()[Math.floor(h.slot / PER)] || { x: 0, y: 0 }, n = h.slot % PER;
+      return { x: c.x + (n - 1) * C.spacing, y: c.y + C.spawnY };
+    }
+    const c = !h.gx && !h.gy ? DL.Camp.layout(G.save.up).barracks || { x: 0, y: 0 } : Py.layout(h.gx, h.gy).barracks;
     return { x: c.x + C.spawnX + h.slot * C.spacing, y: c.y + C.spawnY };
   };
-  const alive = (h) => G.save.up.flame > 0 && h && h.hp > 0 && Py.has(h.gx, h.gy) && barracksLevel(h.gx, h.gy) > 0;
+  const alive = (h) => G.save.up.flame > 0 && h && h.hp > 0 && Py.has(h.gx, h.gy) && barracksLevel(h.gx, h.gy) > 0 && (!isPost(h) || Math.floor(h.slot / PER) < posts().length);
+  const trainKey = (h) => (isPost(h) ? key(0, 0) + "#" + Math.floor(h.slot / PER) : key(h.gx, h.gy));
   const lit = (gx, gy) => (!gx && !gy ? G.flame && G.flame.lit : G.outposts.some((o) => o.gx === gx && o.gy === gy && o.lit));
-  const inGuard = (e, gx, gy) => {
+  const inGuard = (e, gx, gy, h) => {
+    if (h && isPost(h)) { // a stair's champions hold their stair, and close in round the flame
+      const c = posts()[Math.floor(h.slot / PER)];
+      return !!c && (Math.max(Math.abs(e.x - c.x), Math.abs(e.y - c.y)) <= P.champion.defend || DL.Camp.sq(e.x, e.y) <= 320);
+    }
     const c = Py.center(gx, gy), r = !gx && !gy ? Math.max(P.champion.defend, DL.WALL_R + 120) : P.champion.defend;
     return Math.max(Math.abs(e.x - c.x), Math.abs(e.y - c.y)) <= r;
   };
@@ -601,6 +615,23 @@
       if (!gx && !gy && !fortress()) return; // the Refuge's own barracks trains champions for the camp
       const level = barracksLevel(gx, gy);
       if (!level) return;
+      if (!gx && !gy && fortress()) { // one barracks per outer stair, each training its own
+        if (!lit(0, 0)) return;
+        posts().forEach((_, i) => {
+          const id = key(0, 0) + "#" + i; homes.add(id);
+          const mine = G.champions.filter((h) => isPost(h) && Math.floor(h.slot / PER) === i);
+          if (mine.length >= C.count[level]) { training.delete(id); return; }
+          const left = (training.has(id) ? training.get(id) : C.train[level]) - dt;
+          if (left > 0) { training.set(id, left); return; }
+          let n = 0; while (mine.some((h) => h.slot % PER === n)) n++;
+          const h = { id: ++G.eid, champion: true, gx: 0, gy: 0, slot: i * PER + n, hp: C.hp[level] * (DL.Works ? DL.Works.drill() : 1), maxHp: C.hp[level] * (DL.Works ? DL.Works.drill() : 1),
+            angle: Math.PI / 2, moving: false, animT: 0, flash: 0, cd: 0, swing: 0, hit: false, tgt: null };
+          Object.assign(h, champHome(h)); G.champions.push(h);
+          training.set(id, C.train[level]);
+          if (G.puff) G.puff(h.x, h.y - 20, "rgba(255,200,110,0.6)", 35, 0.6);
+        });
+        return;
+      }
       const id = key(gx, gy); homes.add(id);
       // An extinguished square cannot train until its fire is restored.
       if (!lit(gx, gy)) return;
@@ -621,7 +652,7 @@
       const level = barracksLevel(h.gx, h.gy), home = champHome(h);
       h.maxHp = C.hp[level] * (DL.Works ? DL.Works.drill() : 1); h.hp = Math.min(h.hp, h.maxHp);
       h.animT += dt; h.flash = Math.max(0, h.flash - dt); h.cd = Math.max(0, h.cd - dt); h.moving = false;
-      const valid = (e) => e && !e.removed && e.hp > 0 && e.rise <= 0 && !e.dormant && !(e.mind > 0) && inGuard(e, h.gx, h.gy);
+      const valid = (e) => e && !e.removed && e.hp > 0 && e.rise <= 0 && !e.dormant && !(e.mind > 0) && inGuard(e, h.gx, h.gy, h);
       if (h.swing > 0) {
         const before = h.swing; h.swing = Math.max(0, h.swing - dt);
         const e = h.tgt;
@@ -674,7 +705,7 @@
     h.hp = Math.max(0, h.hp - amount); h.flash = 0.2;
     if (!h.hp) {
       const level = barracksLevel(h.gx, h.gy);
-      training.set(key(h.gx, h.gy), P.champion.train[level]);
+      training.set(trainKey(h), P.champion.train[level]);
       if (G.puff) G.puff(h.x, h.y - 20, "rgba(220,190,140,0.6)", 35, 0.6);
     }
   };
