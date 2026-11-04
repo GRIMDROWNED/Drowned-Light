@@ -322,10 +322,16 @@
     // Robert's T3 Middle Ward (2026-11-04)
     mward: { edge: { n: 80, w: 85, e: 1228, s: 900 }, out: 6, sIn: 8, tread: { n: [590, 723], s: [590, 723], w: [440, 545], e: [440, 545] },
       box: { nw: [70, 28, 225, 270], n: [225, 60, 315, 230], stN: [540, 50, 773, 240], w: [85, 650, 225, 760], stW: [85, 400, 225, 580], sw: [40, 760, 230, 1139], s: [230, 860, 305, 1130], stS: [540, 790, 773, 1139], ne: [1088, 28, 1243, 270], se: [1083, 760, 1273, 1139], e: [1088, 650, 1228, 760], stE: [1088, 400, 1228, 580] } },
+    // Robert's T5 Low Ward (2026-11-04)
+    lward: { edge: { n: 100, w: 60, e: 1195, s: 890 }, out: 6, sIn: 8, tread: { n: [560, 695], s: [560, 695], w: [330, 440], e: [330, 440] },
+      box: { nw: [28, 10, 205, 270], n: [200, 75, 285, 245], stN: [505, 35, 750, 250], w: [55, 470, 190, 560], stW: [55, 290, 190, 470], sw: [15, 750, 200, 1223], s: [200, 860, 280, 1170], stS: [505, 800, 750, 1223], ne: [1050, 10, 1227, 270], se: [1055, 750, 1240, 1223], e: [1065, 470, 1200, 560], stE: [1065, 290, 1200, 470] } },
+    // Robert's T6 Curtain Terrace (2026-11-04)
+    curt: { edge: { n: 110, w: 68, e: 1186, s: 905 }, out: 6, sIn: 8, tread: { n: [572, 685], s: [572, 685], w: [445, 545], e: [445, 545] },
+      box: { nw: [30, 20, 225, 270], n: [222, 105, 258, 265], stN: [495, 40, 760, 270], w: [55, 590, 200, 660], stW: [55, 400, 205, 560], sw: [15, 765, 210, 1220], s: [210, 880, 255, 1215], stS: [495, 860, 760, 1225], ne: [1029, 20, 1224, 270], se: [1044, 765, 1239, 1220], e: [1054, 590, 1199, 660], stE: [1049, 400, 1199, 560] } },
   };
   if (typeof Image !== "undefined") {
     const names = ["foundation", "plaza", "terrace-floor"];
-    for (const k of ["terrace", "low", "rim", "tier", "sanct", "court", "ward", "mward"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
+    for (const k of ["terrace", "low", "rim", "tier", "sanct", "court", "ward", "mward", "lward", "curt"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
     for (const n of names) { const img = new Image(); img.onload = () => { IMG[n] = img; }; img.src = DL.asset("assets/sprites/refuge/" + n + ".png"); }
   }
   Refuge.art = IMG;
@@ -380,8 +386,8 @@
   };
   // The four faces of a ring: drawn rock courses on the south (stairs in the gaps), lips on the other three.
   function faces(c, ring, t) {
-    const kit = { low: "low", sanctum: "sanct", main: "court", outer: "mward", ward4: "ward", ward5: "rim", ward7: "rim" }[ring.id] || "terrace";
-    if (kitRing(c, ring, kit) || (kit === "sanct" && kitRing(c, ring, "tier")) || ((kit === "court" || kit === "ward" || kit === "mward") && kitRing(c, ring, "terrace")) || (kit !== "terrace" && kit !== "low" && kitRing(c, ring, "terrace"))) return;
+    const kit = { low: "low", sanctum: "sanct", main: "court", outer: "mward", ward4: "ward", ward5: "lward", ward6: "curt", ward7: "rim" }[ring.id] || "terrace";
+    if (kitRing(c, ring, kit) || (kit === "sanct" && kitRing(c, ring, "tier")) || ((kit === "court" || kit === "ward" || kit === "mward" || kit === "lward" || kit === "curt") && kitRing(c, ring, "terrace")) || (kit !== "terrace" && kit !== "low" && kitRing(c, ring, "terrace"))) return;
     const h = ring.half, A = P(), F = ring.face;
     const gaps = (s) => ring.stairs.filter((q) => q.s === s);
     const spans = (s) => {
