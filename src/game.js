@@ -327,6 +327,7 @@
     DL.Rose.update(dt);
     DL.Rose.local();
     DL.Cave.update(dt);
+    DL.Minions.update(dt);
     updateEnemies(dt);
     if (G.state === "dying") return;
     DL.Hounds.update(dt);
@@ -970,6 +971,7 @@
     // little Fred in his fairy ring comes first, and a turned Drowned close by is fought back
     const champion = !e.def.boss && DL.Pyramid.championTarget(e.x, e.y, bd);
     if (champion) { best = champion; bd = dist(e.x, e.y, champion.x, champion.y); }
+    if (e.def.prey) best = DL.Minions.prey(e, best); // a boss's minion: the egg carrier, or the most wounded knight
     return DL.Fred.decoy(e, DL.Hounds.nearest(e.x, e.y, bd) || best);
   }
   function hurtKnight(k, dmg, ang, by) {
@@ -995,7 +997,7 @@
       }
       e.lx = e.x; e.ly = e.y; // where it stood, so climbing a Pyramid step can slow its move (below)
       const eZ = DL.ZONES[W.zoneIndex(e.x, e.y)];
-      if (!G.night && !eZ.abyss && !e.isSelf && !e.def.den && !e.def.wyvern && !e.march) { // (the Drowned that rise against the Fire Bearer brave the sun)
+      if (!G.night && !eZ.abyss && !e.isSelf && !e.def.den && !e.def.wyvern && !e.march && !e.lord) { // (a boss's minions live as long as it fights) // (the Drowned that rise against the Fire Bearer brave the sun)
         e.hp -= 30 * dt; // the sun unmakes them
         if (Math.random() < 0.3) puff(e.x + rand(-8, 8), e.y - rand(10, 40), "rgba(40,60,70,0.6)", 30, 0.8);
         if (e.hp <= 0) { kill(e, false); continue; }
@@ -1018,6 +1020,7 @@
         if (dp < (e.def.den ? DL.DEN.wake : e.def.wake || 170) || e.hp < e.maxHp) { e.dormant = false; if (e.isSelf) say("Your drowned self rises to meet you.", "danger"); }
         else continue;
       }
+      if (e.lord && DL.Minions.busy(e, dt)) continue; // a Tide Leech under the causeway (src/minions.js)
 
       // Choose what to chase.
       let goal = null;
@@ -1088,6 +1091,7 @@
       } else {
         let want = 1;
         if (e.def.ranged && !goal) { if (d < e.def.keep - 30) want = -1; else if (d < e.def.range) want = 0; }
+        else if (e.def.hang && !goal && d > reach) { if (d < e.def.hang - 40) want = -1; else if (d < e.def.hang + 40) want = 0; } // a minion that hangs back (Screecher, Toll Wretch)
         else if (d < reach * 0.8) want = 0;
         if (e.retreatT > 0) { e.retreatT -= dt; want = -1; } // Mire Stalker falls back after a strike, then comes again
         e.backT = want === -1 ? 1.5 : Math.max(0, (e.backT || 0) - dt); // backing away lately: the Bone Hound runs these down first
@@ -1146,10 +1150,10 @@
     const es = G.enemies;
     for (let i = 0; i < es.length; i++) {
       const a = es[i];
-      if (a.rise > 0) continue;
+      if (a.rise > 0 || a.hidden) continue;
       for (let j = i + 1; j < es.length; j++) {
         const b = es[j];
-        if (b.rise > 0) continue;
+        if (b.rise > 0 || b.hidden) continue;
         const dx = b.x - a.x, dy = b.y - a.y, min = a.def.radius + b.def.radius;
         if (Math.abs(dx) > min || Math.abs(dy) > min) continue;
         const d = Math.hypot(dx, dy) || 0.01;
@@ -1308,6 +1312,7 @@
     if (d <= e.def.range + 16 && ad < 1.25) {
       const hp = p.hp;
       hurtKnight(p, dmg, e.aim, e.def.name);
+      if (e.def.drain && (p === G.player ? p.hp < hp : true)) DL.Minions.bit(e); // a Leech or Rose Wretch feeds its boss
       // the Rose Paladin's shield pricks whatever strikes him (src/kits.js)
       if (p === G.player ? p.hp < hp : p.kit) DL.Kits.thorns(e, p === G.player ? G.save.kit : p.kit, dmg, p);
       // Drowned Wretch: its touch seeps corruption into you
@@ -1388,7 +1393,7 @@
   }
 
   function hitEnemy(e, dmg, ang, kb, burn, remote) {
-    if (e.removed) return;
+    if (e.removed || e.hidden) return;
     // the Sunken King can only be hurt while the Fire Bearer's flame has his heart open (src/finale.js)
     if (e.def.king && !DL.Finale.isOpen(e)) { if (!remote) DL.Finale.immune(e); return; }
     const crit = !remote && Math.random() < 0.12;
@@ -1410,6 +1415,7 @@
     } else if (!e.def.shield && G.enemies.some((b) => b.def.guard && !b.removed && dist(b.x, b.y, e.x, e.y) < b.def.guard)) d *= 0.75; // guarded by a Bulwark
     d *= 1 - (e.def.armor || 0);
     d *= DL.Works.dmgMult(e); // the Research Archive: bosses slain, and their kind
+    if (e.def.boss) d *= DL.Minions.ward(e); // warded by a Totem Servitor (src/minions.js)
     if (e.cursed) d *= 1 + (e.curseK || DL.ABIGAIL.curse); // weakened by one of Abigail's orbs
     if (e.brittle > 0) d *= 1 + DL.ICE.brittle; // made brittle by the Frostweaver
     if (e.def.king) d = DL.Finale.cap(e, d);
@@ -1730,11 +1736,25 @@
     if (G.effects.length > 600) G.effects.splice(0, G.effects.length - 600);
   }
 
+  /* Fighting one of the great bosses (they stand about three knights tall, DL.BOSS.size): the camera pulls back to show
+     at least `DL.BOSS.view` px top to bottom and leans a little toward the boss's middle, so its head stays on screen. */
+  G.bossView = function (p) {
+    if (!p) return null;
+    let best = null, bd = DL.BOSS.viewR;
+    for (const e of G.enemies) {
+      if (!e.def.size || e.removed || (e.dormant && !e.def.wyvern)) continue;
+      const d = dist(p.x, p.y, e.x, e.y);
+      if (d < bd) { bd = d; best = e; }
+    }
+    if (!best) return null;
+    return { need: DL.BOSS.view, needW: DL.BOSS.view * 1.3, x: best.x, y: best.y - 90 * best.def.scale, lean: 0.3 };
+  };
   function updateCamera(dt) {
     const c = G.camera, p = G.player;
     const k = 1 - Math.pow(0.0005, dt);
-    const fv = DL.Finale.view(p); // facing the Sunken King: lean toward him (src/finale.js)
-    const tx = fv ? (p.x + fv.x) / 2 : p.x, ty = fv ? (p.y - 20 + fv.y) / 2 : p.y - 20;
+    const fv = DL.Finale.view(p) || G.bossView(p); // facing the Sunken King (src/finale.js) or a great boss: lean toward it
+    const lean = fv && fv.lean != null ? fv.lean : 0.5;
+    const tx = fv ? p.x + (fv.x - p.x) * lean : p.x, ty = fv ? p.y - 20 + (fv.y - p.y + 20) * lean : p.y - 20;
     c.x += (tx - c.x) * k;
     c.y += (ty - c.y) * k;
     c.shake = Math.max(0, c.shake - dt * 30);

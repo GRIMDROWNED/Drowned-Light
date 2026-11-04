@@ -130,6 +130,42 @@
       radius: 46, mass: 1e6, boss: true, king: true, drop: {} },
     self: { name: "Your Drowned Self", hp: 200, speed: 70, dmg: 15, range: 44, windup: 0.5, cd: 1.3, scale: 1.05,
       radius: 14, mass: 2, boss: true, drop: {} },
+    /* The bosses' minions (src/minions.js, Robert's concept sheets 2026-11-04; their calling is in DL.MINIONS). They grow
+       like the horde, not like their boss. Until Robert's drawings are cut in they wear `look` (another unit's drawings)
+       at `lookScale`, washed `tintK` with `tint`. `prey`: "hurt" hunts the most wounded knight, "egg" the egg carrier;
+       `hang`: keeps that far off; `drain`: each bite heals its boss that share of the boss's health; `ward`: its boss
+       takes that much less damage while it lives. */
+    drakeling: { name: "Carrion Drakeling", hp: 16, speed: 125, dmg: 6, range: 28, windup: 0.3, cd: 1.2, scale: 1, radius: 9, mass: 0.4,
+      fly: true, lunge: 360, retreat: 0.8, minion: true, look: "wyvern_f0", lookScale: 1.1, tint: "#b0202a", tintK: 0.35, drop: {} },
+    raptor: { name: "Bonepicker Raptor", hp: 36, speed: 128, dmg: 9, range: 32, windup: 0.35, cd: 1.1, scale: 1, radius: 12, mass: 0.8,
+      lunge: 380, zigzag: true, prey: "egg", minion: true, look: "boneHound", lookScale: 1, tint: "#c0282a", tintK: 0.3, drop: {} },
+    screecher: { name: "Red Marrow Screecher", hp: 60, speed: 52, dmg: 9, range: 36, windup: 0.5, cd: 1.6, scale: 1, radius: 13, mass: 1,
+      hang: 260, minion: true, look: "wyvern_f1", lookScale: 1.2, tint: "#e8d8c0", tintK: 0.35, drop: { iron: 0.5 } },
+    cairn: { name: "Cairn Crawler", hp: 55, speed: 46, dmg: 11, range: 34, windup: 0.55, cd: 1.5, scale: 1, radius: 15, mass: 2,
+      armor: 0.3, minion: true, look: "colossus", lookScale: 0.5, drop: { stone: 0.5 } },
+    servitor: { name: "Bog Totem Servitor", hp: 150, speed: 30, dmg: 14, range: 44, windup: 0.8, cd: 2.2, scale: 1, radius: 18, mass: 4,
+      armor: 0.25, ward: 0.4, minion: true, look: "derek", lookScale: 2.4, tint: "#566f2a", tintK: 0.25, drop: { iron: 1 } },
+    siltfist: { name: "Silt Fist Fragment", hp: 220, speed: 40, dmg: 22, range: 56, windup: 0.8, cd: 2.2, scale: 1, radius: 22, mass: 6,
+      armor: 0.2, minion: true, look: "colossus", lookScale: 0.9, tint: "#1c1f1e", tintK: 0.3, drop: { iron: 1 } },
+    leech: { name: "Clapper Leech", hp: 22, speed: 96, dmg: 5, range: 26, windup: 0.3, cd: 0.9, scale: 1, radius: 9, mass: 0.5,
+      drain: 0.01, minion: true, look: "bell", lookScale: 0.4, tint: "#9a7a48", tintK: 0.25, drop: {} },
+    tollwretch: { name: "Toll Wretch", hp: 45, speed: 56, dmg: 8, range: 32, windup: 0.45, cd: 1.4, scale: 1, radius: 12, mass: 0.9,
+      hang: 240, minion: true, look: "hexbearer", lookScale: 1, tint: "#d8cdb0", tintK: 0.4, drop: { resin: 0.5 } },
+    skitterer: { name: "Chapel Skitterer", hp: 18, speed: 112, dmg: 6, range: 26, windup: 0.28, cd: 0.95, scale: 1, radius: 9, mass: 0.5,
+      surround: true, minion: true, look: "bell", lookScale: 0.5, tint: "#6a5030", tintK: 0.3, drop: {} },
+    handmaiden: { name: "Briar Handmaiden", hp: 85, speed: 62, dmg: 12, range: 64, windup: 0.55, cd: 1.6, scale: 1, radius: 13, mass: 1.2,
+      lunge: 300, minion: true, look: "rose", lookScale: 0.55, tint: "#e8c8b8", tintK: 0.2, drop: { resin: 0.5 } },
+    rosewretch: { name: "Rose Wretch", hp: 48, speed: 76, dmg: 9, range: 32, windup: 0.4, cd: 1.2, scale: 1, radius: 12, mass: 1,
+      prey: "hurt", drain: 0.01, minion: true, look: "revenant", lookScale: 1.4, tint: "#9c1a1e", tintK: 0.45, drop: {} },
+    thornling: { name: "Thornling Swarm Stalker", hp: 10, speed: 126, dmg: 4, range: 22, windup: 0.22, cd: 0.8, scale: 1, radius: 7, mass: 0.3,
+      surround: true, minion: true, look: "revenant", lookScale: 0.75, tint: "#6a4a2a", tintK: 0.45, drop: {} },
+    // the Sunken King's (Robert's sheet, 2026-11-04). `burrow`: dives into the causeway and bursts up under a knight that often
+    tidestalker: { name: "Tide Stalker", hp: 26, speed: 100, dmg: 8, range: 28, windup: 0.3, cd: 1.0, scale: 1, radius: 11, mass: 0.7,
+      zigzag: true, minion: true, look: "revenant", lookScale: 1.15, tint: "#566f2a", tintK: 0.4, drop: {} },
+    wisp: { name: "Sunken Wisp", hp: 40, speed: 60, dmg: 7, range: 230, windup: 0.7, cd: 2.2, scale: 1, radius: 11, mass: 0.6,
+      ranged: true, keep: 200, fly: true, minion: true, look: "abigail", lookScale: 0.8, tint: "#4fe6f0", tintK: 0.35, drop: {} },
+    tideleech: { name: "Tide Leech", hp: 70, speed: 50, dmg: 13, range: 34, windup: 0.5, cd: 1.6, scale: 1, radius: 14, mass: 2,
+      armor: 0.2, burrow: 6, minion: true, look: "revenant", lookScale: 1.4, tint: "#2d302c", tintK: 0.45, drop: {} },
   };
 
   // Base kits. A kit = weapon + dash behaviour + signature ability.
@@ -546,11 +582,53 @@
   /* The great bosses (balance pass, 2026-11-04). Their health is `hp[type]` (in place of DL.ENEMIES' hp) x zone x
      difficulty, growing `perNight` a night (not DL.GROWTH) and `perAlly` more for every friend in co-op (the horde gets
      +15%). Their blows keep growing `dmgNight` a night. Poise: a stun from a kit or familiar holds any boss (the
-     Sovereign too) at most `stun` s, and then none takes hold for `immune` s (src/game.js G.stun). */
+     Sovereign too) at most `stun` s, and then none takes hold for `immune` s (src/game.js G.stun).
+     Size (Robert 2026-11-04, "about 1.8x bigger"): each boss's drawing, body (`radius`), reach (`range`) and health bar
+     height (`barY`) in DL.ENEMIES are multiplied by `size[type]` below, so each stands about three knights tall. The
+     Sunken King is a scene of his own and keeps his size. */
   DL.BOSS = {
+    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6 },
+    view: 820, viewR: 650, // within `viewR` px of an awake boss the camera pulls back to show at least `view` px top to bottom
     hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600 },
     perNight: 0.04, dmgNight: 0.05, perAlly: 0.6,
     stun: 0.3, immune: 3,
+  };
+  /* The bosses' minions (src/minions.js; their bodies are in DL.ENEMIES). Each boss calls its own while it fights and they
+     crumble when it dies or leaves. `max` is the most alive at once (x the party for the swarms, `party: true`).
+       start  how many come when the fight starts;  phase2  how many more come when the boss drops below half health;
+       every  then one batch of `n` every `every` s (`every2` below half);  respawn  a lone one comes back that long
+       after it falls.  Special callings: the Bell's Skitterers come `perToll` with each toll; the Colossus's ruins
+       let a Crawler out (`fromRuin`) when they crumble; a Screecher calls `call` Drakelings every `callEvery` s; a
+       Toll Wretch makes the Bell toll `tollRate` x as often. The Sunken King's climb out of the causeway, not round him. */
+  DL.MINIONS = {
+    colossus: {
+      cairn: { max: 6, fromRuin: 1, party: true },
+      servitor: { max: 2, start: 2, phase2: 1, ward: 600 },
+      siltfist: { max: 1, phase2: 1 },
+    },
+    bell: {
+      skitterer: { max: 8, perToll: 3, party: true },
+      leech: { max: 4, every: 14, every2: 10, n: 2, party: true },
+      tollwretch: { max: 1, start: 1, respawn: 25, tollRate: 1.6 },
+    },
+    rose: {
+      handmaiden: { max: 4, start: 2, phase2: 2 },
+      rosewretch: { max: 3, every: 16, every2: 11, n: 1 },
+      thornling: { max: 9, every: 10, every2: 7, n: 3, party: true, bushes: true },
+    },
+    wyvern: {
+      drakeling: { max: 6, every: 9, every2: 7, n: 2, party: true },
+      raptor: { max: 4, start: 2, phase2: 2 },
+      screecher: { max: 2, start: 1, phase2: 1, call: 2, callEvery: 8 },
+    },
+    // the Sunken King's: his own "call" move (DL.FINALE.king.call) now brings Tide Stalkers; while a Wisp lives the
+    // Fire Bearer gathers its flame only `slow` as fast
+    king: {
+      tidestalker: { max: 14 },
+      wisp: { max: 3, start: 2, phase2: 1, slow: 0.6 },
+      tideleech: { max: 3, every: 14, every2: 10, n: 1, party: true },
+    },
+    near: 1400, // a boss more than this far from every knight is left alone (no calling)
   };
   /* Last stand (src/game.js hurtPlayer): a blow that would kill you while your health is above `above` of its maximum
      leaves you at 1 health instead, safe from harm for `inv` s. A blow taken at or below that line kills as usual. */
@@ -626,7 +704,7 @@
      `barW`, `eyeX`, `eyeY` and `eyeR` fit its shadow, rise, health bar and eye glow to its big sprite), wave 8 of Derek's Hollow. Between blows of its arm (a sweep `arc` radians wide, in
      DL.ENEMIES, that hurls knights `slam.kb` px) it uses one of three slower moves, each on its own timer (`every` seconds, `first` for the first):
      summon:   pounds the ground: `ruins` broken pillars burst up around it (each hits `dmg` × its blow where it lands) and stand
-               `life` seconds as cover; `adds` small Drowned Knights (`add`) climb out with them, never more than `maxAdds` alive.
+               `life` seconds as cover; `adds` Cairn Crawlers (`add`, its minions: DL.MINIONS) climb out with them, never more than `maxAdds` alive.
      surge:    stomps out a ring of water that rolls `reach` px at `speed` px/s and hits `dmg` × its blow (knocking back `kb`).
                A knight with a ruin between them and the Colossus is sheltered from it.
      collapse: brings its ruined back down: `n` (`n2` once wounded) falling stones, one on each knight and the rest near them,
@@ -634,7 +712,7 @@
      Below `phase2` of its health it moves `fast` × quicker and its moves come round `rate` × as often. */
   DL.COLOSSUS = {
     slam: { kb: 300 },
-    summon: { every: 16, first: 6, windup: 1.1, ruins: 3, dmg: 0.6, life: 14, r: 22, adds: 3, add: "squire", maxAdds: 6 },
+    summon: { every: 16, first: 6, windup: 1.1, ruins: 3, dmg: 0.6, life: 14, r: 22, adds: 2, add: "cairn", maxAdds: 6 },
     surge: { every: 12, first: 10, windup: 1.2, reach: 340, speed: 290, band: 24, dmg: 0.75, kb: 280 },
     collapse: { every: 14, first: 14, windup: 0.9, n: 5, n2: 9, delay: 1.5, r: 38, dmg: 0.9, leave: 0.35 },
     maxRuins: 9, phase2: 0.5, fast: 1.2, rate: 1.45,
@@ -902,6 +980,16 @@
       costs: [{ wood: 16, resin: 16, pearl: 2 }, { wood: 24, resin: 24, pearl: 4 }, { resin: 34, pearl: 6, black: 3 }],
       reqFlame: (t) => [0, 3, 4, 5][t] },
   ];
+
+  // the bosses' size (DL.BOSS.size): `size` is kept on the def so drawing code can scale fixed offsets by it
+  for (const [type, f] of Object.entries(DL.BOSS.size)) {
+    const d = DL.ENEMIES[type];
+    d.size = f;
+    d.scale *= f;
+    d.radius = Math.round(d.radius * f);
+    d.range = Math.round(d.range * f);
+    if (d.barY) d.barY = Math.round(d.barY * f);
+  }
 
   for (const u of DL.UPGRADES) u.costs = u.costs.map((c) => (c ? scaleCost(c) : c));
   DL.OUTPOST.cost = scaleCost(DL.OUTPOST.cost);
