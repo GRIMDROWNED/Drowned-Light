@@ -91,3 +91,11 @@ crop = rgba[398:687, x0:x1]
 im = Image.fromarray(crop).convert('RGBa').resize((round((x1 - x0) * 0.3), round(289 * 0.3)), Image.BOX).convert('RGBA')
 a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
 Image.fromarray(a).save(os.path.join(OUT, 'avenue-ew.png')); print('avenue-ew', im.size)
+
+# S2 (2026-11-04): the north-south paved avenue, one repeat from pillar to pillar
+rgba = keyed('S2-avenue')
+y0, y1 = 228, 433
+crop = rgba[y0:y1, 83:326]
+im = Image.fromarray(crop).convert('RGBa').resize((round(243 * 0.3), round((y1 - y0) * 0.3)), Image.BOX).convert('RGBA')
+a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
+Image.fromarray(a).save(os.path.join(OUT, 'avenue-ns.png')); print('avenue-ns', im.size)

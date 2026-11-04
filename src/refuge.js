@@ -333,7 +333,7 @@
       box: { nw: [20, 10, 190, 300], n: [185, 95, 300, 240], stN: [480, 10, 773, 245], w: [50, 410, 170, 450], stW: [50, 500, 170, 640], sw: [10, 840, 180, 1215], s: [180, 900, 290, 1200], stS: [460, 800, 793, 1238], ne: [1063, 10, 1233, 300], se: [1073, 840, 1243, 1215], e: [1083, 410, 1203, 450], stE: [1083, 500, 1203, 640] } },
   };
   if (typeof Image !== "undefined") {
-    const names = ["foundation", "plaza", "terrace-floor", "avenue-ew"];
+    const names = ["foundation", "plaza", "terrace-floor", "avenue-ew", "avenue-ns"];
     for (const k of ["terrace", "low", "rim", "tier", "sanct", "court", "ward", "mward", "lward", "curt", "great"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
     for (const n of names) { const img = new Image(); img.onload = () => { IMG[n] = img; }; img.src = DL.asset("assets/sprites/refuge/" + n + ".png"); }
   }
@@ -515,7 +515,11 @@
         c.fillStyle = "rgba(30,24,18,0.9)"; c.fillRect(x0, -w / 2 - 5, len, 5); c.fillRect(x0, w / 2, len, 6);
         c.fillStyle = "rgba(220,195,140,0.45)"; c.fillRect(x0, -w / 2 - 5, len, 2);
       } else if (nx) DL.Pyramid.lane(c, nx > 0 ? inner - 8 : -reach, -w / 2, reach - inner + 8, w, true, w);
-      else DL.Pyramid.lane(c, -w / 2, ny > 0 ? inner - 8 : -reach, w, reach - inner + 8, false, w);
+      else if (IMG["avenue-ns"]) { // north-south: Robert's paved avenue (S2), its kerbs just outside the avenue
+        const im = IMG["avenue-ns"], h = w + 18, k = h / im.width, y0 = ny > 0 ? inner - 8 : -reach, len = reach - inner + 8;
+        const p = c.createPattern(im, "repeat"); p.setTransform(new DOMMatrix().translate(-h / 2, 0).scale(k));
+        c.fillStyle = p; c.fillRect(-h / 2, y0, h, len);
+      } else DL.Pyramid.lane(c, -w / 2, ny > 0 ? inner - 8 : -reach, w, reach - inner + 8, false, w);
     }
     const marsh = pattern(c, "grass"), V = DL.Render && DL.Render.vis;
     if (marsh) for (const b of Refuge.bedsAt(lv)) { // the marsh beds, kerbed
