@@ -218,7 +218,7 @@
     if (key === cacheKey) return cache;
     const g = Refuge.geo(lv), R = g.R, k = Math.min(1, R / RF.spotR);
     const L = { tier: DL.Camp.tier(up), R, lv, geo: g, fortress: true, items: [], plots: [], missing: [] };
-    const ti = R - RF.towerIn;
+    const ti = Math.min(R, RF.spotR) - RF.towerIn; // the outer wards have their own drawn corner towers
     L.towers = [[-1, -1], [1, -1], [-1, 1], [1, 1]].slice(0, DL.Camp.towerCount(up.tower)).map(([sx, sy]) => ({ x: sx * ti, y: sy * ti }));
     const towerSpots = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sy]) => ({ x: sx * ti, y: sy * ti }));
     const placed = [];
@@ -328,10 +328,13 @@
     // Robert's T6 Curtain Terrace (2026-11-04)
     curt: { edge: { n: 110, w: 68, e: 1186, s: 905 }, out: 6, sIn: 8, tread: { n: [572, 685], s: [572, 685], w: [445, 545], e: [445, 545] },
       box: { nw: [30, 20, 225, 270], n: [222, 105, 258, 265], stN: [495, 40, 760, 270], w: [55, 590, 200, 660], stW: [55, 400, 205, 560], sw: [15, 765, 210, 1220], s: [210, 880, 255, 1215], stS: [495, 860, 760, 1225], ne: [1029, 20, 1224, 270], se: [1044, 765, 1239, 1220], e: [1054, 590, 1199, 660], stE: [1049, 400, 1199, 560] } },
+    // Robert's T7 Great Wall (2026-11-04)
+    great: { edge: { n: 100, w: 58, e: 1195, s: 910 }, out: 6, sIn: 8, tread: { n: [580, 675], s: [565, 690], w: [535, 620], e: [535, 620] },
+      box: { nw: [20, 10, 190, 300], n: [185, 95, 300, 240], stN: [480, 10, 773, 245], w: [50, 410, 170, 450], stW: [50, 500, 170, 640], sw: [10, 840, 180, 1215], s: [180, 900, 290, 1200], stS: [460, 800, 793, 1238], ne: [1063, 10, 1233, 300], se: [1073, 840, 1243, 1215], e: [1083, 410, 1203, 450], stE: [1083, 500, 1203, 640] } },
   };
   if (typeof Image !== "undefined") {
     const names = ["foundation", "plaza", "terrace-floor"];
-    for (const k of ["terrace", "low", "rim", "tier", "sanct", "court", "ward", "mward", "lward", "curt"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
+    for (const k of ["terrace", "low", "rim", "tier", "sanct", "court", "ward", "mward", "lward", "curt", "great"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
     for (const n of names) { const img = new Image(); img.onload = () => { IMG[n] = img; }; img.src = DL.asset("assets/sprites/refuge/" + n + ".png"); }
   }
   Refuge.art = IMG;
@@ -386,8 +389,8 @@
   };
   // The four faces of a ring: drawn rock courses on the south (stairs in the gaps), lips on the other three.
   function faces(c, ring, t) {
-    const kit = { low: "low", sanctum: "sanct", main: "court", outer: "mward", ward4: "ward", ward5: "lward", ward6: "curt", ward7: "rim" }[ring.id] || "terrace";
-    if (kitRing(c, ring, kit) || (kit === "sanct" && kitRing(c, ring, "tier")) || ((kit === "court" || kit === "ward" || kit === "mward" || kit === "lward" || kit === "curt") && kitRing(c, ring, "terrace")) || (kit !== "terrace" && kit !== "low" && kitRing(c, ring, "terrace"))) return;
+    const kit = { low: "low", sanctum: "sanct", main: "court", outer: "mward", ward4: "ward", ward5: "lward", ward6: "curt", ward7: "great" }[ring.id] || "terrace";
+    if (kitRing(c, ring, kit) || (kit === "sanct" && kitRing(c, ring, "tier")) || ((kit === "court" || kit === "ward" || kit === "mward" || kit === "lward" || kit === "curt" || kit === "great") && kitRing(c, ring, "terrace")) || (kit !== "terrace" && kit !== "low" && kitRing(c, ring, "terrace"))) return;
     const h = ring.half, A = P(), F = ring.face;
     const gaps = (s) => ring.stairs.filter((q) => q.s === s);
     const spans = (s) => {
