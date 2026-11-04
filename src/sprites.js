@@ -139,6 +139,8 @@
     fred("fred_f3", "fred-f3", [160, 248], [107, 222], [110, 216]), // Fred the Rotwalker (level 15), 52 px
     // David the Hatchling (the wyvern's first form, src/wyvern.js), res 4: 24 px from wing tip to tail
     wyvern("wyvern_f0", "wyvern-f0", [90, 117], [81, 116], [82, 122]),
+    // the bosses' minions (src/minions.js): Robert's drawings replace their stand-in looks as they come in
+    minion("drakeling", "drakeling", 4, [[73, 106], [73, 114], [70, 114]]), // the Carrion Drakeling: wing beats every way
     wyvern("wyvern_f1", "wyvern-f1", [125, 160], [123, 173], [111, 189]), // David (level 5), 37 px
     wyvern("wyvern_f2", "wyvern-f2", [144, 210], [139, 267], [141, 261]), // Great David (level 10), 47 px
     wyvern("wyvern_f3", "wyvern-f3", [160, 257], [152, 289], [157, 287]), // David the Bloodwing (level 15), 52 px
@@ -283,6 +285,17 @@
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
       Object.assign(set.views[dir], { attack: ["attackA", "attackB", "attackB"], heal: ["heal"], hurt: ["side/hurt"], death: ["side/death"], idle: [p] });
     return set;
+  }
+
+  /* A boss's minion from the enemy prompt's two sheets (stills, attack, side walk, hurt, death), at `res`. Until its
+     walk-toward and walk-away sheets are in, it moves toward or away from you in its still front or back pose; with
+     them (`feet`: the side, front and back walk sheets' foot points, as the cutter prints them) it walks every way. */
+  function minion(type, folder, res, feet) {
+    const keys = { path: "assets/sprites/minions/" + folder + "/", keys: { [type]: [0, false] }, own: true };
+    if (feet) return Object.assign(walking(type, feet[0], feet[1], feet[2], res), keys);
+    const steady = (p) => ({ walk: [p + "@-"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] });
+    return Object.assign(keys, { res,
+      views: motion({ side: Object.assign({ walk: WALK4 }, POSES_SIDE), down: steady("front"), up: steady("back") }) });
   }
 
   // David the wyvern familiar: he always flies, so his walk is a flap (poses B's four wing beats side on, the fly
@@ -521,6 +534,10 @@
         c.width = c.height = 1;
         Art.sprites[name] = { c, w: 0, h: 0 };
       }
+    // a boss's minion has no coded sheet to swap into: it gets one of its own once its three still poses are in
+    for (const set of UNITS) if (set.own) for (const key in set.keys)
+      if (!Art.sheets[key] && ["down", "up", "side"].every((d) => images[set.path + fileOf(set.views[d].idle[0]) + ".png"]))
+        Art.sheets[key] = { down: {}, up: {}, side: {} };
     for (const key in Art.sheets) Art.applyFrames(key, Art.sheets[key]);
   }
 
