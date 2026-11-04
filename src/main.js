@@ -21,7 +21,7 @@
   let last = 0;
   function frame(ts) {
     requestAnimationFrame(frame); // scheduled first, so one bad frame can't stop the game
-    const dt = Math.min(0.05, (ts - last) / 1000 || 0);
+    const gap = (ts - last) / 1000 || 0, dt = Math.min(0.05, gap), t0 = performance.now();
     last = ts;
     DL.Pad.poll(dt);
     handleGlobalKeys();
@@ -32,6 +32,7 @@
     document.body.classList.toggle("menu-open", G.state !== "play");
     DL.Render.draw(G);
     UI.update();
+    DL.Render.perf(gap, (performance.now() - t0) / 1000, G.state === "play"); // drops the resolution if the phone can't keep up
   }
 
   // Studio splash: shown from the first paint, held briefly, then fades into the title.

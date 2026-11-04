@@ -11,13 +11,15 @@
     R.ctx = R.cv.getContext("2d");
     R.lc = document.createElement("canvas");
     R.lx = R.lc.getContext("2d");
+    R.gc = document.createElement("canvas"); // the coloured glow when many lights are on screen (drawLighting)
+    R.gx = R.gc.getContext("2d");
     R.motes = [];
     R.resize();
     addEventListener("resize", R.resize);
   };
 
   R.resize = function () {
-    R.dpr = Math.min(devicePixelRatio || 1, 2);
+    R.dpr = Math.min(devicePixelRatio || 1, 2, R.cap);
     const sz = DL.View.size();
     R.W = sz.w;
     R.H = sz.h;
@@ -35,6 +37,23 @@
     g.fillStyle = gr;
     g.fillRect(0, 0, v.width, v.height);
     R.vignette = v;
+  };
+
+  /* Adaptive resolution: on a phone that can't keep up (frames over ~28 ms on average through 3 s of play, with the
+     game's own work taking real time, so a browser that simply caps itself at 30 fps doesn't count), the canvas is
+     drawn at a lower pixel density, one step at a time, never below 1.25 pixels per screen point. It only ever steps
+     down in a session. */
+  R.cap = 2;
+  const CAPS = [2, 1.75, 1.5, 1.25];
+  let pf = { n: 0, gap: 0, work: 0, t: 0 };
+  R.perf = function (gap, work, playing) {
+    if (!playing || gap > 0.25) return; // menus, or the tab was hidden
+    pf.n++; pf.gap += gap; pf.work += work; pf.t += gap;
+    if (pf.t < 3) return;
+    const slow = pf.gap / pf.n > 0.028 && pf.work / pf.n > 0.008;
+    pf = { n: 0, gap: 0, work: 0, t: 0 };
+    const next = CAPS.find((v) => v < Math.min(R.dpr, R.cap) - 0.01);
+    if (slow && next) { R.cap = next; R.resize(); }
   };
 
   function sprite(c, name, x, y, flip, alpha) {
@@ -142,8 +161,10 @@
     /* ground */
     const CH = W.CH;
     let built = 0;
+    const paved = DL.Refuge.paved(DL.Camp.layout(G.save.up)) - 2; // the Refuge's floors cover the ground under them
     for (let cy = Math.floor(top / CH); cy <= Math.floor(view.bottom / CH); cy++) {
       for (let cx = Math.floor(left / CH); cx <= Math.floor(view.right / CH); cx++) {
+        if (paved > 0 && cx * CH >= -paved && (cx + 1) * CH <= paved && cy * CH >= -paved && (cy + 1) * CH <= paved) continue;
         let gc = W.groundCanvas(cx, cy, false);
         if (!gc && built < (R.zoomStep ? 8 : 3)) { gc = W.groundCanvas(cx, cy, true); built++; }
         if (!gc) { c.fillStyle = "#121a17"; c.fillRect(cx * CH, cy * CH, CH, CH); continue; }
@@ -2119,19 +2140,39 @@
     c.imageSmoothingEnabled = true;
     c.drawImage(R.lc, 0, 0, R.W, R.H);
 
-    // Coloured glow: warm human light vs. cold bioluminescence.
-    c.globalCompositeOperation = "lighter";
+    // Coloured glow: warm human light vs. cold bioluminescence. With many big lights on screen (a grown Refuge at
+    // night) the soft gradients are summed on a half-size layer and laid over the scene in one go, which is far less
+    // painting than each one at full resolution; with a few, painting them straight on is cheaper. They look the same.
     const strength = 0.25 + dark * 0.6;
+    let area = 0;
     for (const li of G.lights) {
       if (!li.col) continue;
-      const x = (li.x - left) * z + shx, y = (li.y - top) * z + shy, r = li.r * z * 0.85 * flick(li);
-      if (x < -r || y < -r || x > R.W + r || y > R.H + r) continue;
-      const g = c.createRadialGradient(x, y, 0, x, y, r);
+      const x = (li.x - left) * k + ox, y = (li.y - top) * k + oy, r = li.r * k * 0.85;
+      if (x < -r || y < -r || x > lw + r || y > lh + r) continue;
+      area += 4 * r * r;
+    }
+    const half = area > lw * lh * 2.5, gx = half ? R.gx : c, s = half ? k : z, sx = half ? ox : shx, sy = half ? oy : shy;
+    const gw = half ? lw : R.W, gh = half ? lh : R.H;
+    if (half) {
+      if (R.gc.width !== lw || R.gc.height !== lh) { R.gc.width = lw; R.gc.height = lh; }
+      gx.globalCompositeOperation = "source-over";
+      gx.clearRect(0, 0, lw, lh);
+    }
+    gx.globalCompositeOperation = "lighter";
+    for (const li of G.lights) {
+      if (!li.col) continue;
+      const x = (li.x - left) * s + sx, y = (li.y - top) * s + sy, r = li.r * s * 0.85 * flick(li);
+      if (x < -r || y < -r || x > gw + r || y > gh + r) continue;
+      const g = gx.createRadialGradient(x, y, 0, x, y, r);
       g.addColorStop(0, `rgba(${li.col},${0.3 * li.a * strength})`);
       g.addColorStop(0.4, `rgba(${li.col},${0.12 * li.a * strength})`);
       g.addColorStop(1, `rgba(${li.col},0)`);
-      c.fillStyle = g;
-      c.fillRect(x - r, y - r, r * 2, r * 2);
+      gx.fillStyle = g;
+      gx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    if (half) {
+      c.globalCompositeOperation = "lighter";
+      c.drawImage(R.gc, 0, 0, R.W, R.H);
     }
     c.globalCompositeOperation = "source-over";
     c.imageSmoothingEnabled = false;
