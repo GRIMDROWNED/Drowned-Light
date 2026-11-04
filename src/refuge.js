@@ -313,10 +313,13 @@
     // Robert's T1 sanctum (2026-11-04, art-prompts/terrace-fortress-prompts.md)
     sanct: { edge: { n: 150, w: 165, e: 1149, s: 775 }, out: 6, sIn: 8, tread: { n: [610, 705], s: [610, 705], w: [415, 560], e: [415, 560] },
       box: { nw: [150, 85, 380, 340], n: [372, 120, 540, 290], stN: [540, 85, 775, 300], w: [150, 290, 335, 340], stW: [85, 340, 345, 720], sw: [120, 680, 375, 1062], s: [375, 760, 545, 1062], stS: [540, 740, 775, 1080], ne: [934, 85, 1164, 340], se: [939, 680, 1194, 1062], e: [979, 290, 1164, 340], stE: [969, 340, 1229, 720] } },
+    // Robert's T2 Inner Court (2026-11-04)
+    court: { edge: { n: 150, w: 102, e: 1210, s: 840 }, out: 6, sIn: 8, tread: { n: [600, 712], s: [600, 712], w: [470, 690], e: [470, 690] },
+      box: { nw: [95, 80, 245, 290], n: [440, 135, 545, 290], stN: [545, 85, 770, 290], w: [85, 290, 350, 445], stW: [85, 440, 350, 720], sw: [80, 760, 250, 1118], s: [450, 820, 545, 1100], stS: [545, 790, 770, 1118], ne: [1067, 80, 1217, 290], se: [1062, 760, 1232, 1118], e: [962, 290, 1227, 445], stE: [962, 440, 1227, 720] } },
   };
   if (typeof Image !== "undefined") {
     const names = ["foundation", "plaza", "terrace-floor"];
-    for (const k of ["terrace", "low", "rim", "tier", "sanct"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
+    for (const k of ["terrace", "low", "rim", "tier", "sanct", "court"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
     for (const n of names) { const img = new Image(); img.onload = () => { IMG[n] = img; }; img.src = DL.asset("assets/sprites/refuge/" + n + ".png"); }
   }
   Refuge.art = IMG;
@@ -371,8 +374,8 @@
   };
   // The four faces of a ring: drawn rock courses on the south (stairs in the gaps), lips on the other three.
   function faces(c, ring, t) {
-    const kit = { low: "low", sanctum: "sanct", outer: "rim", ward5: "rim", ward7: "rim" }[ring.id] || "terrace";
-    if (kitRing(c, ring, kit) || (kit === "sanct" && kitRing(c, ring, "tier")) || (kit !== "terrace" && kit !== "low" && kitRing(c, ring, "terrace"))) return;
+    const kit = { low: "low", sanctum: "sanct", main: "court", outer: "rim", ward5: "rim", ward7: "rim" }[ring.id] || "terrace";
+    if (kitRing(c, ring, kit) || (kit === "sanct" && kitRing(c, ring, "tier")) || (kit === "court" && kitRing(c, ring, "terrace")) || (kit !== "terrace" && kit !== "low" && kitRing(c, ring, "terrace"))) return;
     const h = ring.half, A = P(), F = ring.face;
     const gaps = (s) => ring.stairs.filter((q) => q.s === s);
     const spans = (s) => {

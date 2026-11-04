@@ -812,7 +812,7 @@
       sprite(c, "brazier", f.x, f.y + 2, false);
       Art.drawFire(c, f.x, f.y + 14 - Art.sprites.brazier.h * PS, f.kind === "beacon" ? 1.5 : 1.1, t);
     });
-    if (!u.stakes) return;
+    if (!u.stakes || L.geo.outerRing) return; // once a terrace is the outer wall, its own drawn wall replaces the palisade
     const g = L.geo, R = L.R, ring = DL.Refuge.blockers(u).find((r) => r.half === R);
     const gaps = ring ? ring.stairs : [];
     const open = (s, along) => gaps.some((q) => q.s === s && Math.abs(along - q.at) < q.w / 2 + 14);
