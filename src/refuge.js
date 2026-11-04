@@ -341,6 +341,62 @@
     c.fillStyle = p || fallback; c.fillRect(x, y, w, h);
     if (dark) { c.fillStyle = `rgba(0,0,0,${dark})`; c.fillRect(x, y, w, h); }
   }
+  // Speed: the floors are nested squares and every floor picture is opaque, so each floor only needs painting where
+  // the next one in won't cover it, and only on screen. These are the rects of the square [-o, o] outside the square
+  // [-i, i] (pulled in 4 px so the floors overlap and no seam shows) that are in view; i <= 0 means no hole.
+  function band(o, i) {
+    const V = DL.Render && DL.Render.vis, P = 8;
+    const x0 = V ? Math.max(-o, V.left - P) : -o, x1 = V ? Math.min(o, V.right + P) : o;
+    const y0 = V ? Math.max(-o, V.top - P) : -o, y1 = V ? Math.min(o, V.bottom + P) : o;
+    if (x0 >= x1 || y0 >= y1) return [];
+    const a = i - 4;
+    if (a <= 0 || x1 <= -a || x0 >= a || y1 <= -a || y0 >= a) return [[x0, y0, x1 - x0, y1 - y0]];
+    const out = [], m0 = Math.max(y0, -a), m1 = Math.min(y1, a);
+    if (y0 < -a) out.push([x0, y0, x1 - x0, -a - y0]);
+    if (y1 > a) out.push([x0, a, x1 - x0, y1 - a]);
+    if (x0 < -a) out.push([x0, m0, -a - x0, m1 - m0]);
+    if (x1 > a) out.push([a, m0, x1 - a, m1 - m0]);
+    return out;
+  }
+  // Paint a floor style (a pattern or colour) and its shade over those rects.
+  function paint(c, rects, style, dark) {
+    if (!rects.length) return;
+    c.fillStyle = style;
+    for (const r of rects) c.fillRect(r[0], r[1], r[2], r[3]);
+    if (!dark) return;
+    c.fillStyle = `rgba(0,0,0,${dark})`;
+    for (const r of rects) c.fillRect(r[0], r[1], r[2], r[3]);
+  }
+  // A copy of an opaque picture with a black shade of alpha `dark` already laid over it: the same pixels as painting
+  // the picture and then the shade, in one pass instead of two.
+  const shades = new WeakMap();
+  function shaded(im, dark) {
+    if (!dark) return im;
+    let m = shades.get(im);
+    if (!m) shades.set(im, (m = new Map()));
+    let cv = m.get(dark);
+    if (!cv) {
+      cv = document.createElement("canvas");
+      cv.width = im.width; cv.height = im.height;
+      const g = cv.getContext("2d");
+      g.drawImage(im, 0, 0);
+      g.fillStyle = `rgba(0,0,0,${dark})`; g.fillRect(0, 0, cv.width, cv.height);
+      m.set(dark, cv);
+    }
+    return cv;
+  }
+  // A picture's repeat pattern (shaded by `dark`), made once per canvas and kept (making one every frame is slow on phones).
+  const picPats = new WeakMap();
+  function picPat(c, key, im, tf, dark) {
+    let m = picPats.get(c);
+    if (!m) picPats.set(c, (m = new Map()));
+    key += ":" + (dark || 0);
+    let p = m.get(key);
+    if (!p || p.im !== im) { p = { im, pat: c.createPattern(shaded(im, dark), "repeat") }; p.pat.setTransform(tf()); m.set(key, p); }
+    return p.pat;
+  }
+  // A ground texture's pattern (one texel per 2 px, like the ground), shaded by `dark`; null until it's built.
+  const groundPat = (c, n, dark) => { const im = DL.World.canvases && DL.World.canvases[n]; return im ? picPat(c, "ground:" + n, im, () => new DOMMatrix().scale(2), dark) : null; };
   const P = () => DL.Pyramid.art || {};
 
   /* Robert's drawn refuge pieces (tools/cut_refuge.py, 2026-11-03): the hearth's base, the bordered plaza (also each
@@ -542,26 +598,26 @@
     if (!p) { p = c.createPattern(IMG["terrace-floor"], "repeat"); p.setTransform(new DOMMatrix().scale(S / 0.6)); floorPats.set(c, p); }
     return p;
   }
+  // Half-side of the square round the hearth that drawGround paves over with opaque floor (0: none), so the
+  // renderer can skip the marsh ground under it.
+  Refuge.paved = (L) => (L && L.fortress && (L.lv >= RF.lowWall || L.geo.rings.length) ? L.geo.R : 0);
   Refuge.drawGround = function (c, L, t) {
     const g = L.geo, lv = L.lv, flags = pattern(c, "campFlags"), paving = pattern(c, "campPaving");
     // the camp yard (packed earth with a dashed edge at first, flagstones once walled), and the hearth's foundation
-    if (lv >= RF.lowWall || g.rings.length) fill(c, "campFlags", -g.R, -g.R, 2 * g.R, 2 * g.R, 0.38, "#3d372d");
+    const terr = g.rings.filter((r) => r.id !== "low");
+    if (Refuge.paved(L)) { const yard = band(g.R, terr[0] ? terr[0].half : 0), p = groundPat(c, "campFlags", 0.38); p ? paint(c, yard, p) : paint(c, yard, "#3d372d", 0.38); }
     else { c.strokeStyle = "rgba(90,75,55,0.35)"; c.lineWidth = 3; c.setLineDash([6, 10]); c.strokeRect(-g.R + 20, -g.R + 20, 2 * g.R - 40, 2 * g.R - 40); c.setLineDash([]); }
     // terraces, outermost first, each with its faces; the sanctum gets the Beacon's paving
-    const terr = g.rings.filter((r) => r.id !== "low");
-    for (const r of terr) {
+    terr.forEach((r, ri) => {
       const dark = r.id === "sanctum" ? 0.08 : r.id === "main" ? 0.2 : 0.3;
       const fl = IMG[r.id === "sanctum" ? "floor-sanctum" : r.id === "main" || r.id === "outer" ? "floor-flags" : "floor-cobble"];
+      const rects = band(r.half, terr[ri + 1] ? terr[ri + 1].half : 0); // only what the next terrace in leaves showing
       if (fl) { // Robert's floors (S3): mosaic on the sanctum (centred on the flame), flagstones on the court and middle ward, cobbles on the outer wards
-        const p = c.createPattern(fl, "repeat"), k = (r.id === "sanctum" ? 2 * r.half : 190) / fl.width;
-        p.setTransform(new DOMMatrix().translate(r.id === "sanctum" ? -r.half : 0, r.id === "sanctum" ? -r.half : 0).scale(k));
-        c.fillStyle = p; c.fillRect(-r.half, -r.half, 2 * r.half, 2 * r.half);
-        c.fillStyle = `rgba(0,0,0,${dark})`; c.fillRect(-r.half, -r.half, 2 * r.half, 2 * r.half);
-      } else if (IMG["terrace-floor"]) { // the drawn terrace floor, repeated; each ring down a shade darker
-        const p = floorPat(c);
-        c.fillStyle = p; c.fillRect(-r.half, -r.half, 2 * r.half, 2 * r.half);
-        c.fillStyle = `rgba(0,0,0,${dark + 0.12})`; c.fillRect(-r.half, -r.half, 2 * r.half, 2 * r.half);
-      } else fill(c, r.id === "sanctum" ? "campPaving" : "campFlags", -r.half, -r.half, 2 * r.half, 2 * r.half, dark, "#4a4438");
+        const k = (r.id === "sanctum" ? 2 * r.half : 190) / fl.width;
+        const p = picPat(c, "floor:" + r.id + ":" + r.half, fl, () => new DOMMatrix().translate(r.id === "sanctum" ? -r.half : 0, r.id === "sanctum" ? -r.half : 0).scale(k), dark);
+        paint(c, rects, p);
+      } else if (IMG["terrace-floor"]) paint(c, rects, picPat(c, "terrace-floor", IMG["terrace-floor"], () => new DOMMatrix().scale(S / 0.6), dark + 0.12)); // the drawn terrace floor, repeated; each ring down a shade darker
+      else { const p = groundPat(c, r.id === "sanctum" ? "campPaving" : "campFlags", dark); p ? paint(c, rects, p) : paint(c, rects, "#4a4438", dark); }
       if (lv >= 8 && r === terr[0] && r.id !== "sanctum" && !IMG["mward-nw"]) { // (the drawn wards have their own bastions) // Reinforced Walls: corner bastions
         for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
           const x = sx * r.half - (sx > 0 ? 44 : 0), y = sy * r.half - (sy > 0 ? 44 : 0);
@@ -570,7 +626,7 @@
           c.fillStyle = "rgba(220,200,150,0.35)"; c.fillRect(x, y, 44, 3);
         }
       }
-    }
+    });
     if (lv < 4 && IMG.foundation) { // Robert's stone base under the hearth, and from level 2 his bordered plaza round it
       if (lv >= 2) pic(c, "plaza", 0, 2, 250, 0.12);
       pic(c, "foundation", 0, 6, 120, 0.08);
@@ -586,7 +642,7 @@
       const w = g.cw;
       if (nx && IMG["avenue-ew"]) { // east-west: Robert's stair strip (S1), its kerbs just outside the avenue
         const im = IMG["avenue-ew"], h = w + 18, k = h / im.height, x0 = nx > 0 ? inner - 8 : -reach, len = reach - inner + 8;
-        const p = c.createPattern(im, "repeat"); p.setTransform(new DOMMatrix().translate(0, -h / 2).scale(k));
+        const p = picPat(c, "avenue-ew:" + h, im, () => new DOMMatrix().translate(0, -h / 2).scale(k));
         c.fillStyle = p; c.fillRect(x0, -h / 2, len, h);
       } else if (nx && IMG["terrace-floor"]) { // east-west: a paved road between kerbs (the stair strip turned on its side read as planks)
         const x0 = nx > 0 ? inner - 8 : -reach, len = reach - inner + 8;
@@ -597,7 +653,7 @@
       } else if (nx) DL.Pyramid.lane(c, nx > 0 ? inner - 8 : -reach, -w / 2, reach - inner + 8, w, true, w);
       else if (IMG["avenue-ns"]) { // north-south: Robert's paved avenue (S2), its kerbs just outside the avenue
         const im = IMG["avenue-ns"], h = w + 18, k = h / im.width, y0 = ny > 0 ? inner - 8 : -reach, len = reach - inner + 8;
-        const p = c.createPattern(im, "repeat"); p.setTransform(new DOMMatrix().translate(-h / 2, 0).scale(k));
+        const p = picPat(c, "avenue-ns:" + h, im, () => new DOMMatrix().translate(-h / 2, 0).scale(k));
         c.fillStyle = p; c.fillRect(-h / 2, y0, h, len);
       } else DL.Pyramid.lane(c, -w / 2, ny > 0 ? inner - 8 : -reach, w, reach - inner + 8, false, w);
     }
