@@ -63,7 +63,7 @@ def to_grey(a, fg):
 def keyed(name):
     a = np.asarray(Image.open(os.path.join(SRC, name + '.png')).convert('RGB')).astype(int)
     fg = key_mask(a, tol=120, fringe=1)
-    if not name.startswith('T'): a = to_grey(a, fg.astype(bool))  # the T pictures are drawn in the final colours
+    if name.startswith('L'): a = to_grey(a, fg.astype(bool))  # only the early L pictures; T, S and D are drawn in the final colours
     rgba = np.zeros(a.shape[:2] + (4,), 'uint8')
     rgba[..., :3] = a * fg[..., None]; rgba[..., 3] = fg * 255
     return rgba
@@ -112,5 +112,34 @@ rgba = keyed('S4-plots')
 for n, (x0, y0, x1, y1) in {'plot-s': (67, 397, 371, 741), 'plot-m': (492, 246, 958, 750), 'plot-l': (1075, 38, 1802, 763)}.items():
     crop = rgba[y0:y1, x0:x1]
     im = Image.fromarray(crop).convert('RGBa').resize((round((x1 - x0) * 0.3), round((y1 - y0) * 0.3)), Image.BOX).convert('RGBA')
+    a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
+    Image.fromarray(a).save(os.path.join(OUT, n + '.png')); print(n, im.size)
+
+# D1 (2026-11-04): defence pieces, cut whole (bastion, round tower, gatehouse, battlement, banner pillar)
+rgba = keyed('D1-defence')
+for n, (x0, y0, x1, y1) in {'d-bastion': (74, 272, 402, 676), 'd-tower': (469, 21, 767, 676), 'd-gate': (824, 111, 1412, 669),
+                            'd-battlement': (1481, 356, 1882, 669), 'd-pillar': (1946, 267, 2091, 669)}.items():
+    crop = rgba[y0:y1, x0:x1]
+    im = Image.fromarray(crop).convert('RGBa').resize((round((x1 - x0) * 0.2), round((y1 - y0) * 0.2)), Image.BOX).convert('RGBA')
+    a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
+    Image.fromarray(a).save(os.path.join(OUT, n + '.png')); print(n, im.size)
+
+# D2 (2026-11-04): decor, cut whole
+rgba = keyed('D2-decor')
+for n, (x0, y0, x1, y1) in {'d-beacon': (50, 141, 250, 632), 'd-bowl': (277, 456, 476, 632), 'd-lantern': (475, 208, 644, 632),
+                            'd-statue': (671, 122, 895, 632), 'd-planter': (923, 342, 1169, 632), 'd-well': (1183, 193, 1507, 633),
+                            'd-rack': (1534, 284, 1758, 632), 'd-crates': (1801, 313, 2127, 632)}.items():
+    crop = rgba[y0:y1, x0:x1]
+    im = Image.fromarray(crop).convert('RGBa').resize((round((x1 - x0) * 0.2), round((y1 - y0) * 0.2)), Image.BOX).convert('RGBA')
+    a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
+    Image.fromarray(a).save(os.path.join(OUT, n + '.png')); print(n, im.size)
+
+# B01 (2026-11-04): the Central Flame's five looks (flame 1, 5, 10, 15, 20), cut whole with empty bowls
+src = np.asarray(Image.open(os.path.join(SRC, 'B01-central-flame.png')).convert('RGB')).astype(int)
+fgm = key_mask(src, tol=120, fringe=1)
+for n, (x0, y0, x1, y1) in {'hearth1': (40, 344, 374, 654), 'hearth5': (431, 344, 764, 654), 'hearth10': (820, 275, 1172, 654),
+                            'hearth15': (1229, 177, 1607, 654), 'hearth20': (1666, 36, 2134, 660)}.items():
+    rgba = np.zeros((y1 - y0, x1 - x0, 4), 'uint8'); rgba[..., :3] = src[y0:y1, x0:x1] * fgm[y0:y1, x0:x1, None]; rgba[..., 3] = fgm[y0:y1, x0:x1] * 255
+    im = Image.fromarray(rgba).convert('RGBa').resize((round((x1 - x0) * 0.4), round((y1 - y0) * 0.4)), Image.BOX).convert('RGBA')
     a = np.asarray(im).copy(); a[..., 3] = (a[..., 3] > 110) * 255
     Image.fromarray(a).save(os.path.join(OUT, n + '.png')); print(n, im.size)

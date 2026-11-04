@@ -677,7 +677,11 @@
     const u = G.save.up, L = DL.Camp.layout(u), R = DL.WALL_R, night = G.nightAmt;
     const put = (y, f) => list.push({ y, f });
     for (const tn of L.tents) put(tn.y, () => { groundShadow(c, "tent", tn.x, tn.y + 4, tn.flip, 26, 7); sprite(c, "tent", tn.x, tn.y + 4, tn.flip); });
-    for (const b of L.banners) put(b.y, () => { shadow(c, b.x, b.y + 1, 6, 2); sprite(c, "banner", b.x, b.y + 2); });
+    const pil = L.fortress && DL.Refuge.art["d-pillar"]; // Robert's banner pillar (D1) in the refuge
+    for (const b of L.banners) put(b.y, () => {
+      if (pil) { const w = 22, h = (w * pil.height) / pil.width; c.drawImage(pil, b.x - w / 2, b.y + 4 - h, w, h); return; }
+      shadow(c, b.x, b.y + 1, 6, 2); sprite(c, "banner", b.x, b.y + 2);
+    });
     // drawn buildings have a picture per level; the coded ones are the fallback
     const drawn = Art.sprites.forge1;
     const building = (b, name) => { groundShadow(c, name, b.x, b.y + 4, false, Art.sprites[name].w * 0.75, 7); sprite(c, name, b.x, b.y + 4); };
@@ -764,7 +768,12 @@
       const lvl = u.flame;
       let fy = 2;
       const artTier = Math.min(3, L.tier), look = [0, 1, 5, 10, 15, 20][L.tier], drawnLook = L.tier >= 2 && Art.sprites["flame" + look];
-      if (drawnLook) { // Robert's milestone looks (flame 5, 10, 15, 20; tools/cut_pyramid.py)
+      const hl = [1, 5, 10, 15, 20].filter((v) => lvl >= v).pop(), HI = L.fortress && DL.Refuge.art["hearth" + hl], HD = HI && DL.Refuge.HEARTH[hl];
+      if (HI) { // Robert's refuge hearths (B01): the picture's foot just below the flame, the fire in its bowl
+        const h = (HD.w * HI.height) / HI.width, top = 26 - h;
+        c.drawImage(HI, -HD.w * HD.bx, top, HD.w, h);
+        fy = top + h * HD.by + 6;
+      } else if (drawnLook) { // Robert's milestone looks (flame 5, 10, 15, 20; tools/cut_pyramid.py)
         sprite(c, "flame" + look, 0, 12);
         fy = FLAME_FIRE[look];
       } else if (L.tier >= 4) {
@@ -779,7 +788,7 @@
           for (const x of [-40, -22, -4, 14, 32]) c.fillRect(x, -108, 8, 15);
         }
       }
-      if (drawnLook) {}
+      if (drawnLook || HI) {}
       else if (Art.sprites["flame" + artTier]) { const y = [10, 14, 12][artTier - 1]; sprite(c, "flame" + artTier, 0, y); fy = FLAME_FIRE[artTier]; }
       else if (L.tier === 1) sprite(c, "firering", 0, 10);
       else if (L.tier === 2) { sprite(c, "firepit2", 0, 14); fy = -2; }
@@ -807,7 +816,12 @@
       }
       if (it.ph) put(it.y, () => DL.Refuge.drawPlaceholder(c, it));
     }
+    const A = DL.Refuge.art, img = (n, x, y, w) => { const im = A[n]; if (!im) return 0; const h = (w * im.height) / im.width; c.drawImage(im, x - w / 2, y - h, w, h); return h; };
+    for (const d of L.decor || []) put(d.y, () => img("d-" + d.kind, d.x, d.y + 4, { statue: 34, well: 46, rack: 32, crates: 46, planter: 36 }[d.kind] || 34));
     for (const f of L.fires) put(f.y, () => {
+      if (f.kind === "torch" && A["d-lantern"]) { const h = img("d-lantern", f.x, f.y + 4, 22); Art.drawFire(c, f.x - 7, f.y + 4 - h * 0.6, 0.35, t); return; }
+      if (f.kind === "beacon" && A["d-beacon"]) { const h = img("d-beacon", f.x, f.y + 4, 30); Art.drawFire(c, f.x, f.y + 4 - h * 0.8, 1.4, t); return; }
+      if (f.kind === "brazier" && A["d-bowl"]) { const h = img("d-bowl", f.x, f.y + 4, 30); Art.drawFire(c, f.x, f.y + 4 - h * 0.55, 1.0, t); return; }
       if (f.kind === "torch") { sprite(c, "torch", f.x, f.y + 2); Art.drawFire(c, f.x, f.y + 10 - Art.sprites.torch.h * PS, 0.7, t); return; }
       sprite(c, "brazier", f.x, f.y + 2, false);
       Art.drawFire(c, f.x, f.y + 14 - Art.sprites.brazier.h * PS, f.kind === "beacon" ? 1.5 : 1.1, t);

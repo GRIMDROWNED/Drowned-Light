@@ -269,6 +269,19 @@
       for (const sg of [-1, 1]) L.fires.push({ x: e.inn.x + (nx ? 0 : sg * (q.w / 2 + 8)), y: e.inn.y + (nx ? sg * (q.w / 2 + 8) : 0), kind: "torch" });
     }
     if (lv >= 20) for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) L.fires.push({ x: sx * (s + 4), y: sy * (s + 4) - (sy > 0 ? 0 : 0), kind: "beacon" });
+    // Robert's decor (D2) on the outer wards: by each central stair's landing, inside the ward, clear of the beds
+    L.decor = [];
+    const KINDS = ["statue", "well", "rack", "crates", "planter", "statue", "crates", "rack"], beds = Refuge.bedsAt(lv).map((b) => ({ box: [b.x - b.half, b.y - b.half, b.x + b.half, b.y + b.half] }));
+    g.rings.forEach((r, i) => {
+      if (!r.beds) return;
+      const inner = g.rings[i + 1], d = inner.half + inner.face + 70;
+      SIDES.forEach(([nx, ny], si) => { for (const sg of [-1, 1]) {
+        const x = nx * d + (ny ? sg * (g.cw / 2 + 60) : 0), y = ny * d + (nx ? sg * (g.cw / 2 + 60) : 0), hw = 22;
+        if (!free(g, footprint(x, y, hw), [...placed, ...beds], [])) continue;
+        L.decor.push({ x, y, kind: KINDS[(si * 2 + (sg > 0) + i) % KINDS.length] });
+        L.solids.push({ x, y: y - 6, r: 12 });
+      } });
+    });
     for (const f of L.fires) if (f.kind !== "torch") L.solids.push({ x: f.x, y: f.y, r: 8 });
     cacheKey = key;
     cache = L;
@@ -333,11 +346,13 @@
       box: { nw: [20, 10, 190, 300], n: [185, 95, 300, 240], stN: [480, 10, 773, 245], w: [50, 410, 170, 450], stW: [50, 500, 170, 640], sw: [10, 840, 180, 1215], s: [180, 900, 290, 1200], stS: [460, 800, 793, 1238], ne: [1063, 10, 1233, 300], se: [1073, 840, 1243, 1215], e: [1083, 410, 1203, 450], stE: [1083, 500, 1203, 640] } },
   };
   if (typeof Image !== "undefined") {
-    const names = ["foundation", "plaza", "terrace-floor", "avenue-ew", "avenue-ns", "floor-sanctum", "floor-flags", "floor-cobble", "plot-s", "plot-m", "plot-l"];
+    const names = ["foundation", "plaza", "terrace-floor", "avenue-ew", "avenue-ns", "floor-sanctum", "floor-flags", "floor-cobble", "plot-s", "plot-m", "plot-l", "d-bastion", "d-tower", "d-gate", "d-battlement", "d-pillar", "d-beacon", "d-bowl", "d-lantern", "d-statue", "d-planter", "d-well", "d-rack", "d-crates", "hearth1", "hearth5", "hearth10", "hearth15", "hearth20"];
     for (const k of ["terrace", "low", "rim", "tier", "sanct", "court", "ward", "mward", "lward", "curt", "great"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
     for (const n of names) { const img = new Image(); img.onload = () => { IMG[n] = img; }; img.src = DL.asset("assets/sprites/refuge/" + n + ".png"); }
   }
   Refuge.art = IMG;
+  // Robert's hearths (B01): world width, and where the bowl sits as a fraction of the picture (the game's fire goes there)
+  Refuge.HEARTH = { 1: { w: 70, bx: 0.5, by: 0.43 }, 5: { w: 70, bx: 0.49, by: 0.27 }, 10: { w: 74, bx: 0.49, by: 0.28 }, 15: { w: 80, bx: 0.47, by: 0.11 }, 20: { w: 98, bx: 0.5, by: 0.19 } };
   // Draw one kit wall ring of half-side h, with its stairs (or openings) where `ring.stairs` says.
   function kitRing(c, ring, kind) {
     const K = KIT[kind], E = K.edge, h = ring.half, B = K.box, img = (n) => IMG[kind + "-" + n];
@@ -495,7 +510,7 @@
         c.fillStyle = p; c.fillRect(-r.half, -r.half, 2 * r.half, 2 * r.half);
         c.fillStyle = `rgba(0,0,0,${dark + 0.12})`; c.fillRect(-r.half, -r.half, 2 * r.half, 2 * r.half);
       } else fill(c, r.id === "sanctum" ? "campPaving" : "campFlags", -r.half, -r.half, 2 * r.half, 2 * r.half, dark, "#4a4438");
-      if (lv >= 8 && r === terr[0] && r.id !== "sanctum") { // Reinforced Walls: corner bastions
+      if (lv >= 8 && r === terr[0] && r.id !== "sanctum" && !IMG["mward-nw"]) { // (the drawn wards have their own bastions) // Reinforced Walls: corner bastions
         for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
           const x = sx * r.half - (sx > 0 ? 44 : 0), y = sy * r.half - (sy > 0 ? 44 : 0);
           c.fillStyle = "#2c2721"; c.fillRect(x - 2, y - 2, 48, 48);
@@ -550,7 +565,7 @@
       c.fillRect(-s0.half, -s0.half, 2 * s0.half, 3); c.fillRect(-s0.half, -s0.half, 3, 2 * s0.half); c.fillRect(s0.half - 3, -s0.half, 3, 2 * s0.half);
     }
     // the flame's star inlay from Final Reinforcement on
-    if (lv >= 19) {
+    if (lv >= 19 && !IMG["floor-sanctum"]) { // (the drawn mosaic has its own star)
       c.strokeStyle = "rgba(190,70,40,0.55)"; c.lineWidth = 3; c.beginPath();
       for (let i = 0; i <= 16; i++) { const a = (i / 16) * Math.PI * 2 - Math.PI / 2, r = i % 2 ? 46 : 84; c[i ? "lineTo" : "moveTo"](Math.cos(a) * r, Math.sin(a) * r * 0.75 + 4); }
       c.stroke();
