@@ -39,22 +39,57 @@
     R.vignette = v;
   };
 
-  /* Adaptive resolution: on a phone that can't keep up (frames over ~28 ms on average through 3 s of play, with the
-     game's own work taking real time, so a browser that simply caps itself at 30 fps doesn't count), the canvas is
-     drawn at a lower pixel density, one step at a time, never below 1.25 pixels per screen point. It only ever steps
-     down in a session. */
+  /* Adaptive resolution: when the game can't keep up (frames over ~28 ms on average through 3 s of play, with the
+     game's own work taking real time or frames slower than 25 fps, so a browser that simply caps itself at 30 fps
+     doesn't count), the canvas is drawn at a lower pixel density, one step at a time, never below 1 pixel per screen
+     point. It only ever steps down in a session. */
   R.cap = 2;
-  const CAPS = [2, 1.75, 1.5, 1.25];
+  const CAPS = [2, 1.75, 1.5, 1.25, 1];
   let pf = { n: 0, gap: 0, work: 0, t: 0 };
-  R.perf = function (gap, work, playing) {
+  R.adapt = true; // (the profiling tools switch it off)
+  R.perf = function (gap, work, playing, parts) {
+    perfStats(gap, work, parts);
     if (!playing || gap > 0.25) return; // menus, or the tab was hidden
     pf.n++; pf.gap += gap; pf.work += work; pf.t += gap;
-    if (pf.t < 3 || window.__noadapt) return;
-    const slow = pf.gap / pf.n > 0.028 && pf.work / pf.n > 0.008;
+    if (pf.t < 3 || !R.adapt) return;
+    const g = pf.gap / pf.n, w = pf.work / pf.n, slow = g > 0.028 && (w > 0.008 || g > 0.04);
     pf = { n: 0, gap: 0, work: 0, t: 0 };
     const next = CAPS.find((v) => v < Math.min(R.dpr, R.cap) - 0.01);
     if (slow && next) { R.cap = next; R.resize(); }
   };
+
+  /* Performance readout: open the game with ?perf in its address, or press F3, for a box in the corner with the frame
+     rate and where each frame's time goes (averaged over half a second), so lag on a real device can be pinned down. */
+  R.showPerf = typeof location !== "undefined" && /[?&]perf\b/.test(location.search);
+  if (typeof addEventListener !== "undefined") addEventListener("keydown", (e) => { if (e.key === "F3") { R.showPerf = !R.showPerf; e.preventDefault(); } });
+  let ps = { n: 0, t: 0, gap: 0, work: 0, max: 0, parts: {} }, perfText = [];
+  function perfStats(gap, work, parts) {
+    if (!R.showPerf || gap > 0.25) return;
+    ps.n++; ps.t += gap; ps.gap += gap; ps.work += work; ps.max = Math.max(ps.max, gap);
+    for (const k in parts || {}) ps.parts[k] = (ps.parts[k] || 0) + parts[k];
+    if (ps.t < 0.5) return;
+    const G = DL.Game, ms = (v) => (v * 1000).toFixed(1), n = ps.n;
+    perfText = [
+      `${Math.round(n / ps.t)} fps  frame ${ms(ps.gap / n)} ms  worst ${ms(ps.max)}`,
+      `our work ${ms(ps.work / n)} ms  (${Object.entries(ps.parts).map(([k, v]) => k + " " + ms(v / n)).join("  ")})`,
+      `waiting on graphics/browser ${ms(Math.max(0, ps.gap - ps.work) / n)} ms`,
+      `canvas ${R.cv.width}x${R.cv.height} @${R.dpr}  zoom ${(R.view ? R.view.z : 0).toFixed(2)}`,
+      `drawn ${R.drawnItems || 0}  lights ${(G.lights || []).length}  Drowned ${(G.enemies || []).length}  effects ${(G.effects || []).length}`,
+    ];
+    ps = { n: 0, t: 0, gap: 0, work: 0, max: 0, parts: {} };
+  }
+  function drawPerf(c) {
+    if (!R.showPerf || !perfText.length) return;
+    c.setTransform(R.dpr, 0, 0, R.dpr, 0, 0);
+    c.globalAlpha = 1; c.globalCompositeOperation = "source-over";
+    c.font = "600 11px ui-monospace, Menlo, Consolas, monospace";
+    c.textAlign = "left";
+    const w = Math.max(...perfText.map((s) => c.measureText(s).width)) + 12;
+    c.fillStyle = "rgba(0,0,0,0.72)";
+    c.fillRect(6, 6, w, perfText.length * 14 + 8);
+    c.fillStyle = "#cfe9ec";
+    perfText.forEach((s, i) => c.fillText(s, 12, 20 + i * 14));
+  }
 
   // A sprite's mirror image, made once and kept on it (flipping the canvas for every draw was slow with a whole
   // marsh of trees on screen, as when the camera pulls back for a boss).
@@ -161,8 +196,9 @@
 
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.globalCompositeOperation = "source-over";
-    c.fillStyle = "#05090c";
-    c.fillRect(0, 0, R.W, R.H);
+    // the ground covers the whole view (every chunk on screen is drawn, or filled while it's being made), so the
+    // backdrop is only needed when a shake shifts the view off the chunks drawn: one full-screen fill saved a frame
+    if (cam.shake > 0.01 || G.state === "title") { c.fillStyle = "#05090c"; c.fillRect(0, 0, R.W, R.H); }
     const toWorld = () => c.setTransform(dpr * z, 0, 0, dpr * z, dpr * (-left * z + shx), dpr * (-top * z + shy));
     toWorld();
     c.imageSmoothingEnabled = false;
@@ -309,6 +345,7 @@
     }
     list.sort((a, b) => a.y - b.y);
     for (const it of list) it.f();
+    R.drawnItems = list.length;
 
     /* non-glowing particles */
     for (const f of G.effects) if (f.type === "shatter") drawShatter(c, f);
@@ -563,6 +600,7 @@
       c.fillStyle = `rgba(2,14,18,${k * 0.85})`;
       c.fillRect(0, 0, R.W, R.H);
     }
+    drawPerf(c);
   };
 
   /* ---------- scene pieces ---------- */

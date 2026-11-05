@@ -47,6 +47,7 @@ so about four times the marsh is on screen. Fixed without changing the look:
   the renderer builds at most 3 per frame within a 6 ms budget, and the chunk cache is LRU (180).
 - `Art.drawUnit` tint cache is capped by pixels (`TINT_PX`), since boss/minion frames are large.
 - Refuge ground is skipped when the fortress is off screen.
+- `?perf` in the address (or F3) shows a frame-time readout (`R.showPerf`, `drawPerf`); the backdrop fill is skipped unless the camera shakes; adaptive resolution (`R.adapt`) also trips on frames under 25 fps and can go down to 1.
 Keep to these when adding art: draw through `sprite()`/`Art.drawUnit`, avoid per-draw save/restore and per-frame gradients.
 
 ### 2026-11-04 · Claude → GPT · Boss minions and bigger bosses
