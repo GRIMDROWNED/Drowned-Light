@@ -255,10 +255,11 @@
     groundCanvas(cx, cy, allowBuild) {
       const key = cx + "," + cy;
       let c = this.ground.get(key);
-      if (c || !allowBuild) return c;
+      if (c) { this.ground.delete(key); this.ground.set(key, c); return c; } // kept newest, so the oldest unseen chunk goes first
+      if (!allowBuild) return c;
       c = this.buildGround(cx, cy);
       this.ground.set(key, c);
-      if (this.ground.size > 140) this.ground.delete(this.ground.keys().next().value);
+      if (this.ground.size > 180) this.ground.delete(this.ground.keys().next().value);
       return c;
     },
 
@@ -290,18 +291,24 @@
       const depth = Math.min(1, d / 5000);
       const h = DL.hash(x >> 1, y >> 1, 3);
       let r, g, b;
-      // Camp earth
-      const m0 = DL.noise(x / 40, y / 40, 4);
-      const earth = this.texel("campEarth", x, y, GROUND_K);
-      const er = earth ? earth[0] : 40 + m0 * 14, eg = earth ? earth[1] : 35 + m0 * 11, eb = earth ? earth[2] : 27 + m0 * 8;
-      if (DL.Camp.sq(x, y) < DL.WALL_R) {
+      // Camp earth (only worked out where it shows: in the camp, and blended in round the hearth; building a chunk
+      // is a lot of pixels, and the camera pulling back near a boss builds many at once)
+      const inCamp = DL.Camp.sq(x, y) < DL.WALL_R;
+      let earth = null, er = 0, eg = 0, eb = 0;
+      if (inCamp || d < 300) {
+        const m0 = DL.noise(x / 40, y / 40, 4);
+        earth = this.texel("campEarth", x, y, GROUND_K);
+        er = earth ? earth[0] : 40 + m0 * 14; eg = earth ? earth[1] : 35 + m0 * 11; eb = earth ? earth[2] : 27 + m0 * 8;
+      }
+      if (inCamp) {
         r = er; g = eg; b = eb;
         if (!earth && h > 0.985) { r += 18; g += 16; b += 12; }
         else if (!earth && h < 0.02) { r -= 8; g -= 8; b -= 6; }
       } else {
         const w = this.waterVal(x, y);
         // water is kept brighter than the land so it reads at a glance
-        const sh = this.texel("shallow", x, y, 0.95), dp = this.texel("deep", x, y, 1.05), so = this.texel("shore", x, y, 0.8);
+        const wet = w < WATER, sh = wet && this.texel("shallow", x, y, 0.95), dp = wet && this.texel("deep", x, y, 1.05);
+        const so = w < SHORE ? this.texel("shore", x, y, 0.8) : null; // (the textures are only looked up where they're used)
         if (w < WATER && sh && dp && so) {
           // drawn water: shallow at the edge, deep further in, fading out of the shore over the first stretch
           const k = Math.min(1, (WATER - w) * 8), e = Math.max(0, (w - WATER + 0.008) / 0.008);

@@ -33,6 +33,22 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-05 · Claude → GPT · Boss fight performance (v0.15.223)
+Type: Decision
+Status: Open
+
+Robert said boss fights (worst: the Deadly Rose) were still laggy. Near a boss the camera pulls back (`G.bossView`),
+so about four times the marsh is on screen. Fixed without changing the look:
+- Lights: `drawLighting` stamps cached gradient pictures (`glowPic`/`holePic`/`tintPic`) faded by globalAlpha instead of
+  building ~2 gradients per light per frame (190+ lights near the Rose).
+- `sprite()` (render.js) no longer does save/restore per draw; flipped sprites use a cached mirrored copy (`mirrored`).
+  `drawObject` only saves when squashing a hit node.
+- Ground chunks: `groundColor` skips camp-earth/water texture lookups where they don't show (~40% faster per chunk),
+  the renderer builds at most 3 per frame within a 6 ms budget, and the chunk cache is LRU (180).
+- `Art.drawUnit` tint cache is capped by pixels (`TINT_PX`), since boss/minion frames are large.
+- Refuge ground is skipped when the fortress is off screen.
+Keep to these when adding art: draw through `sprite()`/`Art.drawUnit`, avoid per-draw save/restore and per-frame gradients.
+
 ### 2026-11-04 · Claude → GPT · Boss minions and bigger bosses
 Type: Decision
 Status: Open

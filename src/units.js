@@ -813,18 +813,24 @@
   /* Tinted copies of frames (hit flashes, wind-up pulses, frost, companion forms), kept and reused: making a fresh
      copy for every tinted draw (dozens a frame in a big fight) was slow, above all on phones, where each one also has
      to be sent to the graphics chip. The tint strength is rounded to 1/32 (too fine a step to see), so a flickering
-     tint reuses a handful of copies. The least recently used copies are dropped past TINT_MAX. */
-  const tints = new Map(), TINT_MAX = 192;
-  let tintId = 0;
+     tint reuses a handful of copies. The least recently used copies are dropped once they hold more than TINT_PX
+     pixels in all (the boss and minion frames are big, so a count alone could hold hundreds of MB on a phone). */
+  const tints = new Map(), TINT_PX = 6e6;
+  let tintId = 0, tintPx = 0;
   function tinted(fr, w, h, flash, color) {
     const q = Math.round(Math.min(1, flash) * 32);
     const key = (fr.__tid || (fr.__tid = ++tintId)) + "|" + color + "|" + q;
     let cv = tints.get(key);
     if (cv) { tints.delete(key); tints.set(key, cv); return cv; } // most recently used last
-    cv = tints.size >= TINT_MAX ? tints.get(tints.keys().next().value) : null;
-    if (cv) tints.delete(tints.keys().next().value);
-    else cv = document.createElement("canvas");
+    while (tints.size && tintPx + w * h > TINT_PX) { // drop the oldest, reusing the last canvas dropped
+      const k = tints.keys().next().value, old = tints.get(k);
+      tints.delete(k);
+      tintPx -= old.width * old.height;
+      cv = old;
+    }
+    cv = cv || document.createElement("canvas");
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    tintPx += w * h;
     const tg = cv.getContext("2d");
     tg.globalCompositeOperation = "source-over";
     tg.globalAlpha = 1;
