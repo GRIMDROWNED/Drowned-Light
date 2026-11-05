@@ -49,25 +49,34 @@
   R.perf = function (gap, work, playing) {
     if (!playing || gap > 0.25) return; // menus, or the tab was hidden
     pf.n++; pf.gap += gap; pf.work += work; pf.t += gap;
-    if (pf.t < 3) return;
+    if (pf.t < 3 || window.__noadapt) return;
     const slow = pf.gap / pf.n > 0.028 && pf.work / pf.n > 0.008;
     pf = { n: 0, gap: 0, work: 0, t: 0 };
     const next = CAPS.find((v) => v < Math.min(R.dpr, R.cap) - 0.01);
     if (slow && next) { R.cap = next; R.resize(); }
   };
 
+  // A sprite's mirror image, made once and kept on it (flipping the canvas for every draw was slow with a whole
+  // marsh of trees on screen, as when the camera pulls back for a boss).
+  function mirrored(s) {
+    if (s.cm && s.cmOf === s.c) return s.cm;
+    const m = document.createElement("canvas");
+    m.width = s.c.width; m.height = s.c.height;
+    const g = m.getContext("2d");
+    g.translate(m.width, 0); g.scale(-1, 1); g.drawImage(s.c, 0, 0);
+    s.cmOf = s.c;
+    return (s.cm = m);
+  }
   function sprite(c, name, x, y, flip, alpha) {
     const s = Art.sprites[name];
     if (!s) return;
     const w = s.w * PS, h = s.h * PS;
-    c.save();
+    const a0 = c.globalAlpha;
     if (alpha != null) c.globalAlpha = alpha;
-    if (flip) {
-      c.translate(Math.round(x), 0);
-      c.scale(-1, 1);
-      c.drawImage(s.c, Math.round(-w / 2), Math.round(y - h), w, h);
-    } else c.drawImage(s.c, Math.round(x - w / 2), Math.round(y - h), w, h);
-    c.restore();
+    // the mirrored copy lands on the same pixels the flipped draw did (mirrored about the rounded x)
+    if (flip) c.drawImage(mirrored(s), Math.round(x) - w - Math.round(-w / 2), Math.round(y - h), w, h);
+    else c.drawImage(s.c, Math.round(x - w / 2), Math.round(y - h), w, h);
+    c.globalAlpha = a0;
   }
 
   function shadow(c, x, y, rx, ry, a = 0.38) {
@@ -160,13 +169,16 @@
 
     /* ground */
     const CH = W.CH;
+    // New ground chunks are slow to make, so a frame makes only a few: at least one, then more while it has spent
+    // under 6 ms on them (the testing zooms allow 8), so the camera pulling back for a boss doesn't stall a frame.
     let built = 0;
+    const gt0 = performance.now(), canBuild = () => (R.zoomStep ? built < 8 : built < 1 || (built < 3 && performance.now() - gt0 < 6));
     const paved = DL.Refuge.paved(DL.Camp.layout(G.save.up)) - 2; // the Refuge's floors cover the ground under them
     for (let cy = Math.floor(top / CH); cy <= Math.floor(view.bottom / CH); cy++) {
       for (let cx = Math.floor(left / CH); cx <= Math.floor(view.right / CH); cx++) {
         if (paved > 0 && cx * CH >= -paved && (cx + 1) * CH <= paved && cy * CH >= -paved && (cy + 1) * CH <= paved) continue;
         let gc = W.groundCanvas(cx, cy, false);
-        if (!gc && built < (R.zoomStep ? 8 : 3)) { gc = W.groundCanvas(cx, cy, true); built++; }
+        if (!gc && canBuild()) { gc = W.groundCanvas(cx, cy, true); built++; }
         if (!gc) { c.fillStyle = "#121a17"; c.fillRect(cx * CH, cy * CH, CH, CH); continue; }
         c.drawImage(gc, cx * CH, cy * CH, CH + 0.6, CH + 0.6);
       }
@@ -560,15 +572,15 @@
     let x = o.x;
     const hit = o.hitT > 0 ? o.hitT / 0.18 : 0;
     if (hit) x += Math.sin(G.t * 80) * 2.5 * hit;
-    c.save();
     if (hit && o.def.res) {
       // squash on impact
+      c.save();
       c.translate(x, o.y);
       c.scale(1 + 0.08 * hit, 1 - 0.1 * hit);
       c.translate(-x, -o.y);
-    }
-    sprite(c, name, x, o.y + 2, o.flip);
-    c.restore();
+      sprite(c, name, x, o.y + 2, o.flip);
+      c.restore();
+    } else sprite(c, name, x, o.y + 2, o.flip);
     if (o.def.bloom && !o.dead && o.hp < o.maxHp) bar(c, o.x, o.y - Art.sprites[name].h * PS - 6, 34, o.hp / o.maxHp, "#5fe6ee");
     // drawn boulders, trees and sprouts show their damage in their own stages
     if (o.def.hits && o.mineHp != null && o.mineHp < o.def.hits && !/^(boulder|iron\d|amethyst|swampTree|sprout)/.test(name)) drawCracks(c, o, name, 1 - o.mineHp / o.def.hits);
@@ -622,7 +634,11 @@
   /* ---------- base camp: a new form every five Flame levels ---------- */
   function drawCampGround(c, G) {
     const L = DL.Camp.layout(G.save.up), R = DL.WALL_R;
-    if (L.fortress) return DL.Refuge.drawGround(c, L, G.time); // the Refuge's terraces and stairs (src/refuge.js)
+    if (L.fortress) { // the Refuge's terraces and stairs (src/refuge.js), unless it's all off screen
+      const V = DL.Render.vis, e = DL.Refuge.clearR(G.save.up) + 300;
+      if (V && (V.right < -e || V.left > e || V.bottom < -e || V.top > e)) return;
+      return DL.Refuge.drawGround(c, L, G.time);
+    }
     if (L.tier === 1) {
       c.strokeStyle = "rgba(90,75,55,0.35)";
       c.lineWidth = 3;
@@ -2117,6 +2133,26 @@
   }
 
   /* ---------- lighting ---------- */
+  /* The soft round lights are drawn from ready-made gradient pictures, stretched to each light's size and faded
+     with globalAlpha, instead of a new gradient per light per frame (near a boss the camera pulls back and well over
+     a hundred lights can be on screen). Same stops as before; GLOW_N px across is smooth enough at any size. */
+  const GLOW_N = 256, glowPics = new Map();
+  function glowPic(key, stops, r0) {
+    let cv = glowPics.get(key);
+    if (cv) return cv;
+    cv = document.createElement("canvas");
+    cv.width = cv.height = GLOW_N;
+    const g = cv.getContext("2d"), h = GLOW_N / 2, gr = g.createRadialGradient(h, h, h * r0, h, h, h);
+    for (const [at, col] of stops) gr.addColorStop(at, col);
+    g.fillStyle = gr;
+    g.fillRect(0, 0, GLOW_N, GLOW_N);
+    glowPics.set(key, cv);
+    return cv;
+  }
+  // the darkness's hole: full at the middle, 3/4 at 0.55, none at the rim (faded by the light's strength)
+  const holePic = () => glowPic("hole", [[0, "rgba(0,0,0,1)"], [0.55, "rgba(0,0,0,0.75)"], [1, "rgba(0,0,0,0)"]], 0.05);
+  // a coloured glow: 1 at the middle, 0.4 at 0.4, none at the rim (faded by 0.3 x its brightness)
+  const tintPic = (col) => glowPic(col, [[0, `rgba(${col},1)`], [0.4, `rgba(${col},0.4)`], [1, `rgba(${col},0)`]], 0);
   function drawLighting(G, c, left, top, z, shx, shy) {
     const p = G.player;
     const zi = p ? W.zoneIndex(p.x, p.y) : 0;
@@ -2135,13 +2171,10 @@
     for (const li of G.lights) {
       const x = (li.x - left) * k + ox, y = (li.y - top) * k + oy, r = li.r * k * flick(li);
       if (x < -r || y < -r || x > lw + r || y > lh + r) continue;
-      const g = L.createRadialGradient(x, y, r * 0.05, x, y, r);
-      g.addColorStop(0, `rgba(0,0,0,${li.s})`);
-      g.addColorStop(0.55, `rgba(0,0,0,${li.s * 0.75})`);
-      g.addColorStop(1, "rgba(0,0,0,0)");
-      L.fillStyle = g;
-      L.fillRect(x - r, y - r, r * 2, r * 2);
+      L.globalAlpha = Math.min(1, li.s);
+      L.drawImage(holePic(), x - r, y - r, r * 2, r * 2);
     }
+    L.globalAlpha = 1;
     c.setTransform(R.dpr, 0, 0, R.dpr, 0, 0);
     c.imageSmoothingEnabled = true;
     c.drawImage(R.lc, 0, 0, R.W, R.H);
@@ -2169,13 +2202,10 @@
       if (!li.col) continue;
       const x = (li.x - left) * s + sx, y = (li.y - top) * s + sy, r = li.r * s * 0.85 * flick(li);
       if (x < -r || y < -r || x > gw + r || y > gh + r) continue;
-      const g = gx.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, `rgba(${li.col},${0.3 * li.a * strength})`);
-      g.addColorStop(0.4, `rgba(${li.col},${0.12 * li.a * strength})`);
-      g.addColorStop(1, `rgba(${li.col},0)`);
-      gx.fillStyle = g;
-      gx.fillRect(x - r, y - r, r * 2, r * 2);
+      gx.globalAlpha = Math.min(1, 0.3 * li.a * strength);
+      gx.drawImage(tintPic(li.col), x - r, y - r, r * 2, r * 2);
     }
+    gx.globalAlpha = 1;
     if (half) {
       c.globalCompositeOperation = "lighter";
       c.drawImage(R.gc, 0, 0, R.W, R.H);
