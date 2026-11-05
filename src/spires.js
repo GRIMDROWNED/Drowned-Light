@@ -164,11 +164,11 @@
   };
 
   // Spire Sentinels (crystal turrets, src/bullets.js): one on the terrace, one in the walkway; brought back if broken.
-  const SENTINELS = [[640, 150], [-300, -250]];
+  const SENTINELS = [[640, 150, 0], [-300, -250, 0.7]]; // x, y, heat: a gentle one on the terrace, a dense one in the walkway
   function sentinels() {
-    for (const [x, y] of SENTINELS) {
+    for (const [x, y, heat] of SENTINELS) {
       if (G.enemies.some((e) => e.def.sentinel && !e.removed && Math.hypot(e.x - OX - x, e.y - OY - y) < 40)) continue;
-      G.enemies.push(G.makeEnemy("sentinel", OX + x, OY + y, S.wave.zone));
+      G.enemies.push(G.makeEnemy("sentinel", OX + x, OY + y, S.wave.zone, { heat }));
       for (let i = 0; i < 12; i++) G.puff(OX + x + DL.rand(-14, 14), OY + y - DL.rand(0, 60), "rgba(200,150,255,0.7)", 50, 0.7);
     }
   }

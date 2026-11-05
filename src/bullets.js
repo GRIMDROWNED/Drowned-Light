@@ -12,7 +12,8 @@
                                                   `gap` px wide at a random place (always one way through)
      Bullets.lane(x, y, ang, n, step, o)          n bullets in single file along ang, `step` px apart (a bridge lane)
      Bullets.spiral(x, y, arms, rate, spin, time, o)  an emitter: `arms` bullets every `rate` s for `time` s, turning `spin` rad/s
-   The Spire Sentinel (a crystal turret, DL.ENEMIES.sentinel) runs a loop of these: Bullets.sentinel.
+   The Spire Sentinel (a crystal turret, DL.ENEMIES.sentinel) runs a loop of these: Bullets.sentinel. Its e.heat
+   (0..1) sets how dense: gentle in the first rooms, dense deep in (rooms will set it per room).
    Numbers: DL.BULLETS (src/data.js). Host only: the Spires is Sandbox-only and solo for now (co-op not synced). */
 "use strict";
 (function (DL) {
@@ -135,19 +136,23 @@
     if (e.charge > 0) return;
     e.charge = 0;
     const x = e.x, y = e.y - S.mouth, aim = Math.atan2(p.y - 18 - y, p.x - x), o = { by: "a Spire Sentinel", dmg: S.dmg };
-    if (e.pat === "spiral") { Bu.spiral(x, y, 3, 0.1, 1.3, 2.6, { ...o, speed: 105 }, e); e.bt = 3.4; }
+    // heat: 0 = a gentle first room, 1 = the dense rooms deep in (Robert, 2026-11-05)
+    const h = Math.max(0, Math.min(1, e.heat || 0)), L = (a, b) => a + (b - a) * h, n = (a, b) => Math.round(L(a, b));
+    const aimNow = () => Math.atan2(G.player.y - 18 - y, G.player.x - x);
+    if (e.pat === "spiral") { Bu.spiral(x, y, n(2, 4), L(0.16, 0.07), 1.3, 2.6, { ...o, speed: L(90, 120) }, e); e.bt = L(3.8, 3.0); }
     else if (e.pat === "rings") {
-      Bu.ring(x, y, 20, 0, { ...o, speed: 115, kind: 1 });
-      after(0.45, e, () => Bu.ring(x, y, 20, Math.PI / 20, { ...o, speed: 115, kind: 1 }));
-      after(0.9, e, () => Bu.ring(x, y, 20, 0, { ...o, speed: 115, kind: 1 }));
-      e.bt = 2.4;
+      const k = n(12, 26), rings = n(2, 3), sp = L(100, 125);
+      for (let i = 0; i < rings; i++) after(i * 0.45, e, () => Bu.ring(x, y, k, i % 2 ? Math.PI / k : 0, { ...o, speed: sp, kind: 1 }));
+      e.bt = L(2.8, 2.2);
     } else if (e.pat === "fan") {
-      for (let i = 0; i < 3; i++) after(i * 0.38, e, () => Bu.fan(x, y, Math.atan2(G.player.y - 18 - y, G.player.x - x), 7, 0.9, { ...o, speed: 150, kind: 2 }));
-      e.bt = 2.2;
+      const k = n(5, 9), volleys = n(2, 3), sp = L(120, 165);
+      for (let i = 0; i < volleys; i++) after(i * 0.38, e, () => Bu.fan(x, y, aimNow(), k, L(0.8, 1.0), { ...o, speed: sp, kind: 2 }));
+      e.bt = L(2.6, 2.0);
     } else {
-      Bu.wall(x, y, aim, 420, 22, 70, { ...o, speed: 95 });
-      after(0.8, e, () => Bu.wall(x, y, Math.atan2(G.player.y - 18 - y, G.player.x - x), 420, 22, 70, { ...o, speed: 95 }));
-      e.bt = 2.6;
+      const k = n(14, 28), gap = L(100, 55), sp = L(80, 105);
+      Bu.wall(x, y, aim, L(380, 440), k, gap, { ...o, speed: sp });
+      if (h > 0.3) after(0.8, e, () => Bu.wall(x, y, aimNow(), L(380, 440), k, gap, { ...o, speed: sp }));
+      e.bt = L(3.0, 2.4);
     }
     DL.Sound.play("chime");
   };
