@@ -509,7 +509,7 @@
       if (o.type === "sprout") { if (!o.harvested) L.push({ x: o.x + 6, y: o.y - 30, r: 46, s: 0.45, col: "80,230,240", a: 0.6 }); continue; }
       L.push({ x: o.x, y: o.y - 24, r: o.def.light * G.diff().light, s: 0.92, col: "80,230,240", a: 0.95, kind: "bloom", obj: o });
     }
-    for (const o of G.amethysts) if (!o.harvested) L.push({ x: o.x, y: o.y - 4, r: 34, s: 0.45, col: "190,160,255", a: 0.9 });
+    for (const o of G.amethysts) if (!o.harvested) L.push({ x: o.x, y: o.y - 4, r: 34, s: 0.45, col: "130,195,255", a: 0.9 });
     if (p && G.state !== "title") {
       const lr = st.lanternR * (p.oil > 0 ? 1 : 0.4);
       L.push({ x: p.x, y: p.y - 28, r: lr, s: 0.8, col: "255,180,90", a: p.oil > 0 ? 0.75 : 0.3, flick: 1, lantern: true });
@@ -752,7 +752,7 @@
     if (!G.hitNodes.includes(o)) G.hitNodes.push(o);
     const col = DL.RESOURCES[o.def.res].color, ix = o.x - Math.cos(ang) * 6, iy = o.y - 12;
     for (let i = 0; i < 6; i++) puff(ix, iy, col, 90, 0.45, -60);
-    if (o.type === "sprout" || o.type === "pearl") { for (let i = 0; i < 5; i++) spark(ix, iy, o.type === "pearl" ? "190,160,255" : "80,230,240", 90); sfx("chime"); }
+    if (o.type === "sprout" || o.type === "pearl") { for (let i = 0; i < 5; i++) spark(ix, iy, o.type === "pearl" ? "130,195,255" : "80,230,240", 90); sfx("chime"); }
     else sfx(o.type === "tree" ? "chop" : "clink");
     if (o.mineHp <= 0) shatter(o);
   }

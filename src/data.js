@@ -18,7 +18,7 @@
     stone: { name: "Stone", color: "#9a9d9e" },
     resin: { name: "Bloom Resin", color: "#43e6ee" },
     iron: { name: "Iron Scrap", color: "#c06a44" },
-    pearl: { name: "Amethyst", color: "#bfa8ff" },
+    pearl: { name: "Amethyst", color: "#9fd0ff" }, // blue since 2026-11-05: violet is the Aether Crystal's
     black: { name: "Black Pearl", color: "#5d6b8c" }, // found only in the Abyss
   };
   DL.RES_KEYS = Object.keys(DL.RESOURCES);
