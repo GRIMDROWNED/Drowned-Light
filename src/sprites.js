@@ -149,6 +149,9 @@
     minion("leech", "leech", 4, [[102, 117], [83, 131], [74, 138]]), // the Starved Bell's Clapper Leech
     minion("raptor", "raptor", 4, [[165, 126], [65, 162], [54, 150]]), // the Mother Wyvern's Bonepicker Raptor
     minion("screecher", "screecher", 4, [[159, 163], [107, 249], [107, 249]]), // the Mother Wyvern's Red Marrow Screecher
+    minion("cairn", "cairn", 4, [[94, 122], [75, 120], [74, 114]]), // the Colossus's Cairn Crawler
+    minion("servitor", "servitor", 4, [[160, 321], [148, 348], [136, 334]]), // the Colossus's Bog Totem Servitor
+    minion("siltfist", "siltfist", 4, [[258, 338], [216, 362], [336, 385]]), // the Colossus's Silt Fist Fragment
     minion("thornling", "thornling", 4, [[45, 87], [43, 82], [46, 83]]), // the Deadly Rose's Thornling Swarm Stalker
     minion("tidestalker", "tidestalker", 4, [[109, 123], [87, 134], [92, 138]]), // the Sunken King's Tide Stalker
     minion("wisp", "wisp", 4, [[108, 182], [112, 197], null]), // the Sunken Wisp: its front shows going away too (Robert)
