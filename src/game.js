@@ -243,7 +243,7 @@
     G.towerCd = [0, 0, 0, 0];
     G.resetPylons();
     G.siegeT = 5; G.spawnT = 3; G.rootEvent = null; G.selfEnemy = null; G.champSpawned = false;
-    G.dying = 0;
+    G.dying = 0; G.spires = null;
     DL.Siege.reset();
     DL.Outposts.reset();
     DL.Pyramid.resetChampions();
@@ -303,6 +303,9 @@
     if (G.cave) {
       // the clock stands still while you're down in Derek's Hollow, where it's always dark
       G.nightAmt = 1; G.night = true;
+    } else if (G.spires) {
+      // the clock stands still in the Abyssal Spires test room too (src/spires.js), its own violet dusk
+      G.nightAmt = 0; G.night = false;
     } else {
       G.time += dt;
       if (G.time >= CYC.total) { G.time -= CYC.total; onNewDay(); }
@@ -327,6 +330,7 @@
     DL.Rose.update(dt);
     DL.Rose.local();
     DL.Cave.update(dt);
+    DL.Spires.update(dt);
     DL.Minions.update(dt);
     updateEnemies(dt);
     if (G.state === "dying") return;
@@ -532,6 +536,7 @@
     for (const pr of G.projectiles) L.push({ x: pr.x, y: pr.y, r: pr.kind === "orb" ? 44 : 26, s: 0.3, col: pr.col, a: 0.8 });
     if (G.walls) DL.Kits.lights(L);
     if (p) DL.Cave.lights(L);
+    DL.Spires.lights(L);
     G.lights = L;
   }
 
@@ -837,7 +842,7 @@
     const p = a ? { x: a.x, y: a.y, zi: W.zoneIndex(a.x, a.y) } : G.player;
     const Z = DL.ZONES[Math.max(1, p.zi)], dCamp = Math.hypot(p.x, p.y);
     const active = G.night || (Z.abyss && G.nightAmt < 0.5);
-    if (!active || G.cave) return; // in the Hollow only its waves come (src/cave.js)
+    if (!active || G.cave || G.spires) return; // in the Hollow only its waves come (src/cave.js)
 
     const cap = (G.night ? 55 : 14) + G.allies.length * (G.night ? 15 : 4);
     if (G.enemies.length >= cap) return;
@@ -998,7 +1003,7 @@
       }
       e.lx = e.x; e.ly = e.y; // where it stood, so climbing a Pyramid step can slow its move (below)
       const eZ = DL.ZONES[W.zoneIndex(e.x, e.y)];
-      if (!G.night && !eZ.abyss && !e.isSelf && !e.def.den && !e.def.wyvern && !e.march && !e.lord) { // (a boss's minions live as long as it fights) // (the Drowned that rise against the Fire Bearer brave the sun)
+      if (!G.night && !eZ.abyss && !G.spires && !e.isSelf && !e.def.den && !e.def.wyvern && !e.march && !e.lord) { // (a boss's minions live as long as it fights) // (the Drowned that rise against the Fire Bearer brave the sun)
         e.hp -= 30 * dt; // the sun unmakes them
         if (Math.random() < 0.3) puff(e.x + rand(-8, 8), e.y - rand(10, 40), "rgba(40,60,70,0.6)", 30, 0.8);
         if (e.hp <= 0) { kill(e, false); continue; }
@@ -1099,7 +1104,7 @@
         const spd = e.speed * (humanLightAt(e.x, e.y) ? 0.72 : 1) * (e.slow > 0 ? 0.6 : 1) * (e.spore > 0 ? e.sporeK : 1) * (e.rallied > 0 ? 1.2 : 1);
         // Walls in the way: head for the nearest gate first.
         const campWp = want === 1 && !e.def.fly ? DL.Camp.route(e.x, e.y, tx, ty, G.save.up) : null;
-        const wp = want === 1 && !e.def.fly ? (DL.Pyramid.route(e.x, e.y, campWp ? campWp.x : tx, campWp ? campWp.y : ty) || campWp) : null; // what flies goes over the walls
+        const wp = want === 1 && !e.def.fly ? DL.Spires.route(e.x, e.y, tx, ty) || (DL.Pyramid.route(e.x, e.y, campWp ? campWp.x : tx, campWp ? campWp.y : ty) || campWp) : null; // what flies goes over the walls
         let mx = wp ? wp.x - e.x : dx, my = wp ? wp.y - e.y : dy;
         if (e.def.zigzag && want === 1 && !wp && d > 80) { // weave from side to side on the way in
           const w = Math.sin(e.animT * 5 + e.id) * 0.9, ox = mx;

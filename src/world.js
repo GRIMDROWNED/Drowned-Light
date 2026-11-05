@@ -14,6 +14,8 @@
 
   // The map's grid ends GRID px out (Camp.sq); past it a rim of Abyss shore, then black water to EDGE, where the
   // world ends (DL.MAP, docs/PYRAMID-PLAN.md). Derek's Hollow lies off the map and isn't bounded.
+  // Off the map: Derek's Hollow and the Abyssal Spires test room (nothing of the wetland is made there).
+  const offMap = (x, y) => DL.Cave.inRegion(x, y) || DL.Spires.inRegion(x, y);
   const GRID = DL.MAP.cell * (DL.MAP.rings + 0.5), EDGE = GRID + DL.MAP.rim, SEA = 160;
 
   const W = (DL.World = {
@@ -21,12 +23,13 @@
     // Past the world's end (or on the black water just inside it)?
     // (the shore wobbles up to 120 px either way, so the world's end isn't a ruled line)
     shoreOut(x, y) { return DL.Camp.sq(x, y) - (EDGE - SEA) + (DL.fbm(x / 300, y / 300, 91) - 0.5) * 240; },
-    beyond(x, y, pad = 0) { return !DL.Cave.inRegion(x, y) && this.shoreOut(x, y) > -pad; },
+    beyond(x, y, pad = 0) { return !offMap(x, y) && this.shoreOut(x, y) > -pad; },
     chunks: new Map(),
     ground: new Map(),
 
     zoneIndex(x, y) {
       if (DL.Cave.inRegion(x, y)) return DL.CAVE.zone; // Derek's Hollow, far off the map
+      if (DL.Spires.inRegion(x, y)) return 0; // the Abyssal Spires test room (src/spires.js)
       const d = DL.Camp.sq(x, y); // the zones are the map's square rings
       let z = 0;
       for (let i = 0; i < DL.ZONES.length; i++) if (d >= DL.ZONES[i].r) z = i;
@@ -35,8 +38,8 @@
     zone(x, y) { return DL.ZONES[this.zoneIndex(x, y)]; },
 
     waterVal(x, y) { return DL.fbm(x / 260, y / 260, 11); },
-    isWater(x, y) { return DL.Camp.sq(x, y) > dry() && !DL.Cave.inRegion(x, y) && (this.waterVal(x, y) < WATER || this.beyond(x, y)); },
-    isShore(x, y) { const w = this.waterVal(x, y); return DL.Camp.sq(x, y) > dry() && !DL.Cave.inRegion(x, y) && w >= WATER && w < SHORE; },
+    isWater(x, y) { return DL.Camp.sq(x, y) > dry() && !offMap(x, y) && (this.waterVal(x, y) < WATER || this.beyond(x, y)); },
+    isShore(x, y) { const w = this.waterVal(x, y); return DL.Camp.sq(x, y) > dry() && !offMap(x, y) && w >= WATER && w < SHORE; },
 
     chunk(cx, cy) {
       const key = cx + "," + cy;
@@ -48,7 +51,7 @@
     gen(cx, cy) {
       const objs = [];
       const mx = (cx + 0.5) * CH, my = (cy + 0.5) * CH;
-      if (DL.Cave.inRegion(mx, my)) return []; // the Hollow's cave floor is bare
+      if (offMap(mx, my)) return []; // the Hollow's cave floor and the Spires are bare
       if (this.beyond(mx, my, -CH - 120)) return []; // the black water at the world's end
       const zi = Math.max(1, this.zoneIndex(mx, my));
       const D = DL.Game.diff();
@@ -203,8 +206,9 @@
     // Push a circle out of solid objects (trees, rocks, pillars, roots).
     collide(ent, r) {
       DL.Cave.collide(ent, r); // the cave mouth's mound, and the Hollow's walls
+      DL.Spires.collide(ent, r); // only the stone of the Spires test room holds you up
       // nobody wades out past the world's end
-      if (!DL.Cave.inRegion(ent.x, ent.y)) {
+      if (!offMap(ent.x, ent.y)) {
         const lim = EDGE - SEA - 120 - r;
         ent.x = Math.max(-lim, Math.min(lim, ent.x)); ent.y = Math.max(-lim, Math.min(lim, ent.y));
       }

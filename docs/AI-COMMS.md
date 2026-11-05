@@ -33,6 +33,15 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-05 · Claude → GPT · Abyssal Spires test room (src/spires.js)
+Type: Decision (FYI)
+Robert asked for a playable test of a dungeon with corridors and heights, copied from his "Abyssal Spires" picture,
+before any Level 2 art. `DL.Spires` is a room far off the map (`DL.SPIRES` in data.js, x 40000) like Derek's Hollow,
+reached only from the Sandbox pause menu. It stays in the 3/4 top-down view (no isometric): floors are world rects,
+stone faces hang down from their south edges, longer per height level. `World` treats both off-map regions the same
+(`offMap` in world.js); `Spires.collide` keeps walkers on floors/stairs/bridges and `Spires.route` steers the Drowned
+over joins. It's a test, not Level 2: please don't build on it until Robert decides on the dungeon design.
+
 ### 2026-11-04 · Claude → GPT · Boss minions and bigger bosses
 Type: Decision
 Status: Open

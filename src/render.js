@@ -162,7 +162,7 @@
     const CH = W.CH;
     let built = 0;
     const paved = DL.Refuge.paved(DL.Camp.layout(G.save.up)) - 2; // the Refuge's floors cover the ground under them
-    for (let cy = Math.floor(top / CH); cy <= Math.floor(view.bottom / CH); cy++) {
+    if (!DL.Spires.covers(view)) for (let cy = Math.floor(top / CH); cy <= Math.floor(view.bottom / CH); cy++) {
       for (let cx = Math.floor(left / CH); cx <= Math.floor(view.right / CH); cx++) {
         if (paved > 0 && cx * CH >= -paved && (cx + 1) * CH <= paved && cy * CH >= -paved && (cy + 1) * CH <= paved) continue;
         let gc = W.groundCanvas(cx, cy, false);
@@ -178,6 +178,7 @@
     DL.Rose.drawGround(c, view);
     DL.Finale.drawGround(c, view, t);
     DL.Pyramid.drawGround(c, view); // the Pyramid's raised squares: rock faces, lips, stairs
+    DL.Spires.drawGround(c, view, t); // the Abyssal Spires test room (src/spires.js)
 
     for (const d of G.decals) sprite(c, d.type, d.x, d.y, false, Math.min(1, d.t / 3));
 
@@ -214,6 +215,7 @@
     });
     pushCamp(list, G, c, t);
     DL.Cave.push(list, c, t, view);
+    DL.Spires.push(list, c, t, view);
     DL.Rose.push(list, c, t, view);
     DL.Trophies.push(list, c);
     DL.Outposts.push(list, c, t, view, sprite, Art.drawFire, bar);
@@ -483,6 +485,7 @@
     for (const m of G.golems) drawGolemHeart(c, m, t);
     drawFormEmbers(c, G, t);
     DL.Cave.drawGlow(c, t);
+    DL.Spires.drawGlow(c, t, view);
     DL.Rose.drawGlow(c, t, view);
     DL.Minions.drawGlow(c, t);
     for (const k of G.kindles) drawKindleGlow(c, k, t);
@@ -2122,7 +2125,7 @@
     const zi = p ? W.zoneIndex(p.x, p.y) : 0;
     const dim = DL.ZONES[zi].dim;
     const D = G.diff();
-    const dark = Math.min(0.96, (0.12 + 0.84 * G.nightAmt) * D.darkness + (dim + D.dayDim) * (1 - G.nightAmt));
+    const dark = G.spires ? DL.SPIRES.dark : Math.min(0.96, (0.12 + 0.84 * G.nightAmt) * D.darkness + (dim + D.dayDim) * (1 - G.nightAmt));
     G.darkness = dark;
     const L = R.lx, lw = R.lc.width, lh = R.lc.height, k = z / 2;
     const ox = shx / 2, oy = shy / 2;
