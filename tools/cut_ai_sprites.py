@@ -85,6 +85,8 @@ GRIDS = {
     'carrion-drakeling/poses-b.png': (3, 2, POSES_B),
     'tide-stalker/poses-a.png': (3, 2, POSES_A),
     'thornling/poses-a.png': (3, 2, POSES_A),
+    'bonepicker-raptor/poses-a.png': (3, 2, POSES_A),
+    'bonepicker-raptor/poses-b.png': (3, 2, POSES_B),
     'clapper-leech/poses-a.png': (3, 2, POSES_A),
     'clapper-leech/poses-b.png': (3, 2, POSES_B),
     # the Toll Wretch's poses B came as 4 walks over hurt and death: poses-b.png is it laid out again 3x2 (raw: poses-b-orig.png)
@@ -205,6 +207,7 @@ HANDMAIDEN_H = 230  # the Deadly Rose's Briar Handmaiden, res 4: 115 world px, a
 SKITTERER_H = 116  # the Starved Bell's Chapel Skitterer, res 4: 58 world px, a little over half a knight
 TOLLWRETCH_H = 208  # the Starved Bell's Toll Wretch, res 4: 104 world px, as tall as a knight
 CLAPPER_H = 104  # the Starved Bell's Clapper Leech, res 4: 52 world px, half a knight
+RAPTOR_H = 140  # the Mother Wyvern's Bonepicker Raptor, res 4: 70 world px, a knight's chest
 THORNLING_H = 80  # the Deadly Rose's Thornling (a boss minion), res 4: 40 world px tall with its tail up
 TIDESTALKER_H = 104  # the Tide Stalker (a boss minion), res 4: 52 world px tall
 WISP_H = 180  # the Sunken Wisp (a boss minion), res 4: 90 world px tall, tendrils included
@@ -358,6 +361,7 @@ SETS = {
     'chapel-skitterer': ('minions/skitterer', 'chapel-skitterer/01_front.png', SKITTERER_H, 1, twelve('chapel-skitterer', TWELVE_FILES)),
     'toll-wretch': ('minions/tollwretch', 'toll-wretch/01_front.png', TOLLWRETCH_H, 1, twelve('toll-wretch', TWELVE_FILES)),
     'clapper-leech': ('minions/leech', 'clapper-leech/01_front.png', CLAPPER_H, 1, twelve('clapper-leech', TWELVE_FILES)),
+    'bonepicker-raptor': ('minions/raptor', 'bonepicker-raptor/01_front.png', RAPTOR_H, 1, twelve('bonepicker-raptor', TWELVE_FILES)),
     'thornling': ('minions/thornling', 'thornling/01_front.png', THORNLING_H, 1, twelve('thornling', TWELVE_FILES)),
     'tide-stalker': ('minions/tidestalker', 'tide-stalker/01_front.png', TIDESTALKER_H, 1, twelve('tide-stalker', TWELVE_FILES)),
     'sunken-wisp': ('minions/wisp', 'sunken-wisp/01_front.png', WISP_H, 1, twelve('sunken-wisp', TWELVE_FILES)),
@@ -582,6 +586,11 @@ SHEETS = {
         ('clapper-leech/walk-side-4.png', 4, 1, 100, 'side/walk'),
         ('clapper-leech/walk-front.png', 4, 1, 122, 'walkF'),
         ('clapper-leech/walk-back.png', 4, 1, 120, 'walkB'),
+    ],
+    'bonepicker-raptor': [
+        ('bonepicker-raptor/walk-side-4.png', 4, 1, 124, 'side/walk'),
+        ('bonepicker-raptor/walk-front.png', 4, 1, 140, 'walkF'),
+        ('bonepicker-raptor/walk-back.png', 4, 1, 140, 'walkB'),
     ],
     'thornling': [
         ('thornling/walk-side-4.png', 4, 1, 70, 'side/walk'),
