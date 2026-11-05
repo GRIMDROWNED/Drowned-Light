@@ -145,6 +145,7 @@
     minion("rosewretch", "rosewretch", 4, [[102, 126], [85, 155], [88, 157]]), // the Deadly Rose's Rose Wretch
     minion("handmaiden", "handmaiden", 4, [[147, 233], [132, 240], [134, 239]]), // the Deadly Rose's Briar Handmaiden
     minion("skitterer", "skitterer", 4, [[74, 135], [71, 135], [79, 135]]), // the Starved Bell's Chapel Skitterer
+    minion("tollwretch", "tollwretch", 4, [[133, 211], [74, 218], [85, 222]]), // the Starved Bell's Toll Wretch
     minion("thornling", "thornling", 4, [[45, 87], [43, 82], [46, 83]]), // the Deadly Rose's Thornling Swarm Stalker
     minion("tidestalker", "tidestalker", 4, [[109, 123], [87, 134], [92, 138]]), // the Sunken King's Tide Stalker
     minion("wisp", "wisp", 4, [[108, 182], [112, 197], null]), // the Sunken Wisp: its front shows going away too (Robert)
