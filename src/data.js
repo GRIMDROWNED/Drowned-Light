@@ -93,6 +93,9 @@
   DL.ENEMIES = {
     squire: { name: "Mire Stalker", hp: 16, speed: 92, dmg: 6, range: 30, windup: 0.32, cd: 1.0, scale: 0.78,
       radius: 10, mass: 0.7, zigzag: true, lunge: 380, retreat: 0.7, drop: { iron: 0.15 } },
+    // A crystal turret of the Abyssal Spires: never moves, plays bullet patterns (src/bullets.js).
+    sentinel: { name: "Spire Sentinel", hp: 110, speed: 0, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1,
+      radius: 18, mass: 50, sentinel: true, shadow: 22, drop: {} },
     footman: { name: "Drowned Wretch", hp: 34, speed: 58, dmg: 11, range: 36, windup: 0.45, cd: 1.4, scale: 1,
       radius: 13, mass: 1, corruptHit: 4, drop: { iron: 0.4 } },
     archer: { name: "Tide Archer", hp: 22, speed: 64, dmg: 9, range: 230, windup: 0.7, cd: 2.3, scale: 0.95,
@@ -695,6 +698,13 @@
      `intro` seconds before wave 1, `rest` between waves, a group pours out of a tunnel every `burst` seconds.
      Each wave brings `n` of its new kind plus `mix` of the kinds already met (both scaled by difficulty and party).
      After a wave everyone heals `heal` of their health and the fallen rise with `rise`; losing leaves you `failHp`. */
+  /* Bullet hell for the dungeon levels (src/bullets.js). Bullets are slow and readable; the dash threads them. */
+  DL.BULLETS = {
+    cap: 700, speed: 110, r: 6, dmg: 7, life: 7, reach: 1100,
+    hitbox: 6, // added to a bullet's radius: how close to the knight's middle it must come to hit
+    sentinel: { wake: 560, charge: 0.7, mouth: 52, dmg: 7 }, // the Spire Sentinel crystal turret
+  };
+
   /* Abyssal Spires test room (Robert, 2026-11-05: try a dungeon with corridors and heights in the 3/4 view before
      drawing art for it). Far off the map like Derek's Hollow; reached from the pause menu in Sandbox. src/spires.js */
   DL.SPIRES = {

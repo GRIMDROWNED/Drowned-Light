@@ -10,8 +10,9 @@
    crystal glows and the mist move.
 
    You walk only on floors, stairs and bridges (Spires.collide). Step into the west arch or the east ring to cross between
-   them; the small arch on the south platform takes you home. Stand on the middle of the rune circle and Drowned climb out
-   of the mist on the far platforms and come for you, routing over stairs and bridges (Spires.route).
+   them; the small arch on the south platform takes you home. A Spire Sentinel (crystal turret, src/bullets.js) on the terrace and one in the walkway
+   fire bullet patterns. Stand on the middle of the rune circle and Drowned climb out
+   of the mist on the far platforms (and broken Sentinels come back) and come for you, routing over stairs and bridges (Spires.route).
    Reached from the pause menu in Sandbox. The world clock stops while you're here. Numbers: DL.SPIRES (src/data.js). */
 "use strict";
 (function (DL) {
@@ -143,12 +144,14 @@
     p.kx = p.ky = 0; p.dashT = 0; p.angle = -Math.PI / 2;
     for (const f of followers()) { f.x = p.x + DL.rand(-30, 30); f.y = p.y + DL.rand(-10, 20); f.spx = null; }
     G.camera.x = p.x; G.camera.y = p.y - 20;
+    sentinels();
     say("The Abyssal Spires. Cross the arches to travel; stand on the rune circle to wake the Drowned.", "good");
   };
   Sp.leave = function () {
     const sp = G.spires, p = G.player;
     if (!sp) return;
     G.spires = null;
+    DL.Bullets.clear();
     for (const e of G.enemies) if (Sp.inRegion(e.x, e.y)) e.removed = true;
     G.enemies = G.enemies.filter((e) => !e.removed);
     if (p) {
@@ -159,6 +162,16 @@
     }
     say("You step back out of the mist.", "good");
   };
+
+  // Spire Sentinels (crystal turrets, src/bullets.js): one on the terrace, one in the walkway; brought back if broken.
+  const SENTINELS = [[640, 150], [-300, -250]];
+  function sentinels() {
+    for (const [x, y] of SENTINELS) {
+      if (G.enemies.some((e) => e.def.sentinel && !e.removed && Math.hypot(e.x - OX - x, e.y - OY - y) < 40)) continue;
+      G.enemies.push(G.makeEnemy("sentinel", OX + x, OY + y, S.wave.zone));
+      for (let i = 0; i < 12; i++) G.puff(OX + x + DL.rand(-14, 14), OY + y - DL.rand(0, 60), "rgba(200,150,255,0.7)", 50, 0.7);
+    }
+  }
 
   // The portals, and waking the rune circle.
   Sp.update = function (dt) {
@@ -179,7 +192,7 @@
     }
     sp.inPortal = atW || atE;
     // the rune circle: step on its heart and the Drowned climb out of the mist on the far platforms
-    const mine = G.enemies.filter((e) => !e.removed && Sp.inRegion(e.x, e.y));
+    const mine = G.enemies.filter((e) => !e.removed && !e.def.sentinel && Sp.inRegion(e.x, e.y));
     sp.wake = Math.max(0, sp.wake - (mine.length ? 0 : dt));
     if (!mine.length && sp.wake <= 0 && Math.hypot(lx - RUNE.x, (ly - RUNE.y) / RUNE.sq) < 34) {
       const w = S.wave, spots = [FLOORS.terrace, FLOORS.south, FLOORS.west, FLOORS.east, FLOORS.walk];
@@ -187,6 +200,7 @@
         const f = spots[i % spots.length], x = OX + (f[0] + f[2]) / 2 + DL.rand(-40, 40), y = OY + (f[1] + f[3]) / 2 + DL.rand(-20, 20);
         G.enemies.push(G.makeEnemy(w.type, x, y, w.zone, { rise: 0.9 }));
       }
+      sentinels();
       sp.wake = w.rest; sp.flare = 1;
       G.camera.shake = 6;
       DL.Sound.play("whisper");

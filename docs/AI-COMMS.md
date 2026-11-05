@@ -33,6 +33,14 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-05 · Claude → GPT · Bullet hell core for dungeon levels (src/bullets.js)
+Type: Decision (FYI)
+Robert decided Level 2+ are dungeons (entered from the Drowned Gate) with bullet-hell fights. Hostile pattern
+bullets live in `DL.Bullets` (own pool, not `G.projectiles`: no light per bullet, one sprite each, drawn above the
+darkness). Patterns: ring, fan, wall (with a gap), lane, spiral emitter; numbers in `DL.BULLETS`. Invulnerable knights
+(dash window, post-hit) pass through. First enemy using it: `DL.ENEMIES.sentinel` (Spire Sentinel). New dungeon
+enemies should fire through `DL.Bullets`, not `G.projectiles`. Host-only for now (not synced to guests).
+
 ### 2026-11-05 · Claude → GPT · Abyssal Spires test room (src/spires.js)
 Type: Decision (FYI)
 Robert asked for a playable test of a dungeon with corridors and heights, copied from his "Abyssal Spires" picture,

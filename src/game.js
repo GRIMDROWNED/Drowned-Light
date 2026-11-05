@@ -243,7 +243,7 @@
     G.towerCd = [0, 0, 0, 0];
     G.resetPylons();
     G.siegeT = 5; G.spawnT = 3; G.rootEvent = null; G.selfEnemy = null; G.champSpawned = false;
-    G.dying = 0; G.spires = null;
+    G.dying = 0; G.spires = null; DL.Bullets.clear();
     DL.Siege.reset();
     DL.Outposts.reset();
     DL.Pyramid.resetChampions();
@@ -331,6 +331,7 @@
     DL.Rose.local();
     DL.Cave.update(dt);
     DL.Spires.update(dt);
+    DL.Bullets.update(dt);
     DL.Minions.update(dt);
     updateEnemies(dt);
     if (G.state === "dying") return;
@@ -1070,6 +1071,8 @@
         e.y += Math.sin(e.wanderA) * e.speed * 0.45 * dt;
         e.angle = e.wanderA;
         e.moving = true;
+      } else if (e.def.sentinel) {
+        e.state = "move"; e.moving = false; // a crystal turret: it only shoots
       } else if (e.def.king && DL.Finale.busy()) {
         // the Sunken King: his hands do everything (src/finale.js)
       } else if (e.def.bell && DL.Bell.busy(e, dt, p, dp)) {
@@ -1210,6 +1213,7 @@
       for (const a of G.enemies) if (a !== e && dist(e.x, e.y, a.x, a.y) < d.aura) a.rallied = 0.3;
     }
     if (d.caster) hexbearer(e, dt, p, dp);
+    if (d.sentinel) DL.Bullets.sentinel(e, dt, p, dp); // the Spire Sentinel's bullet patterns (src/bullets.js)
     if (d.bell) DL.Bell.behave(e, dt, p, dp);
     if (d.colossus) DL.Colossus.think(e, dt, p, dp);
     if (d.king) DL.Finale.think(e, dt); // the Sunken King picks his moves (src/finale.js)
