@@ -148,6 +148,7 @@
     minion("tollwretch", "tollwretch", 4, [[133, 211], [74, 218], [85, 222]]), // the Starved Bell's Toll Wretch
     minion("leech", "leech", 4, [[102, 117], [83, 131], [74, 138]]), // the Starved Bell's Clapper Leech
     minion("raptor", "raptor", 4, [[165, 126], [65, 162], [54, 150]]), // the Mother Wyvern's Bonepicker Raptor
+    minion("screecher", "screecher", 4, [[159, 163], [107, 249], [107, 249]]), // the Mother Wyvern's Red Marrow Screecher
     minion("thornling", "thornling", 4, [[45, 87], [43, 82], [46, 83]]), // the Deadly Rose's Thornling Swarm Stalker
     minion("tidestalker", "tidestalker", 4, [[109, 123], [87, 134], [92, 138]]), // the Sunken King's Tide Stalker
     minion("wisp", "wisp", 4, [[108, 182], [112, 197], null]), // the Sunken Wisp: its front shows going away too (Robert)
