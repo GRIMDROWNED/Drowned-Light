@@ -810,8 +810,35 @@
     return { dir: cy > 0 ? "down" : "up", flip: false };
   };
 
-  const tmp = document.createElement("canvas");
-  const tg = tmp.getContext("2d");
+  /* Tinted copies of frames (hit flashes, wind-up pulses, frost, companion forms), kept and reused: making a fresh
+     copy for every tinted draw (dozens a frame in a big fight) was slow, above all on phones, where each one also has
+     to be sent to the graphics chip. The tint strength is rounded to 1/32 (too fine a step to see), so a flickering
+     tint reuses a handful of copies. The least recently used copies are dropped past TINT_MAX. */
+  const tints = new Map(), TINT_MAX = 192;
+  let tintId = 0;
+  function tinted(fr, w, h, flash, color) {
+    const q = Math.round(Math.min(1, flash) * 32);
+    const key = (fr.__tid || (fr.__tid = ++tintId)) + "|" + color + "|" + q;
+    let cv = tints.get(key);
+    if (cv) { tints.delete(key); tints.set(key, cv); return cv; } // most recently used last
+    cv = tints.size >= TINT_MAX ? tints.get(tints.keys().next().value) : null;
+    if (cv) tints.delete(tints.keys().next().value);
+    else cv = document.createElement("canvas");
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    const tg = cv.getContext("2d");
+    tg.globalCompositeOperation = "source-over";
+    tg.globalAlpha = 1;
+    tg.clearRect(0, 0, w, h);
+    tg.drawImage(fr, 0, 0);
+    tg.globalCompositeOperation = "source-atop";
+    tg.globalAlpha = q / 32;
+    tg.fillStyle = color;
+    tg.fillRect(0, 0, w, h);
+    tg.globalAlpha = 1;
+    tg.globalCompositeOperation = "source-over";
+    tints.set(key, cv);
+    return cv;
+  }
 
   /* Draw a unit with its feet at (x, y). opt: alpha, flash (0..1), flashColor, clip (0..1 visible from top). */
   Art.drawUnit = function (ctx, key, anim, frame, angle, x, y, scale, opt = {}) {
@@ -825,20 +852,7 @@
     const fr = f.c, w = f.w, h = f.h, ax = f.ax != null ? f.ax : CX, ay = f.ay != null ? f.ay : GY;
     const s = (PS * scale) / (f.res || 1);
     const clip = opt.clip != null ? Math.max(0, Math.min(1, opt.clip)) : 1;
-    let img = fr;
-    if (opt.flash) {
-      if (tmp.width !== w || tmp.height !== h) { tmp.width = w; tmp.height = h; }
-      tg.clearRect(0, 0, w, h);
-      tg.globalCompositeOperation = "source-over";
-      tg.drawImage(fr, 0, 0);
-      tg.globalCompositeOperation = "source-atop";
-      tg.globalAlpha = Math.min(1, opt.flash);
-      tg.fillStyle = opt.flashColor || "#fff";
-      tg.fillRect(0, 0, w, h);
-      tg.globalAlpha = 1;
-      tg.globalCompositeOperation = "source-over";
-      img = tmp;
-    }
+    const img = opt.flash ? tinted(fr, w, h, opt.flash, opt.flashColor || "#fff") : fr;
     ctx.save();
     if (opt.alpha != null) ctx.globalAlpha *= opt.alpha;
     ctx.translate(Math.round(x), Math.round(y));

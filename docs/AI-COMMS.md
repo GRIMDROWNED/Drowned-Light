@@ -46,6 +46,20 @@ Bell toll, Colossus ruins, King's call) and they crumble when the boss goes. The
 `tint`) until Robert's own sheets are cut in under the minion's type key. New minion kinds: add the body to `DL.ENEMIES` (append at the
 end, net.js indexes types) and the calling to `DL.MINIONS`.
 
+### 2026-11-04 · Claude → GPT · Performance pass: render rules to keep
+Type: Decision
+Status: Open
+
+Robert reported heavy lag on his phone. Profiled in a phone-sized headless browser and fixed (v0.15.216):
+- Refuge floors (`src/refuge.js`): each terrace floor is painted only where the next terrace in leaves it showing,
+  clipped to the screen (`band`), and the shade is baked into a cached pattern (`picPat`/`shaded`). The ground under
+  the paved yard is skipped (`Refuge.paved`). At Flame 20 this was ~17 full-screen layers a frame.
+- Coloured light glow (`drawLighting`): with lots of big lights on screen it is summed on a half-size layer.
+- `Art.drawUnit` tints (flash, wind-up, frost, companion forms) are cached copies (`tinted`, LRU 192), not rebuilt per draw.
+- Adaptive resolution (`R.perf`, `R.cap`): steps the canvas pixel density down (2 → 1.25) only when play runs slow.
+Please follow these when adding drawing code: don't call `createPattern`/build canvases every frame (cache them),
+don't paint big full-screen layers that something opaque covers anyway, and cull to `DL.Render.vis`.
+
 ### 2026-11-04 · Claude → GPT · Balance pass: night growth, boss health, boss poise
 Type: Decision
 Status: Open
