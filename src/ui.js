@@ -89,6 +89,11 @@
       UI.updateRefugeLabel();
     });
     $("btnZoom").addEventListener("click", () => { $("btnZoom").textContent = "Zoom: " + DL.Render.cycleZoom(); });
+    // Sandbox only: the Abyssal Spires test room (src/spires.js), a dungeon with heights to walk before drawing art for it
+    $("btnSpires").addEventListener("click", () => {
+      UI.resume();
+      if (DL.Spires.active()) DL.Spires.leave(); else DL.Spires.enter();
+    });
     $("btnCombat").addEventListener("click", () => {
       G.save.attackMode = G.save.attackMode === "manual" ? "auto" : "manual";
       G.persist();
@@ -308,6 +313,8 @@
     const G = DL.Game;
     if (G.state !== "play") return;
     $("btnLeaveCoop").classList.toggle("hidden", !DL.Net.role);
+    $("btnSpires").classList.toggle("hidden", !DL.SANDBOX || !!DL.Net.role || !!G.cave);
+    $("btnSpires").textContent = DL.Spires.active() ? "Leave the test room" : "Test room: Abyssal Spires";
     UI.renderCoopPlayers();
     $("pauseNote").textContent = G.isGuest()
       ? "The world keeps running while you're paused. Only the host can pause it for both of you."
@@ -1070,14 +1077,14 @@
     set($("phaseIcon"), "class", G.night ? "moon" : "sun");
     set($("clock"), "--prog", String(G.time / DL.CYCLE.total));
 
-    set($("zoneText"), "text", G.cave ? "Derek's Hollow" : DL.ZONES[p.zi].name);
+    set($("zoneText"), "text", G.cave ? "Derek's Hollow" : G.spires ? "Abyssal Spires (test room)" : DL.ZONES[p.zi].name);
     const N = DL.Net;
     const coopText = !N.role ? "" : N.role === "guest" ? "Co-op · your friend's world" : G.allies.length ? `Co-op · ${G.allies.length + 1} players · room ${N.code}` : `Room ${N.code} · waiting for friends`;
     set($("coopChip"), "text", coopText);
     set($("coopChip"), "hidden", !coopText);
     const d = Math.hypot(p.x, p.y);
     set($("homeArrow"), "transform", `rotate(${(Math.atan2(-p.y, -p.x) * 180) / Math.PI}deg)`);
-    set($("homeDist"), "text", (DL.SANDBOX ? "SANDBOX · " : "") + (G.cave ? "Camp: far above" : (DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`) + (DL.Finale.stage() >= 1 ? "" : DL.Refuge.on() ? ` · Refuge ${DL.Refuge.level()} of ${DL.FLAME.max}` : ` · Pyramid ${Math.floor(DL.Pyramid.coverage() * 100)}% of ${Math.round(DL.PYRAMID.win * 100)}%`)));
+    set($("homeDist"), "text", (DL.SANDBOX ? "SANDBOX · " : "") + (G.cave ? "Camp: far above" : G.spires ? "Camp: beyond the mist" : (DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`) + (DL.Finale.stage() >= 1 ? "" : DL.Refuge.on() ? ` · Refuge ${DL.Refuge.level()} of ${DL.FLAME.max}` : ` · Pyramid ${Math.floor(DL.Pyramid.coverage() * 100)}% of ${Math.round(DL.PYRAMID.win * 100)}%`)));
     // the way to Derek's Hollow, once found, until you've won him
     const cn = DL.Cave.showNav();
     set($("caveNav"), "hidden", !cn);

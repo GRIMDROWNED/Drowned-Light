@@ -695,6 +695,16 @@
      `intro` seconds before wave 1, `rest` between waves, a group pours out of a tunnel every `burst` seconds.
      Each wave brings `n` of its new kind plus `mix` of the kinds already met (both scaled by difficulty and party).
      After a wave everyone heals `heal` of their health and the fallen rise with `rise`; losing leaves you `failHp`. */
+  /* Abyssal Spires test room (Robert, 2026-11-05: try a dungeon with corridors and heights in the 3/4 view before
+     drawing art for it). Far off the map like Derek's Hollow; reached from the pause menu in Sandbox. src/spires.js */
+  DL.SPIRES = {
+    x: 40000, y: 0, halfW: 1600, halfH: 1400,
+    lh: 48,      // world px of drop per height level (a face this much taller per level)
+    hang: 44,    // face showing under a level-0 floor before it fades into the mist
+    dark: 0.36,  // the room's darkness (violet dusk, not night)
+    wave: { type: "footman", n: 4, zone: 1, rest: 6 }, // Drowned that rise when you step on the rune circle
+  };
+
   DL.CAVE = {
     x: 0, y: 40000, radius: 360, dist: 1750, zone: 2,
     intro: 6, rest: 8, burst: 1.4, heal: 0.25, rise: 0.5, failHp: 0.35,
