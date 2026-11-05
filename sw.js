@@ -2,7 +2,7 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.218";
+const VERSION = "0.15.219";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
@@ -104,6 +104,8 @@ const FILES = [
     "minions/skitterer/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "minions/tollwretch/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "minions/tollwretch/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
+    "minions/leech/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
+    "minions/leech/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "minions/thornling/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "minions/thornling/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "minions/tidestalker/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
