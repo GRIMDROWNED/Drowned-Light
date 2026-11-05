@@ -86,7 +86,7 @@
   Bell.behave = function (e, dt, p, dp) {
     if (!e.erupted) erupt(e);
     if (e.meal || e.gulp) return;
-    e.tollT -= dt;
+    e.tollT -= dt * DL.Minions.tollRate(e); // a Toll Wretch rings it on (src/minions.js)
     e.gulpT -= dt;
     if (e.tollT <= 0 && dp < D.tollR + 60 && e.state === "move") toll(e);
   };
@@ -108,8 +108,9 @@
   function toll(e) {
     e.tollT = D.tollEvery * (e.hp < e.maxHp / 2 ? 0.7 : 1);
     G.telegraphs.push({ by: e.def.name, x: e.x, y: e.y, r: D.tollR, t: 0, delay: 1, dmg: e.dmg * 0.55, corrupt: D.tollCorrupt });
-    for (const max of [0.9, 1.2, 1.5]) G.effects.push({ type: "ring", x: e.x, y: e.y - 50, r0: 24, r1: D.tollR, col: "150,230,240", w: 6, t: 0, max });
-    G.text(e.x, e.y - 150, "TOLL", "#9fdfe6", 1.2);
+    for (const max of [0.9, 1.2, 1.5]) G.effects.push({ type: "ring", x: e.x, y: e.y - 40 * e.def.scale, r0: 24, r1: D.tollR, col: "150,230,240", w: 6, t: 0, max });
+    G.text(e.x, e.y - 120 * e.def.scale, "TOLL", "#9fdfe6", 1.2);
+    DL.Minions.toll(e); // Chapel Skitterers burst from the mud
     for (const t of G.torches) if (dist(e.x, e.y, t.x, t.y) < D.tollR) t.t = Math.max(0, t.t - 15);
     sfx("toll");
   }

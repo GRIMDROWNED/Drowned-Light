@@ -684,15 +684,15 @@
   }
   // Where her mouth is on the drawings, from her feet (in screen px), for the glow of her breath and roar.
   function momMouth(e, o) {
-    const m = e.move, kind = m ? m.kind : "", y = e.y - o.alt * MOM_LIFT;
-    if (kind === "roar") return [e.x + (Math.cos(e.angle) >= 0 ? 1 : -1) * 70, y - 175];
+    const m = e.move, kind = m ? m.kind : "", y = e.y - o.alt * MOM_LIFT, z = e.def.scale;
+    if (kind === "roar") return [e.x + (Math.cos(e.angle) >= 0 ? 1 : -1) * 70 * z, y - 175 * z];
     const s = Math.cos(kind === "rear" || kind === "breath" ? m.ang : e.angle) >= 0 ? 1 : -1;
-    if (kind === "breath") return [e.x + s * 95, y - 105];
-    return [e.x + s * 70, y - 160];
+    if (kind === "breath") return [e.x + s * 95 * z, y - 105 * z];
+    return [e.x + s * 70 * z, y - 160 * z];
   }
   Wyv.drawMother = function (c, e, t) {
     const o = momOpts(e, t), m = e.move;
-    shadow(c, e.x, e.y, 30 * (1 - (e.alt || 0) * 0.3), 10 * (1 - (e.alt || 0) * 0.3), 0.32 - (e.alt || 0) * 0.12);
+    shadow(c, e.x, e.y, 30 * e.def.scale * (1 - (e.alt || 0) * 0.3), 10 * e.def.scale * (1 - (e.alt || 0) * 0.3), 0.32 - (e.alt || 0) * 0.12);
     if (e.state === "windup") {
       // her claw coming: a cone of warning on the ground
       const k = 1 - e.stT / e.def.windup;
@@ -707,7 +707,7 @@
     }
     if (momDrawn()) {
       const [a, fr, ang] = momFrame(e, m);
-      DL.Art.drawUnit(c, "wyvern", a, fr, ang, e.x, e.y - o.alt * MOM_LIFT, 1, e.flash > 0 ? { flash: 0.6, flashColor: "#ffffff" } : {});
+      DL.Art.drawUnit(c, "wyvern", a, fr, ang, e.x, e.y - o.alt * MOM_LIFT, e.def.scale, e.flash > 0 ? { flash: 0.6, flashColor: "#ffffff" } : {});
     } else {
       c.save();
       if (e.flash > 0) c.filter = "brightness(2.2)";
@@ -715,7 +715,7 @@
       c.restore();
     }
     if (e.hp < e.maxHp) {
-      const w = e.def.barW, y = momDrawn() ? e.y - o.alt * MOM_LIFT - 205 : e.y - o.alt - e.def.barY; // over her head, drawn or coded
+      const w = e.def.barW, y = momDrawn() ? e.y - o.alt * MOM_LIFT - 205 * e.def.scale : e.y - o.alt - e.def.barY; // over her head, drawn or coded
       c.fillStyle = "rgba(0,0,0,0.6)"; c.fillRect(e.x - w / 2 - 1, y - 1, w + 2, 5);
       c.fillStyle = "#ff6a50"; c.fillRect(e.x - w / 2, y, w * Math.max(0, e.hp / e.maxHp), 3);
     }

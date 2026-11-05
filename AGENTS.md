@@ -46,6 +46,7 @@ Neither assistant sees the other's chats, so anything the other one needs to kno
   `by`, so the death screen can name the killer.
 - **Stuns from kits** go through `G.stun(e, t, root)` (src/game.js) so bosses keep their poise (`DL.BOSS`); new boss
   kinds get a health entry in `DL.BOSS.hp`.
+- **Boss minions** are `DL.ENEMIES` entries with `minion: true` called through `DL.MINIONS` (`src/minions.js`); a boss's size is `DL.BOSS.size`.
 - **New input actions** go in the `ACTIONS` list in `src/binds.js` so they can be rebound.
   New menu screens must be reachable by gamepad and need a B-back case in `back()` in `src/pad.js`.
 - **New touch action buttons** go in `RING` in `src/ui.js`.

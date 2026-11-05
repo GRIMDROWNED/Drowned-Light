@@ -80,6 +80,38 @@ GRIDS = {
     'fred-f3/poses-a.png': (3, 2, POSES_A),
     'fred-f3/poses-b.png': (3, 2, POSES_B),
     # David the wyvern (src/wyvern.js): poses B's four flap cells stand in for the side walk
+    # the bosses' minions (src/minions.js, prompts in art-prompts/boss-minions-prompts.md)
+    'carrion-drakeling/poses-a.png': (3, 2, POSES_A),
+    'carrion-drakeling/poses-b.png': (3, 2, POSES_B),
+    'tide-stalker/poses-a.png': (3, 2, POSES_A),
+    'thornling/poses-a.png': (3, 2, POSES_A),
+    'cairn-crawler/poses-a.png': (3, 2, POSES_A),
+    'cairn-crawler/poses-b.png': (3, 2, POSES_B),
+    'totem-servitor/poses-a.png': (3, 2, POSES_A),
+    'totem-servitor/poses-b.png': (3, 2, POSES_B),
+    'silt-fist/poses-a.png': (3, 2, POSES_A),
+    'silt-fist/poses-b.png': (3, 2, POSES_B),
+    'marrow-screecher/poses-a.png': (3, 2, POSES_A),
+    'marrow-screecher/poses-b.png': (3, 2, POSES_B),
+    'bonepicker-raptor/poses-a.png': (3, 2, POSES_A),
+    'bonepicker-raptor/poses-b.png': (3, 2, POSES_B),
+    'clapper-leech/poses-a.png': (3, 2, POSES_A),
+    'clapper-leech/poses-b.png': (3, 2, POSES_B),
+    # the Toll Wretch's poses B came as 4 walks over hurt and death: poses-b.png is it laid out again 3x2 (raw: poses-b-orig.png)
+    'toll-wretch/poses-a.png': (3, 2, POSES_A),
+    'toll-wretch/poses-b.png': (3, 2, POSES_B),
+    'chapel-skitterer/poses-a.png': (3, 2, POSES_A),
+    'chapel-skitterer/poses-b.png': (3, 2, POSES_B),
+    'rose-wretch/poses-a.png': (3, 2, POSES_A),
+    'rose-wretch/poses-b.png': (3, 2, POSES_B),
+    'briar-handmaiden/poses-a.png': (3, 2, POSES_A),
+    'briar-handmaiden/poses-b.png': (3, 2, POSES_B),
+    'thornling/poses-b.png': (3, 2, POSES_B),
+    'tide-stalker/poses-b.png': (3, 2, POSES_B),
+    'sunken-wisp/poses-a.png': (3, 2, POSES_A),
+    'sunken-wisp/poses-b.png': (3, 2, POSES_B),
+    'tide-leech/poses-a.png': (3, 2, POSES_A),
+    'tide-leech/poses-b.png': (3, 2, POSES_B),
     'wyvern-f0/poses-a.png': (3, 2, POSES_A),
     'wyvern-f0/poses-b.png': (3, 2, POSES_B),
     'wyvern-f1/poses-a.png': (3, 2, POSES_A),
@@ -143,7 +175,7 @@ CELL_SCALE.update({'derek-f0/' + n: 0.88 for n in POSES_B})
 
 # Cells cut off at a share of their width (key colour painted over the rest): the Chain Reaper's throw keeps
 # its arm and loses the chain and sickle stretched out ahead, which the game draws flying (src/render.js).
-CELL_CROP = {'chain-reaper/09_attackB': 0.58}
+CELL_CROP = {'chain-reaper/09_attackB': 0.58, 'sunken-wisp/09_attackB': 0.69}  # the Wisp's bolt flies off on its own (prop wispBolt)
 
 # Cells redrawn on their own after a sheet came back: cell -> (redrawn image, cell whose figure height it takes).
 # The redraw is shrunk to that height before it is cut, so it matches the rest of its sheet.
@@ -178,6 +210,21 @@ FRED0_H = 80  # Fred the Sprout (Fred's first form, src/fred.js), res 4: 20 art 
 FRED1_H = 107  # Fred (level 5), a third taller than the Sprout
 FRED2_H = 164  # Weeping Fred (level 10), about the knight's height
 FRED3_H = 210  # Fred the Rotwalker (level 15), a hulking stalker taller than the knight
+ROSEWRETCH_H = 136  # the Deadly Rose's Rose Wretch, res 4: 68 world px (a knight's chest) with its stalks
+HANDMAIDEN_H = 230  # the Deadly Rose's Briar Handmaiden, res 4: 115 world px, a little taller than a knight
+SKITTERER_H = 116  # the Starved Bell's Chapel Skitterer, res 4: 58 world px, a little over half a knight
+TOLLWRETCH_H = 208  # the Starved Bell's Toll Wretch, res 4: 104 world px, as tall as a knight
+CLAPPER_H = 104  # the Starved Bell's Clapper Leech, res 4: 52 world px, half a knight
+RAPTOR_H = 140  # the Mother Wyvern's Bonepicker Raptor, res 4: 70 world px, a knight's chest
+SCREECHER_H = 230  # the Mother Wyvern's Red Marrow Screecher, res 4: 115 world px, a little taller than a knight
+CAIRN_H = 104  # the Colossus's cairn-crawler, res 4: 52 world px
+SERVITOR_H = 312  # the Colossus's totem-servitor, res 4: 156 world px
+SILTFIST_H = 312  # the Colossus's silt-fist, res 4: 156 world px
+THORNLING_H = 80  # the Deadly Rose's Thornling (a boss minion), res 4: 40 world px tall with its tail up
+TIDESTALKER_H = 104  # the Tide Stalker (a boss minion), res 4: 52 world px tall
+WISP_H = 180  # the Sunken Wisp (a boss minion), res 4: 90 world px tall, tendrils included
+TIDELEECH_H = 120  # the Tide Leech (a boss minion), res 4: 30 art px tall head on
+DRAKELING_H = 104  # the Carrion Drakeling (a boss minion), res 4: 26 art px tall with its wings spread
 WYV0_H = 96  # David the Hatchling (src/wyvern.js), res 4: 24 art px from wing tip to tail, wings as wide as the knight is tall
 WYV1_H = 150  # David (his second form), res 4: 37 art px from wing tip to tail, wings about 1.2 times the Hatchling's
 WYV2_H = 190  # Great David (his third form), res 4: 47 art px from wing tip to tail
@@ -317,6 +364,25 @@ SETS = {
     'fred-f1': ('fred-f1', 'fred-f1/01_front.png', FRED1_H, 1, dict(twelve('fred-f1', TWELVE_FILES), **{'fred-f1/10_attackC.png': 'heal'})),
     # David: poses A put his breath (rear back), his spit and his shriek where the attacks go
     'wyvern-f0': ('wyvern-f0', 'wyvern-f0/01_front.png', WYV0_H, 1, twelve('wyvern-f0', TWELVE_FILES)),
+    # the Mother Wyvern's Carrion Drakeling, res 4: 26 art px tall wings spread (about half the knight)
+    # the Sunken King's Tide Leech, res 4: 30 art px tall head on (about a knight's chest), twice that long side on
+    # the Sunken King's Sunken Wisp, res 4: about 90 world px tall floating, tendrils and all
+    # the Sunken King's Tide Stalker, res 4: about half a knight tall
+    'rose-wretch': ('minions/rosewretch', 'rose-wretch/01_front.png', ROSEWRETCH_H, 1, twelve('rose-wretch', TWELVE_FILES)),
+    'briar-handmaiden': ('minions/handmaiden', 'briar-handmaiden/01_front.png', HANDMAIDEN_H, 1, twelve('briar-handmaiden', TWELVE_FILES)),
+    'chapel-skitterer': ('minions/skitterer', 'chapel-skitterer/01_front.png', SKITTERER_H, 1, twelve('chapel-skitterer', TWELVE_FILES)),
+    'toll-wretch': ('minions/tollwretch', 'toll-wretch/01_front.png', TOLLWRETCH_H, 1, twelve('toll-wretch', TWELVE_FILES)),
+    'clapper-leech': ('minions/leech', 'clapper-leech/01_front.png', CLAPPER_H, 1, twelve('clapper-leech', TWELVE_FILES)),
+    'bonepicker-raptor': ('minions/raptor', 'bonepicker-raptor/01_front.png', RAPTOR_H, 1, twelve('bonepicker-raptor', TWELVE_FILES)),
+    'marrow-screecher': ('minions/screecher', 'marrow-screecher/01_front.png', SCREECHER_H, 1, twelve('marrow-screecher', TWELVE_FILES)),
+    'cairn-crawler': ('minions/cairn', 'cairn-crawler/01_front.png', CAIRN_H, 1, twelve('cairn-crawler', TWELVE_FILES)),
+    'totem-servitor': ('minions/servitor', 'totem-servitor/01_front.png', SERVITOR_H, 1, twelve('totem-servitor', TWELVE_FILES)),
+    'silt-fist': ('minions/siltfist', 'silt-fist/01_front.png', SILTFIST_H, 1, twelve('silt-fist', TWELVE_FILES)),
+    'thornling': ('minions/thornling', 'thornling/01_front.png', THORNLING_H, 1, twelve('thornling', TWELVE_FILES)),
+    'tide-stalker': ('minions/tidestalker', 'tide-stalker/01_front.png', TIDESTALKER_H, 1, twelve('tide-stalker', TWELVE_FILES)),
+    'sunken-wisp': ('minions/wisp', 'sunken-wisp/01_front.png', WISP_H, 1, twelve('sunken-wisp', TWELVE_FILES)),
+    'tide-leech': ('minions/tideleech', 'tide-leech/01_front.png', TIDELEECH_H, 1, twelve('tide-leech', TWELVE_FILES)),
+    'carrion-drakeling': ('minions/drakeling', 'carrion-drakeling/01_front.png', DRAKELING_H, 1, twelve('carrion-drakeling', TWELVE_FILES)),
     'wyvern-f1': ('wyvern-f1', 'wyvern-f1/01_front.png', WYV1_H, 1, twelve('wyvern-f1', TWELVE_FILES)),
     'wyvern-f2': ('wyvern-f2', 'wyvern-f2/01_front.png', WYV2_H, 1, twelve('wyvern-f2', TWELVE_FILES)),
     'wyvern-f3': ('wyvern-f3', 'wyvern-f3/01_front.png', WYV3_H, 1, twelve('wyvern-f3', TWELVE_FILES)),
@@ -511,6 +577,81 @@ SHEETS = {
         ('fred-f0/walk-back.png', 4, 1, FRED0_H, 'walkB'),
     ],
     # his flap cycles toward and away from you; the first frame has the wings raised, so it stands taller
+    # the Carrion Drakeling: four wing beats side on, toward and away from you
+    'rose-wretch': [
+        ('rose-wretch/walk-side-4.png', 4, 1, 110, 'side/walk'),
+        ('rose-wretch/walk-front.png', 4, 1, 136, 'walkF'),
+        ('rose-wretch/walk-back.png', 4, 1, 136, 'walkB'),
+    ],
+    'briar-handmaiden': [
+        ('briar-handmaiden/walk-side-4.png', 4, 1, 218, 'side/walk'),
+        ('briar-handmaiden/walk-front.png', 4, 1, 232, 'walkF'),
+        ('briar-handmaiden/walk-back.png', 4, 1, 232, 'walkB'),
+    ],
+    'chapel-skitterer': [
+        ('chapel-skitterer/walk-side-4.png', 4, 1, 116, 'side/walk'),
+        ('chapel-skitterer/walk-front.png', 4, 1, 116, 'walkF'),
+        ('chapel-skitterer/walk-back.png', 4, 1, 116, 'walkB'),
+    ],
+    'toll-wretch': [
+        ('toll-wretch/walk-side-4.png', 4, 1, 200, 'side/walk'),
+        ('toll-wretch/walk-front.png', 4, 1, 208, 'walkF'),
+        ('toll-wretch/walk-back.png', 4, 1, 208, 'walkB'),
+    ],
+    'clapper-leech': [
+        ('clapper-leech/walk-side-4.png', 4, 1, 100, 'side/walk'),
+        ('clapper-leech/walk-front.png', 4, 1, 122, 'walkF'),
+        ('clapper-leech/walk-back.png', 4, 1, 120, 'walkB'),
+    ],
+    'bonepicker-raptor': [
+        ('bonepicker-raptor/walk-side-4.png', 4, 1, 124, 'side/walk'),
+        ('bonepicker-raptor/walk-front.png', 4, 1, 140, 'walkF'),
+        ('bonepicker-raptor/walk-back.png', 4, 1, 140, 'walkB'),
+    ],
+    'marrow-screecher': [
+        ('marrow-screecher/walk-side-4.png', 4, 1, 160, 'side/walk'),
+        ('marrow-screecher/walk-front.png', 4, 1, 230, 'walkF'),
+        ('marrow-screecher/walk-back.png', 4, 1, 230, 'walkB'),
+    ],
+    'cairn-crawler': [
+        ('cairn-crawler/walk-side-4.png', 4, 1, 104, 'side/walk'),
+        ('cairn-crawler/walk-front.png', 4, 1, 104, 'walkF'),
+        ('cairn-crawler/walk-back.png', 4, 1, 104, 'walkB'),
+    ],
+    'totem-servitor': [
+        ('totem-servitor/walk-side-4.png', 4, 1, 312, 'side/walk'),
+        ('totem-servitor/walk-front.png', 4, 1, 312, 'walkF'),
+        ('totem-servitor/walk-back.png', 4, 1, 312, 'walkB'),
+    ],
+    'silt-fist': [
+        ('silt-fist/walk-side-4.png', 4, 1, 312, 'side/walk'),
+        ('silt-fist/walk-front.png', 4, 1, 312, 'walkF'),
+        ('silt-fist/walk-back.png', 4, 1, 312, 'walkB'),
+    ],
+    'thornling': [
+        ('thornling/walk-side-4.png', 4, 1, 70, 'side/walk'),
+        ('thornling/walk-front.png', 4, 1, 80, 'walkF'),
+        ('thornling/walk-back.png', 4, 1, 80, 'walkB'),
+    ],
+    'tide-stalker': [
+        ('tide-stalker/walk-side-4.png', 4, 1, 88, 'side/walk'),
+        ('tide-stalker/walk-front.png', 4, 1, 132, 'walkF'),
+        ('tide-stalker/walk-back.png', 4, 1, 122, 'walkB'),
+    ],
+    'sunken-wisp': [
+        ('sunken-wisp/walk-side-4.png', 4, 1, 162, 'side/walk'),
+        ('sunken-wisp/walk-front.png', 4, 1, 190, 'walkF'),
+    ],
+    'tide-leech': [
+        ('tide-leech/walk-side-4.png', 4, 1, 80, 'side/walk'),
+        ('tide-leech/walk-front.png', 4, 1, 104, 'walkF'),
+        ('tide-leech/walk-back.png', 4, 1, 100, 'walkB'),
+    ],
+    'carrion-drakeling': [
+        ('carrion-drakeling/walk-side-4.png', 4, 1, 104, 'side/walk'),
+        ('carrion-drakeling/walk-front.png', 4, 1, 112, 'walkF'),
+        ('carrion-drakeling/walk-back.png', 4, 1, 112, 'walkB'),
+    ],
     'wyvern-f0': [
         ('wyvern-f0/walk-side-4.png', 4, 1, 115, 'side/walk'),
         ('wyvern-f0/fly-front.png', 4, 1, 114, 'walkF'),
@@ -800,7 +941,7 @@ SEAMS = {'wyvern-f3/poses-a.png': [(533, 0, 512)], 'wyvern-f3/fly-back.png': [(4
          'wyvern-f2/fly-back.png': [(457, 0, 724), (1092, 0, 724), (1512, 0, 724)]}
 # Animation sheets whose wings reach over into the next cell: split by figure (as GRIDS are) and laid out
 # again in equal cells before cutting, so no frame picks up its neighbour's wingtip or loses its own.
-REGRID = {'wyvern-f%d/%s' % (f, n) for f in range(4) for n in ('fly-front.png', 'fly-back.png')} | {'mother/walk-front.png', 'mother/walk-back.png', 'chain-reaper/run-side.png'}
+REGRID = {'carrion-drakeling/walk-front.png', 'carrion-drakeling/walk-back.png'} | {'wyvern-f%d/%s' % (f, n) for f in range(4) for n in ('fly-front.png', 'fly-back.png')} | {'mother/walk-front.png', 'mother/walk-back.png', 'chain-reaper/run-side.png'}
 
 def open_sheet(sheet):
     img = Image.open(os.path.join(SRC, sheet)).convert('RGB')
@@ -1083,3 +1224,13 @@ if not only or 'ice-mage' in only:
             done.append(im)
             print(dst, im.size)
     if done: contact(done, os.path.join(SRC, 'ice-owl-preview.png'))
+
+# The Sunken Wisp's bolt, clipped from its attack sheet (cell 5, where the orb has left it) as a prop at res 2
+WISP_BOLT = ('sunken-wisp/poses-a.png', (845, 650, 1010, 780), 32)  # sheet, box, width in file px (a knight's hand or so)
+_p = os.path.join(SRC, WISP_BOLT[0])
+if os.path.exists(_p) and (not only or 'sunken-wisp' in only):
+    _img = Image.open(_p).convert('RGB').crop(WISP_BOLT[1])
+    _w = cut_keyed(_img, 1, fringe=1).width
+    _im = cut_keyed(_img, WISP_BOLT[2] / _w, fringe=1)
+    _im.save(os.path.join(OUT, PROP_OUT, 'wispBolt.png'))
+    print('props/wispBolt', _im.size)

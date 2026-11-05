@@ -139,6 +139,22 @@
     fred("fred_f3", "fred-f3", [160, 248], [107, 222], [110, 216]), // Fred the Rotwalker (level 15), 52 px
     // David the Hatchling (the wyvern's first form, src/wyvern.js), res 4: 24 px from wing tip to tail
     wyvern("wyvern_f0", "wyvern-f0", [90, 117], [81, 116], [82, 122]),
+    // the bosses' minions (src/minions.js): Robert's drawings replace their stand-in looks as they come in
+    minion("drakeling", "drakeling", 4, [[73, 106], [73, 114], [70, 114]]), // the Carrion Drakeling: wing beats every way
+    minion("tideleech", "tideleech", 4, [[140, 105], [80, 141], [80, 137]]), // the Sunken King's Tide Leech
+    minion("rosewretch", "rosewretch", 4, [[102, 126], [85, 155], [88, 157]]), // the Deadly Rose's Rose Wretch
+    minion("handmaiden", "handmaiden", 4, [[147, 233], [132, 240], [134, 239]]), // the Deadly Rose's Briar Handmaiden
+    minion("skitterer", "skitterer", 4, [[74, 135], [71, 135], [79, 135]]), // the Starved Bell's Chapel Skitterer
+    minion("tollwretch", "tollwretch", 4, [[133, 211], [74, 218], [85, 222]]), // the Starved Bell's Toll Wretch
+    minion("leech", "leech", 4, [[102, 117], [83, 131], [74, 138]]), // the Starved Bell's Clapper Leech
+    minion("raptor", "raptor", 4, [[165, 126], [65, 162], [54, 150]]), // the Mother Wyvern's Bonepicker Raptor
+    minion("screecher", "screecher", 4, [[159, 163], [107, 249], [107, 249]]), // the Mother Wyvern's Red Marrow Screecher
+    minion("cairn", "cairn", 4, [[94, 122], [75, 120], [74, 114]]), // the Colossus's Cairn Crawler
+    minion("servitor", "servitor", 4, [[160, 321], [148, 348], [136, 334]]), // the Colossus's Bog Totem Servitor
+    minion("siltfist", "siltfist", 4, [[258, 338], [216, 362], [336, 385]]), // the Colossus's Silt Fist Fragment
+    minion("thornling", "thornling", 4, [[45, 87], [43, 82], [46, 83]]), // the Deadly Rose's Thornling Swarm Stalker
+    minion("tidestalker", "tidestalker", 4, [[109, 123], [87, 134], [92, 138]]), // the Sunken King's Tide Stalker
+    minion("wisp", "wisp", 4, [[108, 182], [112, 197], null]), // the Sunken Wisp: its front shows going away too (Robert)
     wyvern("wyvern_f1", "wyvern-f1", [125, 160], [123, 173], [111, 189]), // David (level 5), 37 px
     wyvern("wyvern_f2", "wyvern-f2", [144, 210], [139, 267], [141, 261]), // Great David (level 10), 47 px
     wyvern("wyvern_f3", "wyvern-f3", [160, 257], [152, 289], [157, 287]), // David the Bloodwing (level 15), 52 px
@@ -285,6 +301,23 @@
     return set;
   }
 
+  /* A boss's minion from the enemy prompt's two sheets (stills, attack, side walk, hurt, death), at `res`. With no back
+     walk (`feet[2]` null) its front stills and walk serve going away too. Until its
+     walk-toward and walk-away sheets are in, it moves toward or away from you in its still front or back pose; with
+     them (`feet`: the side, front and back walk sheets' foot points, as the cutter prints them) it walks every way. */
+  function minion(type, folder, res, feet) {
+    const keys = { path: "assets/sprites/minions/" + folder + "/", keys: { [type]: [0, false] }, own: true };
+    if (feet && !feet[2]) { // no back drawn: it shows its front going away too
+      const set = Object.assign(walking(type, feet[0], feet[1], feet[1], res), keys);
+      set.views.up = set.views.down;
+      return set;
+    }
+    if (feet) return Object.assign(walking(type, feet[0], feet[1], feet[2], res), keys);
+    const steady = (p) => ({ walk: [p + "@-"], hurt: ["side/hurt"], death: ["side/hurt", "side/death", "side/death"] });
+    return Object.assign(keys, { res,
+      views: motion({ side: Object.assign({ walk: WALK4 }, POSES_SIDE), down: steady("front"), up: steady("back") }) });
+  }
+
   // David the wyvern familiar: he always flies, so his walk is a flap (poses B's four wing beats side on, the fly
   // sheets toward and away from you). His attack rears back and spits a bolt, and "roar" is his shriek.
   function wyvern(key, folder, side, front, back) {
@@ -360,7 +393,7 @@
   }
 
   // World and camp sprites: Art.sprites name -> file. Drawn with the bottom centre on the ground, like the coded ones.
-  const PLANTS = ["refugeOn", "refugeOff", "sentinelOn", "sentinelOff", "rootOn", "rootOff", "sproutOn", "sproutOff", "sproutOn2", "sproutOff2", "sproutBare", "husk", "gardenOn", "gardenOff",
+  const PLANTS = ["wispBolt", "refugeOn", "refugeOff", "sentinelOn", "sentinelOff", "rootOn", "rootOff", "sproutOn", "sproutOff", "sproutOn2", "sproutOff2", "sproutBare", "husk", "gardenOn", "gardenOff",
     "reeds1", "reeds2", "reeds3", "reeds4", "reeds5", "reeds6", "gardenBed1", "gardenBed2", "gardenBed3",
     "swampTree11", "swampTree12", "swampTree13", "swampTree14", "swampTree21", "swampTree22", "swampTree23", "swampTree24", "swampTree31", "swampTree32", "swampTree33", "swampTree34",
     "boulder11", "boulder12", "boulder13", "boulder21", "boulder22", "boulder23", "boulder31", "boulder32", "boulder33", "boulder41", "boulder42", "boulder43",
@@ -521,6 +554,10 @@
         c.width = c.height = 1;
         Art.sprites[name] = { c, w: 0, h: 0 };
       }
+    // a boss's minion has no coded sheet to swap into: it gets one of its own once its three still poses are in
+    for (const set of UNITS) if (set.own) for (const key in set.keys)
+      if (!Art.sheets[key] && ["down", "up", "side"].every((d) => images[set.path + fileOf(set.views[d].idle[0]) + ".png"]))
+        Art.sheets[key] = { down: {}, up: {}, side: {} };
     for (const key in Art.sheets) Art.applyFrames(key, Art.sheets[key]);
   }
 

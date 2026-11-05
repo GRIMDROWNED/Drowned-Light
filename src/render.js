@@ -140,7 +140,7 @@
 
   R.draw = function (G) {
     // facing the Sunken King, the camera pulls back far enough to show him (src/finale.js)
-    const fv = G.player && G.state !== "title" ? DL.Finale.view(G.player) : null;
+    const fv = G.player && G.state !== "title" ? DL.Finale.view(G.player) || G.bossView(G.player) : null; // or a great boss (src/game.js)
     R.zoomMul = (R.zoomMul || 1) + ((fv ? Math.min(1, R.H / (R.zoom * fv.need), R.W / (R.zoom * fv.needW)) : 1) - (R.zoomMul || 1)) * 0.03;
     const c = R.ctx, z = R.zoom * R.zoomMul * R.userZoom(), cam = G.camera, dpr = R.dpr;
     const shx = (Math.random() - 0.5) * cam.shake, shy = (Math.random() - 0.5) * cam.shake;
@@ -471,7 +471,7 @@
       c.moveTo(x0 + Math.cos(a + 2.4) * 6, y0 + Math.sin(a + 2.4) * 6); c.lineTo(x1, y1); c.lineTo(x0 + Math.cos(a - 2.4) * 6, y0 + Math.sin(a - 2.4) * 6);
       c.stroke();
     }
-    for (const e of G.enemies) if (e.rise <= 0 && !e.def.king && !(e.def.rose && e.dormant && Art.sprites.roseBud)) drawEyes(c, e, t);
+    for (const e of G.enemies) if (e.rise <= 0 && !e.def.king && !e.def.minion && !(e.def.rose && e.dormant && Art.sprites.roseBud)) drawEyes(c, e, t);
     for (const h of G.hounds) drawHoundEyes(c, h, t);
     // once the pack is broken, the carcasses glow faintly so you can find one to carry home
     if (den.cleared && !DL.Hounds.mine()) for (const b of den.bodies) {
@@ -484,6 +484,7 @@
     drawFormEmbers(c, G, t);
     DL.Cave.drawGlow(c, t);
     DL.Rose.drawGlow(c, t, view);
+    DL.Minions.drawGlow(c, t);
     for (const k of G.kindles) drawKindleGlow(c, k, t);
     drawSoulGlow(c, G, view, t);
     DL.Fred.glow(c, t, view);
@@ -1079,7 +1080,9 @@
     if (!a.down) bar(c, a.x, a.y - 84, 26, Math.max(0, a.hp) / (a.maxHp || 100), "#c8484e");
   }
 
-  const unitKey = (e) => (e.isSelf ? "self_" + DL.Game.save.kit : e.def.beast ? "boneHound" : e.type);
+  const unitKey = (e) => (e.isSelf ? "self_" + DL.Game.save.kit : e.def.beast ? "boneHound" : e.def.look ? (DL.Minions.look(e) || { key: e.type }).key : e.type);
+  // the size a Drowned is drawn at (a boss's minion wears another's drawings at its own size until its own are in)
+  const unitScale = (e) => { const lk = e.def.look && DL.Minions.look(e); return lk ? lk.scale : e.def.scale; };
 
   function enemyAnim(e, t) {
     if (e.state === "windup") return ["attack", 0, e.aim];
@@ -1197,7 +1200,8 @@
   }
 
   function drawEnemy(c, e, t) {
-    const d = e.def, s = d.scale;
+    if (e.hidden) return; // a Tide Leech under the causeway
+    const d = e.def, s = unitScale(e), lk = d.look && DL.Minions.look(e);
     if (d.bell && e.dormant) { drawBuriedBell(c, e, t); return; }
     if (d.rose && e.dormant && Art.sprites.roseBud) return; // the Deadly Rose asleep inside her bud (src/rose.js)
     if (d.wyvern) return DL.Wyvern.drawMother(c, e, t); // the mother wyvern, drawn in code until her drawings are in (src/wyvern.js)
@@ -1235,8 +1239,9 @@
     }
     // Bone Wolves wear the hound's bones with a drowned, cyan cast
     const frozen = DL.Kits.frozen(e), icy = frozen && e.flash <= 0 && e.state !== "windup"; // frozen by the Frostweaver: frosted over
-    const flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : icy ? 0.45 : d.beast ? WOLF_TINT : 0;
-    const flashColor = e.flash > 0 ? "#ffffff" : icy ? "#bfe6ff" : d.beast && e.state !== "windup" ? WOLF_CAST : d.rose ? "#ff7a8a" : "#7ff6ff";
+    let flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : icy ? 0.45 : d.beast ? WOLF_TINT : 0;
+    let flashColor = e.flash > 0 ? "#ffffff" : icy ? "#bfe6ff" : d.beast && e.state !== "windup" ? WOLF_CAST : d.rose ? "#ff7a8a" : "#7ff6ff";
+    if (lk && lk.tint && !flash) { flash = lk.tintK; flashColor = lk.tint; } // a stand-in minion, washed in its own colour
     const [anim, fr, ang] = enemyAnim(e, t);
     Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y, s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1 });
     if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.barY || (d.crawl ? 36 : d.beast ? 66 : 84) * s) - 4, Math.round((d.barW || 26) * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
@@ -1270,7 +1275,8 @@
   function drawBuriedBell(c, e, t) {
     const s = e.def.scale, sink = 80 * s;
     c.save();
-    c.beginPath(); c.rect(e.x - 120, e.y - 200, 240, 200); c.clip();
+    const sz = e.def.size || 1;
+    c.beginPath(); c.rect(e.x - 120 * sz, e.y - 200 * sz, 240 * sz, 200 * sz); c.clip();
     Art.drawUnit(c, "bell", "idle", 0, Math.PI / 2, e.x, e.y + sink, s, { flash: 0.15, flashColor: "#1d3a3c" });
     c.restore();
     c.strokeStyle = "rgba(90,200,210,0.35)";
@@ -1536,7 +1542,7 @@
 
   function drawDissolve(c, f) {
     const e = f.e, k = f.t / f.max;
-    Art.drawUnit(c, unitKey(e), "death", Math.min(2, Math.floor(k * 3)), e.angle, e.x, e.y, e.def.scale, { alpha: 1 - k * k, flash: 0.3 + k * 0.5, flashColor: "#5fe6ee" });
+    Art.drawUnit(c, unitKey(e), "death", Math.min(2, Math.floor(k * 3)), e.angle, e.x, e.y, unitScale(e), { alpha: 1 - k * k, flash: 0.3 + k * 0.5, flashColor: "#5fe6ee" });
   }
 
   /* The Rose Paladin's Thorn Lash: the Deadly Rose's drawn whip (coiled, cracked out, fading in petals) swung from his
@@ -1850,7 +1856,7 @@
       c.restore();
       return;
     }
-    const bolt = b.kind === "bolt" && !b.hostile && Art.sprites[b.flare ? "arbFlareBolt" : "arbBolt"];
+    const bolt = (b.kind === "bolt" && !b.hostile && Art.sprites[b.flare ? "arbFlareBolt" : "arbBolt"]) || (b.kind === "wispBolt" && Art.sprites.wispBolt); // or a Sunken Wisp's orb
     if (bolt) {
       // the Ashen Arbalist's drawn bolt, its head at the front, turned the way it flies
       const w = bolt.w * PS, h = bolt.h * PS;

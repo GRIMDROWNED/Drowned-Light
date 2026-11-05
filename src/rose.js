@@ -358,7 +358,7 @@
   }
   // The giant bud she sleeps in (Robert's drawing), breathing slowly, with a glow seeping between its petals.
   function drawBud(c, s, t) {
-    const sp = DL.Art.sprites.roseBud, w = sp.w * 2, h = sp.h * 2, k = 1 + Math.sin(t * 1.2) * 0.012;
+    const sz = DL.ENEMIES.rose.size || 1, sp = DL.Art.sprites.roseBud, w = sp.w * 2 * sz, h = sp.h * 2 * sz, k = 1 + Math.sin(t * 1.2) * 0.012;
     c.fillStyle = "rgba(0,0,0,0.35)";
     c.beginPath(); c.ellipse(s.x, s.y, w * 0.38, w * 0.1, 0, 0, TAU); c.fill();
     c.drawImage(sp.c, Math.round(s.x - (w * k) / 2), Math.round(s.y - h * k + 4), Math.round(w * k), Math.round(h * k));
@@ -377,14 +377,14 @@
   // her arm along her aim; turned over rather than upside down when she lashes to the left.
   function drawLash(c, e) {
     const k = 1 - e.lashT / K.lashShow, f = k < 0.3 ? 1 : k < 0.7 ? 2 : 3;
-    const sp = DL.Art.sprites["roseLash" + f], w = sp.w * 2, h = sp.h * 2;
+    const sz = e.def.size || 1, sp = DL.Art.sprites["roseLash" + f], w = sp.w * 2 * sz, h = sp.h * 2 * sz;
     let a = e.aim || 0;
     c.save();
     c.translate(Math.round(e.x), Math.round(e.y - 110 * e.def.scale)); // from her shoulder
     if (Math.cos(a) < 0) { c.scale(-1, 1); a = Math.PI - a; }
     c.rotate(a);
     c.globalAlpha *= f === 3 ? Math.min(1, e.lashT / (K.lashShow * 0.3)) : 1;
-    c.drawImage(sp.c, f === 3 ? 40 : 6, -Math.round(h / 2), w, h);
+    c.drawImage(sp.c, (f === 3 ? 40 : 6) * sz, -Math.round(h / 2), w, h);
     c.restore();
   }
   // Her waltz: Robert's ring of whirling thorn whips round her waist, a quarter turn a frame, as wide as the ring
@@ -392,7 +392,7 @@
   // part, or the near (lower) part.
   function drawWaltz(c, e, t, near) {
     const sp = DL.Art.sprites["roseWaltz" + (1 + (Math.floor(t * 16) % 4))], w = sp.w * 2, h = sp.h * 2 * 0.8;
-    const x = Math.round(e.x - w / 2), y = Math.round(e.y - 40 - h / 2), mid = Math.round(e.y - 6); // just above her hem, so the near half never cuts across her gown
+    const x = Math.round(e.x - w / 2), y = Math.round(e.y - 40 * (e.def.size || 1) - h / 2), mid = Math.round(e.y - 6); // just above her hem, so the near half never cuts across her gown
     c.save();
     c.beginPath();
     if (near) c.rect(x - 2, mid, w + 4, h); else c.rect(x - 2, y - 2, w + 4, mid - y + 2);
@@ -432,16 +432,16 @@
           const a = t * 13 + i * Math.PI, r = K.waltz.r * 0.92;
           c.strokeStyle = `rgba(${RED},0.75)`;
           c.lineWidth = 3;
-          c.beginPath(); c.ellipse(e.x, e.y - 30, r, r * 0.5, 0, a, a + 1.6); c.stroke();
+          c.beginPath(); c.ellipse(e.x, e.y - 30 * (e.def.size || 1), r, r * 0.5, 0, a, a + 1.6); c.stroke();
           c.strokeStyle = "rgba(255,150,160,0.5)";
           c.lineWidth = 1;
-          c.beginPath(); c.ellipse(e.x, e.y - 30, r - 4, (r - 4) * 0.5, 0, a + 0.3, a + 1.5); c.stroke();
+          c.beginPath(); c.ellipse(e.x, e.y - 30 * (e.def.size || 1), r - 4, (r - 4) * 0.5, 0, a + 0.3, a + 1.5); c.stroke();
         }
       } else if (!e.spin && e.state === "windup" && e.special === "waltz") {
         const k = Math.max(0, 1 - e.stT / K.waltz.windup);
         c.strokeStyle = `rgba(${RED},${0.2 + 0.6 * k})`;
         c.lineWidth = 2;
-        c.beginPath(); c.ellipse(e.x, e.y - 30, 30 + 40 * k, (30 + 40 * k) * 0.5, 0, 0, TAU); c.stroke();
+        c.beginPath(); c.ellipse(e.x, e.y - 30 * (e.def.size || 1), 30 + 40 * k, (30 + 40 * k) * 0.5, 0, 0, TAU); c.stroke();
       }
     }
     if (G.state !== "play" && G.state !== "camp") return;

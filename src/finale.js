@@ -245,7 +245,7 @@
     }
     if (nearest(g.x, g.y) > K.forget) return sink(e);
     if (e.rise > 0 || e.open > 0) return;
-    b.charge = Math.min(1, b.charge + dt / K.charge);
+    b.charge = Math.min(1, b.charge + (dt / K.charge) * DL.Minions.bearerRate()); // slowed while a Sunken Wisp lives
     if (b.charge >= 1) burn(b, e);
   }
   // Everyone left: he sinks back into the water, whole.
@@ -341,12 +341,17 @@
     for (let i = 0; i < W.n; i++) G.telegraphs.push({ by: e.def.name, x: x0 + side * i * W.step, y, r: W.r, t: 0, delay: W.windup + i * 0.04, dmg: e.dmg * W.dmg, king: true });
     sfx("growl");
   }
+  // a spot on the causeway near the gate, where the King's Drowned climb out (src/minions.js too)
+  Finale.callSpot = function () {
+    const g = Finale.gate();
+    return { x: g.x + rand(-CW + 30, CW - 30), y: g.y + rand(30, 150) };
+  };
   function call(e) {
     const g = Finale.gate(), b = Finale.b, live = G.enemies.filter((q) => q.fromKing && !q.removed).length;
     const n = Math.min(14 - live, Math.round((K.call.n + e.phase) * G.partyScale()));
     for (let i = 0; i < n; i++) {
       const x = g.x + rand(-CW + 30, CW - 30), y = g.y + rand(30, 150); // up out of the cracks in the causeway
-      G.enemies.push(G.makeEnemy(DL.weighted(DL.ZONES[4].pool), x, y, 4, { rise: 0.9, goal: b && !b.down ? b : null, fromKing: true }));
+      G.enemies.push(G.makeEnemy("tidestalker", x, y, 4, { rise: 0.9, goal: b && !b.down ? b : null, fromKing: true, lord: e.id })); // his minions (src/minions.js)
     }
     if (n > 0) for (let i = 0; i < 16; i++) G.puff(g.x + rand(-CW, CW), g.y + rand(30, 150), "rgba(60,200,210,0.6)", 60, 0.9, -30);
   }

@@ -33,6 +33,19 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-04 · Claude → GPT · Boss minions and bigger bosses
+Type: Decision
+Status: Open
+Files/PRs: `src/minions.js` (new), `src/data.js` (`DL.MINIONS`, `DL.BOSS.size/view`, 15 minion types in `DL.ENEMIES`), `src/game.js`, `src/render.js`, boss modules, v0.15.207
+
+Robert asked for boss minions and bigger bosses, and drew three minions for each boss. **Size:** `DL.BOSS.size[type]` multiplies a
+boss's `scale`, `radius`, `range` and `barY` at load (end of data.js), and `def.size` is kept so drawing code can scale fixed offsets;
+the camera pulls back near an awake big boss (`G.bossView`, like `Finale.view`). **Minions:** ordinary Drowned with `minion: true`
+and `lord` (their boss's id); `DL.Minions.update` calls them per `DL.MINIONS[boss]` (start / phase2 / every / respawn, plus hooks:
+Bell toll, Colossus ruins, King's call) and they crumble when the boss goes. They wear another unit's drawings (`look`, `lookScale`,
+`tint`) until Robert's own sheets are cut in under the minion's type key. New minion kinds: add the body to `DL.ENEMIES` (append at the
+end, net.js indexes types) and the calling to `DL.MINIONS`.
+
 ### 2026-11-04 · Claude → GPT · Performance pass: render rules to keep
 Type: Decision
 Status: Open

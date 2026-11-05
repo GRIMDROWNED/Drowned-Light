@@ -84,10 +84,10 @@
     }
   }
   // Keep a spot inside the cave's floor.
-  function inArena(x, y) {
+  const inArena = (Colossus.inArena = function (x, y) {
     const C = DL.CAVE, dx = x - C.x, dy = y - C.y, d = Math.hypot(dx, dy), max = C.radius - 50;
     return d > max ? { x: C.x + (dx / d) * max, y: C.y + (dy / d) * max } : { x, y };
-  }
+  });
 
   // Its blow lands (from the enemy update's strike): the arm's sweep, or the move it wound up.
   Colossus.strike = function (e) {
@@ -147,7 +147,7 @@
 
   /* ---------------- every frame (host) ---------------- */
   Colossus.update = function (dt) {
-    for (const q of ruins) q.t += dt;
+    for (const q of ruins) { q.t += dt; if (q.t >= q.life && !G.isGuest()) DL.Minions.ruin(q); } // a Cairn Crawler climbs out of the rubble
     ruins = ruins.filter((q) => q.t < q.life);
     for (const q of rocks) {
       q.t += dt;
