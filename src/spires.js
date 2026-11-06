@@ -10,9 +10,9 @@
    crystal glows and the mist move.
 
    You walk only on floors, stairs and bridges (Spires.collide). Step into the west arch or the east ring to cross between
-   them; the small arch on the south platform takes you home. A Spire Sentinel (crystal turret, src/bullets.js) on the terrace and one in the walkway
-   fire bullet patterns. Stand on the middle of the rune circle and Drowned climb out
-   of the mist on the far platforms (and broken Sentinels come back) and come for you, routing over stairs and bridges (Spires.route).
+   them; the small arch on the south platform takes you home. Every fighting floor is a room (ROOMS): step onto it and rune
+   light seals its ways out while its Spire Sentinels (crystal turrets, src/bullets.js) and Drowned rise; clear it and it opens.
+   Drowned route over stairs and bridges (Spires.route).
    Reached from the pause menu in Sandbox. The world clock stops while you're here. Numbers: DL.SPIRES (src/data.js). */
 "use strict";
 (function (DL) {
@@ -163,12 +163,12 @@
       const dx = ent.x - OX - s[0], dy = ent.y - OY - s[1], d = Math.hypot(dx, dy), min = s[2] + r;
       if (d < min && d > 0.01) { ent.x = OX + s[0] + (dx / d) * min; ent.y = OY + s[1] + (dy / d) * min; }
     }
-    const m = Math.min(8, r * 0.6);
-    if (!Sp.walkable(ent.x, ent.y, m)) {
+    const m = Math.min(8, r * 0.6), hold = heldIn(ent);
+    if (hold ? !inRect(ent.x - OX, ent.y - OY, hold, m) : !Sp.walkable(ent.x, ent.y, m)) {
       const lx = ent.spx, ly = ent.spy;
       if (lx == null || !Sp.inRegion(lx, ly)) { if (ent === G.player) { ent.x = OX + SPAWN.x; ent.y = OY + SPAWN.y; } }
-      else if (Sp.walkable(ent.x, ly, m)) ent.y = ly;
-      else if (Sp.walkable(lx, ent.y, m)) ent.x = lx;
+      else if (hold ? inRect(ent.x - OX, ly - OY, hold, m) : Sp.walkable(ent.x, ly, m)) ent.y = ly;
+      else if (hold ? inRect(lx - OX, ent.y - OY, hold, m) : Sp.walkable(lx, ent.y, m)) ent.x = lx;
       else { ent.x = lx; ent.y = ly; }
     }
     ent.spx = ent.x; ent.spy = ent.y;
@@ -199,12 +199,11 @@
   Sp.enter = function () {
     const p = G.player;
     if (!p || G.spires || G.cave) return;
-    G.spires = { bx: p.x, by: p.y, inPortal: true, wake: 0, flare: 0 };
+    G.spires = { bx: p.x, by: p.y, inPortal: true, flare: 0, seal: null, cleared: {} };
     p.x = OX + SPAWN.x; p.y = OY + SPAWN.y; p.spx = p.x; p.spy = p.y;
     p.kx = p.ky = 0; p.dashT = 0; p.angle = -Math.PI / 2;
     for (const f of followers()) { f.x = p.x + DL.rand(-30, 30); f.y = p.y + DL.rand(-10, 20); f.spx = null; }
     G.camera.x = p.x; G.camera.y = p.y - 20;
-    sentinels();
     say("The Abyssal Spires. Causeways south-west, crystal terraces east, the high spires north and the throne at the top.", "good");
   };
   Sp.leave = function () {
@@ -223,16 +222,78 @@
     say("You step back out of the mist.", "good");
   };
 
-  // Spire Sentinels (crystal turrets, src/bullets.js): one on the terrace, one in the walkway; brought back if broken.
-  // x, y, heat: gentle by the hub, denser the farther in (Robert, 2026-11-05)
-  const SENTINELS = [[640, 150, 0], [-300, -250, 0.3], [-1990, 520, 0.2], [-1820, 1060, 0.35], [1330, 130, 0.3], [1380, -400, 0.5],
-    [2080, -360, 0.6], [-300, -1240, 0.7], [300, -1240, 0.7], [-900, -1200, 0.8], [900, -1240, 0.8], [-300, -2000, 1], [300, -2000, 1]];
-  function sentinels() {
-    for (const [x, y, heat] of SENTINELS) {
-      if (G.enemies.some((e) => e.def.sentinel && !e.removed && Math.hypot(e.x - OX - x, e.y - OY - y) < 40)) continue;
-      G.enemies.push(G.makeEnemy("sentinel", OX + x, OY + y, S.wave.zone, { heat }));
+  /* ---------------- rooms (step 2 of the Level 2 plan) ----------------
+     A room is one floor. Step onto it and its ways out seal with rune light; its foes climb out of the mist (Sentinels
+     stand up where they're listed); break them all and the light fades. heat 0..1 sets how dense the Sentinels' patterns
+     are: gentle by the hub, dense deep in (Robert, 2026-11-05). The hub, the portal ledges and the exit ledge have no fight.
+     Step on the rune circle's heart (no room sealed) to wake every cleared room again: it's a test room. */
+  // floor, heat, Sentinels [[x, y]], other foes [[type, n]]
+  const ROOMS = {
+    terrace: { heat: 0, sent: [[640, 150]], foes: [["footman", 2]] },
+    walk: { heat: 0.2, sent: [[-300, -250], [300, -250]], foes: [["footman", 2]] },
+    cw1: { heat: 0.15, sent: [[-1310, 540]], foes: [["footman", 2], ["squire", 1]] },
+    cw2: { heat: 0.3, sent: [[-1990, 520]], foes: [["squire", 3], ["archer", 1]] },
+    cw3: { heat: 0.45, sent: [[-1660, 1040]], foes: [["footman", 3], ["archer", 2]] },
+    ct1: { heat: 0.3, sent: [[1330, 130]], foes: [["footman", 2], ["archer", 1]] },
+    ct2: { heat: 0.5, sent: [[1380, -400]], foes: [["footman", 3], ["archer", 2]] },
+    ct3: { heat: 0.65, sent: [[2080, -380]], foes: [["squire", 3], ["archer", 1]] },
+    north: { heat: 0.5, sent: [], foes: [["squire", 3], ["archer", 2]] },
+    high: { heat: 0.75, sent: [[-300, -1240], [300, -1240]], foes: [["footman", 3], ["archer", 2]] },
+    hw: { heat: 0.85, sent: [[-900, -1220]], foes: [["squire", 3], ["hexbearer", 1]] },
+    he: { heat: 0.85, sent: [[900, -1250]], foes: [["squire", 3], ["hexbearer", 1]] },
+    arena: { heat: 1, sent: [[-300, -2000], [300, -2000]], foes: [["footman", 4], ["archer", 2], ["hexbearer", 1]] }, // the boss comes in step 7
+  };
+  Sp.ROOMS = ROOMS;
+  // each room's ways out: where its floor meets a stair or bridge, and which way the rune curtain lies across it
+  const GATES = {};
+  for (const j of JOINS) for (const [a, b] of [[j[0], j[1]], [j[1], j[0]]]) {
+    if (!ROOMS[a]) continue;
+    let w, ang;
+    if (STAIRS[b]) { const q = STAIRS[b]; w = q[2] - q[0] + 10; ang = 0; }
+    else { const q = BRIDGES[b]; w = q[4] * 2 + 12; ang = Math.atan2(q[3] - q[1], q[2] - q[0]) + Math.PI / 2; }
+    (GATES[a] = GATES[a] || []).push({ x: j[2], y: j[3], w, ang });
+  }
+  // a room's foes still standing
+  const foesOf = (id) => G.enemies.filter((e) => e.room === id && !e.removed && e.hp > 0);
+  // a free spot on the floor, away from the knight
+  function spot(f, p) {
+    for (let k = 0; k < 30; k++) {
+      const x = OX + DL.rand(f[0] + 30, f[2] - 30), y = OY + DL.rand(f[1] + 30, f[3] - 30);
+      if (!Sp.walkable(x, y, 20) || Math.hypot(x - p.x, y - p.y) < 170 || SOLIDS.some((q) => Math.hypot(x - OX - q[0], y - OY - q[1]) < q[2] + 20)) continue;
+      return [x, y];
+    }
+    return [OX + (f[0] + f[2]) / 2, OY + (f[1] + f[3]) / 2];
+  }
+  function seal(sp, id, p) {
+    const R = ROOMS[id], f = FLOORS[id];
+    sp.seal = id; sp.sealT = 0;
+    for (const [x, y] of R.sent) {
+      G.enemies.push(G.makeEnemy("sentinel", OX + x, OY + y, S.wave.zone, { heat: R.heat, room: id }));
       for (let i = 0; i < 12; i++) G.puff(OX + x + DL.rand(-14, 14), OY + y - DL.rand(0, 60), "rgba(200,150,255,0.7)", 50, 0.7);
     }
+    for (const [type, n] of R.foes) for (let i = 0; i < n; i++) {
+      const [x, y] = spot(f, p);
+      G.enemies.push(G.makeEnemy(type, x, y, S.wave.zone, { rise: 0.9, room: id }));
+    }
+    G.camera.shake = 5;
+    DL.Sound.play("whisper");
+    say("Rune light seals the way out. Break everything in the room!", "danger");
+  }
+  function open(sp) {
+    const id = sp.seal;
+    sp.cleared[id] = true; sp.seal = null; sp.flare = 1;
+    for (const g of GATES[id] || []) for (let i = 0; i < 10; i++) G.puff(OX + g.x + DL.rand(-g.w / 2, g.w / 2) * Math.cos(g.ang), OY + g.y + DL.rand(-g.w / 2, g.w / 2) * Math.sin(g.ang) - DL.rand(0, 40), "rgba(220,180,255,0.8)", 60, 0.8);
+    DL.Sound.play("chime");
+    const left = Object.keys(ROOMS).filter((k) => !sp.cleared[k]).length;
+    say(left ? `The rune light fades. The way on is open. (${left} room${left > 1 ? "s" : ""} left)` : "Every room is clear. Step on the rune circle's heart to wake them again.", "good");
+  }
+  // where the room's foes and a sealed-in knight may stand
+  function heldIn(ent) {
+    const sp = G.spires;
+    if (!sp) return null;
+    if (ent.room && FLOORS[ent.room]) return FLOORS[ent.room];
+    if (sp.seal && ent === G.player) return FLOORS[sp.seal];
+    return null;
   }
 
   // The portals, and waking the rune circle.
@@ -268,20 +329,19 @@
       DL.Sound.play("chime");
     }
     sp.inPortal = atW || atE;
-    // the rune circle: step on its heart and the Drowned climb out of the mist on the far platforms
-    const mine = G.enemies.filter((e) => !e.removed && !e.def.sentinel && Sp.inRegion(e.x, e.y));
-    sp.wake = Math.max(0, sp.wake - (mine.length ? 0 : dt));
-    if (!mine.length && sp.wake <= 0 && Math.hypot(lx - RUNE.x, (ly - RUNE.y) / RUNE.sq) < 34) {
-      const w = S.wave, spots = [FLOORS.terrace, FLOORS.south, FLOORS.west, FLOORS.east, FLOORS.walk];
-      for (let i = 0; i < w.n; i++) {
-        const f = spots[i % spots.length], x = OX + (f[0] + f[2]) / 2 + DL.rand(-40, 40), y = OY + (f[1] + f[3]) / 2 + DL.rand(-20, 20);
-        G.enemies.push(G.makeEnemy(w.type, x, y, w.zone, { rise: 0.9 }));
-      }
-      sentinels();
-      sp.wake = w.rest; sp.flare = 1;
+    // rooms: step in and it seals; clear it and it opens
+    if (sp.seal) {
+      sp.sealT += dt;
+      if (sp.sealT > 1 && !foesOf(sp.seal).length) open(sp);
+    } else {
+      for (const id in ROOMS) if (!sp.cleared[id] && inRect(lx, ly, FLOORS[id], 34)) { seal(sp, id, p); break; }
+    }
+    // the rune circle's heart wakes every cleared room again (a test room)
+    if (!sp.seal && Object.keys(sp.cleared).length && Math.hypot(lx - RUNE.x, (ly - RUNE.y) / RUNE.sq) < 34) {
+      sp.cleared = {}; sp.flare = 1;
       G.camera.shake = 6;
       DL.Sound.play("whisper");
-      say("The runes flare. The Drowned climb out of the mist!", "danger");
+      say("The runes flare. Every room stirs again.", "danger");
     }
   };
 
@@ -868,7 +928,34 @@
       if (x < view.left - 160 || x > view.right + 160 || y < view.top - 20 || y > view.bottom + 260) continue;
       list.push({ y, f: () => drawProp(c, q, x, y, t) });
     }
+    const sp = G.spires;
+    if (sp && sp.seal) for (const g of GATES[sp.seal] || []) list.push({ y: OY + g.y, f: () => curtain(c, g, t, sp.sealT) });
   };
+  // a sealed way out: a wall of rune light standing across it
+  function curtain(c, g, t, age) {
+    const k = Math.min(1, age * 3), H = 70 * k, dx = (Math.cos(g.ang) * g.w) / 2, dy = (Math.sin(g.ang) * g.w) / 2;
+    const x = OX + g.x, y = OY + g.y;
+    c.save();
+    c.globalCompositeOperation = "lighter";
+    const gr = c.createLinearGradient(0, y - H, 0, y);
+    gr.addColorStop(0, "rgba(170,110,255,0)"); gr.addColorStop(0.6, "rgba(170,110,255,0.35)"); gr.addColorStop(1, "rgba(220,180,255,0.7)");
+    c.fillStyle = gr;
+    c.beginPath(); c.moveTo(x - dx, y - dy); c.lineTo(x + dx, y + dy); c.lineTo(x + dx, y + dy - H); c.lineTo(x - dx, y - dy - H); c.closePath(); c.fill();
+    // runes drifting up it
+    c.fillStyle = "rgba(240,220,255,0.85)";
+    for (let i = 0; i < 7; i++) {
+      const u = i / 6 - 0.5, life = (t * 0.6 + i * 0.37) % 1, rx = x + dx * 2 * u, ry = y + dy * 2 * u - life * H;
+      c.globalAlpha = Math.sin(Math.PI * life);
+      c.fillRect(rx - 1.5, ry - 3, 3, 6);
+    }
+    c.globalAlpha = 1;
+    c.lineCap = "round"; // a band of light on the stone, so a curtain seen edge-on still reads
+    c.strokeStyle = "rgba(190,130,255,0.45)"; c.lineWidth = 12;
+    c.beginPath(); c.moveTo(x - dx, y - dy); c.lineTo(x + dx, y + dy); c.stroke();
+    c.strokeStyle = "rgba(235,210,255,0.9)"; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(x - dx, y - dy); c.lineTo(x + dx, y + dy); c.stroke();
+    c.restore();
+  }
   function drawProp(c, q, x, y, t) {
     const kind = q[0];
     const im = IMG[kind === "crystal" ? "crystal-" + (3 - q[4]) : kind === "banner" ? "exit-banner" : kind === "well" ? (G.spires && G.spires.lit && G.spires.lit[q[3]] ? "well-lit" : "well-dark") : kind];
@@ -973,6 +1060,7 @@
       const big = q[0] === "arch" || q[0] === "ring";
       L.push({ x, y: y - (big ? 90 : 40), r: big ? 170 : q[0] === "crystal" ? 80 * q[3] : 70, s: big ? 0.8 : 0.6, col: GLOW, a: 0.8 });
     }
+    if (G.spires.seal) for (const g of GATES[G.spires.seal] || []) L.push({ x: OX + g.x, y: OY + g.y - 30, r: 110, s: 0.7, col: GLOW, a: 0.8 });
     if (near(OX + RUNE.x, OY + RUNE.y)) L.push({ x: OX + RUNE.x, y: OY + RUNE.y, r: 200, s: 0.5 + 0.4 * (G.spires.flare || 0), col: GLOW, a: 0.6 });
     if (near(OX + FALL.x0, OY + FALL.y)) L.push({ x: OX + (FALL.x0 + FALL.x1) / 2, y: OY + FALL.y + 40, r: 140, s: 0.6, col: GLOW, a: 0.7 });
   };
