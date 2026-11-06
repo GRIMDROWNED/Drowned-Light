@@ -488,6 +488,7 @@
     DL.Cave.drawGlow(c, t);
     DL.Spires.drawGlow(c, t, view);
     DL.Bullets.glow(c, t, view);
+    DL.SpireFoes.drawRifts(c, t); // the Rift Callers' rifts, bright over the mist (src/spirefoes.js)
     DL.Rose.drawGlow(c, t, view);
     DL.Minions.drawGlow(c, t);
     for (const k of G.kindles) drawKindleGlow(c, k, t);
@@ -1251,7 +1252,7 @@
     if (lk && lk.tint && !flash) { flash = lk.tintK; flashColor = lk.tint; } // a stand-in minion, washed in its own colour
     if (d.spire) DL.SpireFoes.drawMark(c, e, t); // where a Chain Leaper lands, a Bowman's lanes
     const [anim, fr, ang] = enemyAnim(e, t);
-    Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y - (e.lift || 0), s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1 });
+    Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y - (e.lift || 0), s, { flash, flashColor, alpha: e.dormant ? 0.8 : e.fade != null ? e.fade : 1 });
     if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.barY || (d.crawl ? 36 : d.beast ? 66 : 84) * s) - 4, Math.round((d.barW || 26) * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
     if (e.burn > 0) Art.drawFire(c, e.x + Math.sin(t * 7) * 4, e.y - 10, 0.5, t);
     if (frozen && Art.sprites.iceSpike2) {

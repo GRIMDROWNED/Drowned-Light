@@ -101,6 +101,12 @@
       spire: "leaper", shadow: 18, barY: 84, drop: {} },
     bowman: { name: "Bridge Bowman", hp: 34, speed: 62, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1, radius: 12, mass: 0.9,
       spire: "bowman", shadow: 15, barY: 112, drop: {} },
+    shade: { name: "Mist Shade", hp: 30, speed: 84, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1, radius: 11, mass: 0.6,
+      spire: "shade", shadow: 12, barY: 128, drop: {} },
+    caller: { name: "Rift Caller", hp: 70, speed: 46, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1, radius: 14, mass: 1.5,
+      spire: "caller", shadow: 18, barY: 176, drop: {} },
+    prism: { name: "Prism Knight", hp: 170, speed: 46, dmg: 16, range: 0, windup: 1, cd: 99, scale: 1, radius: 17, mass: 4,
+      spire: "prism", shadow: 22, barY: 132, barW: 40, drop: {} },
     footman: { name: "Drowned Wretch", hp: 34, speed: 58, dmg: 11, range: 36, windup: 0.45, cd: 1.4, scale: 1,
       radius: 13, mass: 1, corruptHit: 4, drop: { iron: 0.4 } },
     archer: { name: "Tide Archer", hp: 22, speed: 64, dmg: 9, range: 230, windup: 0.7, cd: 2.3, scale: 0.95,
@@ -715,6 +721,19 @@
     // the Bridge Bowman: keeps keep[0]..keep[1] away, draws, looses `lanes` parallel lanes of `per` arrows (one lane left empty)
     bowman: { reach: 620, keep: [230, 340], every: [3.2, 2.2], draw: 0.85, loose: 0.25, quiver: 0.55, hand: 52,
       lanes: [7, 9], per: [3, 5], step: 30, width: [280, 360], speed: [150, 190], dmg: 6 },
+    // the Mist Shade: lurks lurk[0]..[1] away faded (takes `faded` of a blow), surfaces when your light comes within
+    // find (in mist / out of it) or a bubble of light holds it, throws fans, fades and blinks away
+    shade: { hover: 16, lurk: [170, 240], find: [140, 250], surface: 0.35, gather: 0.55, throw: 0.3, fade: 0.5, rest: [2.6, 1.8],
+      fan: [7, 13], volleys: [1, 2], spread: [0.9, 1.2], speed: [115, 150], dmg: 7, faded: 0.3, blink: [170, 240] },
+    // the Rift Caller: keeps keep[0]..[1] away, tears `rifts` round you that each fire `bursts` aimed bursts, and calls
+    // `calls` Drowned every `call` s (no more than callMax of its own at once)
+    caller: { hover: 22, reach: 650, keep: [300, 420], every: [4.4, 3.0], tear: 0.6, rifts: [2, 3], ring: [150, 220], open: 0.8,
+      life: 2.6, bursts: 2, gap: 0.7, burst: [3, 5], spread: 0.5, speed: [120, 150], dmg: 7, call: 12, calls: 2, callMax: 4,
+      bow: 0.8, callType: "footman" },
+    // the Prism Knight: its shield takes all but `soak` of a blow within `front` rad of dead ahead; it bursts a ring when
+    // it has soaked burstAt or every `every` s (one more bullet per `extra` soaked), and bashes what comes close
+    prism: { reach: 520, front: 1.2, soak: 0.35, burstAt: 60, extra: 6, every: [7, 5], raise: 0.6, ring: [16, 26],
+      speed: [100, 125], dmg: 8, bash: { reach: 66, wind: 0.45, time: 0.3, lunge: 260, kb: 360, cd: 1.6 } },
   };
 
   /* Abyssal Spires test room (Robert, 2026-11-05: try a dungeon with corridors and heights in the 3/4 view before

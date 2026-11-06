@@ -220,6 +220,7 @@
     if (!sp) return;
     G.spires = null;
     DL.Bullets.clear();
+    DL.SpireFoes.clear();
     for (const e of G.enemies) if (Sp.inRegion(e.x, e.y)) e.removed = true;
     G.enemies = G.enemies.filter((e) => !e.removed);
     if (p) {
@@ -239,19 +240,20 @@
   // floor, heat, Sentinels [[x, y]], other foes [[type, n]]
   const ROOMS = {
     // Chain Leapers and Bridge Bowmen (src/spirefoes.js) on the causeways and beyond; a few Drowned for blades
+    // Mist Shades in the misty rooms, Rift Callers on the high ground, a Prism Knight to hold the deep rooms
     terrace: { heat: 0, sent: [[640, 150]], foes: [["leaper", 1]] },
     walk: { heat: 0.2, sent: [[-300, -250], [300, -250]], foes: [["bowman", 1]] },
     cw1: { heat: 0.15, sent: [[-1310, 540]], foes: [["leaper", 2]] },
-    cw2: { heat: 0.3, sent: [[-1990, 520]], foes: [["leaper", 2], ["bowman", 1]] },
-    cw3: { heat: 0.45, sent: [[-1660, 1040]], foes: [["leaper", 2], ["bowman", 2]] },
+    cw2: { heat: 0.3, sent: [[-1990, 520]], foes: [["leaper", 1], ["bowman", 1], ["shade", 1]] },
+    cw3: { heat: 0.45, sent: [[-1660, 1040]], foes: [["leaper", 2], ["shade", 2]] },
     ct1: { heat: 0.3, sent: [[1330, 130]], foes: [["bowman", 1], ["footman", 1]] },
-    ct2: { heat: 0.5, sent: [[1380, -400]], foes: [["bowman", 2], ["leaper", 1]] },
-    ct3: { heat: 0.65, sent: [[2080, -380]], foes: [["leaper", 3]] },
-    north: { heat: 0.5, sent: [], foes: [["bowman", 2], ["leaper", 2]] },
-    high: { heat: 0.75, sent: [[-300, -1240], [300, -1240]], foes: [["bowman", 2], ["leaper", 2]] },
-    hw: { heat: 0.85, sent: [[-900, -1220]], foes: [["leaper", 2], ["bowman", 1]] },
-    he: { heat: 0.85, sent: [[900, -1250]], foes: [["bowman", 2], ["leaper", 1]] },
-    arena: { heat: 1, sent: [[-300, -2000], [300, -2000]], foes: [["leaper", 2], ["bowman", 2], ["footman", 2]] }, // the boss comes in step 7
+    ct2: { heat: 0.5, sent: [[1380, -400]], foes: [["bowman", 1], ["caller", 1]] },
+    ct3: { heat: 0.65, sent: [[2080, -380]], foes: [["leaper", 1], ["shade", 2], ["prism", 1]] },
+    north: { heat: 0.5, sent: [], foes: [["bowman", 1], ["leaper", 1], ["caller", 1]] },
+    high: { heat: 0.75, sent: [[-300, -1240], [300, -1240]], foes: [["bowman", 1], ["leaper", 1], ["prism", 1], ["caller", 1]] },
+    hw: { heat: 0.85, sent: [[-900, -1220]], foes: [["shade", 2], ["leaper", 1]] },
+    he: { heat: 0.85, sent: [[900, -1250]], foes: [["shade", 1], ["bowman", 1], ["prism", 1]] },
+    arena: { heat: 1, sent: [[-300, -2000], [300, -2000]], foes: [["prism", 1], ["caller", 1], ["leaper", 1], ["bowman", 1]] }, // the boss comes in step 7
   };
   Sp.ROOMS = ROOMS;
   // each room's ways out: where its floor meets a stair or bridge, and which way the rune curtain lies across it
@@ -302,6 +304,8 @@
     return out;
   }
   const lit = (x, y) => bubbles().some((b) => Math.hypot(x - b.x, y - b.y) < b.r * 0.85);
+  Sp.lightAt = lit; // a burning Aether Crystal or a torch here: a Mist Shade can't fade in it
+  Sp.floorOf = (id) => FLOORS[id];
   // standing in thick mist, no light round you
   Sp.misty = (x, y) => !!G.spires && !!mistAt(x - OX, y - OY) && !lit(x, y);
   // the knight is lost to this foe: they're in the mist and it's not close

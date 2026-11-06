@@ -155,6 +155,9 @@
     // the Abyssal Spires' foes (src/spirefoes.js), cut at res 4 on green
     Object.assign(walking("leaper", [94, 158], [58, 152], [54, 152], 4), { path: "assets/sprites/spires-foes/leaper/", keys: { leaper: [0, false] }, own: true }),
     Object.assign(walking("bowman", [113, 220], [62, 212], [56, 212], 4), { path: "assets/sprites/spires-foes/bowman/", keys: { bowman: [0, false] }, own: true }),
+    Object.assign(walking("shade", [86, 202], [71, 202], [70, 202], 4), { path: "assets/sprites/spires-foes/shade/", keys: { shade: [0, false] }, own: true }),
+    Object.assign(walking("caller", [102, 292], [112, 302], [99, 292], 4), { path: "assets/sprites/spires-foes/caller/", keys: { caller: [0, false] }, own: true }),
+    Object.assign(walking("prism", [194, 259], [101, 252], [80, 252], 4), { path: "assets/sprites/spires-foes/prism/", keys: { prism: [0, false] }, own: true }),
     minion("thornling", "thornling", 4, [[45, 87], [43, 82], [46, 83]]), // the Deadly Rose's Thornling Swarm Stalker
     minion("tidestalker", "tidestalker", 4, [[109, 123], [87, 134], [92, 138]]), // the Sunken King's Tide Stalker
     minion("wisp", "wisp", 4, [[108, 182], [112, 197], null]), // the Sunken Wisp: its front shows going away too (Robert)
