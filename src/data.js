@@ -724,7 +724,11 @@
     lh: 48,      // world px of drop per height level (a face this much taller per level)
     hang: 44,    // face showing under a level-0 floor before it fades into the mist
     dark: 0.36,  // the room's darkness (violet dusk, not night)
-    wave: { zone: 1 }, // the zone the rooms' foes are made for (their health and damage); rooms: ROOMS in src/spires.js
+    wave: { zone: 1 },
+    // the Hollow Mist (src/spires.js): corruption a second in it, how near a foe still sees you in it, the first-strike
+    // bonus from it, the light holes cut by your lantern / a torch / a burning Aether Crystal (for `burn` s), and how
+    // long you stand at a lit Mist Well to go home
+    mist: { corrupt: 3, see: 110, strike: 1.5, lantern: 85, torch: 120, bubble: 190, burn: 25, home: 1.5 }, // the zone the rooms' foes are made for (their health and damage); rooms: ROOMS in src/spires.js
   };
 
   DL.CAVE = {

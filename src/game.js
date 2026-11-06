@@ -594,7 +594,7 @@
 
     if (DL.Input.take("dash")) tryDash(inp);
     if (DL.Input.take("ability")) useAbility();
-    if (DL.Input.take("torch")) placeTorch();
+    if (DL.Input.take("torch") && !DL.Spires.burn()) placeTorch(); // in the Spires a carried Aether Crystal burns first
     if (DL.Input.take("boost")) DL.Wyvern.boost(); // David's Tailwind or War Fury (src/wyvern.js)
 
     if (DL.Kits.tideTick(p, st, dt)) {
@@ -804,7 +804,14 @@
     const D = G.diff();
     const darkness = G.night ? 1 : Z.abyss ? 0.45 : D.dayCorrupt && p.zi >= 2 ? 0.35 : 0;
     p.exposed = false;
-    if (prot === "human") {
+    if (G.spires) {
+      // the Abyssal Spires: corruption only in the Hollow Mist (src/spires.js); the lantern halves it
+      let rate = DL.Spires.corruption(p) * D.corrupt;
+      if (rate > 0) {
+        if (p.oil > 0) { rate *= 0.5; p.oil = Math.max(0, p.oil - 1.1 * DL.Kits.oilDrain() * dt); }
+        p.corrupt += rate * dt; p.exposed = true;
+      } else p.corrupt -= 0.7 * dt;
+    } else if (prot === "human") {
       p.corrupt -= 10 * dt;
       p.oil = Math.min(st.maxOil, p.oil + 14 * dt);
       p.hp = Math.min(st.maxHp, p.hp + 3 * dt);
@@ -1411,6 +1418,8 @@
     if (e.def.king && !DL.Finale.isOpen(e)) { if (!remote) DL.Finale.immune(e); return; }
     const crit = !remote && Math.random() < 0.12;
     let d = dmg * (crit ? 1.6 : 1);
+    if (!remote && !e.struck && G.spires && DL.Spires.misty(G.player.x, G.player.y)) d *= DL.SPIRES.mist.strike; // first strike from the mist
+    e.struck = true;
     if (G.isGuest()) {
       // Show the hit now; the host owns the Drowned and applies it.
       DL.Net.event({ t: "hit", id: e.id, dmg: d, ang, kb, burn: burn || 0 });
