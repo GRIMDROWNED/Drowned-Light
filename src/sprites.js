@@ -152,6 +152,9 @@
     minion("cairn", "cairn", 4, [[94, 122], [75, 120], [74, 114]]), // the Colossus's Cairn Crawler
     minion("servitor", "servitor", 4, [[160, 321], [148, 348], [136, 334]]), // the Colossus's Bog Totem Servitor
     minion("siltfist", "siltfist", 4, [[258, 338], [216, 362], [336, 385]]), // the Colossus's Silt Fist Fragment
+    // the Abyssal Spires' foes (src/spirefoes.js), cut at res 4 on green
+    Object.assign(walking("leaper", [94, 158], [58, 152], [54, 152], 4), { path: "assets/sprites/spires-foes/leaper/", keys: { leaper: [0, false] }, own: true }),
+    Object.assign(walking("bowman", [113, 220], [62, 212], [56, 212], 4), { path: "assets/sprites/spires-foes/bowman/", keys: { bowman: [0, false] }, own: true }),
     minion("thornling", "thornling", 4, [[45, 87], [43, 82], [46, 83]]), // the Deadly Rose's Thornling Swarm Stalker
     minion("tidestalker", "tidestalker", 4, [[109, 123], [87, 134], [92, 138]]), // the Sunken King's Tide Stalker
     minion("wisp", "wisp", 4, [[108, 182], [112, 197], null]), // the Sunken Wisp: its front shows going away too (Robert)

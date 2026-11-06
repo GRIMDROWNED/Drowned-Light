@@ -1073,6 +1073,8 @@
         e.moving = true;
       } else if (e.def.sentinel) {
         e.state = "move"; e.moving = false; // a crystal turret: it only shoots
+      } else if (e.def.spire && DL.SpireFoes.busy(e, dt, p, dp)) {
+        // a foe of the Abyssal Spires: its own leaps and volleys (src/spirefoes.js)
       } else if (e.def.king && DL.Finale.busy()) {
         // the Sunken King: his hands do everything (src/finale.js)
       } else if (e.def.bell && DL.Bell.busy(e, dt, p, dp)) {

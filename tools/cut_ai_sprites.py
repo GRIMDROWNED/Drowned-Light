@@ -158,6 +158,11 @@ GRIDS = {
     # and his last look, Crowned (30 stacks: form 3): the crowned knight in a white fur mantle, purple cape and lantern (hooded first try in bloodsworn-f3-v1)
     'bloodsworn-f3/poses-a.png': (3, 2, POSES_A),
     'bloodsworn-f3/poses-b.png': (3, 2, POSES_B),
+    # the Abyssal Spires' foes (src/spirefoes.js), on green: the Chain Leaper and the Bridge Bowman
+    'chain-leaper/poses-a.png': (3, 2, POSES_A),
+    'chain-leaper/poses-b.png': (3, 2, POSES_B),
+    'bridge-bowman/poses-a.png': (3, 2, POSES_A),
+    'bridge-bowman/poses-b.png': (3, 2, POSES_B),
     'colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '11_hurt']),
     'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
 }
@@ -186,7 +191,7 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
-KEY_OPTS = {'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+KEY_OPTS = {'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
 # Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
 def jade_match(x):
     """The Jade Breaker's sheets each came out a little different in colour: match them all to his front view."""
@@ -234,7 +239,11 @@ BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25
 ROSE_H = 368  # the Deadly Rose, cut at res 4: drawn 92 art px tall standing (x0.8 in game), about twice the knight
 ICE_MAGE_H = 104  # the Frostweaver, hat and staff tip included: the body about the other knights' height (res 2)
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
+LEAPER_H = 150  # the Chain Leaper (Abyssal Spires), res 4: 75 world px crouched front on, about a knight tall standing
+BOWMAN_H = 210  # the Bridge Bowman (Abyssal Spires), res 4: 105 world px, bow tip to boots, a gaunt knight's height
 SETS = {
+    'chain-leaper': ('spires-foes/leaper', 'chain-leaper/01_front.png', LEAPER_H, 1, twelve('chain-leaper', TWELVE_FILES)),
+    'bridge-bowman': ('spires-foes/bowman', 'bridge-bowman/01_front.png', BOWMAN_H, 1, twelve('bridge-bowman', TWELVE_FILES)),
     # the Pyramid Champion: broad and armoured, a little taller than the Lantern Knight (shown at 0.85x, DL.PYRAMID.champion.scale)
     'pyramid-champion': ('pyramid-champion', 'pyramid-champion/01_front.png', 88, 1, {
         'pyramid-champion/01_front.png': 'front', 'pyramid-champion/02_back.png': 'back', 'pyramid-champion/03_right.png': 'right',
@@ -421,6 +430,16 @@ SETS = {
 # Frames come out on one shared canvas (numbered prefix1, prefix2, ...); put the printed foot point
 # in that unit's `feet` in src/sprites.js.
 SHEETS = {
+    'chain-leaper': [
+        ('chain-leaper/walk-side-4.png', 4, 1, 150, 'side/walk'),
+        ('chain-leaper/walk-front.png', 4, 1, 150, 'walkF'),
+        ('chain-leaper/walk-back.png', 4, 1, 150, 'walkB'),
+    ],
+    'bridge-bowman': [
+        ('bridge-bowman/walk-side-4.png', 4, 1, 210, 'side/walk'),
+        ('bridge-bowman/walk-front.png', 4, 1, 210, 'walkF'),
+        ('bridge-bowman/walk-back.png', 4, 1, 210, 'walkB'),
+    ],
     # the Pyramid Champion's side walk has three frames (the GRIDS strip), played 1-2-3-2 (src/sprites.js)
     'pyramid-champion': [
         ('pyramid-champion/walk-side-4.png', 3, 1, 88, 'side/walk'),

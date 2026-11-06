@@ -96,6 +96,11 @@
     // A crystal turret of the Abyssal Spires: never moves, plays bullet patterns (src/bullets.js).
     sentinel: { name: "Spire Sentinel", hp: 110, speed: 0, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1,
       radius: 18, mass: 50, sentinel: true, shadow: 22, drop: {} },
+    // The Abyssal Spires' bullet-pattern foes (src/spirefoes.js): their moves are their own (range 0: no Drowned blow)
+    leaper: { name: "Chain Leaper", hp: 46, speed: 74, dmg: 12, range: 0, windup: 1, cd: 99, scale: 1, radius: 13, mass: 1.2,
+      spire: "leaper", shadow: 18, barY: 84, drop: {} },
+    bowman: { name: "Bridge Bowman", hp: 34, speed: 62, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1, radius: 12, mass: 0.9,
+      spire: "bowman", shadow: 15, barY: 112, drop: {} },
     footman: { name: "Drowned Wretch", hp: 34, speed: 58, dmg: 11, range: 36, windup: 0.45, cd: 1.4, scale: 1,
       radius: 13, mass: 1, corruptHit: 4, drop: { iron: 0.4 } },
     archer: { name: "Tide Archer", hp: 22, speed: 64, dmg: 9, range: 230, windup: 0.7, cd: 2.3, scale: 0.95,
@@ -703,6 +708,13 @@
     cap: 700, speed: 110, r: 6, dmg: 7, life: 7, reach: 1100,
     hitbox: 6, // added to a bullet's radius: how close to the knight's middle it must come to hit
     sentinel: { wake: 560, charge: 0.7, mouth: 52, dmg: 7 }, // the Spire Sentinel crystal turret
+    // [gentle, dense] pairs are read at the room's heat (src/spirefoes.js)
+    // the Chain Leaper: crouch, leap at you (no farther than hop), slam, a ring of shards
+    leaper: { reach: 480, every: [3.4, 2.2], crouch: 0.55, air: 0.6, slam: 0.45, hop: [230, 320], peak: 70, hitR: 44,
+      ring: [10, 20], rings: [1, 2], speed: [95, 125], dmg: 7 },
+    // the Bridge Bowman: keeps keep[0]..keep[1] away, draws, looses `lanes` parallel lanes of `per` arrows (one lane left empty)
+    bowman: { reach: 620, keep: [230, 340], every: [3.2, 2.2], draw: 0.85, loose: 0.25, quiver: 0.55, hand: 52,
+      lanes: [7, 9], per: [3, 5], step: 30, width: [280, 360], speed: [150, 190], dmg: 6 },
   };
 
   /* Abyssal Spires test room (Robert, 2026-11-05: try a dungeon with corridors and heights in the 3/4 view before
