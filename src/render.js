@@ -1090,6 +1090,7 @@
   const unitScale = (e) => { const lk = e.def.look && DL.Minions.look(e); return lk ? lk.scale : e.def.scale; };
 
   function enemyAnim(e, t) {
+    if (e.pose != null) return ["attack", e.pose, e.aim]; // a Spires foe's own move (src/spirefoes.js)
     if (e.state === "windup") return ["attack", 0, e.aim];
     if (e.state === "recover") return ["attack", e.stT > 0.2 ? 1 : 2, e.aim];
     if (e.moving) return ["walk", Math.floor(e.animT * walkRate(unitKey(e), e.def.crawl ? 8 : 5.5)), e.angle];
@@ -1248,8 +1249,9 @@
     let flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : icy ? 0.45 : d.beast ? WOLF_TINT : 0;
     let flashColor = e.flash > 0 ? "#ffffff" : icy ? "#bfe6ff" : d.beast && e.state !== "windup" ? WOLF_CAST : d.rose ? "#ff7a8a" : "#7ff6ff";
     if (lk && lk.tint && !flash) { flash = lk.tintK; flashColor = lk.tint; } // a stand-in minion, washed in its own colour
+    if (d.spire) DL.SpireFoes.drawMark(c, e, t); // where a Chain Leaper lands, a Bowman's lanes
     const [anim, fr, ang] = enemyAnim(e, t);
-    Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y, s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1 });
+    Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y - (e.lift || 0), s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1 });
     if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.barY || (d.crawl ? 36 : d.beast ? 66 : 84) * s) - 4, Math.round((d.barW || 26) * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
     if (e.burn > 0) Art.drawFire(c, e.x + Math.sin(t * 7) * 4, e.y - 10, 0.5, t);
     if (frozen && Art.sprites.iceSpike2) {

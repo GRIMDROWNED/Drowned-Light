@@ -24,6 +24,7 @@
   Bu.clear = () => { list = []; emitters = []; later = []; };
   // run fn after `s` seconds of game time (so a pause pauses it), unless `owner` has died by then
   const after = (s, owner, fn) => later.push({ t: s, owner, fn });
+  Bu.later = after;
 
   function add(x, y, ang, o) {
     if (list.length >= B.cap) return;
