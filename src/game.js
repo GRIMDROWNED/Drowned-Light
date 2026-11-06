@@ -65,6 +65,7 @@
     pyramid: { sq: {} },
     // the finale (src/finale.js): stage (0 nothing yet, 1 the Fire Bearer waits in camp, 2 on the march, 3 at the gate, 4 won),
     // where the Bearer stands, its health (-1: full), guttered, its last camp, the gate found yet, and the day it was won
+    riftlord: 0, // how often the Lord of the Rift Throne has been beaten in this world (src/riftthrone.js)
     riftHome: 0, // 1 once Rift Shards were first carried home from a dungeon: their buildings show from then (src/rift.js)
     finale: { stage: 0, x: 0, y: 0, hp: -1, down: false, rest: null, found: false, won: 0 },
     started: false,
@@ -168,7 +169,12 @@
       : `The ${DL.KITS[id].name} can now be chosen when you begin a new game.`, "good"), 900);
   };
   // A world already holding a full-grown Rose Heart (built before this check) earns him too.
-  const checkUnlocks = (quiet) => { if (G.save.up.roseheart >= 3) G.unlockKit("rosePaladin", quiet); };
+  // The Chain Reaper is won from the Lord of the Rift Throne (src/riftthrone.js) since v0.15.234: a device with a world
+  // already played as him keeps him.
+  const checkUnlocks = (quiet) => {
+    if (G.save.up.roseheart >= 3) G.unlockKit("rosePaladin", quiet);
+    if (!G.kitOpen("chainReaper") && (G.save.riftlord || G.listSlots().some((q) => q.save && q.save.kit === "chainReaper"))) G.unlockKit("chainReaper", true);
+  };
   G.diff = () => DL.DIFFICULTIES[G.save.difficulty] || DL.DIFFICULTIES.dark;
   G.siegeRadius = () => G.stats().flameR + 90;
   G.stage = (c) => (c < 25 ? 1 : c < 50 ? 2 : c < 75 ? 3 : 4);
@@ -1483,6 +1489,7 @@
     if (e.def.rose) DL.Rose.slain(e);
     if (e.def.wyvern) DL.Wyvern.slain(e);
     if (e.def.king) { DL.Finale.slain(e); return; }
+    if (e.def.riftlord) { DL.RiftThrone.slain(e); return; } // the Spires' boss: the run is won (src/riftthrone.js)
     sfx("kill");
     G.effects.push({ type: "dissolve", e, t: 0, max: 0.6 });
     for (let i = 0; i < 16; i++) puff(e.x + rand(-10, 10), e.y - rand(0, 50) * e.def.scale, "rgba(60,220,230,0.7)", 50, 0.9, -40);

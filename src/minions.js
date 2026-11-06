@@ -9,7 +9,7 @@
   const { dist, rand, TAU } = DL;
   const G = DL.Game, M = DL.MINIONS;
   const Minions = (DL.Minions = {});
-  const KIND = (e) => (e.def.colossus ? "colossus" : e.def.bell ? "bell" : e.def.rose ? "rose" : e.def.wyvern ? "wyvern" : e.def.king ? "king" : null);
+  const KIND = (e) => (e.def.colossus ? "colossus" : e.def.bell ? "bell" : e.def.rose ? "rose" : e.def.wyvern ? "wyvern" : e.def.king ? "king" : e.def.riftlord ? "riftlord" : null);
 
   const mine = (b, type) => G.enemies.filter((e) => e.lord === b.id && e.type === type && !e.removed);
   const lordOf = (e) => (e.lord ? G.enemies.find((b) => b.id === e.lord && !b.removed) : null);
@@ -20,9 +20,9 @@
     const c = M[KIND(b)][type];
     let have = mine(b, type).length;
     for (let i = 0; i < n && have < cap(c); i++, have++) {
-      const o = at ? at(i) : b.def.king ? DL.Finale.callSpot() : (() => { const a = rand(0, TAU), r = b.def.radius + rand(40, 110); return { x: b.x + Math.cos(a) * r, y: b.y + Math.sin(a) * r * 0.8 }; })();
+      const o = at ? at(i) : b.def.king ? DL.Finale.callSpot() : b.def.riftlord ? DL.RiftThrone.callSpot(b) : (() => { const a = rand(0, TAU), r = b.def.radius + rand(40, 110); return { x: b.x + Math.cos(a) * r, y: b.y + Math.sin(a) * r * 0.8 }; })();
       if (b.def.colossus && DL.Colossus.inArena) Object.assign(o, DL.Colossus.inArena(o.x, o.y));
-      const e = G.makeEnemy(type, o.x, o.y, b.zi || 4, { lord: b.id, rise: 0.9, fromColossus: b.def.colossus || undefined, fromKing: b.def.king || undefined });
+      const e = G.makeEnemy(type, o.x, o.y, b.zi || 4, { lord: b.id, rise: 0.9, fromColossus: b.def.colossus || undefined, fromKing: b.def.king || undefined, room: b.room, heat: b.room ? 1 : undefined });
       G.enemies.push(e);
       for (let k = 0; k < 6; k++) G.puff(o.x + rand(-12, 12), o.y + rand(-4, 4), "rgba(60,200,210,0.6)", 60, 0.6, -30);
     }

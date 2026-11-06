@@ -98,6 +98,9 @@
   const ARCH_W = { x: -730, y: -640 }, RING_E = { x: 690, y: -700 }, ARCH_S = { x: -680, y: 455 };
   const ARCH_T = { x: -330, y: -1700 }; // in the throne arena: straight back to the rune hub
   const THRONE = { x: 0, y: -2300 };
+  const THRONE_K = 1.2; // the throne is drawn this much bigger than its file's half size: its lord is three knights tall
+  // where the Lord of the Rift Throne sits (src/riftthrone.js): in front of the throne, lifted onto its seat
+  const SEAT = { dy: 46, lift: 70 };
   // Mist Wells: dark until a knight stands at one, then lit (a landmark per district for now; step 4 gives them their job)
   const WELLS = [[-1820, 1090], [2080, -260], [-900, -1110], [900, -1150], [-1990, 450]];
   // things that stand up: drawn y-sorted with the knights. kind, x, y, (size)
@@ -130,7 +133,7 @@
     [ARCH_S.x - 48, ARCH_S.y, 15], [ARCH_S.x + 48, ARCH_S.y, 15],
     [-188, 8, 11], [188, 8, 11], [-188, 312, 11], [188, 312, 11], [-880, -458, 11], [-580, -458, 11], [540, -500, 11], [840, -500, 11],
     [-480, -292, 11], [-240, -292, 11], [240, -292, 11], [480, -292, 11], [742, 262, 22], [-870, -680, 12], [840, -740, 12], [-800, 622, 12],
-    [ARCH_T.x - 48, ARCH_T.y, 15], [ARCH_T.x + 48, ARCH_T.y, 15], [THRONE.x, THRONE.y - 20, 80], ...WELLS.map(([x, y]) => [x, y - 10, 40]),
+    [ARCH_T.x - 48, ARCH_T.y, 15], [ARCH_T.x + 48, ARCH_T.y, 15], [THRONE.x, THRONE.y - 40, 110], ...WELLS.map(([x, y]) => [x, y - 10, 40]),
     [-440, -1018, 11], [-220, -1018, 11], [220, -1018, 11], [440, -1018, 11], [-240, -538, 11], [240, -538, 11],
     [1130, 300, 16], [2230, -480, 16], [-2120, 680, 14],
   ];
@@ -278,7 +281,7 @@
     high: { heat: 0.75, sent: [[-300, -1240], [300, -1240]], foes: [["bowman", 1], ["leaper", 1], ["prism", 1], ["caller", 1]] },
     hw: { heat: 0.85, sent: [[-900, -1220]], foes: [["shade", 2], ["leaper", 1]] },
     he: { heat: 0.85, sent: [[900, -1250]], foes: [["shade", 1], ["bowman", 1], ["prism", 1]] },
-    arena: { heat: 1, sent: [[-300, -2000], [300, -2000]], foes: [["prism", 1], ["caller", 1], ["leaper", 1], ["bowman", 1]] }, // the boss comes in step 7
+    arena: { heat: 1, sent: [], foes: [], boss: true }, // the Lord of the Rift Throne and his minions (src/riftthrone.js)
     // side rooms: a harder fight for a chest of Rift Shards (opened once a run, after the room is won)
     sd1: { heat: 0.7, sent: [[-1700, 1360]], foes: [["leaper", 2], ["shade", 2], ["bowman", 1]], chest: [-1560, 1420] },
     sd2: { heat: 0.9, sent: [[2600, -400]], foes: [["prism", 1], ["shade", 2], ["caller", 1]], chest: [2680, -260] },
@@ -465,6 +468,7 @@
   function seal(sp, id, p) {
     const R = ROOMS[id], f = FLOORS[id];
     sp.seal = id; sp.sealT = 0;
+    if (R.boss) DL.RiftThrone.wake(id);
     for (const [x, y] of R.sent) {
       G.enemies.push(G.makeEnemy("sentinel", OX + x, OY + y, S.wave.zone, { heat: R.heat, room: id }));
       for (let i = 0; i < 12; i++) G.puff(OX + x + DL.rand(-14, 14), OY + y - DL.rand(0, 60), "rgba(200,150,255,0.7)", 50, 0.7);
@@ -475,8 +479,17 @@
     }
     G.camera.shake = 5;
     DL.Sound.play("whisper");
-    say("Rune light seals the way out. Break everything in the room!", "danger");
+    if (!R.boss) say("Rune light seals the way out. Break everything in the room!", "danger");
   }
+  Sp.seat = () => ({ x: OX + THRONE.x, y: OY + THRONE.y + SEAT.dy, lift: SEAT.lift });
+  // the boss beaten (src/riftthrone.js): his reward into the run's loot, and the arena's arch now goes home with all of it
+  Sp.won = function (reward) {
+    const sp = G.spires;
+    if (!sp) return;
+    sp.won = true;
+    sp.shard += reward.shard; sp.aether += reward.aether;
+    setTimeout(() => say(`${reward.shard} Rift Shards and ${reward.aether} Aether Crystals glitter where he fell. The arch in the arena now takes you home with everything you carry.`, "good"), 2500);
+  };
   function open(sp) {
     const id = sp.seal;
     sp.cleared[id] = true; sp.seal = null; sp.flare = 1;
@@ -506,6 +519,7 @@
     const atW = Math.abs(lx - ARCH_W.x) < 36 && ly < ARCH_W.y - 4 && ly > ARCH_W.y - 40, atE = Math.abs(lx - RING_E.x) < 44 && ly < RING_E.y - 4 && ly > RING_E.y - 40;
     const atS = Math.abs(lx - ARCH_S.x) < 30 && ly < ARCH_S.y - 4 && ly > ARCH_S.y - 40;
     if (atS) { Sp.leave(); return; }
+    if (Math.abs(lx - ARCH_T.x) < 30 && ly < ARCH_T.y - 4 && ly > ARCH_T.y - 40 && sp.won && !sp.seal) { Sp.leave(true); return; } // the boss beaten: home with it all
     if (Math.abs(lx - ARCH_T.x) < 30 && ly < ARCH_T.y - 4 && ly > ARCH_T.y - 40) { // the arena's arch: back to the hub
       p.x = OX + SPAWN.x; p.y = OY + SPAWN.y; p.spx = p.x; p.spy = p.y; p.dashT = 0; p.kx = p.ky = 0;
       G.camera.x = p.x; G.camera.y = p.y - 20;
@@ -1143,6 +1157,11 @@
     }
     const sp = G.spires;
     if (sp && sp.seal) for (const g of GATES[sp.seal] || []) list.push({ y: OY + g.y, f: () => curtain(c, g, t, sp.sealT) });
+    // the Lord of the Rift Throne asleep on it, until the arena wakes him (and once he's beaten, an empty throne)
+    if (!(sp && (sp.won || sp.seal === "arena")) && !DL.RiftThrone.lord()) {
+      const st = Sp.seat();
+      if (st.x > view.left - 300 && st.x < view.right + 300 && st.y > view.top - 100 && st.y < view.bottom + 400) list.push({ y: st.y, f: () => DL.RiftThrone.drawSleeping(c, st.x, st.y - st.lift, t) });
+    }
     if (sp) for (const id in ROOMS) {
       const q = ROOMS[id].chest;
       if (q) list.push({ y: OY + q[1], f: () => chest(c, OX + q[0], OY + q[1], t, !!sp.opened[id], !!sp.cleared[id]) });
@@ -1197,7 +1216,7 @@
     const kind = q[0];
     const im = IMG[kind === "crystal" ? "crystal-" + (3 - q[4]) : kind === "banner" ? "exit-banner" : kind === "well" ? (G.spires && G.spires.lit && G.spires.lit[q[3]] ? "well-lit" : "well-dark") : kind];
     if (im && kind !== "arch" && kind !== "ring") { // drawn: stand it on its foot
-      const s = (kind === "crystal" ? q[3] : 1) / 2, w = im.width * s, h = im.height * s;
+      const s = (kind === "crystal" ? q[3] : kind === "throne" ? THRONE_K : 1) / 2, w = im.width * s, h = im.height * s;
       c.drawImage(im, x - w / 2, y - h + (kind === "crystal" ? 3 : 5), w, h);
     } else if (kind === "crystal") {
       const s = q[3], img = art.crystals[q[4]];
