@@ -10,8 +10,9 @@
    crystal glows and the mist move.
 
    You walk only on floors, stairs and bridges (Spires.collide). Step into the west arch or the east ring to cross between
-   them; the small arch on the south platform takes you home. Stand on the middle of the rune circle and Drowned climb out
-   of the mist on the far platforms and come for you, routing over stairs and bridges (Spires.route).
+   them; the small arch on the south platform takes you home. A Spire Sentinel (crystal turret, src/bullets.js) on the terrace and one in the walkway
+   fire bullet patterns. Stand on the middle of the rune circle and Drowned climb out
+   of the mist on the far platforms (and broken Sentinels come back) and come for you, routing over stairs and bridges (Spires.route).
    Reached from the pause menu in Sandbox. The world clock stops while you're here. Numbers: DL.SPIRES (src/data.js). */
 "use strict";
 (function (DL) {
@@ -53,7 +54,7 @@
   // things that stand up: drawn y-sorted with the knights. kind, x, y, (size)
   const PROPS = [
     ["arch", ARCH_W.x, ARCH_W.y, 1], ["ring", RING_E.x, RING_E.y], ["arch", ARCH_S.x, ARCH_S.y, 0.8],
-    ["post", -188, 8], ["post", 188, 8], ["post", -188, 312], ["post", 188, 312],
+    ["banner", -592, 470], ["post", -188, 8], ["post", 188, 8], ["post", -188, 312], ["post", 188, 312],
     ["spire", -480, -292], ["spire", -240, -292], ["spire", 240, -292], ["spire", 480, -292],
     ["post", -880, -458], ["post", -580, -458], ["post", 540, -500], ["post", 840, -500],
     ["crystal", 742, 262, 1.5, 0], ["crystal", 700, 276, 0.8, 2], ["crystal", 770, 232, 0.9, 1],
@@ -143,12 +144,14 @@
     p.kx = p.ky = 0; p.dashT = 0; p.angle = -Math.PI / 2;
     for (const f of followers()) { f.x = p.x + DL.rand(-30, 30); f.y = p.y + DL.rand(-10, 20); f.spx = null; }
     G.camera.x = p.x; G.camera.y = p.y - 20;
+    sentinels();
     say("The Abyssal Spires. Cross the arches to travel; stand on the rune circle to wake the Drowned.", "good");
   };
   Sp.leave = function () {
     const sp = G.spires, p = G.player;
     if (!sp) return;
     G.spires = null;
+    DL.Bullets.clear();
     for (const e of G.enemies) if (Sp.inRegion(e.x, e.y)) e.removed = true;
     G.enemies = G.enemies.filter((e) => !e.removed);
     if (p) {
@@ -159,6 +162,16 @@
     }
     say("You step back out of the mist.", "good");
   };
+
+  // Spire Sentinels (crystal turrets, src/bullets.js): one on the terrace, one in the walkway; brought back if broken.
+  const SENTINELS = [[640, 150, 0], [-300, -250, 0.7]]; // x, y, heat: a gentle one on the terrace, a dense one in the walkway
+  function sentinels() {
+    for (const [x, y, heat] of SENTINELS) {
+      if (G.enemies.some((e) => e.def.sentinel && !e.removed && Math.hypot(e.x - OX - x, e.y - OY - y) < 40)) continue;
+      G.enemies.push(G.makeEnemy("sentinel", OX + x, OY + y, S.wave.zone, { heat }));
+      for (let i = 0; i < 12; i++) G.puff(OX + x + DL.rand(-14, 14), OY + y - DL.rand(0, 60), "rgba(200,150,255,0.7)", 50, 0.7);
+    }
+  }
 
   // The portals, and waking the rune circle.
   Sp.update = function (dt) {
@@ -179,7 +192,7 @@
     }
     sp.inPortal = atW || atE;
     // the rune circle: step on its heart and the Drowned climb out of the mist on the far platforms
-    const mine = G.enemies.filter((e) => !e.removed && Sp.inRegion(e.x, e.y));
+    const mine = G.enemies.filter((e) => !e.removed && !e.def.sentinel && Sp.inRegion(e.x, e.y));
     sp.wake = Math.max(0, sp.wake - (mine.length ? 0 : dt));
     if (!mine.length && sp.wake <= 0 && Math.hypot(lx - RUNE.x, (ly - RUNE.y) / RUNE.sq) < 34) {
       const w = S.wave, spots = [FLOORS.terrace, FLOORS.south, FLOORS.west, FLOORS.east, FLOORS.walk];
@@ -187,6 +200,7 @@
         const f = spots[i % spots.length], x = OX + (f[0] + f[2]) / 2 + DL.rand(-40, 40), y = OY + (f[1] + f[3]) / 2 + DL.rand(-20, 20);
         G.enemies.push(G.makeEnemy(w.type, x, y, w.zone, { rise: 0.9 }));
       }
+      sentinels();
       sp.wake = w.rest; sp.flare = 1;
       G.camera.shake = 6;
       DL.Sound.play("whisper");
@@ -216,8 +230,46 @@
   const BX0 = -1200, BY0 = -860, BX1 = 1200, BY1 = 980; // the painted canvas's extent (local)
   let base = null, art = null;
 
+  // Robert's drawn pieces (tools/cut_spires.py, 2 file px per world px). They load when the room is first drawn;
+  // until then (and in the node tests) the coded stone shows, and when the last one lands the room repaints.
+  const ART_N = ["floor-2", "floor-3", "floor-4", "kerb", "face-1-band", "face-1-foot", "face-2-band", "face-2-foot", "stairs",
+    "bridge", "bridge-post", "post", "spire", "arch", "ring", "exit-banner", "crystal-1", "crystal-2", "crystal-3",
+    "column-1", "column-1b", "column-2", "column-3", "rune-circle", "rune-glow"];
+  const IMG = {};
+  let loading = false;
+  function loadArt() {
+    if (loading || typeof Image === "undefined") return;
+    loading = true;
+    let left = ART_N.length;
+    const done = () => { if (--left === 0) base = null; };
+    for (const n of ART_N) {
+      const im = new Image();
+      im.onload = () => { IMG[n] = im; done(); };
+      im.onerror = done;
+      im.src = DL.asset("assets/sprites/spires/" + n + ".png");
+    }
+  }
+  // tile a drawn strip across x0..x1 with its top at y, h tall
+  function stripX(g, img, x0, x1, y, h, off = 0) {
+    const w = (img.width * h) / img.height;
+    g.save(); g.beginPath(); g.rect(x0, y, x1 - x0, h); g.clip();
+    for (let x = x0 - off * w; x < x1; x += w) g.drawImage(img, x, y, w + 0.5, h);
+    g.restore();
+  }
+  // the runs of an edge at y between x0 and x1 that no stair or bridge comes in through
+  function runs(x0, x1, y, gaps) {
+    const cut = gaps.filter((q) => Math.abs(q[1] - y) < 30 && q[0] > x0 - 52 && q[0] < x1 + 52).map((q) => [q[0] - 52, q[0] + 52]).sort((a, b) => a[0] - b[0]);
+    const out = [];
+    let x = x0;
+    for (const [a, b] of cut) { if (a > x) out.push([x, a]); x = Math.max(x, b); }
+    if (x < x1) out.push([x, x1]);
+    return out;
+  }
+  const FOOT_WALL = { 1: 37, 2: 35.5 }; // the wall rows at the top of each face's foot picture (world px)
+
   // A stone face hanging from a floor's south edge: courses of brick darkening downward, a ragged foot, fading out.
-  function face(g, x0, x1, y, h, r, glyphs) {
+  function face(g, x0, x1, y, h, r, glyphs, v = 1) {
+    if (IMG["face-" + v + "-band"] && IMG["face-" + v + "-foot"]) return faceArt(g, x0, x1, y, h, r, v);
     const w = Math.round(x1 - x0), H = Math.round(h + 70), t = mk(w, H), q = t.getContext("2d");
     q.fillStyle = C.face;
     q.beginPath(); q.moveTo(0, 0); q.lineTo(w, 0);
@@ -257,13 +309,47 @@
     g.drawImage(t, x0, y);
   }
 
+  // The drawn face: the top half of the wall tiled down as far as it needs, then the foot (the rest of the wall and the
+  // hanging rock) once, then the same light and fade as the coded one.
+  function faceArt(g, x0, x1, y, h, r, v) {
+    const band = IMG["face-" + v + "-band"], foot = IMG["face-" + v + "-foot"];
+    const bw = band.width / 2, bh = band.height / 2, fw = foot.width / 2, fh = foot.height / 2, fwall = FOOT_WALL[v];
+    const fy = Math.max(0, h - fwall), w = Math.round(x1 - x0), H = Math.round(fy + fh) + 1, t = mk(w, H), q = t.getContext("2d");
+    const off = r() * bw;
+    for (let yy = 0; yy < fy; yy += bh) for (let xx = -off; xx < w; xx += bw) q.drawImage(band, xx, yy, bw + 0.5, bh + 0.5);
+    for (let xx = -off; xx < w; xx += fw) q.drawImage(foot, xx, fy, fw + 0.5, fh);
+    q.globalCompositeOperation = "source-atop";
+    let gr = q.createLinearGradient(0, 0, w, 0);
+    gr.addColorStop(0, "rgba(200,170,255,0.16)"); gr.addColorStop(Math.min(0.2, 24 / w), "rgba(200,170,255,0)");
+    gr.addColorStop(Math.max(0.8, 1 - 24 / w), "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,0.4)");
+    q.fillStyle = gr; q.fillRect(0, 0, w, H);
+    gr = q.createLinearGradient(0, 0, 0, H);
+    gr.addColorStop(0, "rgba(0,0,0,0.1)"); gr.addColorStop(1, "rgba(10,0,25,0.5)");
+    q.fillStyle = gr; q.fillRect(0, 0, w, H);
+    q.fillStyle = "rgba(0,0,0,0.35)"; q.fillRect(0, 0, w, 3);
+    q.globalCompositeOperation = "destination-out";
+    gr = q.createLinearGradient(0, fy + fwall, 0, H);
+    gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,0.85)");
+    q.fillStyle = gr; q.fillRect(0, fy + fwall, w, H);
+    g.drawImage(t, x0, y);
+  }
+
   // A floor's top: flagstones in offset rows, bevelled, with a lighter kerb round the edge.
   function top(g, x0, y0, x1, y1, r, gaps) {
     g.save();
     g.beginPath(); g.rect(x0, y0, x1 - x0, y1 - y0); g.clip();
     g.fillStyle = C.grout; g.fillRect(x0, y0, x1 - x0, y1 - y0);
+    const drawn = IMG["floor-2"] && IMG.kerb;
+    if (drawn) { // Robert's tiles, on one grid for the whole room so neighbouring floors line up
+      const T = 192;
+      for (let ty = BY0 + Math.floor((y0 - BY0) / T) * T; ty < y1; ty += T)
+        for (let tx = BX0 + Math.floor((x0 - BX0) / T) * T; tx < x1; tx += T) {
+          const k = r(), im = (k < 0.14 && IMG["floor-3"]) || (k < 0.28 && IMG["floor-4"]) || IMG["floor-2"];
+          g.drawImage(im, tx, ty, T, T);
+        }
+    }
     const TW = 22, TH = 17;
-    for (let row = 0, y = y0; y < y1; row++, y += TH) {
+    for (let row = 0, y = drawn ? y1 : y0; y < y1; row++, y += TH) {
       for (let x = x0 - (row % 2) * (TW / 2); x < x1; x += TW) {
         const k = 0.25 + r() * 0.4;
         g.fillStyle = mix(C.topD, C.topL, k); g.fillRect(x + 1, y + 1, TW - 2, TH - 2);
@@ -287,7 +373,10 @@
       g.fillStyle = mix(C.rimD, C.rim, 0.5 + r() * 0.5); g.fillRect(x + 1, y + 1, w - 2, h - 3);
       g.fillStyle = "rgba(255,240,255,0.18)"; g.fillRect(x + 1, y + 1, w - 2, 1);
     };
-    for (let x = x0; x < x1; x += 24) {
+    if (drawn) { // the drawn parapet along the north and south edges
+      for (const [a, b] of runs(x0, x1, y1, gaps)) stripX(g, IMG.kerb, a, b, y1 - 24, 24, r());
+      for (const [a, b] of runs(x0, x1, y0, gaps)) stripX(g, IMG.kerb, a, b, y0, 24, r());
+    } else for (let x = x0; x < x1; x += 24) {
       if (!open(x + 12, y0)) kerb(x, y0, 24, 8);
       if (!open(x + 12, y1)) kerb(x, y1 - 8, 24, 8);
     }
@@ -296,7 +385,7 @@
       if (!open(x1, y + 12)) kerb(x1 - 8, y, 8, Math.min(24, y1 - 8 - y));
     }
     // raised blocks along the south edge (a parapet you can see over)
-    for (let x = x0 + 18; x < x1 - 30; x += 56) {
+    for (let x = x0 + 18; !drawn && x < x1 - 30; x += 56) {
       if (open(x + 8, y1)) continue;
       g.fillStyle = C.rim; g.fillRect(x, y1 - 18, 16, 8);
       g.fillStyle = C.faceL; g.fillRect(x, y1 - 10, 16, 10);
@@ -307,6 +396,8 @@
 
   // The rune circle set into the plaza: rings of wedge stones round a disc, with grooves for the runes.
   function runeFloor(g, r) {
+    const im = IMG["rune-circle"];
+    if (im) { const w = RUNE.r * 2 + 14, h = (w * im.height) / im.width; g.drawImage(im, RUNE.x - w / 2, RUNE.y - h / 2, w, h); return; }
     g.save();
     g.translate(RUNE.x, RUNE.y); g.scale(1, RUNE.sq);
     g.fillStyle = C.grout; g.beginPath(); g.arc(0, 0, RUNE.r + 4, 0, Math.PI * 2); g.fill();
@@ -338,6 +429,12 @@
 
   // Stairs rising north: treads and risers between low stone rails, and the face under their foot.
   function stairs(g, q, r) {
+    const im = IMG.stairs;
+    if (im) { // the drawn flight, its treads (file px 38..191 across, 28..386 down) stretched onto the stair
+      const sx = (q[2] - q[0]) / (191 - 38), sy = (q[3] - q[1]) / (386 - 28);
+      g.drawImage(im, q[0] - 38 * sx, q[1] - 28 * sy, im.width * sx, im.height * sy);
+      return;
+    }
     const [x0, y0, x1, y1] = q, n = Math.max(5, Math.round((y1 - y0) / 15)), h = (y1 - y0) / n;
     for (let i = 0; i < n; i++) {
       const y = y0 + i * h, k = 0.35 + 0.25 * (1 - i / n); // higher steps catch more light
@@ -357,6 +454,7 @@
 
   // A rope bridge: planks across, chain rails on posts, sagging a little and dripping chain below.
   function bridge(g, q, r) {
+    if (IMG.bridge) return bridgeArt(g, q);
     const [ax, ay, bx, by, hw] = q, len = Math.hypot(bx - ax, by - ay), ux = (bx - ax) / len, uy = (by - ay) / len, nx = -uy, ny = ux;
     const sag = (u) => Math.sin(Math.PI * u) * 7;
     // chains hanging under it
@@ -389,6 +487,21 @@
         g.fillStyle = C.rim; g.fillRect(x - 5, y - 21, 10, 4);
       }
     }
+  }
+
+  // The drawn bridge: the plank strip laid along it (always drawn west to east, so its chains hang down), posts at the ends.
+  function bridgeArt(g, q) {
+    let [ax, ay, bx, by, hw] = q;
+    if (bx < ax) [ax, ay, bx, by] = [bx, by, ax, ay];
+    const im = IMG.bridge, len = Math.hypot(bx - ax, by - ay), ang = Math.atan2(by - ay, bx - ax), tw = im.width / 2, th = im.height / 2;
+    g.save(); g.translate(ax, ay); g.rotate(ang);
+    g.beginPath(); g.rect(-4, -th, len + 8, th * 3); g.clip();
+    for (let s = -4; s < len + 4; s += tw) g.drawImage(im, s, -32, tw + 0.5, th);
+    g.restore();
+    const post = IMG["bridge-post"];
+    if (!post) return;
+    const nx = -Math.sin(ang), ny = Math.cos(ang), pw = post.width / 2, ph = post.height / 2;
+    for (const [px, py] of [[ax, ay], [bx, by]]) for (const sd of [-1, 1]) g.drawImage(post, px + nx * hw * sd - pw / 2, py + ny * hw * sd - ph + 4, pw, ph);
   }
 
   // A crystal cluster: violet shards with a lit facet, standing on (0, 0).
@@ -530,13 +643,16 @@
     // every slab back to front by its south edge: its hanging face, then its top
     const gaps = JOINS.map((j) => [j[2], j[3]]);
     const slabs = [];
-    for (const k in FLOORS) slabs.push({ y: FLOORS[k][3], f: () => { const q = FLOORS[k]; face(g, q[0], q[2], q[3], S.hang + q[4] * LH, r, Math.round((q[2] - q[0]) / 160)); top(g, q[0], q[1], q[2], q[3], r, gaps); if (k === "plaza") runeFloor(g, r); } });
+    for (const k in FLOORS) slabs.push({ y: FLOORS[k][3], f: () => { const q = FLOORS[k]; face(g, q[0], q[2], q[3], S.hang + q[4] * LH, r, Math.round((q[2] - q[0]) / 160), k === "plaza" || k === "west" || k === "east" ? 2 : 1); top(g, q[0], q[1], q[2], q[3], r, gaps); if (k === "plaza") runeFloor(g, r); } });
     for (const k in STAIRS) slabs.push({ y: STAIRS[k][3] - 0.5, f: () => { const q = STAIRS[k]; face(g, q[0] - 3, q[2] + 3, q[3], S.hang + q[4] * LH, r, 0); stairs(g, q, r); } });
-    for (const q of PILLARS) slabs.push({ y: q[1] + q[2] * 0.4, f: () => {
+    const COLS = ["column-1", "column-1b", "column-2", "column-3"];
+    PILLARS.forEach((q, i) => slabs.push({ y: q[1] + q[2] * 0.4, f: () => {
+      const im = IMG[COLS[i % 4]];
+      if (im) { const w = q[2] * 1.3, h = (w * im.height) / im.width; g.drawImage(im, q[0] - w / 2, q[1] - w * 0.35, w, h); return; }
       const w = q[2], d = w * 0.8;
       face(g, q[0] - w / 2, q[0] + w / 2, q[1] + d / 2, S.hang + 30 + q[3] * LH, r, 1);
       top(g, q[0] - w / 2, q[1] - d / 2, q[0] + w / 2, q[1] + d / 2, r, []);
-    } });
+    } }));
     slabs.sort((a, b) => a.y - b.y);
     for (const s of slabs) s.f();
     for (const k in BRIDGES) bridge(g, BRIDGES[k], r);
@@ -544,6 +660,7 @@
   }
 
   function build() {
+    loadArt();
     base = paint();
     const r = rng(99);
     art = {
@@ -589,8 +706,9 @@
     c.save();
     c.globalCompositeOperation = "lighter";
     c.globalAlpha = 0.45 + 0.15 * Math.sin(t * 1.7) + 0.4 * fl;
-    c.translate(OX + RUNE.x, OY + RUNE.y); c.scale(1, RUNE.sq); c.rotate(t * 0.08);
-    c.drawImage(art.runes, -160, -160);
+    const rg = IMG["rune-glow"];
+    if (rg) { const w = RUNE.r * 2 + 14, h = (w * rg.height) / rg.width; c.drawImage(rg, OX + RUNE.x - w / 2, OY + RUNE.y - h / 2, w, h); }
+    else { c.translate(OX + RUNE.x, OY + RUNE.y); c.scale(1, RUNE.sq); c.rotate(t * 0.08); c.drawImage(art.runes, -160, -160); }
     c.restore();
     // the light-fall pouring off the terrace
     c.save();
@@ -628,9 +746,30 @@
   };
   function drawProp(c, q, x, y, t) {
     const kind = q[0];
-    if (kind === "crystal") {
+    const im = IMG[kind === "crystal" ? "crystal-" + (3 - q[4]) : kind === "banner" ? "exit-banner" : kind];
+    if (im && kind !== "arch" && kind !== "ring") { // drawn: stand it on its foot
+      const s = (kind === "crystal" ? q[3] : 1) / 2, w = im.width * s, h = im.height * s;
+      c.drawImage(im, x - w / 2, y - h + (kind === "crystal" ? 3 : 5), w, h);
+    } else if (kind === "crystal") {
       const s = q[3], img = art.crystals[q[4]];
       c.drawImage(img, x - 28 * s, y - 70 * s, 56 * s, 72 * s);
+    } else if (kind === "banner") {
+      // coded until the art loads: nothing
+    } else if (kind === "arch" && im) {
+      const sz = q[3], ws = 0.341 * 0.5 * sz, w = (im.width / 2) * sz, h = (im.height / 2) * sz;
+      // the opening, in the raw picture's px round its foot (626, 1193): the portal swirls behind it
+      const P = (rx, ry) => [x + (rx - 626) * ws, y + (ry - 1193) * ws];
+      c.save(); c.beginPath();
+      let p = P(345, 1175); c.moveTo(p[0], p[1]); p = P(345, 520); c.lineTo(p[0], p[1]);
+      let cp = P(360, 400); p = P(628, 370); c.quadraticCurveTo(cp[0], cp[1], p[0], p[1]);
+      cp = P(895, 400); p = P(910, 520); c.quadraticCurveTo(cp[0], cp[1], p[0], p[1]);
+      p = P(910, 1175); c.lineTo(p[0], p[1]); c.closePath(); c.clip();
+      portal(c, x, y - h * 0.4, w * 0.5, h * 0.7, t); c.restore();
+      c.drawImage(im, x - w / 2, y - h, w, h);
+    } else if (kind === "ring" && im) {
+      const ws = 0.4234 * 0.5, w = im.width / 2, h = im.height / 2, cx = x + (627 - 627) * ws, cy = y + (545 - 1200) * ws + 10;
+      c.save(); c.beginPath(); c.ellipse(cx, cy, 292 * ws, 258 * ws, 0, 0, Math.PI * 2); c.clip(); portal(c, cx, cy, 292 * ws * 2, 258 * ws * 2, t); c.restore();
+      c.drawImage(im, x - w / 2, y - h + 10, w, h);
     } else if (kind === "post" || kind === "spire") {
       const img = art[kind];
       c.drawImage(img, x - 20, y - img.height + 8);
@@ -703,7 +842,7 @@
     const near = (x, y) => Math.abs(x - p.x) < 900 && Math.abs(y - p.y) < 700;
     for (const q of PROPS) {
       const x = OX + q[1], y = OY + q[2];
-      if (!near(x, y)) continue;
+      if (!near(x, y) || q[0] === "banner") continue;
       const big = q[0] === "arch" || q[0] === "ring";
       L.push({ x, y: y - (big ? 90 : 40), r: big ? 170 : q[0] === "crystal" ? 80 * q[3] : 70, s: big ? 0.8 : 0.6, col: GLOW, a: 0.8 });
     }

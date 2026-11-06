@@ -286,3 +286,24 @@ def cool_violet(x):
     f = h * 6 - np.floor(h * 6)
     p, q, t = v * (1 - s), v * (1 - f * s), v * (1 - (1 - f) * s)
     return np.stack([np.choose(i, [v, q, p, p, t, v]), np.choose(i, [t, v, v, q, p, p]), np.choose(i, [p, p, t, v, v, q])], -1) * 255
+
+
+def blue_crystal(x):
+    """Amethyst turned blue (Robert, 2026-11-05: purple is kept for the Aether Crystal of the Abyssal Spires). Only the
+    violet-to-pink crystal turns, to a sky blue; the grey rock around it is left alone.
+    x is an (..., 3) float array, 0..255."""
+    a = x / 255.0
+    mx, mn = a.max(-1), a.min(-1)
+    d = np.maximum(mx - mn, 1e-6)
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    v, s = mx, np.where(mx > 0, (mx - mn) / np.maximum(mx, 1e-6), 0)
+    h = np.where(mx == r, ((g - b) / d) % 6, np.where(mx == g, (b - r) / d + 2, (r - g) / d + 4)) / 6
+    gem = (s > 0.12) & ((h > 0.66) | (h < 0.03))
+    hh = np.where(h < 0.03, h + 1, h)
+    h = np.where(gem, 0.575 + (hh - 0.78) * 0.35, h) % 1  # pulled together round a clear sky blue
+    s = np.where(gem, np.minimum(1, s * 1.05), s)
+    v = np.where(gem, np.minimum(1, v * 1.08), v)
+    i = (h * 6).astype(int) % 6
+    f = h * 6 - np.floor(h * 6)
+    p, q, t = v * (1 - s), v * (1 - f * s), v * (1 - (1 - f) * s)
+    return np.stack([np.choose(i, [v, q, p, p, t, v]), np.choose(i, [t, v, v, q, p, p]), np.choose(i, [p, p, t, v, v, q])], -1) * 255

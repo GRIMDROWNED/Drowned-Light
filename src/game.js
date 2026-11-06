@@ -243,7 +243,7 @@
     G.towerCd = [0, 0, 0, 0];
     G.resetPylons();
     G.siegeT = 5; G.spawnT = 3; G.rootEvent = null; G.selfEnemy = null; G.champSpawned = false;
-    G.dying = 0; G.spires = null;
+    G.dying = 0; G.spires = null; DL.Bullets.clear();
     DL.Siege.reset();
     DL.Outposts.reset();
     DL.Pyramid.resetChampions();
@@ -331,6 +331,7 @@
     DL.Rose.local();
     DL.Cave.update(dt);
     DL.Spires.update(dt);
+    DL.Bullets.update(dt);
     DL.Minions.update(dt);
     updateEnemies(dt);
     if (G.state === "dying") return;
@@ -508,7 +509,7 @@
       if (o.type === "sprout") { if (!o.harvested) L.push({ x: o.x + 6, y: o.y - 30, r: 46, s: 0.45, col: "80,230,240", a: 0.6 }); continue; }
       L.push({ x: o.x, y: o.y - 24, r: o.def.light * G.diff().light, s: 0.92, col: "80,230,240", a: 0.95, kind: "bloom", obj: o });
     }
-    for (const o of G.amethysts) if (!o.harvested) L.push({ x: o.x, y: o.y - 4, r: 34, s: 0.45, col: "190,160,255", a: 0.9 });
+    for (const o of G.amethysts) if (!o.harvested) L.push({ x: o.x, y: o.y - 4, r: 34, s: 0.45, col: "130,195,255", a: 0.9 });
     if (p && G.state !== "title") {
       const lr = st.lanternR * (p.oil > 0 ? 1 : 0.4);
       L.push({ x: p.x, y: p.y - 28, r: lr, s: 0.8, col: "255,180,90", a: p.oil > 0 ? 0.75 : 0.3, flick: 1, lantern: true });
@@ -751,7 +752,7 @@
     if (!G.hitNodes.includes(o)) G.hitNodes.push(o);
     const col = DL.RESOURCES[o.def.res].color, ix = o.x - Math.cos(ang) * 6, iy = o.y - 12;
     for (let i = 0; i < 6; i++) puff(ix, iy, col, 90, 0.45, -60);
-    if (o.type === "sprout" || o.type === "pearl") { for (let i = 0; i < 5; i++) spark(ix, iy, o.type === "pearl" ? "190,160,255" : "80,230,240", 90); sfx("chime"); }
+    if (o.type === "sprout" || o.type === "pearl") { for (let i = 0; i < 5; i++) spark(ix, iy, o.type === "pearl" ? "130,195,255" : "80,230,240", 90); sfx("chime"); }
     else sfx(o.type === "tree" ? "chop" : "clink");
     if (o.mineHp <= 0) shatter(o);
   }
@@ -1070,6 +1071,8 @@
         e.y += Math.sin(e.wanderA) * e.speed * 0.45 * dt;
         e.angle = e.wanderA;
         e.moving = true;
+      } else if (e.def.sentinel) {
+        e.state = "move"; e.moving = false; // a crystal turret: it only shoots
       } else if (e.def.king && DL.Finale.busy()) {
         // the Sunken King: his hands do everything (src/finale.js)
       } else if (e.def.bell && DL.Bell.busy(e, dt, p, dp)) {
@@ -1210,6 +1213,7 @@
       for (const a of G.enemies) if (a !== e && dist(e.x, e.y, a.x, a.y) < d.aura) a.rallied = 0.3;
     }
     if (d.caster) hexbearer(e, dt, p, dp);
+    if (d.sentinel) DL.Bullets.sentinel(e, dt, p, dp); // the Spire Sentinel's bullet patterns (src/bullets.js)
     if (d.bell) DL.Bell.behave(e, dt, p, dp);
     if (d.colossus) DL.Colossus.think(e, dt, p, dp);
     if (d.king) DL.Finale.think(e, dt); // the Sunken King picks his moves (src/finale.js)

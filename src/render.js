@@ -314,6 +314,7 @@
     /* darkness + light */
     drawLighting(G, c, left, top, z, shx, shy);
     toWorld();
+    DL.Bullets.draw(c, view); // bullet-hell bullets: above the darkness so they always read (src/bullets.js)
 
     /* glowing things drawn above the darkness */
     c.globalCompositeOperation = "lighter";
@@ -486,6 +487,7 @@
     drawFormEmbers(c, G, t);
     DL.Cave.drawGlow(c, t);
     DL.Spires.drawGlow(c, t, view);
+    DL.Bullets.glow(c, t, view);
     DL.Rose.drawGlow(c, t, view);
     DL.Minions.drawGlow(c, t);
     for (const k of G.kindles) drawKindleGlow(c, k, t);
@@ -1204,6 +1206,7 @@
 
   function drawEnemy(c, e, t) {
     if (e.hidden) return; // a Tide Leech under the causeway
+    if (e.def.sentinel) return DL.Bullets.drawSentinel(c, e, t); // coded crystal turret (src/bullets.js)
     const d = e.def, s = unitScale(e), lk = d.look && DL.Minions.look(e);
     if (d.bell && e.dormant) { drawBuriedBell(c, e, t); return; }
     if (d.rose && e.dormant && Art.sprites.roseBud) return; // the Deadly Rose asleep inside her bud (src/rose.js)

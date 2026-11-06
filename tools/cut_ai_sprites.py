@@ -5,7 +5,7 @@ so poses keep their relative size."""
 import os, sys
 from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
-from cutlib import cool_violet, cut_glow, cut_keyed, cut_sheet, contact, match_colors, match_hist, mirror_legs, recolor_frames, split_grid
+from cutlib import blue_crystal, cool_violet, cut_glow, cut_keyed, cut_sheet, contact, match_colors, match_hist, mirror_legs, recolor_frames, split_grid
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files/art-prompts/returned'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites')
@@ -868,6 +868,8 @@ PROP_WIDTH.update({'grave2': 60, 'soulFly1': 56, 'soulFly2': 56})
 # tolerance than the default 120 and without the purple-fringe filter, so the art isn't eaten.
 PROP_TOL = {n: 60 for n in ['amethyst11', 'amethyst12', 'amethyst13', 'amethyst21', 'amethyst22', 'amethyst23', 'amethyst31', 'amethyst32', 'amethyst33']}
 PROP_TOL['resPearl'] = 60
+# Amethyst is blue since 2026-11-05 (Robert): purple belongs to the Aether Crystal of the Abyssal Spires now.
+PROP_RECOLOR = {n: blue_crystal for n in ['amethyst11', 'amethyst12', 'amethyst13', 'amethyst21', 'amethyst22', 'amethyst23', 'amethyst31', 'amethyst32', 'amethyst33', 'resPearl']}
 # Props whose footing isn't in the middle of the picture (a leaning stake, a post with a lamp hung out to one
 # side): padded so the footing is centred, since sprites are drawn centred on their spot.
 PROP_FOOT_CENTRE = {'stake', 'gatePost', 'gatePost2', 'fire1', 'fire2', 'fire3', 'fire4', 'fire5', 'fire6'}
@@ -1084,6 +1086,7 @@ if not only or 'props' in only or any(os.path.dirname(sh) in only for sh in PROP
     for n, cell in cells.items():
         im = cut_glow(cell, PROP_GLOW[n]) if n in PROP_GLOW else cut_keyed(cell, k[n], key=keys[n], fringe=1, tol=PROP_TOL.get(n, 120), tint=n not in PROP_TOL)
         if n in PROP_DESPILL: im = despill(im)
+        if n in PROP_RECOLOR: im = recolor_frames([im], PROP_RECOLOR[n])[0]
         if n in PROP_FOOT_CENTRE: im = centre_foot(im)
         # even sizes, so the art-pixel size (half) is whole; the padding goes on the top and the left
         w, h = im.width + im.width % 2, im.height + im.height % 2
