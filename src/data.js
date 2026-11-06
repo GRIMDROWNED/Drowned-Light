@@ -712,7 +712,7 @@
     lh: 48,      // world px of drop per height level (a face this much taller per level)
     hang: 44,    // face showing under a level-0 floor before it fades into the mist
     dark: 0.36,  // the room's darkness (violet dusk, not night)
-    wave: { type: "footman", n: 4, zone: 1, rest: 6 }, // Drowned that rise when you step on the rune circle
+    wave: { zone: 1 }, // the zone the rooms' foes are made for (their health and damage); rooms: ROOMS in src/spires.js
   };
 
   DL.CAVE = {
