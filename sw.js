@@ -2,12 +2,12 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.233";
+const VERSION = "0.15.234";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
   "src/core.js", "src/binds.js", "src/view.js", "src/data.js", "src/camp.js", "src/refuge.js", "src/works.js", "src/art.js", "src/units.js", "src/sprites.js",
-  "src/world.js", "src/game.js", "src/hounds.js", "src/den.js", "src/golem.js", "src/cave.js", "src/spires.js", "src/bullets.js", "src/spirefoes.js", "src/rift.js", "src/colossus.js", "src/kindle.js", "src/abigail.js", "src/fred.js", "src/wyvern.js", "src/bell.js", "src/rose.js", "src/finale.js", "src/minions.js", "src/summons.js", "src/siege.js", "src/trophies.js", "src/pyramid.js", "src/outposts.js", "src/kits.js", "src/net.js", "src/render.js", "src/ui.js", "src/pad.js", "src/main.js",
+  "src/world.js", "src/game.js", "src/hounds.js", "src/den.js", "src/golem.js", "src/cave.js", "src/spires.js", "src/bullets.js", "src/spirefoes.js", "src/rift.js", "src/riftthrone.js", "src/colossus.js", "src/kindle.js", "src/abigail.js", "src/fred.js", "src/wyvern.js", "src/bell.js", "src/rose.js", "src/finale.js", "src/minions.js", "src/summons.js", "src/siege.js", "src/trophies.js", "src/pyramid.js", "src/outposts.js", "src/kits.js", "src/net.js", "src/render.js", "src/ui.js", "src/pad.js", "src/main.js",
   "icons/icon-192.png", "icons/icon-512.png", "icons/favicon-32.png", "assets/drowned-games.jpg", "assets/title-portrait.jpg", "assets/title-landscape.jpg",
   ...Object.entries({
     "drowned/archer/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
@@ -140,6 +140,14 @@ const FILES = [
     "spires-foes/caller/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "spires-foes/prism/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "spires-foes/prism/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
+    "spires-foes/mite/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
+    "spires-foes/mite/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
+    "spires-foes/swisp/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
+    "spires-foes/swisp/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
+    "spires-foes/warden/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
+    "spires-foes/warden/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
+    "rift-throne/": ["attackA", "attackB", "attackC", "back", "front", "right", "seated", "waking", "rising", "p2front", "p2sweep", "p2enraged", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
+    "rift-throne/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "spires/": ["arena", "throne", "well-dark", "well-lit", "floor-2", "floor-3", "floor-4", "kerb", "face-1-band", "face-1-foot", "face-2-band", "face-2-foot", "stairs", "bridge", "bridge-post", "post", "spire", "arch", "ring", "exit-banner", "crystal-1", "crystal-2", "crystal-3", "column-1", "column-1b", "column-2", "column-3", "rune-circle", "rune-glow", "bullet-0", "bullet-1", "bullet-2", "bullet-3", "sentinel", "sentinel-orbit"],
     "pyramid/": ["step-south", "step-north", "step-east", "step-west", "stair-south", "stair-north", "stair-east", "stair-west", "stairway-lane"],
     "ground/": ["campEarth", "campFlags", "campPaving", "grass", "dirt", "shore", "shallow", "deep", "boardwalk", "caveFloor", "rimDeep", "rimShore"],

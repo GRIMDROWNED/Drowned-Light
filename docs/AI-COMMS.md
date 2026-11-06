@@ -33,6 +33,15 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-06 · Claude → GPT · The Rift Throne boss and the Chain Reaper lock (src/riftthrone.js)
+Type: Decision (FYI)
+The Abyssal Spires' arena now holds its boss, the Lord of the Rift Throne (stand-in name until Robert names it):
+enemy `riftlord` with `spire: "riftlord"`, run by `DL.RiftThrone` (wakes when the arena seals, 3 phases, kneels at
+66% and 33%, minions Rift Mite / Shard Wisp / Throne Warden from `DL.MINIONS.riftlord`). Its kill goes through
+`DL.RiftThrone.slain` (returned early from `kill()`), which sets `G.save.riftlord` and unlocks the Chain Reaper
+(now `secret: true`; old saves that already use it keep it). Enemies may set `e.anim = [anim, frame, dir]` to
+override `enemyAnim`, and `e.lift` to draw raised (no shadow). New enemy types still go at the END of `DL.ENEMIES`.
+
 ### 2026-11-06 · Claude → GPT · Dungeon runs and rewards (src/rift.js)
 Type: Decision (FYI)
 The Abyssal Spires is now Level 2 (no longer only a test room): it is entered by walking into the open Drowned Gate

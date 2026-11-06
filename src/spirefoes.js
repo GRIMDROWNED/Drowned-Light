@@ -29,12 +29,13 @@
     e.state = "move";
     if (DL.Kits.frozen(e)) { e.moving = false; return true; } // frozen solid: it holds still
     if (k !== "shade" && !e.act && DL.Spires.hidden(p, e)) { prowl(e, dt); return true; } // lost you in the mist: it prowls
-    ({ leaper, bowman, shade, caller, prism })[k](e, dt, p, dp);
+    ({ leaper, bowman, shade, caller, prism, mite, swisp, warden, riftlord: DL.RiftThrone.busy })[k](e, dt, p, dp);
     return true;
   };
   // what a blow does to it (hitEnemy in game.js; ang is the way the blow drives it): a faded Shade is hard to touch,
   // the Prism Knight's shield soaks a blow from the front
   F.soak = function (e, d, ang) {
+    if (e.def.riftlord) return DL.RiftThrone.soak(e, d);
     if (e.def.spire === "shade" && e.fade < 0.6) return d * B.shade.faded;
     if (e.def.spire === "prism" && e.act !== "bash") {
       const S = B.prism, front = Math.cos(ang - (e.angle + Math.PI)) > Math.cos(S.front);
@@ -327,6 +328,82 @@
     } else if (e.t <= 0) { e.act = null; e.pose = null; }
   }
 
+  /* ---------------- the Rift Throne boss's minions ---------------- */
+  // the Rift Mite: scuttles at you; close in, its back cracks (a ring shows where) and it bursts into shards
+  function mite(e, dt, p, dp) {
+    const S = B.mite;
+    if (!e.act) {
+      e.pose = null;
+      step(e, dt, p, 1, 1);
+      if (dp < S.near) { e.act = "crack"; e.t = S.crack; e.pose = 2; e.moving = false; }
+      return;
+    }
+    e.moving = false;
+    e.t -= dt;
+    if (Math.random() < 0.4) G.puff(e.x + rand(-8, 8), e.y - rand(0, 20), "rgba(220,170,255,0.7)", 50, 0.4);
+    if (e.t <= 0) {
+      DL.Bullets.ring(e.x, e.y - 12, S.ring, rand(0, TAU), { by: "a Rift Mite bursting", dmg: S.dmg, speed: S.speed, kind: 1 });
+      if (Math.hypot(p.x - e.x, p.y - e.y) < 40 && !(p.inv > 0) && !(p.dashT > 0)) G.hurtPlayer(e.dmg, Math.atan2(p.y - e.y, p.x - e.x), e.def.name);
+      for (let i = 0; i < 12; i++) G.puff(e.x + rand(-14, 14), e.y - rand(0, 24), "rgba(220,170,255,0.85)", 90, 0.6);
+      DL.Sound.play("hit");
+      e.hp = 0; e.burst = true; G.kill(e);
+    }
+  }
+  // the Shard Wisp: floats at a distance; gathers (pose 0) and flings a star of shards (pose 1), or spins a spiral (pose 2)
+  function swisp(e, dt, p, dp) {
+    const S = B.swisp;
+    if (e.next == null) e.next = rand(1.2, 2.2);
+    e.lift = S.hover + Math.sin(G.t * 2.2 + e.id) * 6;
+    if (!e.act) {
+      e.pose = null;
+      step(e, dt, p, dp < S.keep[0] ? -1 : dp > S.keep[1] ? 1 : 0, dp < S.keep[0] ? 1 : 0.5);
+      e.next -= dt;
+      if (e.next <= 0) {
+        if (Math.random() < 0.6) { e.act = "charge"; e.t = S.charge; e.pose = 0; }
+        else { e.act = "spin"; e.t = S.spin; e.pose = 2; DL.Bullets.spiral(e.x, e.y - e.lift - 20, S.arms, 5, 2.2, S.spin, { by: "a Shard Wisp's spin", dmg: S.dmg, speed: S.speed * 0.9, kind: 1 }, e); }
+      }
+      return;
+    }
+    e.moving = false;
+    e.t -= dt;
+    if (e.act === "charge" && e.t <= 0) {
+      DL.Bullets.ring(e.x, e.y - e.lift - 20, S.star, rand(0, TAU), { by: "a Shard Wisp's star", dmg: S.dmg, speed: S.speed, kind: 1 });
+      DL.Sound.play("chime");
+      e.act = "fling"; e.t = 0.35; e.pose = 1;
+    } else if (e.t <= 0) { e.act = null; e.pose = null; e.next = L(e, S.every); }
+  }
+  // the Throne Warden: walks you down and thrusts its halberd; now and then plants it and a wall of shards comes at you
+  function warden(e, dt, p, dp) {
+    const S = B.warden;
+    if (e.next == null) e.next = S.every * 0.6;
+    e.next -= dt; e.bashCd = (e.bashCd || 0) - dt;
+    if (!e.act) {
+      e.pose = null;
+      step(e, dt, p, dp > S.reach * 0.8 ? 1 : 0, dp > S.reach * 0.8 ? 1 : 0.4);
+      if (e.next <= 0) { e.act = "plant"; e.t = S.plant; e.pose = 2; e.aim = Math.atan2(p.y - e.y, p.x - e.x); }
+      else if (dp < S.reach && e.bashCd <= 0) { e.act = "draw"; e.t = S.draw; e.pose = 0; e.aim = Math.atan2(p.y - e.y, p.x - e.x); e.angle = e.aim; }
+      return;
+    }
+    e.moving = false;
+    e.t -= dt;
+    if (e.act === "draw" && e.t <= 0) {
+      e.act = "thrust"; e.t = S.thrust; e.pose = 1; e.hitDone = false;
+      e.kx += Math.cos(e.aim) * S.lunge; e.ky += Math.sin(e.aim) * S.lunge;
+    } else if (e.act === "thrust") {
+      if (!e.hitDone && Math.hypot(p.x - e.x, p.y - e.y) < S.reach && !(p.inv > 0) && !(p.dashT > 0)) {
+        e.hitDone = true;
+        G.hurtPlayer(e.dmg, e.aim, e.def.name);
+        p.kx = (p.kx || 0) + Math.cos(e.aim) * S.kb; p.ky = (p.ky || 0) + Math.sin(e.aim) * S.kb;
+      }
+      if (e.t <= 0) { e.act = null; e.pose = null; e.bashCd = S.cd; }
+    } else if (e.act === "plant" && e.t <= 0) {
+      DL.Bullets.wall(e.x, e.y - 30, e.aim, S.wall[0], S.wall[1], S.wall[2], { by: "a Throne Warden's wall", dmg: S.dmg, speed: S.speed, kind: 0 });
+      for (let i = 0; i < 10; i++) G.puff(e.x + rand(-16, 16), e.y - rand(0, 30), "rgba(220,170,255,0.7)", 70, 0.6);
+      DL.Sound.play("whisper");
+      e.act = "after"; e.t = 0.4; e.next = S.every;
+    } else if (e.act === "after" && e.t <= 0) { e.act = null; e.pose = null; }
+  }
+
   /* ---------------- telegraphs, on the ground under them ---------------- */
   F.drawMark = function (c, e, t) {
     if (e.def.spire === "prism" && e.glint > 0) { // the shield flares as it soaks a blow or gathers its burst
@@ -334,6 +411,7 @@
       c.drawImage(glowSprite(), e.x + Math.cos(e.angle) * 18 - 40, e.y - 90, 80, 80); c.restore();
     }
     if (!e.def.spire || !e.act) return;
+    if (e.def.riftlord) { DL.RiftThrone.drawMark(c, e, t); return; }
     c.save();
     c.globalCompositeOperation = "lighter";
     if (e.def.spire === "leaper" && (e.act === "crouch" || e.act === "air")) {
@@ -342,6 +420,10 @@
       c.beginPath(); c.ellipse(e.tx, e.ty, S.hitR, S.hitR * 0.55, 0, 0, TAU); c.stroke();
       c.fillStyle = `rgba(190,110,255,${0.08 + 0.25 * k})`;
       c.beginPath(); c.ellipse(e.tx, e.ty, S.hitR * k, S.hitR * 0.55 * k, 0, 0, TAU); c.fill();
+    } else if (e.def.spire === "mite" && e.act === "crack") { // where it bursts
+      const k = 1 - Math.max(0, e.t) / B.mite.crack;
+      c.strokeStyle = `rgba(230,170,255,${0.3 + 0.5 * k})`; c.lineWidth = 2;
+      c.beginPath(); c.ellipse(e.x, e.y, 40, 22, 0, 0, TAU); c.stroke();
     } else if (e.def.spire === "bowman" && e.act === "draw") {
       const k = 1 - Math.max(0, e.t) / B.bowman.draw, len = 260;
       for (let i = 0; i < e.lanes; i++) {
