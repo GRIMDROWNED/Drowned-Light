@@ -20,6 +20,9 @@
     iron: { name: "Iron Scrap", color: "#c06a44" },
     pearl: { name: "Amethyst", color: "#9fd0ff" }, // blue since 2026-11-05: violet is the Aether Crystal's
     black: { name: "Black Pearl", color: "#5d6b8c" }, // found only in the Abyss
+    // brought home from the dungeons (src/spires.js, src/rift.js): kept out of sight until the first run home
+    shard: { name: "Rift Shard", color: "#d6a8ff", rift: true },
+    aether: { name: "Aether Crystal", color: "#9a5cff", rift: true },
   };
   DL.RES_KEYS = Object.keys(DL.RESOURCES);
 
@@ -748,6 +751,14 @@
     // bonus from it, the light holes cut by your lantern / a torch / a burning Aether Crystal (for `burn` s), and how
     // long you stand at a lit Mist Well to go home
     mist: { corrupt: 3, see: 110, strike: 1.5, lantern: 85, torch: 120, bubble: 190, burn: 25, home: 1.5 }, // the zone the rooms' foes are made for (their health and damage); rooms: ROOMS in src/spires.js
+    // a run's loot (step 6): Rift Shards per foe broken, per room cleared (by its heat, 0..1), in a side room's chest;
+    // carried Aether Crystals come home too. Leave and you keep `keep` of it; fall and the mist keeps it all.
+    loot: { kill: { sentinel: 1, leaper: 1, bowman: 1, shade: 2, caller: 2, prism: 4 }, room: [2, 8], chest: { shard: [14, 20], aether: 2 }, keep: 0.5 },
+  };
+  // what the dungeons pay for at the base (src/rift.js): the Crystal Turret by level, the Mist Lantern, the Rift Portal
+  DL.RIFT = {
+    turret: { spots: [0, 2, 4, 4], every: [0, 2.4, 1.9, 1.5], n: [0, 6, 8, 10], dmg: [0, 9, 12, 16], range: 300, speed: 240, life: 1.4, along: 150 },
+    lantern: { ring: 150, corrupt: 0.5 },
   };
 
   DL.CAVE = {
@@ -1044,6 +1055,17 @@
       },
       costs: [{ wood: 16, resin: 16, pearl: 2 }, { wood: 24, resin: 24, pearl: 4 }, { resin: 34, pearl: 6, black: 3 }],
       reqFlame: (t) => [0, 3, 4, 5][t] },
+    // paid for with what the dungeons give (src/rift.js): hidden until you first carry Rift Shards home
+    { id: "crystal", name: "Crystal Turret", max: 3, rift: true,
+      info: "A shard of the Spires set by the gates. When the Drowned come near it spins out slow spirals of crystal at them.",
+      effect: (l) => { const T = DL.RIFT.turret; return l ? `${T.spots[l]} turrets · ${T.n[l]} shards a spiral every ${T.every[l]} s · ${T.dmg[l]} damage` : "No turrets"; },
+      costs: [{ shard: 20, stone: 12 }, { shard: 40, aether: 2, iron: 10 }, { shard: 70, aether: 4, pearl: 3 }],
+      reqFlame: () => 0 },
+    { id: "mistlantern", name: "Mist Lantern", max: 1, rift: true,
+      info: "An Aether Crystal caged in your lantern. In the mist of the dungeons it lights a wider ring round you and slows the corruption.",
+      effect: (l) => (l ? `In the mist: lantern ring ${DL.RIFT.lantern.ring} px · corruption x${DL.RIFT.lantern.corrupt}` : "Your lantern only"),
+      costs: [{ shard: 30, aether: 6 }],
+      reqFlame: () => 0 },
   ];
 
   // the bosses' size (DL.BOSS.size): `size` is kept on the def so drawing code can scale fixed offsets by it

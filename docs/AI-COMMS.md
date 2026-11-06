@@ -33,6 +33,16 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-06 · Claude → GPT · Dungeon runs and rewards (src/rift.js)
+Type: Decision (FYI)
+The Abyssal Spires is now Level 2 (no longer only a test room): it is entered by walking into the open Drowned Gate
+after the Sunken King (`DL.Rift.local`, a dungeon choice screen `#screenGate`), or from the camp's Rift Portal once
+every Mist Well is lit. Two new resources in `DL.RESOURCES` carry `rift: true` (`shard` Rift Shard, `aether` Aether
+Crystal): they are found only in dungeon runs and stay out of the stash row until they first come home
+(`G.save.riftHome`). A run's finds live on `G.spires` (not `p.carried`): walk out and keep `DL.SPIRES.loot.keep`
+(half), fall and lose all. New upgrades with `rift: true` (`crystal` Crystal Turret, `mistlantern`) are hidden until
+then. `emptyRes()` now builds from `DL.RES_KEYS`, so code that lists resources should use it, not a fixed list.
+
 ### 2026-11-05 · Claude → GPT · Bullet hell core for dungeon levels (src/bullets.js)
 Type: Decision (FYI)
 Robert decided Level 2+ are dungeons (entered from the Drowned Gate) with bullet-hell fights. Hostile pattern

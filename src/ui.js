@@ -143,6 +143,8 @@
       UI.hideScreens(); G.respawn(); UI.showHud(true);
     });
     $("btnWinGo").addEventListener("click", () => UI.closeWin());
+    $("btnGateBack").addEventListener("click", () => UI.closeGate());
+    $("gateList").addEventListener("click", (e) => { const b = e.target.closest("button[data-dungeon]"); if (b && !b.disabled) UI.closeGate(b.dataset.dungeon); });
     $("btnResume").addEventListener("click", () => UI.resume());
     $("btnQuit").addEventListener("click", () => { G.persist(); DL.Net.leave(true); UI.toTitle(); });
 
@@ -239,6 +241,7 @@
       else if (act === "wyvRepick") DL.Summons.repick("wyvern");
       else if (act === "travel") { if (DL.Outposts.travel(arg)) { UI.closeCamp(); return; } }
       else if (act === "torch") G.craftTorch();
+      else if (act === "rift") { UI.closeCamp(); UI.openGate("portal"); return; }
       else if (act === "march") { if (DL.Finale.begin()) { UI.closeCamp(); return; } }
       else if (act === "rest") { G.restUntilDusk(); UI.closeCamp(); UI.toast("You rest by the fire until dusk.", "warn"); return; }
       UI.renderCamp();
@@ -314,7 +317,7 @@
     if (G.state !== "play") return;
     $("btnLeaveCoop").classList.toggle("hidden", !DL.Net.role);
     $("btnSpires").classList.toggle("hidden", !DL.SANDBOX || !!DL.Net.role || !!G.cave);
-    $("btnSpires").textContent = DL.Spires.active() ? "Leave the test room" : "Test room: Abyssal Spires";
+    $("btnSpires").textContent = DL.Spires.active() ? "Leave the Spires (keep half)" : "Sandbox: the Abyssal Spires";
     UI.renderCoopPlayers();
     $("pauseNote").textContent = G.isGuest()
       ? "The world keeps running while you're paused. Only the host can pause it for both of you."
@@ -445,6 +448,7 @@
       : `<p class="muted">You carried nothing. Your stored supplies and camp are safe.${info.hadSelf ? " Your drowned self still waits where you last fell." : ""}</p>`;
     const kept = info.kept && DL.RES_KEYS.filter((k) => info.kept[k] > 0).map((k) => chip(k, info.kept[k])).join("");
     if (kept && info.cause !== "camp") $("deathLost").innerHTML += `<p>The Storehouse kept half of it safe:</p><div class="chips">${kept}</div>`;
+    if (info.rift) $("deathLost").innerHTML += `<p>The mist keeps everything the run had found:</p><div class="chips">${["shard", "aether"].filter((k) => info.rift[k] > 0).map((k) => chip(k, info.rift[k])).join("")}</div>`;
     $("deathStats").textContent = `Day ${info.day} · nights survived: ${info.nights}`;
     $("screenDeath").classList.remove("hidden");
   };
@@ -461,6 +465,28 @@
     $("winStats").textContent = `${G.kit().name} · level ${s.kitLevel} · ${G.diff().name}` + (n != null ? ` · day ${s.day} · nights survived: ${n}` : "");
     $("screenWin").classList.remove("hidden");
     DL.Sound.play("milestone");
+  };
+  /* The dungeons beyond the Drowned Gate (src/rift.js): walked into from the gate, or the Rift Portal in camp. */
+  UI.openGate = function (from) {
+    const G = DL.Game;
+    if (G.state !== "play") return;
+    G.state = "gate";
+    UI.showHud(false);
+    const coop = !!(DL.Net && DL.Net.role), lit = DL.Rift.wellsLit();
+    $("gateIntro").textContent = from === "portal"
+      ? "The rift hums in the camp. Through it the roads beyond the Drowned Gate wait."
+      : "Warm light breathes out of the open gate. Beyond it, roads lead down into the deep.";
+    $("gateList").innerHTML = DL.Rift.DUNGEONS.map((d) => `<button class="primary" data-dungeon="${d.id}" ${coop ? "disabled" : ""}>${d.name}<span class="sub">${d.text}${d.id === "spires" ? ` · Mist Wells lit: ${lit} of ${DL.Spires.WELLS_N}` : ""}</span></button>`).join("");
+    $("gateNote").textContent = coop ? "The dungeons can't be entered in co-op yet." : "Fall in a dungeon and the mist keeps everything you found. Walk out and you keep half.";
+    $("screenGate").classList.remove("hidden");
+  };
+  UI.closeGate = function (go) {
+    const G = DL.Game;
+    $("screenGate").classList.add("hidden");
+    if (G.state === "gate") G.state = "play";
+    UI.showHud(true);
+    DL.Input.clear();
+    if (go) DL.Rift.go(go);
   };
   UI.closeWin = function () {
     const G = DL.Game;
@@ -685,7 +711,7 @@
       t.classList.toggle("on", t.dataset.tab === UI.campTab);
       t.classList.toggle("hidden", UI.atOutpost ? t.dataset.tab !== "travel" : t.dataset.tab === "travel" && !G.outposts.length);
     }
-    $("campStash").innerHTML = DL.RES_KEYS.map((k) => `<span class="stash-item">${chip(k, s.stash[k])}<small>${DL.RESOURCES[k].name}</small></span>`).join("");
+    $("campStash").innerHTML = DL.RES_KEYS.filter((k) => !DL.RESOURCES[k].rift || DL.Rift.seen() || s.stash[k] > 0).map((k) => `<span class="stash-item">${chip(k, s.stash[k])}<small>${DL.RESOURCES[k].name}</small></span>`).join("");
     const tier = DL.Camp.tier(s.up);
     const siegeIn = DL.Siege.nightsLeft();
     $("campDay").textContent = (UI.atOutpost ? "Square · " : G.isGuest() ? "Your friend's camp · shared stash · " : "") + `Tier ${["", "I", "II", "III", "IV", "V"][tier]} · ${DL.TIER_NAMES[tier]} · Day ${s.day} · ${G.phase() === "day" ? "Daylight" : G.phase() === "night" ? "Night" : G.phase() === "dusk" ? "Dusk" : "Dawn"}` +
@@ -693,6 +719,7 @@
     let html = "";
     if (UI.campTab === "build") {
       html += DL.Finale.card(); // the Fire Bearer, once it has risen (src/finale.js)
+      html += DL.Rift.card(); // the Rift Portal, once every Mist Well is lit (src/rift.js)
       const trades = DL.Works.trades(); // the Salvage Yard's converter (src/works.js)
       if (trades.length) html += `<article class="card"><header><h3>Salvage Yard</h3></header>
         <p>Break down what you have too much of into what you need. Trades come from your stash.</p>
@@ -813,7 +840,7 @@
   }
   UI.owns = owns;
   // A building won from a boss (a trophy) or for a familiar (its home), not yet earned in this world.
-  const secret = (u) => (u.trophy && !DL.Game.save.trophies[u.trophy]) || (u.needs && !DL.Summons.anyHas(u.needs));
+  const secret = (u) => (u.rift && !DL.Rift.seen()) || (u.trophy && !DL.Game.save.trophies[u.trophy]) || (u.needs && !DL.Summons.anyHas(u.needs));
   /* A familiar not yet won: who it is stays a secret. Its portrait is a dark shape, and the card only says
      where to look and how the hunt is going (`action`). */
   function lockedCard(data, hint, action) {
@@ -1077,7 +1104,7 @@
     set($("phaseIcon"), "class", G.night ? "moon" : "sun");
     set($("clock"), "--prog", String(G.time / DL.CYCLE.total));
 
-    set($("zoneText"), "text", G.cave ? "Derek's Hollow" : G.spires ? "Abyssal Spires (test room)" : DL.ZONES[p.zi].name);
+    set($("zoneText"), "text", G.cave ? "Derek's Hollow" : G.spires ? "Abyssal Spires" : DL.ZONES[p.zi].name);
     const N = DL.Net;
     const coopText = !N.role ? "" : N.role === "guest" ? "Co-op · your friend's world" : G.allies.length ? `Co-op · ${G.allies.length + 1} players · room ${N.code}` : `Room ${N.code} · waiting for friends`;
     set($("coopChip"), "text", coopText);
@@ -1134,7 +1161,8 @@
 
     // soul orbs and a hauled Bone Wolf carcass go in the satchel line too
     const souls = DL.Abigail.won() ? 0 : DL.Abigail.held(), carcass = (DL.Den.carrying() ? `<span class="chip carcass"><i></i>Bone Wolf carcass</span>` : "") + (DL.Wyvern.carrying() ? `<span class="chip egg"><i></i>Wyvern egg</span>` : "");
-    const carried = DL.RES_KEYS.filter((k) => p.carried[k] > 0).map((k) => chip(k, p.carried[k])).join("") + (souls ? `<span class="chip soul"><i></i>${souls} soul orb${souls > 1 ? "s" : ""}</span>` : "") + carcass;
+    const bag = DL.Spires.bag(); // a dungeon run's finds (src/spires.js)
+    const carried = DL.RES_KEYS.filter((k) => p.carried[k] > 0).map((k) => chip(k, p.carried[k])).join("") + (bag ? ["shard", "aether"].filter((k) => bag[k] > 0).map((k) => chip(k, bag[k])).join("") : "") + (souls ? `<span class="chip soul"><i></i>${souls} soul orb${souls > 1 ? "s" : ""}</span>` : "") + carcass;
     set($("carried"), "html", carried ? `<span class="lbl">Carrying</span>${carried}` : "");
 
     // objective banner

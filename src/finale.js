@@ -432,7 +432,7 @@
     if (st < 1) return "";
     const w = Finale.where();
     if (st === 4) return `<article class="card finale-card"><header><h3>The Drowned Gate</h3><span class="tag">Open</span></header>
-      <p>The Fire Bearer carried the last light of the marsh to the gate, and ${KING} is no more. The gate stands open, ${w.m} m to the ${w.dir}.</p></article>`;
+      <p>The Fire Bearer carried the last light of the marsh to the gate, and ${KING} is no more. The gate stands open, ${w.m} m to the ${w.dir}. Walk into it and roads lead down into the deep.</p></article>`;
     const lock = Finale.lock();
     const body = st === 1
       ? `<p>Kindle drank the Central Flame and rose as the Fire Bearer. Past ${DL.Refuge.on() ? "the refuge's walls" : "your outer squares"}, ${w.m} m to the ${w.dir}, something waits for its fire. Send it and it strides straight to the hearth before the gate; the gate becomes a place you can travel to.</p>
