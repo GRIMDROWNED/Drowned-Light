@@ -15,7 +15,7 @@
   const CURRENT_SLOT = "drowned-light-" + SB + "slot";
   const say = (m, k) => DL.UI && DL.UI.toast(m, k);
   const sfx = (n) => DL.Sound.play(n);
-  const emptyRes = () => ({ wood: 0, stone: 0, resin: 0, iron: 0, pearl: 0, black: 0 });
+  const emptyRes = () => Object.fromEntries(DL.RES_KEYS.map((k) => [k, 0]));
 
   const G = (DL.Game = { state: "title", t: 0, time: 0, nightAmt: 0, night: false, allies: [], eid: 0, pid: 0, dirty: new Set() });
   // Co-op: the guest's device plays inside the host's world and never saves it.
@@ -26,7 +26,7 @@
   G.defaultSave = () => ({
     v: 1, day: 1, nights: 0, deepest: 0, muted: false,
     stash: emptyRes(),
-    up: { fortress: 1, flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, roost: 0, bell: 0, roseheart: 0 },
+    up: { fortress: 1, flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, roost: 0, bell: 0, roseheart: 0, crystal: 0, mistlantern: 0 },
     kit: "lanternBlade",
     kitLevel: 1,
     difficulty: "dark",
@@ -65,6 +65,7 @@
     pyramid: { sq: {} },
     // the finale (src/finale.js): stage (0 nothing yet, 1 the Fire Bearer waits in camp, 2 on the march, 3 at the gate, 4 won),
     // where the Bearer stands, its health (-1: full), guttered, its last camp, the gate found yet, and the day it was won
+    riftHome: 0, // 1 once Rift Shards were first carried home from a dungeon: their buildings show from then (src/rift.js)
     finale: { stage: 0, x: 0, y: 0, hp: -1, down: false, rest: null, found: false, won: 0 },
     started: false,
     lastPlayed: 0,
@@ -344,6 +345,8 @@
     DL.Works.update(dt);
     DL.Finale.update(dt);
     DL.Finale.local();
+    DL.Rift.local(); // walking into the open Drowned Gate: the dungeons (src/rift.js)
+    DL.Rift.update(dt); // the Crystal Turrets
     updateDefenses(dt);
     DL.Trophies.update(dt);
     DL.Outposts.update(dt);
@@ -538,6 +541,7 @@
     if (G.walls) DL.Kits.lights(L);
     if (p) DL.Cave.lights(L);
     DL.Spires.lights(L);
+    DL.Rift.lights(L);
     G.lights = L;
   }
 
@@ -1482,6 +1486,7 @@
     sfx("kill");
     G.effects.push({ type: "dissolve", e, t: 0, max: 0.6 });
     for (let i = 0; i < 16; i++) puff(e.x + rand(-10, 10), e.y - rand(0, 50) * e.def.scale, "rgba(60,220,230,0.7)", 50, 0.9, -40);
+    if (e.room) DL.Spires.onKill(e); // a dungeon room's foe: Rift Shards
     if (e.isSelf) {
       const c = G.save.drownedSelf ? G.save.drownedSelf.carried : {};
       for (const k in c) if (c[k] > 0) dropRes(e.x, e.y, k, c[k]);
@@ -1513,6 +1518,7 @@
   }
 
   /* ---------------- defenses, projectiles, telegraphs ---------------- */
+  G.nearestEnemy = (x, y, R) => nearestEnemy(x, y, R);
   function nearestEnemy(x, y, R) {
     let best = null, bd = R;
     for (const e of G.enemies) {
@@ -1798,13 +1804,14 @@
     G.save.carried = emptyRes();
     const any = DL.RES_KEYS.some((k) => lost[k] > 0);
     const hadSelf = !!G.save.drownedSelf;
+    const sp = G.spires, rift = sp && (sp.shard || sp.aether) ? { shard: sp.shard, aether: sp.aether } : null; // fallen in a dungeon: the mist keeps its loot
     if (any) {
-      G.save.drownedSelf = { x: p.x, y: p.y, carried: lost };
+      G.save.drownedSelf = sp ? { x: sp.bx, y: sp.by, carried: lost } : { x: p.x, y: p.y, carried: lost }; // (out of a dungeon: where you went in)
       G.selfEnemy = null;
       G.enemies = G.enemies.filter((e) => !e.isSelf);
     }
     G.persist();
-    G.deathInfo = { cause, hit: cause === "wounds" ? G.lastHit : null, lost, kept, any, hadSelf, zone: DL.ZONES[p.zi].name, day: G.save.day, nights: G.save.nights };
+    G.deathInfo = { cause, hit: cause === "wounds" ? G.lastHit : null, lost, kept, any, hadSelf, rift, zone: sp ? "the marsh by the Drowned Gate" : DL.ZONES[p.zi].name, day: G.save.day, nights: G.save.nights };
     for (let i = 0; i < 40; i++) puff(p.x + rand(-12, 12), p.y - rand(0, 60), "rgba(60,220,230,0.7)", 50, 1.6, -30);
   }
 

@@ -216,6 +216,7 @@
     pushCamp(list, G, c, t);
     DL.Cave.push(list, c, t, view);
     DL.Spires.push(list, c, t, view);
+    DL.Rift.push(list, c, t); // the Crystal Turrets at camp (src/rift.js)
     DL.Rose.push(list, c, t, view);
     DL.Trophies.push(list, c);
     DL.Outposts.push(list, c, t, view, sprite, Art.drawFire, bar);

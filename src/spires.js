@@ -13,7 +13,10 @@
    them; the small arch on the south platform takes you home. Every fighting floor is a room (ROOMS): step onto it and rune
    light seals its ways out while its Spire Sentinels (crystal turrets, src/bullets.js) and Drowned rise; clear it and it opens.
    Drowned route over stairs and bridges (Spires.route).
-   Reached from the pause menu in Sandbox. The world clock stops while you're here. Numbers: DL.SPIRES (src/data.js). */
+   A run (step 6, src/rift.js): you come in through the open Drowned Gate or the camp's Rift Portal (or the Sandbox pause
+   menu). Foes, won rooms and the chests in the three side rooms give Rift Shards; walk out and half of them, and of your
+   unburnt Aether Crystals, come home; fall and the mist keeps it all. The world clock stops while you're here.
+   Numbers: DL.SPIRES (src/data.js). */
 "use strict";
 (function (DL) {
   const G = DL.Game, S = DL.SPIRES;
@@ -46,6 +49,10 @@
     he: [700, -1340, 1100, -1060, 4],
     // the Rift Throne's round arena at the top (oval: the box is its bounds)
     arena: [-560, -2420, 560, -1580, 5, "oval"],
+    // side rooms (step 6): off the misty wings, a harder fight and a chest
+    sd1: [-1800, 1300, -1440, 1500, 0],
+    sd2: [2440, -460, 2760, -200, 2],
+    sd3: [-1660, -1320, -1320, -1060, 4],
   };
   // stairs rising one level going north: x0, y0 (top), x1, y1 (foot), level at the foot
   const STAIRS = {
@@ -68,6 +75,9 @@
     b7: [1700, -320, 1900, -320, 26],
     b8: [-460, -1160, -700, -1160, 26],
     b9: [460, -1200, 700, -1200, 26],
+    b10: [-1620, 1180, -1620, 1300, 26],
+    b11: [2260, -330, 2440, -330, 26],
+    b12: [-1100, -1190, -1320, -1190, 26],
   };
   // where two pieces meet: [a, b, x, y] (the Drowned route through these)
   const JOINS = [
@@ -81,6 +91,8 @@
     ["walk", "s5", 0, -292], ["s5", "north", 0, -528], ["north", "s6", 0, -752], ["s6", "high", 0, -1008],
     ["high", "b8", -452, -1160], ["b8", "hw", -708, -1160], ["high", "b9", 452, -1200], ["b9", "he", 708, -1200],
     ["high", "s7", 0, -1452], ["s7", "arena", 0, -1586],
+    ["cw3", "b10", -1620, 1172], ["b10", "sd1", -1620, 1308], ["ct3", "b11", 2252, -330], ["b11", "sd2", 2448, -330],
+    ["hw", "b12", -1108, -1190], ["b12", "sd3", -1312, -1190],
   ];
   const RUNE = { x: 0, y: 160, r: 150, sq: 0.78 }; // the rune circle on the plaza (squashed by sq: it lies on the floor)
   const ARCH_W = { x: -730, y: -640 }, RING_E = { x: 690, y: -700 }, ARCH_S = { x: -680, y: 455 };
@@ -205,7 +217,7 @@
     const p = G.player;
     if (!p || G.spires || G.cave) return;
     const saved = wellsSave();
-    G.spires = { bx: p.x, by: p.y, inPortal: true, flare: 0, seal: null, cleared: {}, lit: {}, litT: {}, away: {}, took: {}, aether: 0, bubbles: [] };
+    G.spires = { bx: p.x, by: p.y, inPortal: true, flare: 0, seal: null, cleared: {}, lit: {}, litT: {}, away: {}, took: {}, aether: 0, shard: 0, opened: {}, bubbles: [] };
     for (const i in saved) if (saved[i]) { G.spires.lit[i] = true; G.spires.litT[i] = -99; if (WELL_ROOM[i]) G.spires.cleared[WELL_ROOM[i]] = true; }
     const at = saved.at != null && WELLS[saved.at] ? { x: WELLS[saved.at][0], y: WELLS[saved.at][1] + 60 } : SPAWN; // the last Well lit: a checkpoint
     p.x = OX + at.x; p.y = OY + at.y; p.spx = p.x; p.spy = p.y;
@@ -215,10 +227,23 @@
     say(at === SPAWN ? "The Abyssal Spires. Causeways south-west, crystal terraces east, the high spires north and the throne at the top."
       : "Back at your Mist Well. Stand at a lit Well a moment to go home.", "good");
   };
-  Sp.leave = function () {
+  // what this run has found so far: Rift Shards and unburnt Aether Crystals
+  Sp.bag = () => (G.spires ? { shard: G.spires.shard, aether: G.spires.aether } : null);
+  // a foe of a room broken: Rift Shards (kill in src/game.js)
+  Sp.onKill = function (e) {
+    const sp = G.spires, n = sp && e.room ? DL.SPIRES.loot.kill[e.def.spire || e.type] || 0 : 0;
+    if (!n) return;
+    sp.shard += n;
+    G.texts.push({ x: e.x, y: e.y - 50, txt: `+${n} Rift Shard${n > 1 ? "s" : ""}`, col: "#d6a8ff", t: 0, max: 1, scale: 0.9 });
+  };
+  // Out of the Spires. Walking out (the exit arch, a lit Well) you keep DL.SPIRES.loot.keep of what you carry;
+  // `all` brings everything home (the boss, step 7). Falling never comes here: the mist keeps it all (die in game.js).
+  Sp.leave = function (all) {
     const sp = G.spires, p = G.player;
     if (!sp) return;
     G.spires = null;
+    const k = all ? 1 : DL.SPIRES.loot.keep, got = { shard: Math.floor(sp.shard * k), aether: Math.floor(sp.aether * k) };
+    const home = DL.Rift.bringHome(got);
     DL.Bullets.clear();
     DL.SpireFoes.clear();
     for (const e of G.enemies) if (Sp.inRegion(e.x, e.y)) e.removed = true;
@@ -229,7 +254,7 @@
       for (const f of followers()) { f.x = p.x + DL.rand(-30, 30); f.y = p.y + DL.rand(-10, 20); }
       G.camera.x = p.x; G.camera.y = p.y - 20;
     }
-    say("You step back out of the mist.", "good");
+    say(home ? `You step back out of the mist with ${home}${all ? "" : " (half of what you carried: the mist keeps the rest)"}.` : "You step back out of the mist.", "good");
   };
 
   /* ---------------- rooms (step 2 of the Level 2 plan) ----------------
@@ -254,6 +279,10 @@
     hw: { heat: 0.85, sent: [[-900, -1220]], foes: [["shade", 2], ["leaper", 1]] },
     he: { heat: 0.85, sent: [[900, -1250]], foes: [["shade", 1], ["bowman", 1], ["prism", 1]] },
     arena: { heat: 1, sent: [[-300, -2000], [300, -2000]], foes: [["prism", 1], ["caller", 1], ["leaper", 1], ["bowman", 1]] }, // the boss comes in step 7
+    // side rooms: a harder fight for a chest of Rift Shards (opened once a run, after the room is won)
+    sd1: { heat: 0.7, sent: [[-1700, 1360]], foes: [["leaper", 2], ["shade", 2], ["bowman", 1]], chest: [-1560, 1420] },
+    sd2: { heat: 0.9, sent: [[2600, -400]], foes: [["prism", 1], ["shade", 2], ["caller", 1]], chest: [2680, -260] },
+    sd3: { heat: 1, sent: [[-1580, -1270], [-1400, -1270]], foes: [["prism", 1], ["caller", 1], ["leaper", 2]], chest: [-1490, -1120] },
   };
   Sp.ROOMS = ROOMS;
   // each room's ways out: where its floor meets a stair or bridge, and which way the rune curtain lies across it
@@ -285,6 +314,7 @@
   const AETHER = [[-2080, 1100], [-1560, 1080], [-1940, 820], [2200, -420], [1950, -180], [-1040, -1260], [-760, -1050],
     [1030, -1300], [760, -1100], [-2120, 400], [-1860, 640]];
   Sp.MIST = MIST;
+  Sp.WELLS_N = WELLS.length;
   const wellsSave = () => (G.save.spiresWells = G.save.spiresWells || {});
   // the room a Well stands in
   const WELL_ROOM = WELLS.map(([x, y]) => Object.keys(ROOMS).find((k) => inRect(x, y, FLOORS[k], 0)) || null);
@@ -311,7 +341,9 @@
   // the knight is lost to this foe: they're in the mist and it's not close
   Sp.hidden = (p, e) => !!G.spires && Sp.misty(p.x, p.y) && Math.hypot(p.x - e.x, p.y - e.y) > DL.SPIRES.mist.see;
   // corruption per second in the Spires (0 out of the mist): updateCorruption in game.js
-  Sp.corruption = (p) => (Sp.misty(p.x, p.y) ? DL.SPIRES.mist.corrupt : 0);
+  const lanternUp = () => !!(G.save.up && G.save.up.mistlantern);
+  Sp.corruption = (p) => (Sp.misty(p.x, p.y) ? DL.SPIRES.mist.corrupt * (lanternUp() ? DL.RIFT.lantern.corrupt : 1) : 0); // the Mist Lantern (src/rift.js) slows it
+  Sp.lanternR = () => (lanternUp() ? DL.RIFT.lantern.ring : DL.SPIRES.mist.lantern);
   // burn a carried Aether Crystal (the torch button in the Spires): false if none
   Sp.burn = function () {
     const sp = G.spires, M = DL.SPIRES.mist;
@@ -352,7 +384,7 @@
     const sp = G.spires;
     if (!sp) return;
     const p = G.player, holes = bubbles(), K = 0.25; // a quarter-size canvas, scaled up: soft and cheap
-    if (p && Sp.inRegion(p.x, p.y)) holes.push({ x: p.x, y: p.y - 20, r: p.oil > 0 ? DL.SPIRES.mist.lantern : DL.SPIRES.mist.lantern * 0.6 });
+    if (p && Sp.inRegion(p.x, p.y)) holes.push({ x: p.x, y: p.y - 20, r: p.oil > 0 ? Sp.lanternR() : Sp.lanternR() * 0.6 });
     for (const m of MIST) {
       const k = sp.lit[m.well] ? Math.max(0, 1 - (G.t - (sp.litT[m.well] || -9)) / 2.5) : 1; // a lit Well's mist fades away
       if (k <= 0) continue;
@@ -448,10 +480,12 @@
   function open(sp) {
     const id = sp.seal;
     sp.cleared[id] = true; sp.seal = null; sp.flare = 1;
+    const L = DL.SPIRES.loot.room, n = Math.round(L[0] + (L[1] - L[0]) * ROOMS[id].heat);
+    sp.shard += n;
     for (const g of GATES[id] || []) for (let i = 0; i < 10; i++) G.puff(OX + g.x + DL.rand(-g.w / 2, g.w / 2) * Math.cos(g.ang), OY + g.y + DL.rand(-g.w / 2, g.w / 2) * Math.sin(g.ang) - DL.rand(0, 40), "rgba(220,180,255,0.8)", 60, 0.8);
     DL.Sound.play("chime");
     const left = Object.keys(ROOMS).filter((k) => !sp.cleared[k]).length;
-    say(left ? `The rune light fades. The way on is open. (${left} room${left > 1 ? "s" : ""} left)` : "Every room is clear. Step on the rune circle's heart to wake them again.", "good");
+    say(`The rune light fades: ${n} Rift Shards.` + (ROOMS[id].chest ? " The chest can be opened now." : left ? ` The way on is open. (${left} room${left > 1 ? "s" : ""} left)` : DL.SANDBOX ? " Every room is clear. Step on the rune circle's heart to wake them again." : " Every room is clear."), "good");
   }
   // where the room's foes and a sealed-in knight may stand
   function heldIn(ent) {
@@ -503,8 +537,19 @@
     } else {
       for (const id in ROOMS) if (!sp.cleared[id] && inRect(lx, ly, FLOORS[id], 34)) { seal(sp, id, p); break; }
     }
-    // the rune circle's heart wakes every cleared room again (a test room)
-    if (!sp.seal && Object.keys(sp.cleared).length && Math.hypot(lx - RUNE.x, (ly - RUNE.y) / RUNE.sq) < 34) {
+    // a won side room's chest: walk up to it
+    for (const id in ROOMS) {
+      const q = ROOMS[id].chest;
+      if (!q || !sp.cleared[id] || sp.opened[id] || Math.hypot(lx - q[0], ly - q[1] - 10) > 44) continue;
+      sp.opened[id] = true;
+      const C = DL.SPIRES.loot.chest, n = Math.round(DL.rand(C.shard[0], C.shard[1]));
+      sp.shard += n; sp.aether += C.aether;
+      for (let k = 0; k < 26; k++) G.puff(OX + q[0] + DL.rand(-18, 18), OY + q[1] - DL.rand(0, 50), "rgba(230,190,255,0.85)", 90, 0.9);
+      DL.Sound.play("milestone");
+      say(`The chest springs open: ${n} Rift Shards and ${C.aether} Aether Crystals.`, "good");
+    }
+    // the rune circle's heart wakes every cleared room again (Sandbox only: in a real run a room is won once)
+    if (DL.SANDBOX && !sp.seal && Object.keys(sp.cleared).length && Math.hypot(lx - RUNE.x, (ly - RUNE.y) / RUNE.sq) < 34) {
       sp.cleared = {}; sp.flare = 1;
       WELL_ROOM.forEach((r, i) => { if (r && sp.lit[i]) sp.cleared[r] = true; }); // a lit Well keeps its room won
       G.camera.shake = 6;
@@ -532,7 +577,7 @@
     cryO: "#1d0f33", cryD: "#5a2ea8", cryM: "#9558e6", cryL: "#d6b4ff", cryH: "#f6ecff",
   };
   const GLOW = "190,130,255";
-  const BX0 = -2600, BY0 = -2800, BX1 = 2600, BY1 = 1500; // the painted extent (local)
+  const BX0 = -2800, BY0 = -2800, BX1 = 2900, BY1 = 1800; // the painted extent (local)
   const CH = 1024; // painted in square chunks, made as they come into view and dropped far away (phones)
   let chunks = new Map(), art = null;
 
@@ -1098,7 +1143,31 @@
     }
     const sp = G.spires;
     if (sp && sp.seal) for (const g of GATES[sp.seal] || []) list.push({ y: OY + g.y, f: () => curtain(c, g, t, sp.sealT) });
+    if (sp) for (const id in ROOMS) {
+      const q = ROOMS[id].chest;
+      if (q) list.push({ y: OY + q[1], f: () => chest(c, OX + q[0], OY + q[1], t, !!sp.opened[id], !!sp.cleared[id]) });
+    }
   };
+  // a side room's chest (coded until Robert's art): dark stone bound in violet, glowing once its room is won
+  function chest(c, x, y, t, open, ready) {
+    c.save();
+    c.fillStyle = "rgba(0,0,0,0.35)"; c.beginPath(); c.ellipse(x, y + 2, 26, 8, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = "#2a2140"; c.fillRect(x - 22, y - 26, 44, 26);
+    c.fillStyle = "#3a2f58"; c.fillRect(x - 22, y - 26, 44, 5);
+    c.fillStyle = "#b48cff"; c.fillRect(x - 22, y - 16, 44, 3); c.fillRect(x - 3, y - 22, 6, 9);
+    if (open) { // the lid thrown back, light pouring up
+      c.fillStyle = "#3a2f58"; c.fillRect(x - 22, y - 42, 44, 14);
+      c.globalCompositeOperation = "lighter";
+      const g = c.createLinearGradient(0, y - 70, 0, y - 24);
+      g.addColorStop(0, "rgba(200,150,255,0)"); g.addColorStop(1, "rgba(220,180,255,0.6)");
+      c.fillStyle = g; c.fillRect(x - 18, y - 70, 36, 46);
+    } else {
+      c.fillStyle = "#2f2548"; c.beginPath(); c.moveTo(x - 24, y - 26); c.quadraticCurveTo(x, y - 44, x + 24, y - 26); c.closePath(); c.fill();
+      c.strokeStyle = "#b48cff"; c.lineWidth = 2; c.stroke();
+      if (ready) { c.globalCompositeOperation = "lighter"; c.globalAlpha = 0.35 + 0.25 * Math.sin(t * 4); c.drawImage(art.glow, x - 40, y - 60, 80, 80); }
+    }
+    c.restore();
+  }
   // a sealed way out: a wall of rune light standing across it
   function curtain(c, g, t, age) {
     const k = Math.min(1, age * 3), H = 70 * k, dx = (Math.cos(g.ang) * g.w) / 2, dy = (Math.sin(g.ang) * g.w) / 2;
