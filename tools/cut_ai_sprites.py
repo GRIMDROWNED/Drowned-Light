@@ -163,6 +163,12 @@ GRIDS = {
     'chain-leaper/poses-b.png': (3, 2, POSES_B),
     'bridge-bowman/poses-a.png': (3, 2, POSES_A),
     'bridge-bowman/poses-b.png': (3, 2, POSES_B),
+    'mist-shade/poses-a.png': (3, 2, POSES_A),
+    'mist-shade/poses-b.png': (3, 2, POSES_B),
+    'rift-caller/poses-a.png': (3, 2, POSES_A),
+    'rift-caller/poses-b.png': (3, 2, POSES_B),
+    'prism-knight/poses-a.png': (3, 2, POSES_A),
+    'prism-knight/poses-b.png': (3, 2, POSES_B),
     'colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '11_hurt']),
     'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
 }
@@ -191,13 +197,23 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
-KEY_OPTS = {'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+KEY_OPTS = {'mist-shade': {'key': (0, 255, 0)}, 'rift-caller': {'key': (0, 255, 0)}, 'prism-knight': {'key': (0, 255, 0)}, 'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
 # Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
 def jade_match(x):
     """The Jade Breaker's sheets each came out a little different in colour: match them all to his front view."""
     if not hasattr(jade_match, 'f'): jade_match.f = match_hist(Image.open(os.path.join(SRC, 'jade-breaker/01_front.png')))
     return jade_match.f(x)
-RECOLOR = {'chain-reaper': cool_violet, 'jade-breaker': jade_match}
+def mist_violet(x):
+    """The Mist Shade's see-through poses (fading, hurt, dying) let the green key through: any pixel greener than its
+    red and blue is turned back to the shade's violet at the same brightness."""
+    import numpy as np
+    r, g, b = x[..., 0], x[..., 1], x[..., 2]
+    v = (r + g + b) / 3
+    green = g > np.maximum(r, b) * 0.92
+    out = x.copy()
+    out[green] = np.stack([v * 1.05, v * 0.7, v * 1.3], -1)[green]
+    return out
+RECOLOR = {'chain-reaper': cool_violet, 'jade-breaker': jade_match, 'mist-shade': mist_violet}
 HOUND_H = 60
 EMBER_H = 136  # the Ember Hound (third form), cut at res 4: drawn 34 px tall with its flames, a little bigger than the hound
 WARG_H = 152  # the Grave Warg (last form), cut at res 4: drawn 38 px tall with its horns and mist, a quarter bigger than the hound
@@ -241,7 +257,13 @@ ICE_MAGE_H = 104  # the Frostweaver, hat and staff tip included: the body about 
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
 LEAPER_H = 150  # the Chain Leaper (Abyssal Spires), res 4: 75 world px crouched front on, about a knight tall standing
 BOWMAN_H = 210  # the Bridge Bowman (Abyssal Spires), res 4: 105 world px, bow tip to boots, a gaunt knight's height
+SHADE_H = 200  # the Mist Shade (Abyssal Spires), res 4: 100 world px, hood to wisps, a knight tall
+CALLER_H = 290  # the Rift Caller, res 4: 145 world px floating, about one and a half knights
+PRISM_H = 250  # the Prism Knight (elite), res 4: 125 world px, a quarter taller than a knight
 SETS = {
+    'mist-shade': ('spires-foes/shade', 'mist-shade/01_front.png', SHADE_H, 1, twelve('mist-shade', TWELVE_FILES)),
+    'rift-caller': ('spires-foes/caller', 'rift-caller/01_front.png', CALLER_H, 1, twelve('rift-caller', TWELVE_FILES)),
+    'prism-knight': ('spires-foes/prism', 'prism-knight/01_front.png', PRISM_H, 1, twelve('prism-knight', TWELVE_FILES)),
     'chain-leaper': ('spires-foes/leaper', 'chain-leaper/01_front.png', LEAPER_H, 1, twelve('chain-leaper', TWELVE_FILES)),
     'bridge-bowman': ('spires-foes/bowman', 'bridge-bowman/01_front.png', BOWMAN_H, 1, twelve('bridge-bowman', TWELVE_FILES)),
     # the Pyramid Champion: broad and armoured, a little taller than the Lantern Knight (shown at 0.85x, DL.PYRAMID.champion.scale)
@@ -430,6 +452,21 @@ SETS = {
 # Frames come out on one shared canvas (numbered prefix1, prefix2, ...); put the printed foot point
 # in that unit's `feet` in src/sprites.js.
 SHEETS = {
+    'mist-shade': [
+        ('mist-shade/walk-side-4.png', 4, 1, 200, 'side/walk'),
+        ('mist-shade/walk-front.png', 4, 1, 200, 'walkF'),
+        ('mist-shade/walk-back.png', 4, 1, 200, 'walkB'),
+    ],
+    'rift-caller': [
+        ('rift-caller/walk-side-4.png', 4, 1, 290, 'side/walk'),
+        ('rift-caller/walk-front.png', 4, 1, 290, 'walkF'),
+        ('rift-caller/walk-back.png', 4, 1, 290, 'walkB'),
+    ],
+    'prism-knight': [
+        ('prism-knight/walk-side-4.png', 4, 1, 250, 'side/walk'),
+        ('prism-knight/walk-front.png', 4, 1, 250, 'walkF'),
+        ('prism-knight/walk-back.png', 4, 1, 250, 'walkB'),
+    ],
     'chain-leaper': [
         ('chain-leaper/walk-side-4.png', 4, 1, 150, 'side/walk'),
         ('chain-leaper/walk-front.png', 4, 1, 150, 'walkF'),

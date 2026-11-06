@@ -2,7 +2,7 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.231";
+const VERSION = "0.15.232";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
@@ -134,6 +134,12 @@ const FILES = [
     "spires-foes/leaper/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "spires-foes/bowman/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "spires-foes/bowman/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
+    "spires-foes/shade/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
+    "spires-foes/shade/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
+    "spires-foes/caller/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
+    "spires-foes/caller/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
+    "spires-foes/prism/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
+    "spires-foes/prism/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "spires/": ["arena", "throne", "well-dark", "well-lit", "floor-2", "floor-3", "floor-4", "kerb", "face-1-band", "face-1-foot", "face-2-band", "face-2-foot", "stairs", "bridge", "bridge-post", "post", "spire", "arch", "ring", "exit-banner", "crystal-1", "crystal-2", "crystal-3", "column-1", "column-1b", "column-2", "column-3", "rune-circle", "rune-glow", "bullet-0", "bullet-1", "bullet-2", "bullet-3", "sentinel", "sentinel-orbit"],
     "pyramid/": ["step-south", "step-north", "step-east", "step-west", "stair-south", "stair-north", "stair-east", "stair-west", "stairway-lane"],
     "ground/": ["campEarth", "campFlags", "campPaving", "grass", "dirt", "shore", "shallow", "deep", "boardwalk", "caveFloor", "rimDeep", "rimShore"],

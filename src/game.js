@@ -1419,6 +1419,7 @@
     const crit = !remote && Math.random() < 0.12;
     let d = dmg * (crit ? 1.6 : 1);
     if (!remote && !e.struck && G.spires && DL.Spires.misty(G.player.x, G.player.y)) d *= DL.SPIRES.mist.strike; // first strike from the mist
+    if (e.def.spire) d = DL.SpireFoes.soak(e, d, ang); // a faded Mist Shade, the Prism Knight's shield (src/spirefoes.js)
     e.struck = true;
     if (G.isGuest()) {
       // Show the hit now; the host owns the Drowned and applies it.

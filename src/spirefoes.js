@@ -5,7 +5,13 @@
      a ring of crystal shards bursts out. Dash out from under it, then thread the ring.
    Bridge Bowman: keeps its distance, draws, and looses parallel lanes of crystal arrows down the line at you. One lane
      is always left empty, and while it draws, faint lines show every lane but that one.
-   Both read e.heat (0..1, set by the room, src/spires.js): gentle by the hub, dense deep in. They run their own moves
+   Mist Shade: lurks faded (hard to see, hard to hurt) until your light finds it, surfaces, throws a fan of mist bolts,
+     then fades and slips away. A burning Aether Crystal or a torch near it holds it in the open.
+   Rift Caller: floats far back, tears small rifts open round you that each spit aimed bursts, and calls Drowned up out
+     of the mist to fight for it.
+   Prism Knight (elite): its crystal shield soaks most of a blow from the front (go round it); what it soaks, and a
+     slow count of its own, it bursts back out as a ring of bullets. Close in and it bashes with the shield.
+   All read e.heat (0..1, set by the room, src/spires.js): gentle by the hub, dense deep in. They run their own moves
    (game.js calls SpireFoes.busy in place of the Drowned's walk-and-strike); e.pose (0, 1, 2 = attackA, B, C) picks the
    drawn frame and e.lift raises the Leaper off its shadow. Numbers: DL.BULLETS.leaper / .bowman (src/data.js). */
 "use strict";
@@ -22,9 +28,23 @@
     if (!k) return false;
     e.state = "move";
     if (DL.Kits.frozen(e)) { e.moving = false; return true; } // frozen solid: it holds still
-    if (!e.act && DL.Spires.hidden(p, e)) { prowl(e, dt); return true; } // lost you in the mist: it prowls
-    if (k === "leaper") leaper(e, dt, p, dp); else bowman(e, dt, p, dp);
+    if (k !== "shade" && !e.act && DL.Spires.hidden(p, e)) { prowl(e, dt); return true; } // lost you in the mist: it prowls
+    ({ leaper, bowman, shade, caller, prism })[k](e, dt, p, dp);
     return true;
+  };
+  // what a blow does to it (hitEnemy in game.js; ang is the way the blow drives it): a faded Shade is hard to touch,
+  // the Prism Knight's shield soaks a blow from the front
+  F.soak = function (e, d, ang) {
+    if (e.def.spire === "shade" && e.fade < 0.6) return d * B.shade.faded;
+    if (e.def.spire === "prism" && e.act !== "bash") {
+      const S = B.prism, front = Math.cos(ang - (e.angle + Math.PI)) > Math.cos(S.front);
+      if (front) {
+        e.soaked = (e.soaked || 0) + d * (1 - S.soak);
+        e.glint = 0.25;
+        return d * S.soak;
+      }
+    }
+    return d;
   };
 
   // walk toward (+1), away from (-1) or round (0) the knight
@@ -135,8 +155,184 @@
     DL.Sound.play("chime");
   }
 
+  /* ---------------- the Mist Shade ---------------- */
+  function shade(e, dt, p, dp) {
+    const S = B.shade;
+    if (e.fade == null) { e.fade = 0.2; e.next = rand(0.8, 1.6); }
+    e.lift = S.hover + Math.sin(G.t * 2.2 + e.id) * 5;
+    const held = DL.Spires.lightAt(e.x, e.y); // light holds it in the open
+    if (!e.act) {
+      e.fade = Math.max(held ? 1 : 0.2, e.fade - dt * 2);
+      e.pose = held ? null : 2;
+      // drift round the knight at a distance, slowly
+      const want = dp > S.lurk[1] ? 1 : dp < S.lurk[0] ? -1 : 0;
+      step(e, dt, p, want, want === 0 ? 0.35 : 0.8);
+      e.next -= dt;
+      const find = DL.Spires.misty(p.x, p.y) ? S.find[0] : S.find[1];
+      if (e.next <= 0 && (dp < find || held)) { e.act = "surface"; e.t = S.surface; e.pose = 0; e.aim = Math.atan2(p.y - 18 - (e.y - e.lift - 40), p.x - e.x); }
+      return;
+    }
+    e.moving = false;
+    e.t -= dt;
+    if (e.act === "surface") {
+      e.fade = Math.min(1, e.fade + dt / S.surface);
+      if (e.t <= 0) { e.act = "gather"; e.t = S.gather; e.pose = 0; }
+    } else if (e.act === "gather") {
+      e.aim = Math.atan2(p.y - 18 - (e.y - e.lift - 40), p.x - e.x); e.angle = e.aim;
+      if (Math.random() < 0.5) G.puff(e.x + Math.cos(e.aim) * 20, e.y - e.lift - 44, "rgba(200,160,255,0.7)", 30, 0.4);
+      if (e.t <= 0) { throwFan(e); e.act = "throw"; e.t = S.throw; e.pose = 1; }
+    } else if (e.act === "throw") {
+      if (e.t <= 0) { e.act = "fade"; e.t = S.fade; e.pose = 2; }
+    } else {
+      e.fade = Math.max(held ? 1 : 0.2, e.fade - dt / S.fade);
+      if (e.t <= 0) {
+        // slips away through the mist to somewhere else round you
+        for (let i = 0; i < 8; i++) G.puff(e.x + rand(-14, 14), e.y - e.lift - rand(0, 60), "rgba(170,130,230,0.6)", 50, 0.6);
+        if (!held) {
+          const a = rand(0, TAU), r = L(e, S.blink);
+          for (let k = 0; k < 8; k++) {
+            const x = p.x + Math.cos(a + k * 0.8) * r, y = p.y + Math.sin(a + k * 0.8) * r;
+            if (DL.Spires.canStand(e, x, y)) { e.x = x; e.y = y; break; }
+          }
+        }
+        e.act = null; e.next = L(e, S.rest);
+      }
+    }
+  }
+  function throwFan(e) {
+    const S = B.shade, n = N(e, S.fan), volleys = N(e, S.volleys), x = e.x + Math.cos(e.aim) * 18, y = e.y - e.lift - 40;
+    const o = { by: "a Mist Shade", dmg: S.dmg, speed: L(e, S.speed), kind: 0 };
+    for (let i = 0; i < volleys; i++) DL.Bullets.later(i * 0.32, e, () => {
+      const p = G.player;
+      DL.Bullets.fan(x, y, Math.atan2(p.y - 18 - y, p.x - x), n, L(e, S.spread), o);
+    });
+    DL.Sound.play("whisper");
+  }
+
+  /* ---------------- the Rift Caller ---------------- */
+  const rifts = [];
+  F.clear = () => { rifts.length = 0; };
+  function caller(e, dt, p, dp) {
+    const S = B.caller;
+    if (e.next == null) { e.next = rand(1.5, 2.5); e.callT = S.call * 0.6; }
+    e.lift = S.hover + Math.sin(G.t * 1.7 + e.id) * 6;
+    tickRifts(e, dt);
+    e.callT -= dt;
+    if (!e.act) {
+      e.pose = null;
+      step(e, dt, p, dp < S.keep[0] ? -1 : dp > S.keep[1] ? 1 : 0, dp < S.keep[0] ? 1 : 0.4);
+      e.next -= dt;
+      const mine = G.enemies.filter((q) => q.calledBy === e.id && !q.removed).length;
+      if (e.callT <= 0 && mine < S.callMax) { e.act = "call"; e.t = S.bow; e.pose = 2; e.callT = S.call; }
+      else if (e.next <= 0 && dp < S.reach) { e.act = "tear"; e.t = S.tear; e.pose = 0; e.angle = Math.atan2(p.y - e.y, p.x - e.x); }
+      return;
+    }
+    e.moving = false;
+    e.t -= dt;
+    if (e.act === "tear" && e.t <= 0) {
+      const n = N(e, S.rifts), a0 = rand(0, TAU);
+      for (let i = 0; i < n; i++) {
+        const a = a0 + (i / n) * TAU, r = rand(S.ring[0], S.ring[1]);
+        rifts.push({ x: p.x + Math.cos(a) * r, y: p.y + Math.sin(a) * r * 0.8 - 20, t: 0, owner: e, shots: 0 });
+      }
+      DL.Sound.play("whisper");
+      e.act = "channel"; e.t = 0.5; e.pose = 1;
+    } else if (e.act === "call" && e.t <= 0) {
+      const room = e.room, f = room && DL.Spires.floorOf(room);
+      for (let i = 0; i < S.calls; i++) {
+        let x = e.x + rand(-120, 120), y = e.y + rand(-60, 80);
+        if (f && !DL.Spires.canStand(e, x, y)) { x = e.x; y = e.y + 30; }
+        G.enemies.push(G.makeEnemy(S.callType, x, y, DL.SPIRES.wave.zone, { rise: 0.9, room, calledBy: e.id }));
+        for (let k = 0; k < 10; k++) G.puff(x + rand(-12, 12), y - rand(0, 40), "rgba(200,150,255,0.7)", 60, 0.7);
+      }
+      DL.Sound.play("whisper");
+      e.act = null; e.next = Math.max(e.next, 1.2);
+    } else if (e.act === "channel" && e.t <= 0) { e.act = null; e.pose = null; e.next = L(e, S.every); }
+  }
+  // each rift opens, spits its bursts at the knight, and closes; one dies with its Caller
+  function tickRifts(e, dt) {
+    const S = B.caller, p = G.player;
+    for (const r of rifts) {
+      if (r.owner !== e) continue;
+      r.t += dt;
+      if (r.shots < S.bursts && r.t > S.open + r.shots * S.gap) {
+        r.shots++;
+        DL.Bullets.fan(r.x, r.y, Math.atan2(p.y - 18 - r.y, p.x - r.x), N(e, S.burst), S.spread, { by: "a Rift Caller's rift", dmg: S.dmg, speed: L(e, S.speed), kind: 0 });
+      }
+    }
+    for (let i = rifts.length - 1; i >= 0; i--) if (rifts[i].t > S.life || rifts[i].owner.removed) rifts.splice(i, 1);
+  }
+  function drawRift(c, r, t) {
+    const S = B.caller, k = Math.min(1, r.t / S.open, (S.life - r.t) / 0.4), h = 34 * k, w = 9 * k;
+    c.save();
+    c.globalCompositeOperation = "lighter";
+    c.globalAlpha = Math.max(0, k);
+    c.drawImage(glowSprite(), r.x - 40, r.y - 40, 80, 80);
+    c.fillStyle = "rgba(250,235,255,0.95)";
+    c.beginPath(); c.moveTo(r.x, r.y - h);
+    for (let i = 1; i <= 4; i++) c.lineTo(r.x + (i % 2 ? w : -w * 0.4) * (1 + 0.2 * Math.sin(t * 20 + i)), r.y - h + (i / 4) * h * 2);
+    c.lineTo(r.x, r.y + h);
+    for (let i = 3; i >= 1; i--) c.lineTo(r.x + (i % 2 ? -w : w * 0.4), r.y - h + (i / 4) * h * 2);
+    c.closePath(); c.fill();
+    c.restore();
+  }
+  let glowC = null;
+  function glowSprite() {
+    if (glowC) return glowC;
+    glowC = document.createElement("canvas"); glowC.width = glowC.height = 64;
+    const g = glowC.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, "rgba(220,160,255,0.9)"); gr.addColorStop(1, "rgba(160,90,255,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    return glowC;
+  }
+  F.drawRifts = function (c, t) { for (const r of rifts) if (!r.owner.removed) drawRift(c, r, t); };
+
+  /* ---------------- the Prism Knight ---------------- */
+  function prism(e, dt, p, dp) {
+    const S = B.prism;
+    if (e.next == null) e.next = L(e, S.every);
+    if (e.glint > 0) e.glint -= dt;
+    e.next -= dt;
+    if (!e.act) {
+      e.pose = null;
+      step(e, dt, p, dp > S.bash.reach * 0.8 ? 1 : 0, dp > S.bash.reach * 0.8 ? 1 : 0.3);
+      e.angle = Math.atan2(p.y - e.y, p.x - e.x); // the shield always faces you
+      if ((e.soaked || 0) >= S.burstAt || (e.next <= 0 && dp < S.reach)) { e.act = "raise"; e.t = S.raise; e.pose = 2; }
+      else if (dp < S.bash.reach && (e.bashCd || 0) <= 0) { e.act = "brace"; e.t = S.bash.wind; e.pose = 0; e.aim = e.angle; }
+      e.bashCd = (e.bashCd || 0) - dt;
+      return;
+    }
+    e.moving = false;
+    e.t -= dt;
+    if (e.act === "brace") {
+      if (e.t <= 0) { e.act = "bash"; e.t = S.bash.time; e.pose = 1; e.kx += Math.cos(e.aim) * S.bash.lunge; e.ky += Math.sin(e.aim) * S.bash.lunge; e.hitDone = false; }
+    } else if (e.act === "bash") {
+      if (!e.hitDone && Math.hypot(p.x - e.x, p.y - e.y) < S.bash.reach && !(p.inv > 0) && !(p.dashT > 0)) {
+        e.hitDone = true;
+        G.hurtPlayer(e.dmg, e.aim, e.def.name);
+        p.kx = (p.kx || 0) + Math.cos(e.aim) * S.bash.kb; p.ky = (p.ky || 0) + Math.sin(e.aim) * S.bash.kb;
+      }
+      if (e.t <= 0) { e.act = null; e.pose = null; e.bashCd = S.bash.cd; }
+    } else if (e.act === "raise") {
+      e.glint = 0.3;
+      if (e.t <= 0) {
+        const n = N(e, S.ring) + Math.floor((e.soaked || 0) / S.extra), o = { by: "a Prism Knight's burst", dmg: S.dmg, speed: L(e, S.speed), kind: 1 };
+        DL.Bullets.ring(e.x, e.y - 50, n, rand(0, TAU), o);
+        if (heat(e) > 0.5) DL.Bullets.later(0.35, e, () => DL.Bullets.ring(e.x, e.y - 50, n, Math.PI / n, o));
+        for (let i = 0; i < 16; i++) G.puff(e.x + rand(-20, 20), e.y - rand(30, 80), "rgba(235,210,255,0.8)", 90, 0.6);
+        DL.Sound.play("chime");
+        e.soaked = 0; e.next = L(e, S.every);
+        e.act = "after"; e.t = 0.4;
+      }
+    } else if (e.t <= 0) { e.act = null; e.pose = null; }
+  }
+
   /* ---------------- telegraphs, on the ground under them ---------------- */
   F.drawMark = function (c, e, t) {
+    if (e.def.spire === "prism" && e.glint > 0) { // the shield flares as it soaks a blow or gathers its burst
+      c.save(); c.globalCompositeOperation = "lighter"; c.globalAlpha = Math.min(1, e.glint * 4);
+      c.drawImage(glowSprite(), e.x + Math.cos(e.angle) * 18 - 40, e.y - 90, 80, 80); c.restore();
+    }
     if (!e.def.spire || !e.act) return;
     c.save();
     c.globalCompositeOperation = "lighter";
