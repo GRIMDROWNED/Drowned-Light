@@ -708,7 +708,7 @@
   /* Abyssal Spires test room (Robert, 2026-11-05: try a dungeon with corridors and heights in the 3/4 view before
      drawing art for it). Far off the map like Derek's Hollow; reached from the pause menu in Sandbox. src/spires.js */
   DL.SPIRES = {
-    x: 40000, y: 0, halfW: 1600, halfH: 1400,
+    x: 40000, y: 0, halfW: 2900, halfH: 3000,
     lh: 48,      // world px of drop per height level (a face this much taller per level)
     hang: 44,    // face showing under a level-0 floor before it fades into the mist
     dark: 0.36,  // the room's darkness (violet dusk, not night)
