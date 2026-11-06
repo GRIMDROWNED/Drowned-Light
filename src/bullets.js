@@ -97,8 +97,26 @@
   // one sprite per kind: a dark rim (so it reads on light stone), a violet glow and a white-hot core
   const COLS = [["170,110,255", "#f4e6ff"], ["255,110,200", "#ffe6f6"], ["110,220,255", "#e6fbff"]];
   let sprites = null;
+  // Robert's drawn bullets and Sentinel (tools/cut_spires.py); the coded ones show until they load
+  const ART = {};
+  if (typeof Image !== "undefined") for (const n of ["bullet-0", "bullet-1", "bullet-2", "bullet-3", "sentinel", "sentinel-orbit"]) {
+    const im = new Image();
+    im.onload = () => { ART[n] = im; if (n.startsWith("bullet")) sprites = null; };
+    im.src = DL.asset("assets/sprites/spires/" + n + ".png");
+  }
   function build() {
-    sprites = COLS.map(([glow, core]) => {
+    sprites = COLS.map(([glow, core], i) => {
+      const art = ART["bullet-" + i];
+      if (art) { // a soft glow under the drawn bullet, which keeps its own dark rim
+        const c = document.createElement("canvas"); c.width = c.height = 32;
+        const g = c.getContext("2d"), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+        gr.addColorStop(0, `rgba(${glow},0.6)`); gr.addColorStop(1, `rgba(${glow},0)`);
+        g.fillStyle = gr; g.fillRect(0, 0, 32, 32);
+        const k = 22 / Math.max(art.width, art.height);
+        g.drawImage(art, 16 - (art.width * k) / 2, 16 - (art.height * k) / 2, art.width * k, art.height * k);
+        c.drawn = true;
+        return c;
+      }
       const c = document.createElement("canvas"); c.width = c.height = 24;
       const g = c.getContext("2d"), gr = g.createRadialGradient(12, 12, 0, 12, 12, 12);
       gr.addColorStop(0, `rgba(${glow},0.9)`); gr.addColorStop(0.5, `rgba(${glow},0.45)`); gr.addColorStop(1, `rgba(${glow},0)`);
@@ -115,8 +133,10 @@
     if (!sprites) build();
     for (const b of list) {
       if (b.x < view.left - 12 || b.x > view.right + 12 || b.y < view.top - 12 || b.y > view.bottom + 12) continue;
-      const s = (b.r / B.r) * 24;
-      c.drawImage(sprites[b.kind] || sprites[0], b.x - s / 2, b.y - s / 2, s, s);
+      const sp = sprites[b.kind] || sprites[0], s = (b.r / B.r) * (sp.drawn ? 30 : 24);
+      if (sp.drawn && b.kind === 2) { // the arrow points the way it flies
+        c.save(); c.translate(b.x, b.y); c.rotate(Math.atan2(b.vy, b.vx)); c.drawImage(sp, -s / 2, -s / 2, s, s); c.restore();
+      } else c.drawImage(sp, b.x - s / 2, b.y - s / 2, s, s);
     }
   };
 
@@ -130,11 +150,13 @@
     if (e.rise > 0 || e.stun > 0 || DL.Kits.frozen(e)) return; // staggered or frozen: it holds its fire
     if (dp > S.wake) { e.charge = 0; return; }
     e.bt = (e.bt || 0) - dt;
+    if (e.fireT > 0) e.fireT -= dt;
     if (e.bt > 0) return;
     if (!e.charge) { e.charge = S.charge; e.pat = LOOP[(e.step = ((e.step || 0) + 1)) % LOOP.length]; }
     e.charge -= dt;
     if (e.charge > 0) return;
     e.charge = 0;
+    e.fireT = 0.3; // the drawn Sentinel shows its firing frame for a moment
     const x = e.x, y = e.y - S.mouth, aim = Math.atan2(p.y - 18 - y, p.x - x), o = { by: "a Spire Sentinel", dmg: S.dmg };
     // heat: 0 = a gentle first room, 1 = the dense rooms deep in (Robert, 2026-11-05)
     const h = Math.max(0, Math.min(1, e.heat || 0)), L = (a, b) => a + (b - a) * h, n = (a, b) => Math.round(L(a, b));
@@ -161,6 +183,22 @@
   Bu.drawSentinel = function (c, e, t) {
     const S = B.sentinel, ch = e.charge > 0 ? 1 - e.charge / S.charge : 0, bob = Math.sin(t * 2 + e.id) * 3;
     const x = e.x, y = e.y;
+    const poses = ART.sentinel, orbit = ART["sentinel-orbit"];
+    if (poses && orbit) { // Robert's drawn turret: idle loop with its shards turning, charge, fire, hurt
+      let im = orbit, n = 6, f = Math.floor(t * 8 + e.id) % 6;
+      if (e.flash > 0) { im = poses; f = 4; }
+      else if (e.fireT > 0) { im = poses; f = 3; }
+      else if (ch > 0) { im = poses; f = ch < 0.5 ? 1 : 2; }
+      if (im === poses) n = 6;
+      const fw = im.width / n, w = fw / 2, h = im.height / 2;
+      c.fillStyle = "rgba(0,0,0,0.35)"; c.beginPath(); c.ellipse(x, y, 26, 8, 0, 0, TAU); c.fill();
+      c.drawImage(im, f * fw, 0, fw, im.height, x - w / 2, y - h + 4, w, h);
+      if (e.hp < e.maxHp) {
+        c.fillStyle = "rgba(10,5,20,0.8)"; c.fillRect(x - 20, y - h - 2, 40, 4);
+        c.fillStyle = "#c08cff"; c.fillRect(x - 20, y - h - 2, 40 * Math.max(0, e.hp / e.maxHp), 4);
+      }
+      return;
+    }
     c.fillStyle = "rgba(0,0,0,0.35)"; c.beginPath(); c.ellipse(x, y, 24, 8, 0, 0, TAU); c.fill();
     // plinth
     c.fillStyle = "#241a36"; c.fillRect(x - 20, y - 22, 40, 22);
