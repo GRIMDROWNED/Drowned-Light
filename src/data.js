@@ -384,11 +384,40 @@
         { name: "Crowned in Thorns", desc: "At 30 stacks your swings throw red crescents, and Reap the Tithe spends only half your stacks." },
       ],
     },
+    /* Kit 10: a bronze knight in a ragged crimson cape with a forge-hot greatsword (Robert's art, 2026-11-06; name and
+       abilities proposed by Claude, open to change). Forge Heat (src/kits.js K.heat): every Drowned his blows strike adds
+       `perHit` heat (x`tempered` from Tempered Steel, 5), and every blow his guard blocks adds `perBlock`, up to `max`. It holds
+       `hold` s after his last blow, then cools `cool` a second. His cleave hits up to `dmg` harder as it fills; full heat
+       makes his next Brand Thrust erupt. */
+    cinderbrand: {
+      name: "Cinderbrand", tag: "Kit 10", motto: "The forge never cools.", roles: ["Heavy", "Guard", "Burst"],
+      weapon: "Forge greatsword", color: "255,130,40",
+      desc: "A bronze knight with a forge-hot greatsword. Slow, crushing overhead cleaves build heat in the blade. Hold your ability to plant the sword and guard; let go to lunge in a Brand Thrust that pierces a whole line. At full heat the thrust erupts in flame.",
+      attack: { type: "arc", name: "Forge Cleave", dmg: 24, range: 80, arc: 1.7, cd: 0.85, kb: 230 },
+      dash: { type: "plain" },
+      passive: { heat: { perHit: 9, perBlock: 20, max: 100, hold: 3, cool: 14, dmg: 0.25, tempered: 1.5, burnAt: 50 } },
+      // held (`guard`): the sword planted, he stands his ground; blows from within `arc` of his front lose `block` of their
+      // damage. Up to `max` s, then the thrust goes off by itself. Let go (or tap): he lunges `dash` s at `speed`, piercing
+      // all within `width` of his path and `reach` past where he stops. Full heat: x`erupt` damage, a line of fire
+      // (`fire` dps for `fireT` s) and the heat spent. Brand Line (15): `far` x farther and the line always burns.
+      // Forgeheart (20): an eruption spends half the heat and bursts in a ring `ring` px round where he stops.
+      ability: { id: "brand", name: "Brand Thrust", oil: 12, cd: 9, dmg: 30, kb: 260, burn: 5, reach: 70, width: 44, speed: 720, dash: 0.16, far: 1.5,
+        erupt: 1.8, fire: 12, fireT: 3, ring: 130,
+        guard: { block: 0.7, arc: 2.2, max: 3, riposte: 1 },
+        desc: "Hold to plant your greatsword and guard: blows from the front lose most of their force and stoke the blade. Let go to lunge in a thrust that pierces every Drowned in a line and sets them burning. At full heat it erupts in a line of fire." },
+      special: { name: "Forge Heat", desc: "Every blow that lands heats your sword, and so does every blow you block. A hot blade cleaves up to 25% harder; at full heat your next Brand Thrust erupts in flame." },
+      milestones: [
+        { name: "Tempered Steel", desc: "Your sword heats half again as fast, and from half heat your cleaves set the Drowned alight." },
+        { name: "Riposte", desc: "A blow your guard blocks is struck straight back at the Drowned that threw it." },
+        { name: "Brand Line", desc: "Brand Thrust lunges half again as far and always leaves a burning line behind it." },
+        { name: "Forgeheart", desc: "An erupting Brand Thrust spends only half your heat and bursts in a ring of fire where you stop." },
+      ],
+    },
   };
   // The Frostweaver's frost (src/kits.js): how long freezing and brittle last, brittle's extra damage taken, and the shatter
   // of a frozen Drowned dying (it freezes up to `shatterN` others within `shatterR` px). The owl familiar from level 5.
   DL.ICE = { frost: 2.5, brittle: 0.2, brittleT: 4, shatterN: 3, shatterR: 150, owl: { range: 260, cd: 1.1, dmg: 6 } };
-  DL.KIT_ORDER = ["lanternBlade", "pikeWarden", "ashenArbalist", "relicBearer", "flameBastion", "chainReaper", "jadeBreaker", "rosePaladin", "bloodsworn"];
+  DL.KIT_ORDER = ["lanternBlade", "pikeWarden", "ashenArbalist", "relicBearer", "flameBastion", "chainReaper", "jadeBreaker", "rosePaladin", "bloodsworn", "cinderbrand"];
 
   /* ---------- pacing ----------
      Three levers slow everything down together:

@@ -464,6 +464,7 @@
     }
     if (p && G.state !== "title") drawKitGlow(c, G, p, t);
     if (p && G.state !== "title" && G.state !== "dead") drawTithe(c, G, p, t);
+    if (p && G.state !== "title" && G.state !== "dead") drawHeat(c, G, p, t);
     if (p && G.state === "play" && G.save.attackMode === "manual") {
       // where a manual strike will go
       const a = p.aim != null ? p.aim : p.angle, r0 = 30, r1 = 40;
@@ -1003,7 +1004,8 @@
   function playerAnim(G, p, t) {
     const key = G.save.kit + p.stage, n = (anim) => Art.animLength(key, anim); // drawn frames (3 for most kits, 8 for the Jade Breaker)
     if (G.state === "dying") return ["death", Math.min(n("death") - 1, Math.floor((G.dying / 1.35) * n("death"))), p.angle];
-    if (p.dashT > 0 || p.tideDash) return ["dash", 0, p.angle];
+    if (p.dashT > 0 || p.tideDash || p.brandDash) return ["dash", 0, p.angle];
+    if (p.brandGuard && Art.sheet(key).down.guard) return ["guard", 0, p.brandGuard.ang]; // the Cinderbrand's planted sword
     if (p.waltz) return [p.moving ? "walk" : "idle", p.moving ? Math.floor(p.animT * stepRate(G.save.kit + p.stage, false)) : 0, t * 13]; // turning on the spot in Rose's Waltz
     if (p.tideCharge && p.tideCharge.t > 0.12) return [castAnim(key), n(castAnim(key)) > 3 ? 2 : 0, p.aim ?? p.angle]; // winding up Jade Tide (the blade raised)
     if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
@@ -1981,6 +1983,16 @@
       h.addColorStop(0, `rgba(235,50,90,${0.1 * f})`); h.addColorStop(1, "rgba(235,50,90,0)");
       c.fillStyle = h; c.fillRect(p.x - 52, p.y - 86, 104, 104);
     }
+  }
+  // The Cinderbrand's Forge Heat: a glow round the blade as it fills, and a bar under him (white-hot when full).
+  function drawHeat(c, G, p, t) {
+    const K = DL.Kits, h = K.heat(p);
+    if (!h || p.held) return;
+    const H = DL.KITS.cinderbrand.passive.heat, f = h / H.max, full = K.heatFull(p);
+    const g = c.createRadialGradient(p.x, p.y - 40, 0, p.x, p.y - 40, 30 + f * 26);
+    g.addColorStop(0, `rgba(255,${full ? 190 : 120},50,${0.08 + f * 0.16 + (full ? Math.sin(t * 10) * 0.04 : 0)})`); g.addColorStop(1, "rgba(255,120,40,0)");
+    c.fillStyle = g; c.fillRect(p.x - 60, p.y - 100, 120, 120);
+    if (!(p.heatHold <= 0 && Math.floor(t * 8) % 2)) bar(c, p.x, p.y + 8, 30, f, full ? "#ffd27a" : "#e8762a");
   }
   function drawTithe(c, G, p, t) {
     const K = DL.Kits, n = K.stacks(p);

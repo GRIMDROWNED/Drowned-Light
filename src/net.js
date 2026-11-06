@@ -21,7 +21,7 @@
   const wispK = () => (G.wisp ? [r1(G.wisp.x), r1(G.wisp.y)] : 0);
   // Moving as sent: 0 still, 1 walking, 2 running; and the dash shown (the Jade Breaker's charged rush counts).
   const moveK = (p) => (p.moving ? (p.running ? 2 : 1) : 0);
-  const dashK = (p) => Math.max(p.dashT || 0, p.tideDash ? p.tideDash.t : 0);
+  const dashK = (p) => Math.max(p.dashT || 0, p.tideDash ? p.tideDash.t : 0, p.brandDash ? p.brandDash.t : 0);
   const TYPES = Object.keys(DL.ENEMIES);
   const MAX_GUESTS = 3; // four knights in all
   const swingRow = (sw) => (sw ? [r1(sw.ang), r1(sw.t), sw.kind, Math.round(sw.range), r1(sw.arc || 1), sw.col, sw.flip ? 1 : 0] : 0);
