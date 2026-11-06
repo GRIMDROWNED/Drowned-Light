@@ -105,6 +105,7 @@
     bloodsworn(),
     bloodswornB(),
     bloodswornC(),
+    cinderbrand(),
     // the Pyramid Champion (barracks defender, src/pyramid.js): three side walk frames played 1-2-3-2, a front guard stance as its idle
     (() => {
       const W3 = [1, 1, 2, 2, 3, 3, 2, 2].map((i) => "side/walk" + i + "@-");
@@ -268,6 +269,21 @@
   // and his last look, Crowned (30 stacks, form 3): the crowned knight again, now in a white fur mantle with purple cape and lantern
   function bloodswornC() {
     return Object.assign(walking("bloodswornC", [37, 92], [28, 96], [24, 96]), { path: "assets/sprites/bloodsworn-f3/", keys: stages("bloodswornC") });
+  }
+
+  /* The Cinderbrand (kit 10, Robert's art 2026-11-06, on green): the 12 poses and walk sheets. His Forge Cleave is the
+     overhead wind-up and the sword driven down; Brand Thrust is the low thrust and the level lunge (his dash too); his
+     planted guard kneels behind the sword from the side and stands behind it facing you. Feet of the single poses set
+     by hand: the sword's point reaches lower than his boots. */
+  function cinderbrand() {
+    const set = Object.assign(walking("cinderbrand", [40, 97], [40, 98], [36, 98]), { path: "assets/sprites/cinderbrand/", keys: stages("cinderbrand") });
+    for (const dir in set.views) {
+      Object.assign(set.views[dir], { attack: ["attackA", "side/chop", "side/chop"], cast: ["attackB", "side/lunge", "side/lunge"], dash: ["side/lunge"],
+        guard: [dir === "down" ? "guardF" : "side/guard"] });
+    }
+    Object.assign(set.feet, { front: [34, 97], back: [32, 94], right: [35, 95], attackA: [58, 84], attackB: [36, 73], attackC: [32, 77],
+      "side/lunge": [38, 67], "side/chop": [50, 100], "side/guard": [48, 77], guardF: [36, 71] });
+    return set;
   }
 
   function reaper() {

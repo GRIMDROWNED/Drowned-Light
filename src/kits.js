@@ -1,4 +1,4 @@
-/* Drowned Light — the nine kits in play: attacks, dashes, abilities, passives,
+/* Drowned Light — the ten kits in play: attacks, dashes, abilities, passives,
    the 20-level progression and what changes at milestones 5, 10, 15 and 20. */
 "use strict";
 (function (DL) {
@@ -70,9 +70,10 @@
     return 1 + f.bonus * Math.max(0, Math.min(1, (d - f.from) / (f.to - f.from)));
   };
 
-  K.damageTaken = function (p) {
+  K.damageTaken = function (p, ang) {
     const kit = G.kit();
     let m = 1;
+    if (p.brandGuard && ang != null) m *= guardBlock(p, ang);
     if (kit.passive && kit.passive.guard) m *= 1 - (K.has(5) ? 0.35 : kit.passive.guard);
     if (K.steady(p)) m *= 1 - kit.passive.stance.guard;
     if (p.guardT > 0) m *= 0.5;
@@ -84,7 +85,8 @@
     const kit = G.kit(), rush = kit.passive && kit.passive.rush;
     return (kit.speedMult || 1) * (rush && p.rushT > 0 ? rush.speed : 1) * (p.tideCharge ? 0.5 : 1) // charging Jade Tide slows him
       * (p.waltz ? kit.ability.move : 1) // and the Rose Paladin walks slower while he waltzes
-      * titheSpeed(p); // and the Bloodsworn runs faster on his Blood Tithe
+      * titheSpeed(p) // and the Bloodsworn runs faster on his Blood Tithe
+      * (p.brandGuard ? 0 : 1); // and the Cinderbrand stands his ground while his sword is planted
   };
   // The Jade Breaker's Momentum: the bonus damage his next swing carries (0 to passive.momentum.bonus).
   function momentum(p) {
@@ -119,7 +121,7 @@
   function hit(e, dmg, ang, kb, burn) {
     const was = e.removed, hp = e.hp;
     G.hitEnemy(e, dmg, ang, kb, burn);
-    if (!was) K.blow(e, hp, dmg);
+    if (!was) { K.blow(e, hp, dmg); if (forge()) K.heatAdd(forge().perHit * (K.has(5) ? forge().tempered : 1)); }
   }
   function slay(e) {
     const was = e.removed;
@@ -192,6 +194,130 @@
       }
     }
   }
+
+  /* ---------- the Cinderbrand's Forge Heat and planted guard ---------- */
+  const forge = () => G.save.kit === "cinderbrand" && G.kit().passive && G.kit().passive.heat;
+  K.heat = (p = G.player) => (forge() && p ? p.heat || 0 : 0);
+  K.heatFull = (p = G.player) => !!forge() && K.heat(p) >= forge().max;
+  K.heatAdd = function (n) {
+    const H = forge(), p = G.player;
+    if (!H || !p) return;
+    const was = K.heatFull(p);
+    p.heat = Math.min(H.max, (p.heat || 0) + n);
+    p.heatHold = H.hold;
+    if (!was && K.heatFull(p)) {
+      // the blade comes white-hot: a flare and a word over his head
+      G.effects.push({ type: "ring", x: p.x, y: p.y - 30, r0: 6, r1: 54, t: 0, max: 0.35, col: "255,200,90", w: 4 });
+      for (let i = 0; i < 14; i++) G.spark(p.x + rand(-14, 14), p.y - rand(10, 70), i % 2 ? "255,200,90" : "255,110,30", 130);
+      sfx("build");
+    }
+  };
+  // His cleave's share of extra damage from the heat (0 to passive.heat.dmg).
+  const heatDmg = (p) => { const H = forge(); return H ? H.dmg * K.heat(p) / H.max : 0; };
+  function heatTick(p, dt) {
+    const H = forge();
+    if (!H) { p.heat = 0; return; }
+    if (p.heatHold > 0) p.heatHold -= dt;
+    else if (p.heat > 0) p.heat = Math.max(0, p.heat - H.cool * dt);
+    if (p.heat >= H.max * 0.5 && Math.random() < dt * (K.heatFull(p) ? 24 : 8)) G.spark(p.x + rand(-18, 18), p.y - rand(20, 70), K.heatFull(p) ? "255,210,110" : "255,120,40", 50);
+  }
+  /* A blow `ang` (the way it pushes him) landing while his sword is planted: from in front it loses `block` of its
+     force and stokes the blade; Riposte (10) strikes the nearest Drowned in front straight back. Returns the share kept. */
+  function guardBlock(p, ang) {
+    const g = G.kit().ability.guard, gd = p.brandGuard;
+    if (!g || Math.abs(angleDiff(ang + Math.PI, gd.ang)) > g.arc / 2) return 1;
+    K.heatAdd(forge() ? forge().perBlock : 0);
+    G.effects.push({ type: "ring", x: p.x + Math.cos(gd.ang) * 18, y: p.y - 30 + Math.sin(gd.ang) * 10, r0: 4, r1: 30, t: 0, max: 0.25, col: "255,190,90", w: 3 });
+    for (let i = 0; i < 8; i++) G.spark(p.x + Math.cos(gd.ang) * 20, p.y - 30, "255,190,90", 140);
+    gd.blocked = (gd.blocked || 0) + 1;
+    if (K.has(10) && (gd.riposteT || 0) <= 0) {
+      gd.riposteT = 0.3;
+      let best = null, bd = 150;
+      for (const e of G.enemies) {
+        if (e.rise > 0 || e.removed) continue;
+        const d = dist(p.x, p.y, e.x, e.y) - e.def.radius;
+        if (d < bd && Math.abs(angleDiff(gd.ang, Math.atan2(e.y - p.y, e.x - p.x))) < g.arc / 2) { bd = d; best = e; }
+      }
+      if (best) {
+        const st = G.stats(), a = Math.atan2(best.y - p.y, best.x - p.x);
+        hit(best, G.kit().attack.dmg * K.power() * st.dmgMult * G.corruptBonus() * g.riposte, a, 220);
+        G.effects.push({ type: "slash", x: p.x, y: p.y - 24, ang: a, arc: 1.2, r: 60, t: 0, max: 0.2, col: G.kit().color, w: 8 });
+      }
+    }
+    sfx("hit");
+    return 1 - g.block;
+  }
+  /* Brand Thrust held: the button plants the sword (K.brandStart) and he guards until it's let go or `guard.max` s pass,
+     then lunges. Oil and cooldown are paid on letting go. Returns true while the lunge moves him. */
+  K.brandStart = function (p) {
+    if (p.brandGuard || p.brandDash) return;
+    p.brandGuard = { t: 0, ang: p.aim != null && G.save.attackMode === "manual" ? p.aim : p.angle };
+  };
+  K.brandTick = function (p, st, dt) {
+    const kit = G.kit(), ab = kit.ability;
+    if (!ab.guard) { p.brandGuard = p.brandDash = null; return false; }
+    const aim = () => (p.aim != null && G.save.attackMode === "manual" ? p.aim : p.angle);
+    const gd = p.brandGuard;
+    if (gd) {
+      gd.t += dt;
+      gd.riposteT = (gd.riposteT || 0) - dt;
+      gd.ang = aim();
+      if (DL.Input.abilityHeld() && gd.t < ab.guard.max && G.state === "play" && !(p.downT > 0)) return false;
+      p.brandGuard = null;
+      if (p.oil < ab.oil) { sfx("deny"); return false; }
+      p.oil -= ab.oil;
+      p.abiCd = K.abilityCd();
+      sfx("ability");
+      const ang = gd.ang, pw = K.power() * st.dmgMult * G.corruptBonus(), erupt = K.heatFull(p), far = K.has(15) ? ab.far : 1;
+      p.angle = ang;
+      p.brandDash = { t: ab.dash * far, ang, hit: new Set(), x0: p.x, y0: p.y, erupt, dmg: ab.dmg * pw * (erupt ? ab.erupt : 1) };
+      if (erupt) p.heat = K.has(20) ? forge().max / 2 : 0;
+      p.inv = Math.max(p.inv, ab.dash * far + 0.1);
+      G.camera.shake = erupt ? 6 : 3;
+    }
+    const d = p.brandDash;
+    if (!d) return false;
+    d.t -= dt;
+    p.x += Math.cos(d.ang) * ab.speed * dt;
+    p.y += Math.sin(d.ang) * ab.speed * dt;
+    p.moving = false;
+    p.trail.push({ x: p.x, y: p.y, life: 0.2, ang: d.ang });
+    const burn = ab.burn * K.power() * st.dmgMult;
+    const strike = (e) => { d.hit.add(e); hit(e, d.dmg, d.ang, ab.kb, burn); };
+    for (const e of G.enemies.slice()) {
+      if (e.rise > 0 || e.removed || d.hit.has(e) || dist(p.x, p.y, e.x, e.y) > e.def.radius + ab.width / 2) continue;
+      strike(e);
+    }
+    if (d.t > 0) return true;
+    // the thrust's point: everything out to `reach` ahead of where he stops
+    p.brandDash = null;
+    p.cast = { t: 0.2, dur: 0.4, ang: d.ang };
+    for (const e of onLine(p, d.ang, ab.reach, ab.width)) if (!d.hit.has(e)) strike(e);
+    const ex = p.x + Math.cos(d.ang) * ab.reach, ey = p.y + Math.sin(d.ang) * ab.reach;
+    G.effects.push({ type: "slash", x: p.x, y: p.y - 24, ang: d.ang, arc: 0.5, r: ab.reach + 20, t: 0, max: 0.25, col: d.erupt ? "255,210,110" : kit.color, w: d.erupt ? 14 : 8 });
+    if (d.erupt || K.has(15)) {
+      // a line of fire along the lunge and its point
+      const len = dist(d.x0, d.y0, ex, ey), n = Math.max(2, Math.round(len / 34));
+      for (let i = 0; i <= n; i++) {
+        const x = d.x0 + (ex - d.x0) * i / n, y = d.y0 + (ey - d.y0) * i / n;
+        lightZone(x, y, d.erupt ? 46 : 34, d.erupt ? ab.fireT : ab.fireT * 0.6, { fire: true, dps: ab.fire * K.power() * (d.erupt ? 1 : 0.5) });
+        if (d.erupt) for (let k = 0; k < 3; k++) G.spark(x + rand(-10, 10), y - rand(0, 30), k % 2 ? "255,200,90" : "255,90,30", 160);
+      }
+    }
+    if (d.erupt) {
+      G.camera.shake = 9;
+      if (K.has(20)) {
+        // Forgeheart: a ring of fire bursts where he stops
+        G.effects.push({ type: "ring", x: p.x, y: p.y - 6, r0: 10, r1: ab.ring, t: 0, max: 0.4, col: "255,150,50", w: 9 });
+        for (const e of G.enemies.slice()) {
+          if (e.rise > 0 || e.removed || dist(p.x, p.y, e.x, e.y) > ab.ring + e.def.radius) continue;
+          hit(e, d.dmg * 0.6, Math.atan2(e.y - p.y, e.x - p.x), 200, burn);
+        }
+      }
+    }
+    sfx(d.erupt ? "hit" : "swing");
+    return false;
+  };
 
   /* ---------- helpers ---------- */
   function nearest(x, y, R, skip) {
@@ -288,11 +414,11 @@
       let arc = a.arc;
       if (id === "lanternBlade" && K.has(20)) { arc *= 1.3; swing.col = "255,244,214"; }
       swing.arc = arc;
-      const burn = id === "lanternBlade" && K.has(5) ? 3 * pw : 0;
+      const hot = forge(), burn = id === "lanternBlade" && K.has(5) ? 3 * pw : hot && K.has(5) && K.heat(p) >= hot.burnAt ? 3 * pw : 0;
       // the Jade Breaker's Momentum goes into the swing and is spent; Crystal Edge hurls harder, Shatter stuns
       const mom = momentum(p), jade = id === "jadeBreaker";
       // his sweep also grows `grow` a level on top of K.power (Robert's ask: it's his one-target blow)
-      const dmg = a.dmg * pw * (1 + mom) * (jade ? 1 + (a.grow || 0) * (K.level() - 1) : 1), kb = a.kb * (jade && K.has(5) ? 1.2 : 1) * jadeKb();
+      const dmg = a.dmg * pw * (1 + mom) * (1 + heatDmg(p)) * (jade ? 1 + (a.grow || 0) * (K.level() - 1) : 1), kb = a.kb * (jade && K.has(5) ? 1.2 : 1) * jadeKb();
       // the Rose Paladin's Thorn Lash: Crown of Thorns (10) makes them bleed; Rosebriar Lash (15) binds what every third lash strikes
       const binds = a.lash && K.has(15) && (p.lashN = (p.lashN || 0) + 1) % 3 === 0;
       if (jade) { p.momT = 0; swing.dur = 0.3; if (mom > 0.15) swing.col = "180,255,200"; }
@@ -307,7 +433,8 @@
           if (binds) K.bind(e, 1.2, kit.ability.sting * pw);
         }
       }
-      if (jade) G.camera.shake = Math.max(G.camera.shake || 0, 3);
+      if (jade || hot) G.camera.shake = Math.max(G.camera.shake || 0, 3);
+      if (hot) { swing.dur = 0.32; if (K.heat(p) >= hot.max / 2) swing.col = "255,200,90"; }
       if (a.lash) { Object.assign(swing, { kind: "lash", dur: 0.34 }); G.camera.shake = Math.max(G.camera.shake || 0, 2); }
       if (id === "lanternBlade" && K.has(10) && p.attackN % 3 === 0) {
         shoot(p, ang, { kind: "wave", speed: 430, life: 0.42, dmg: a.dmg * pw * 0.7, pierce: 99, r: 20, col: swing.col });
@@ -718,6 +845,7 @@
     p.guardT = Math.max(0, (p.guardT || 0) - dt);
     p.rushT = Math.max(0, (p.rushT || 0) - dt);
     titheTick(p, st, dt);
+    heatTick(p, dt);
     // Momentum builds while moving and drains twice as fast standing still
     if (kit.passive && kit.passive.momentum) p.momT = Math.max(0, Math.min(kit.passive.momentum.full, (p.momT || 0) + (p.moving ? dt : -2 * dt)));
     if (crystalLife !== p) { crystals = []; crystalLife = p; } // a new life clears them
