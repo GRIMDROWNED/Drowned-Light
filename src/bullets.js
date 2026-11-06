@@ -149,7 +149,7 @@
     e.moving = false;
     e.angle = Math.PI / 2;
     if (e.rise > 0 || e.stun > 0 || DL.Kits.frozen(e)) return; // staggered or frozen: it holds its fire
-    if (dp > S.wake) { e.charge = 0; return; }
+    if (dp > S.wake || DL.Spires.hidden(p, e)) { e.charge = 0; return; } // too far, or lost in the mist
     e.bt = (e.bt || 0) - dt;
     if (e.fireT > 0) e.fireT -= dt;
     if (e.bt > 0) return;

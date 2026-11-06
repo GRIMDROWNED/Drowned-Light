@@ -204,12 +204,16 @@
   Sp.enter = function () {
     const p = G.player;
     if (!p || G.spires || G.cave) return;
-    G.spires = { bx: p.x, by: p.y, inPortal: true, flare: 0, seal: null, cleared: {} };
-    p.x = OX + SPAWN.x; p.y = OY + SPAWN.y; p.spx = p.x; p.spy = p.y;
+    const saved = wellsSave();
+    G.spires = { bx: p.x, by: p.y, inPortal: true, flare: 0, seal: null, cleared: {}, lit: {}, litT: {}, away: {}, took: {}, aether: 0, bubbles: [] };
+    for (const i in saved) if (saved[i]) { G.spires.lit[i] = true; G.spires.litT[i] = -99; if (WELL_ROOM[i]) G.spires.cleared[WELL_ROOM[i]] = true; }
+    const at = saved.at != null && WELLS[saved.at] ? { x: WELLS[saved.at][0], y: WELLS[saved.at][1] + 60 } : SPAWN; // the last Well lit: a checkpoint
+    p.x = OX + at.x; p.y = OY + at.y; p.spx = p.x; p.spy = p.y;
     p.kx = p.ky = 0; p.dashT = 0; p.angle = -Math.PI / 2;
     for (const f of followers()) { f.x = p.x + DL.rand(-30, 30); f.y = p.y + DL.rand(-10, 20); f.spx = null; }
     G.camera.x = p.x; G.camera.y = p.y - 20;
-    say("The Abyssal Spires. Causeways south-west, crystal terraces east, the high spires north and the throne at the top.", "good");
+    say(at === SPAWN ? "The Abyssal Spires. Causeways south-west, crystal terraces east, the high spires north and the throne at the top."
+      : "Back at your Mist Well. Stand at a lit Well a moment to go home.", "good");
   };
   Sp.leave = function () {
     const sp = G.spires, p = G.player;
@@ -259,6 +263,158 @@
     else { const q = BRIDGES[b]; w = q[4] * 2 + 12; ang = Math.atan2(q[3] - q[1], q[2] - q[0]) + Math.PI / 2; }
     (GATES[a] = GATES[a] || []).push({ x: j[2], y: j[3], w, ang });
   }
+  /* ---------------- the Hollow Mist (step 4) ----------------
+     Thick violet mist sits round each Mist Well and the way in to it. It hides what's inside (foes, bullets, the floor),
+     corruption builds while you stand in it (your lantern halves that), and it hides you too: foes farther than
+     DL.SPIRES.mist.see lose you (mist-walking), and your first blow on a foe from inside it lands harder.
+     Aether Crystals grow only in the mist: walk into one to take it, then burn it (the torch button) for a bubble of
+     light round you that clears the mist and the corruption for a while. Light a patch's Mist Well and it clears for
+     good: its room stays won, and the Well becomes a checkpoint (the next visit starts there, and standing at it a
+     moment after walking away takes you home). Lit Wells are saved (G.save.spiresWells). */
+  // x, y, rx, ry (an ellipse, local), the Well that clears it
+  const MIST = [
+    { x: -1830, y: 1010, rx: 430, ry: 250, well: 0 }, // the far causeway and the bridge down to it
+    { x: 1990, y: -320, rx: 360, ry: 250, well: 1 }, // the far crystal terrace
+    { x: -850, y: -1170, rx: 340, ry: 230, well: 2 }, // the west wing of the high spires
+    { x: 870, y: -1200, rx: 340, ry: 240, well: 3 }, // the east wing
+    { x: -1990, y: 520, rx: 300, ry: 250, well: 4 }, // the second causeway
+  ];
+  // Aether Crystals: where they grow (local), in the mist
+  const AETHER = [[-2080, 1100], [-1560, 1080], [-1940, 820], [2200, -420], [1950, -180], [-1040, -1260], [-760, -1050],
+    [1030, -1300], [760, -1100], [-2120, 400], [-1860, 640]];
+  Sp.MIST = MIST;
+  const wellsSave = () => (G.save.spiresWells = G.save.spiresWells || {});
+  // the room a Well stands in
+  const WELL_ROOM = WELLS.map(([x, y]) => Object.keys(ROOMS).find((k) => inRect(x, y, FLOORS[k], 0)) || null);
+  // in a patch of unlit mist (local px; k < 1 is how far in: 0.85 = the thick of it)
+  function mistAt(lx, ly, k = 0.85) {
+    const sp = G.spires;
+    if (!sp) return null;
+    for (const m of MIST) if (!sp.lit[m.well] && ((lx - m.x) / m.rx) ** 2 + ((ly - m.y) / m.ry) ** 2 < k * k) return m;
+    return null;
+  }
+  // the bubbles of light that clear the mist: a burning Aether Crystal, torches
+  function bubbles() {
+    const sp = G.spires, out = [];
+    if (!sp) return out;
+    for (const b of sp.bubbles) out.push({ x: b.follow ? G.player.x : b.x, y: b.follow ? G.player.y : b.y, r: b.r * Math.min(1, b.t / 1.5, (b.max - b.t + 0.3) / 0.6) });
+    for (const t of G.torches) if (Sp.inRegion(t.x, t.y)) out.push({ x: t.x, y: t.y, r: DL.SPIRES.mist.torch });
+    return out;
+  }
+  const lit = (x, y) => bubbles().some((b) => Math.hypot(x - b.x, y - b.y) < b.r * 0.85);
+  // standing in thick mist, no light round you
+  Sp.misty = (x, y) => !!G.spires && !!mistAt(x - OX, y - OY) && !lit(x, y);
+  // the knight is lost to this foe: they're in the mist and it's not close
+  Sp.hidden = (p, e) => !!G.spires && Sp.misty(p.x, p.y) && Math.hypot(p.x - e.x, p.y - e.y) > DL.SPIRES.mist.see;
+  // corruption per second in the Spires (0 out of the mist): updateCorruption in game.js
+  Sp.corruption = (p) => (Sp.misty(p.x, p.y) ? DL.SPIRES.mist.corrupt : 0);
+  // burn a carried Aether Crystal (the torch button in the Spires): false if none
+  Sp.burn = function () {
+    const sp = G.spires, M = DL.SPIRES.mist;
+    if (!sp || !sp.aether) return false;
+    sp.aether--;
+    sp.bubbles.push({ follow: true, r: M.bubble, t: M.burn, max: M.burn });
+    for (let i = 0; i < 20; i++) G.puff(G.player.x + DL.rand(-20, 20), G.player.y - DL.rand(0, 50), "rgba(230,200,255,0.8)", 90, 0.9);
+    DL.Sound.play("torch");
+    say(`The Aether Crystal burns: the mist draws back from you.${sp.aether ? ` (${sp.aether} left)` : ""}`, "good");
+    return true;
+  };
+  function mistUpdate(sp, p, dt) {
+    for (const b of sp.bubbles) b.t -= dt;
+    sp.bubbles = sp.bubbles.filter((b) => b.t > 0);
+    const lx = p.x - OX, ly = p.y - OY;
+    AETHER.forEach(([x, y], i) => {
+      if (sp.took[i] || !mistAt(x, y, 1) || Math.hypot(lx - x, ly - y) > 26) return;
+      sp.took[i] = true; sp.aether++;
+      for (let k = 0; k < 14; k++) G.puff(OX + x + DL.rand(-10, 10), OY + y - DL.rand(0, 30), "rgba(220,170,255,0.9)", 70, 0.7);
+      DL.Sound.play("chime");
+      say(`An Aether Crystal (${sp.aether}). Burn it with the torch button for light in the mist.`, "good");
+    });
+    const m = mistAt(lx, ly);
+    if (m && !sp.warned) { sp.warned = true; say("Thick mist: it hides you, and them. Corruption builds in here.", "danger"); }
+    // a lit Well, walked away from and come back to: stand at it a moment to go home
+    WELLS.forEach(([x, y], i) => {
+      if (!sp.lit[i]) return;
+      const d = Math.hypot(lx - x, ly - y - 50);
+      if (d > 140) sp.away[i] = true;
+      if (sp.away[i] && d < 46 && !sp.seal) {
+        sp.homeT = (sp.homeT || 0) + dt;
+        if (sp.homeT > DL.SPIRES.mist.home) { sp.homeT = 0; Sp.leave(); }
+      } else if (d < 46) sp.homeT = 0;
+    });
+  }
+  let fog = null; // one small canvas, reused for every patch
+  function drawFog(c, view, t) {
+    const sp = G.spires;
+    if (!sp) return;
+    const p = G.player, holes = bubbles(), K = 0.25; // a quarter-size canvas, scaled up: soft and cheap
+    if (p && Sp.inRegion(p.x, p.y)) holes.push({ x: p.x, y: p.y - 20, r: p.oil > 0 ? DL.SPIRES.mist.lantern : DL.SPIRES.mist.lantern * 0.6 });
+    for (const m of MIST) {
+      const k = sp.lit[m.well] ? Math.max(0, 1 - (G.t - (sp.litT[m.well] || -9)) / 2.5) : 1; // a lit Well's mist fades away
+      if (k <= 0) continue;
+      const x0 = OX + m.x - m.rx * 1.15, y0 = OY + m.y - m.ry * 1.15, w = m.rx * 2.3, h = m.ry * 2.3;
+      if (x0 > view.right || x0 + w < view.left || y0 > view.bottom || y0 + h < view.top) continue;
+      const fw = Math.ceil(w * K), fh = Math.ceil(h * K);
+      if (!fog) fog = document.createElement("canvas");
+      if (fog.width < fw || fog.height < fh) { fog.width = Math.max(fog.width, fw); fog.height = Math.max(fog.height, fh); }
+      const g = fog.getContext("2d");
+      g.globalCompositeOperation = "source-over";
+      g.clearRect(0, 0, fog.width, fog.height);
+      g.save(); g.scale(K, K); g.translate(-x0, -y0);
+      // the body of the mist: thick in the middle, thinning to its rim
+      g.save(); g.translate(OX + m.x, OY + m.y); g.scale(1, m.ry / m.rx);
+      const gr = g.createRadialGradient(0, 0, 0, 0, 0, m.rx * 1.15);
+      gr.addColorStop(0, "rgba(58,34,92,0.97)"); gr.addColorStop(0.62, "rgba(66,40,104,0.95)"); gr.addColorStop(0.86, "rgba(80,52,124,0.55)"); gr.addColorStop(1, "rgba(90,60,140,0)");
+      g.fillStyle = gr; g.beginPath(); g.arc(0, 0, m.rx * 1.15, 0, Math.PI * 2); g.fill();
+      g.restore();
+      // slow swirls of lighter mist in it
+      g.fillStyle = "rgba(150,120,200,0.10)";
+      for (let i = 0; i < 9; i++) {
+        const a = t * 0.12 + i * 2.1, rr = 0.55 + 0.3 * Math.sin(i * 1.7 + t * 0.2);
+        g.beginPath(); g.ellipse(OX + m.x + Math.cos(a) * m.rx * rr, OY + m.y + Math.sin(a * 1.3) * m.ry * rr, m.rx * 0.32, m.ry * 0.22, 0, 0, Math.PI * 2); g.fill();
+      }
+      // light cuts holes in it
+      g.globalCompositeOperation = "destination-out";
+      for (const b of holes) {
+        if (b.x + b.r < x0 || b.x - b.r > x0 + w || b.y + b.r < y0 || b.y - b.r > y0 + h) continue;
+        const hg = g.createRadialGradient(b.x, b.y, b.r * 0.35, b.x, b.y, b.r);
+        hg.addColorStop(0, "rgba(0,0,0,1)"); hg.addColorStop(1, "rgba(0,0,0,0)");
+        g.fillStyle = hg; g.beginPath(); g.arc(b.x, b.y, b.r, 0, Math.PI * 2); g.fill();
+      }
+      g.restore();
+      const sm = c.imageSmoothingEnabled;
+      c.imageSmoothingEnabled = true; // soft, not blocky: it's mist, not pixel art
+      c.globalAlpha = k;
+      c.drawImage(fog, 0, 0, fw, fh, x0, y0, w, h);
+      c.globalAlpha = 1;
+      c.imageSmoothingEnabled = sm;
+    }
+  }
+  // the Aether Crystals not yet taken, glowing through the mist (they're how you find your way in it)
+  function drawAether(c, t, view) {
+    const sp = G.spires;
+    if (!sp) return;
+    AETHER.forEach(([lx, ly], i) => {
+      const x = OX + lx, y = OY + ly;
+      if (sp.took[i] || !mistAt(lx, ly, 1) || x < view.left - 40 || x > view.right + 40 || y < view.top - 60 || y > view.bottom + 20) return;
+      const pulse = 0.75 + 0.25 * Math.sin(t * 3 + i), im = IMG["crystal-3"];
+      c.globalCompositeOperation = "lighter";
+      c.globalAlpha = 0.7 * pulse; c.drawImage(art.glow, x - 34, y - 46, 68, 68);
+      c.globalAlpha = 1;
+      c.globalCompositeOperation = "source-over";
+      if (im) { const w = im.width * 0.28, h = im.height * 0.28; c.drawImage(im, x - w / 2, y - h + 2, w, h); }
+      else c.drawImage(art.crystals[2], x - 10, y - 26, 20, 26);
+      c.globalCompositeOperation = "lighter";
+      c.globalAlpha = 0.5 * pulse; c.drawImage(art.glow, x - 14, y - 26, 28, 28);
+      c.globalAlpha = 1;
+    });
+    // a burning crystal: a ring of violet light round the knight
+    for (const b of bubbles().slice(0, sp.bubbles.length)) {
+      c.globalAlpha = 0.25; c.drawImage(art.glow, b.x - b.r * 0.6, b.y - 20 - b.r * 0.6, b.r * 1.2, b.r * 1.2);
+    }
+    c.globalAlpha = 1;
+  }
+
   // a room's foes still standing
   const foesOf = (id) => G.enemies.filter((e) => e.room === id && !e.removed && e.hp > 0);
   // a free spot on the floor, away from the knight
@@ -319,14 +475,15 @@
       DL.Sound.play("chime");
       return;
     }
-    sp.lit = sp.lit || {};
     WELLS.forEach(([x, y], i) => {
       if (sp.lit[i] || Math.hypot(lx - x, ly - y - 30) > 70) return;
-      sp.lit[i] = true;
+      sp.lit[i] = true; sp.litT[i] = G.t;
+      const sv = wellsSave(); sv[i] = true; sv.at = i; G.persist();
       for (let k = 0; k < 24; k++) G.puff(OX + x + DL.rand(-30, 30), OY + y - DL.rand(0, 90), "rgba(230,200,255,0.8)", 80, 0.9);
       DL.Sound.play("chime");
-      say("The Mist Well wakes. (Test room: lighting it does nothing yet.)", "good");
+      say("The Mist Well wakes and the mist round it clears for good. It's your checkpoint now.", "good");
     });
+    mistUpdate(sp, p, dt);
     if ((atW || atE) && !sp.inPortal) {
       const to = atW ? RING_E : ARCH_W;
       p.x = OX + to.x; p.y = OY + to.y + 44; p.spx = p.x; p.spy = p.y; p.dashT = 0; p.kx = p.ky = 0; p.angle = Math.PI / 2;
@@ -345,6 +502,7 @@
     // the rune circle's heart wakes every cleared room again (a test room)
     if (!sp.seal && Object.keys(sp.cleared).length && Math.hypot(lx - RUNE.x, (ly - RUNE.y) / RUNE.sq) < 34) {
       sp.cleared = {}; sp.flare = 1;
+      WELL_ROOM.forEach((r, i) => { if (r && sp.lit[i]) sp.cleared[r] = true; }); // a lit Well keeps its room won
       G.camera.shake = 6;
       DL.Sound.play("whisper");
       say("The runes flare. Every room stirs again.", "danger");
@@ -1026,6 +1184,11 @@
   // Above the darkness: crystal and portal glows, the rune ring's bloom, rising motes, a breath of mist.
   Sp.drawGlow = function (c, t, view) {
     if (!sees(view) || !art) return;
+    const mode = c.globalCompositeOperation;
+    c.globalCompositeOperation = "source-over";
+    drawFog(c, view, t); // the Hollow Mist over everything in it
+    drawAether(c, t, view);
+    c.globalCompositeOperation = mode;
     const glow = (x, y, r, a) => { c.globalAlpha = a; c.drawImage(art.glow, x - r, y - r, r * 2, r * 2); };
     for (const q of PROPS) {
       const x = OX + q[1], y = OY + q[2];

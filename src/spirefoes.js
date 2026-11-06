@@ -22,6 +22,7 @@
     if (!k) return false;
     e.state = "move";
     if (DL.Kits.frozen(e)) { e.moving = false; return true; } // frozen solid: it holds still
+    if (!e.act && DL.Spires.hidden(p, e)) { prowl(e, dt); return true; } // lost you in the mist: it prowls
     if (k === "leaper") leaper(e, dt, p, dp); else bowman(e, dt, p, dp);
     return true;
   };
@@ -35,6 +36,15 @@
     e.x += mx * spd * dt; e.y += my * spd * dt;
     e.angle = want === 0 ? Math.atan2(dy, dx) : Math.atan2(my, mx);
     e.moving = true;
+  }
+
+  // lost in the mist: wander slowly, and start fresh when it finds you again
+  function prowl(e, dt) {
+    e.pose = null;
+    e.wanderA = (e.wanderA == null ? rand(0, TAU) : e.wanderA) + rand(-2, 2) * dt;
+    e.x += Math.cos(e.wanderA) * e.speed * 0.35 * dt; e.y += Math.sin(e.wanderA) * e.speed * 0.35 * dt;
+    e.angle = e.wanderA; e.moving = true;
+    e.next = Math.max(e.next || 0, 0.8);
   }
 
   /* ---------------- the Chain Leaper ---------------- */
