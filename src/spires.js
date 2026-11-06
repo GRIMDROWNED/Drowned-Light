@@ -31,26 +31,63 @@
     east: [520, -760, 860, -480, 3],
     terrace: [470, 40, 800, 300, 1],
     south: [-820, 420, -540, 640, 0],
+    // Lower Causeways (south-west, low and wide)
+    cw1: [-1500, 420, -1120, 660, 0],
+    cw2: [-2200, 340, -1780, 700, 0],
+    cw3: [-2150, 940, -1500, 1180, 0],
+    // Crystal Terraces (east)
+    ct1: [1100, -20, 1560, 330, 1],
+    ct2: [1060, -560, 1700, -230, 2],
+    ct3: [1900, -500, 2260, -140, 2],
+    // High Spires (north)
+    north: [-260, -760, 260, -520, 3],
+    high: [-460, -1460, 460, -1000, 4],
+    hw: [-1100, -1300, -700, -1020, 4],
+    he: [700, -1340, 1100, -1060, 4],
+    // the Rift Throne's round arena at the top (oval: the box is its bounds)
+    arena: [-560, -2420, 560, -1580, 5, "oval"],
   };
   // stairs rising one level going north: x0, y0 (top), x1, y1 (foot), level at the foot
   const STAIRS = {
     s1: [-55, -212, 55, 2, 1],
     s2: [-715, -452, -615, -288, 2],
     s3: [605, -492, 715, -288, 2],
+    s4: [1280, -242, 1390, -8, 1],
+    s5: [-50, -532, 50, -288, 2],
+    s6: [-55, -1012, 55, -748, 3],
+    s7: [-60, -1592, 60, -1448, 4],
   };
   // rope bridges: x1, y1, x2, y2, half width
   const BRIDGES = {
     b1: [195, 175, 485, 150, 26],
     b2: [-195, 250, -560, 470, 26],
+    b3: [-820, 540, -1120, 540, 26],
+    b4: [-1500, 540, -1780, 520, 26],
+    b5: [-1990, 700, -1900, 940, 26],
+    b6: [800, 170, 1100, 160, 26],
+    b7: [1700, -320, 1900, -320, 26],
+    b8: [-460, -1160, -700, -1160, 26],
+    b9: [460, -1200, 700, -1200, 26],
   };
   // where two pieces meet: [a, b, x, y] (the Drowned route through these)
   const JOINS = [
     ["plaza", "s1", 0, -4], ["s1", "walk", 0, -206], ["walk", "s2", -665, -294], ["s2", "west", -665, -446],
     ["walk", "s3", 660, -294], ["s3", "east", 660, -486], ["plaza", "b1", 203, 173], ["b1", "terrace", 478, 151],
     ["plaza", "b2", -203, 252], ["b2", "south", -552, 465],
+    ["south", "b3", -812, 540], ["b3", "cw1", -1112, 540], ["cw1", "b4", -1492, 540], ["b4", "cw2", -1772, 521],
+    ["cw2", "b5", -1988, 692], ["b5", "cw3", -1902, 932],
+    ["terrace", "b6", 792, 170], ["b6", "ct1", 1108, 160], ["ct1", "s4", 1335, -12], ["s4", "ct2", 1335, -238],
+    ["ct2", "b7", 1692, -320], ["b7", "ct3", 1908, -320],
+    ["walk", "s5", 0, -292], ["s5", "north", 0, -528], ["north", "s6", 0, -752], ["s6", "high", 0, -1008],
+    ["high", "b8", -452, -1160], ["b8", "hw", -708, -1160], ["high", "b9", 452, -1200], ["b9", "he", 708, -1200],
+    ["high", "s7", 0, -1452], ["s7", "arena", 0, -1586],
   ];
   const RUNE = { x: 0, y: 160, r: 150, sq: 0.78 }; // the rune circle on the plaza (squashed by sq: it lies on the floor)
   const ARCH_W = { x: -730, y: -640 }, RING_E = { x: 690, y: -700 }, ARCH_S = { x: -680, y: 455 };
+  const ARCH_T = { x: -330, y: -1700 }; // in the throne arena: straight back to the rune hub
+  const THRONE = { x: 0, y: -2300 };
+  // Mist Wells: dark until a knight stands at one, then lit (a landmark per district for now; step 4 gives them their job)
+  const WELLS = [[-1820, 1090], [2080, -260], [-900, -1110], [900, -1150], [-1990, 450]];
   // things that stand up: drawn y-sorted with the knights. kind, x, y, (size)
   const PROPS = [
     ["arch", ARCH_W.x, ARCH_W.y, 1], ["ring", RING_E.x, RING_E.y], ["arch", ARCH_S.x, ARCH_S.y, 0.8],
@@ -59,7 +96,21 @@
     ["post", -880, -458], ["post", -580, -458], ["post", 540, -500], ["post", 840, -500],
     ["crystal", 742, 262, 1.5, 0], ["crystal", 700, 276, 0.8, 2], ["crystal", 770, 232, 0.9, 1],
     ["crystal", -870, -680, 1, 1], ["crystal", 840, -740, 1.1, 0], ["crystal", -800, 622, 1.1, 2], ["crystal", -566, 628, 0.8, 0],
-    ["crystal", 500, 60, 0.7, 1], ["crystal", -60, -280, 0.7, 2], ["crystal", 300, -228, 0.6, 0],
+    ["crystal", 500, 60, 0.7, 1], ["crystal", -130, -280, 0.7, 2], ["crystal", 300, -228, 0.6, 0],
+    ["arch", ARCH_T.x, ARCH_T.y, 0.8], ["throne", THRONE.x, THRONE.y],
+    ...WELLS.map(([x, y], i) => ["well", x, y, i]),
+    // causeways
+    ["post", -1480, 438], ["post", -1140, 438], ["post", -2180, 358], ["post", -1800, 358], ["banner", -1520, 1150],
+    ["crystal", -2120, 680, 1.2, 0], ["crystal", -1560, 1160, 1, 1], ["crystal", -2130, 960, 0.8, 2], ["crystal", -1150, 640, 0.7, 1],
+    // terraces: crystals everywhere
+    ["crystal", 1130, 300, 1.3, 0], ["crystal", 1530, 10, 1, 2], ["crystal", 1090, -540, 1.1, 1], ["crystal", 1680, -250, 0.9, 0],
+    ["crystal", 2230, -480, 1.4, 0], ["crystal", 1930, -160, 1, 2], ["crystal", 1500, 300, 0.8, 1], ["post", 1080, -248], ["post", 1680, -248],
+    // high spires: a row of spires
+    ["spire", -440, -1018], ["spire", -220, -1018], ["spire", 220, -1018], ["spire", 440, -1018],
+    ["spire", -240, -538], ["spire", 240, -538], ["post", -1080, -1040], ["post", -720, -1040], ["post", 720, -1080], ["post", 1080, -1080],
+    ["crystal", -1080, -1280, 1.1, 0], ["crystal", 1080, -1320, 1.1, 0],
+    // the arena: crystals round its rim
+    ["crystal", -470, -2000, 1.2, 0], ["crystal", 470, -2000, 1.2, 0], ["crystal", -330, -2290, 1, 1], ["crystal", 330, -2290, 1, 1],
   ];
   // solid circles: x, y, r
   const SOLIDS = [
@@ -67,20 +118,29 @@
     [ARCH_S.x - 48, ARCH_S.y, 15], [ARCH_S.x + 48, ARCH_S.y, 15],
     [-188, 8, 11], [188, 8, 11], [-188, 312, 11], [188, 312, 11], [-880, -458, 11], [-580, -458, 11], [540, -500, 11], [840, -500, 11],
     [-480, -292, 11], [-240, -292, 11], [240, -292, 11], [480, -292, 11], [742, 262, 22], [-870, -680, 12], [840, -740, 12], [-800, 622, 12],
+    [ARCH_T.x - 48, ARCH_T.y, 15], [ARCH_T.x + 48, ARCH_T.y, 15], [THRONE.x, THRONE.y - 20, 80], ...WELLS.map(([x, y]) => [x, y - 10, 40]),
+    [-440, -1018, 11], [-220, -1018, 11], [220, -1018, 11], [440, -1018, 11], [-240, -538, 11], [240, -538, 11],
+    [1130, 300, 16], [2230, -480, 16], [-2120, 680, 14],
   ];
   // stone columns standing up out of the mist (not walkable): x, y, width, level
   const PILLARS = [
     [-420, -80, 64, 1], [330, -100, 56, 1], [-400, 560, 76, 0], [300, 540, 64, 1], [1000, -220, 84, 2], [980, 430, 70, 1],
     [-1060, -160, 76, 2], [-60, 700, 60, 0], [640, 650, 80, 0], [-300, -640, 58, 3], [170, -650, 66, 3], [-1080, 360, 66, 1],
     [1060, -660, 56, 3], [-1080, -700, 56, 3], [1100, 120, 50, 1], [-200, 470, 44, 0], [420, -560, 48, 3],
-  ];
+    [-1300, 900, 70, 0], [-2400, 800, 60, 0], [-1000, 1150, 64, 0], [-2500, 200, 70, 1], [1300, 600, 70, 0], [1900, 300, 66, 1],
+    [2400, -800, 60, 2], [1500, -900, 70, 3], [-1500, -600, 70, 2], [-1500, -1500, 66, 4], [1400, -1600, 70, 4], [-900, -1900, 76, 4],
+    [900, -1950, 76, 4], [-800, -2500, 60, 5], [800, -2450, 60, 5], [0, -2600, 70, 5], [-2000, -200, 60, 1], [2500, 0, 56, 1],
+  ].filter((q) => !Object.values(FLOORS).some((f) => q[0] + q[2] > f[0] - 30 && q[0] - q[2] < f[2] + 30 && q[1] + q[2] > f[1] - 30 && q[1] - q[2] < f[3] + 260));
   const FALL = { x0: 690, x1: 760, y: 300, len: 300 }; // the stream of violet light pouring off the terrace
   const SPAWN = { x: 0, y: 290 };
 
   /* ---------------- where you can stand ---------------- */
   Sp.inRegion = (x, y) => Math.abs(x - OX) < S.halfW && Math.abs(y - OY) < S.halfH;
   Sp.active = () => !!G.spires;
-  const inRect = (x, y, q, m) => x > q[0] + m && x < q[2] - m && y > q[1] + m && y < q[3] - m;
+  const inRect = (x, y, q, m) => {
+    if (q[5] === "oval") { const rx = (q[2] - q[0]) / 2 - m, ry = (q[3] - q[1]) / 2 - m; return ((x - q[0] - rx - m) / rx) ** 2 + ((y - q[1] - ry - m) / ry) ** 2 < 1; }
+    return x > q[0] + m && x < q[2] - m && y > q[1] + m && y < q[3] - m;
+  };
   const inStair = (x, y, q, m) => x > q[0] + m && x < q[2] - m && y > q[1] && y < q[3];
   function segD(x, y, q) {
     const vx = q[2] - q[0], vy = q[3] - q[1], u = Math.max(0, Math.min(1, ((x - q[0]) * vx + (y - q[1]) * vy) / (vx * vx + vy * vy)));
@@ -145,7 +205,7 @@
     for (const f of followers()) { f.x = p.x + DL.rand(-30, 30); f.y = p.y + DL.rand(-10, 20); f.spx = null; }
     G.camera.x = p.x; G.camera.y = p.y - 20;
     sentinels();
-    say("The Abyssal Spires. Cross the arches to travel; stand on the rune circle to wake the Drowned.", "good");
+    say("The Abyssal Spires. Causeways south-west, crystal terraces east, the high spires north and the throne at the top.", "good");
   };
   Sp.leave = function () {
     const sp = G.spires, p = G.player;
@@ -164,7 +224,9 @@
   };
 
   // Spire Sentinels (crystal turrets, src/bullets.js): one on the terrace, one in the walkway; brought back if broken.
-  const SENTINELS = [[640, 150, 0], [-300, -250, 0.7]]; // x, y, heat: a gentle one on the terrace, a dense one in the walkway
+  // x, y, heat: gentle by the hub, denser the farther in (Robert, 2026-11-05)
+  const SENTINELS = [[640, 150, 0], [-300, -250, 0.3], [-1990, 520, 0.2], [-1820, 1060, 0.35], [1330, 130, 0.3], [1380, -400, 0.5],
+    [2080, -360, 0.6], [-300, -1240, 0.7], [300, -1240, 0.7], [-900, -1200, 0.8], [900, -1240, 0.8], [-300, -2000, 1], [300, -2000, 1]];
   function sentinels() {
     for (const [x, y, heat] of SENTINELS) {
       if (G.enemies.some((e) => e.def.sentinel && !e.removed && Math.hypot(e.x - OX - x, e.y - OY - y) < 40)) continue;
@@ -180,9 +242,24 @@
     if (!Sp.inRegion(p.x, p.y)) { G.spires = null; return; }
     sp.flare = Math.max(0, sp.flare - dt * 0.5);
     const lx = p.x - OX, ly = p.y - OY;
-    const atW = Math.abs(lx - ARCH_W.x) < 36 && ly < ARCH_W.y - 4, atE = Math.abs(lx - RING_E.x) < 44 && ly < RING_E.y - 4;
-    const atS = Math.abs(lx - ARCH_S.x) < 30 && ly < ARCH_S.y - 4;
+    const atW = Math.abs(lx - ARCH_W.x) < 36 && ly < ARCH_W.y - 4 && ly > ARCH_W.y - 40, atE = Math.abs(lx - RING_E.x) < 44 && ly < RING_E.y - 4 && ly > RING_E.y - 40;
+    const atS = Math.abs(lx - ARCH_S.x) < 30 && ly < ARCH_S.y - 4 && ly > ARCH_S.y - 40;
     if (atS) { Sp.leave(); return; }
+    if (Math.abs(lx - ARCH_T.x) < 30 && ly < ARCH_T.y - 4 && ly > ARCH_T.y - 40) { // the arena's arch: back to the hub
+      p.x = OX + SPAWN.x; p.y = OY + SPAWN.y; p.spx = p.x; p.spy = p.y; p.dashT = 0; p.kx = p.ky = 0;
+      G.camera.x = p.x; G.camera.y = p.y - 20;
+      for (let i = 0; i < 18; i++) G.puff(p.x + DL.rand(-16, 16), p.y - DL.rand(0, 50), "rgba(200,150,255,0.7)", 70, 0.8);
+      DL.Sound.play("chime");
+      return;
+    }
+    sp.lit = sp.lit || {};
+    WELLS.forEach(([x, y], i) => {
+      if (sp.lit[i] || Math.hypot(lx - x, ly - y - 30) > 70) return;
+      sp.lit[i] = true;
+      for (let k = 0; k < 24; k++) G.puff(OX + x + DL.rand(-30, 30), OY + y - DL.rand(0, 90), "rgba(230,200,255,0.8)", 80, 0.9);
+      DL.Sound.play("chime");
+      say("The Mist Well wakes. (Test room: lighting it does nothing yet.)", "good");
+    });
     if ((atW || atE) && !sp.inPortal) {
       const to = atW ? RING_E : ARCH_W;
       p.x = OX + to.x; p.y = OY + to.y + 44; p.spx = p.x; p.spy = p.y; p.dashT = 0; p.kx = p.ky = 0; p.angle = Math.PI / 2;
@@ -227,12 +304,13 @@
     cryO: "#1d0f33", cryD: "#5a2ea8", cryM: "#9558e6", cryL: "#d6b4ff", cryH: "#f6ecff",
   };
   const GLOW = "190,130,255";
-  const BX0 = -1200, BY0 = -860, BX1 = 1200, BY1 = 980; // the painted canvas's extent (local)
-  let base = null, art = null;
+  const BX0 = -2600, BY0 = -2800, BX1 = 2600, BY1 = 1500; // the painted extent (local)
+  const CH = 1024; // painted in square chunks, made as they come into view and dropped far away (phones)
+  let chunks = new Map(), art = null;
 
   // Robert's drawn pieces (tools/cut_spires.py, 2 file px per world px). They load when the room is first drawn;
   // until then (and in the node tests) the coded stone shows, and when the last one lands the room repaints.
-  const ART_N = ["floor-2", "floor-3", "floor-4", "kerb", "face-1-band", "face-1-foot", "face-2-band", "face-2-foot", "stairs",
+  const ART_N = ["arena", "throne", "well-dark", "well-lit", "floor-2", "floor-3", "floor-4", "kerb", "face-1-band", "face-1-foot", "face-2-band", "face-2-foot", "stairs",
     "bridge", "bridge-post", "post", "spire", "arch", "ring", "exit-banner", "crystal-1", "crystal-2", "crystal-3",
     "column-1", "column-1b", "column-2", "column-3", "rune-circle", "rune-glow"];
   const IMG = {};
@@ -241,7 +319,7 @@
     if (loading || typeof Image === "undefined") return;
     loading = true;
     let left = ART_N.length;
-    const done = () => { if (--left === 0) base = null; };
+    const done = () => { if (--left === 0) chunks = new Map(); };
     for (const n of ART_N) {
       const im = new Image();
       im.onload = () => { IMG[n] = im; done(); };
@@ -637,31 +715,64 @@
     return c;
   }
 
-  function paint() {
-    const r = rng(1234), c = mk(BX1 - BX0, BY1 - BY0), g = c.getContext("2d");
-    g.translate(-BX0, -BY0);
-    // every slab back to front by its south edge: its hanging face, then its top
-    const gaps = JOINS.map((j) => [j[2], j[3]]);
-    const slabs = [];
-    for (const k in FLOORS) slabs.push({ y: FLOORS[k][3], f: () => { const q = FLOORS[k]; face(g, q[0], q[2], q[3], S.hang + q[4] * LH, r, Math.round((q[2] - q[0]) / 160), k === "plaza" || k === "west" || k === "east" ? 2 : 1); top(g, q[0], q[1], q[2], q[3], r, gaps); if (k === "plaza") runeFloor(g, r); } });
-    for (const k in STAIRS) slabs.push({ y: STAIRS[k][3] - 0.5, f: () => { const q = STAIRS[k]; face(g, q[0] - 3, q[2] + 3, q[3], S.hang + q[4] * LH, r, 0); stairs(g, q, r); } });
+  // Every slab (with the box it paints into), back to front by its south edge, then the bridges on top.
+  let SLABS = null;
+  function slabs() {
+    if (SLABS) return SLABS;
+    const gaps = JOINS.map((j) => [j[2], j[3]]), L = [];
+    let n = 0;
+    const add = (y, box, f) => { const seed = 1234 + 7919 * n++; L.push({ y, box, f: (g) => f(g, rng(seed)) }); };
+    for (const k in FLOORS) {
+      const q = FLOORS[k], fh = S.hang + q[4] * LH + 120;
+      if (q[5] === "oval") { add(q[3], [q[0], q[1], q[2], q[3] + fh], (g, r) => oval(g, q, r)); continue; }
+      add(q[3], [q[0] - 4, q[1] - 30, q[2] + 4, q[3] + fh], (g, r) => {
+        face(g, q[0], q[2], q[3], S.hang + q[4] * LH, r, Math.round((q[2] - q[0]) / 160), k === "plaza" || k === "west" || k === "east" || k === "high" || k === "ct2" ? 2 : 1);
+        top(g, q[0], q[1], q[2], q[3], r, gaps);
+        if (k === "plaza") runeFloor(g, r);
+      });
+    }
+    for (const k in STAIRS) {
+      const q = STAIRS[k];
+      add(q[3] - 0.5, [q[0] - 60, q[1] - 60, q[2] + 60, q[3] + S.hang + q[4] * LH + 120], (g, r) => { face(g, q[0] - 3, q[2] + 3, q[3], S.hang + q[4] * LH, r, 0); stairs(g, q, r); });
+    }
     const COLS = ["column-1", "column-1b", "column-2", "column-3"];
-    PILLARS.forEach((q, i) => slabs.push({ y: q[1] + q[2] * 0.4, f: () => {
+    PILLARS.forEach((q, i) => add(q[1] + q[2] * 0.4, [q[0] - q[2], q[1] - q[2], q[0] + q[2], q[1] + 800], (g, r) => {
       const im = IMG[COLS[i % 4]];
       if (im) { const w = q[2] * 1.3, h = (w * im.height) / im.width; g.drawImage(im, q[0] - w / 2, q[1] - w * 0.35, w, h); return; }
       const w = q[2], d = w * 0.8;
       face(g, q[0] - w / 2, q[0] + w / 2, q[1] + d / 2, S.hang + 30 + q[3] * LH, r, 1);
       top(g, q[0] - w / 2, q[1] - d / 2, q[0] + w / 2, q[1] + d / 2, r, []);
-    } }));
-    slabs.sort((a, b) => a.y - b.y);
-    for (const s of slabs) s.f();
-    for (const k in BRIDGES) bridge(g, BRIDGES[k], r);
+    }));
+    L.sort((a, b) => a.y - b.y);
+    for (const k in BRIDGES) {
+      const q = BRIDGES[k], pad = 60;
+      add(1e9, [Math.min(q[0], q[2]) - pad, Math.min(q[1], q[3]) - pad, Math.max(q[0], q[2]) + pad, Math.max(q[1], q[3]) + pad], (g, r) => bridge(g, q, r));
+    }
+    return (SLABS = L);
+  }
+  // the round arena: its hanging wall swept down from the lower rim, then Robert's drawn floor (or a coded one)
+  function oval(g, q, r) {
+    const cx = (q[0] + q[2]) / 2, cy = (q[1] + q[3]) / 2, rx = (q[2] - q[0]) / 2, ry = (q[3] - q[1]) / 2, H = S.hang + q[4] * LH;
+    g.save(); g.beginPath();
+    g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI); g.lineTo(cx - rx, cy + H + 80); g.lineTo(cx + rx, cy + H + 80); g.closePath();
+    g.clip(); face(g, q[0], q[2], cy, ry + H, r, 6, 2); g.restore();
+    const im = IMG.arena;
+    if (im) { const h = (2 * rx * im.height) / im.width; g.drawImage(im, q[0], cy - ry * 1.02, 2 * rx, h); return; }
+    g.save(); g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.clip(); top(g, q[0], q[1], q[2], q[3] + 10, r, []); g.restore();
+  }
+  function paintChunk(i, j) {
+    const x0 = BX0 + i * CH, y0 = BY0 + j * CH, c = mk(CH, CH), g = c.getContext("2d");
+    g.translate(-x0, -y0);
+    for (const sl of slabs()) {
+      const b = sl.box;
+      if (b[2] < x0 || b[0] > x0 + CH || b[3] < y0 || b[1] > y0 + CH) continue;
+      sl.f(g);
+    }
     return c;
   }
 
   function build() {
     loadArt();
-    base = paint();
     const r = rng(99);
     art = {
       crystals: [0, 1, 2].map(crystalSprite), arch: archSprite(1), archS: archSprite(0.8), ring: ringSprite(),
@@ -669,9 +780,9 @@
     };
     // mist puffs drifting below the platforms, and far columns in the haze
     const m = rng(4242);
-    art.mist = Array.from({ length: 26 }, () => ({ x: (m() - 0.5) * 2600, y: (m() - 0.5) * 2000, s: 2.5 + m() * 3, v: 6 + m() * 10, a: 0.5 + m() * 0.5 }));
-    art.far = Array.from({ length: 18 }, () => ({ x: (m() - 0.5) * 3000, y: (m() - 0.5) * 2400, w: 30 + m() * 50, h: 120 + m() * 220 }));
-    art.motes = Array.from({ length: 40 }, () => ({ x: (m() - 0.5) * 2400, y: (m() - 0.5) * 1800, p: m() * 10, v: 10 + m() * 18 }));
+    art.mist = Array.from({ length: 70 }, () => ({ x: (m() - 0.5) * 5400, y: (m() - 0.5) * 4400 - 600, s: 2.5 + m() * 3, v: 6 + m() * 10, a: 0.5 + m() * 0.5 }));
+    art.far = Array.from({ length: 50 }, () => ({ x: (m() - 0.5) * 6000, y: (m() - 0.5) * 5200 - 600, w: 30 + m() * 50, h: 120 + m() * 220 }));
+    art.motes = Array.from({ length: 120 }, () => ({ x: (m() - 0.5) * 5000, y: (m() - 0.5) * 4200 - 600, p: m() * 10, v: 10 + m() * 18 }));
   }
 
   /* ---------------- drawing each frame ---------------- */
@@ -681,7 +792,7 @@
   // The mist sea, far columns, then the painted stone; the rune ring and the light-fall glow on top of it.
   Sp.drawGround = function (c, view, t) {
     if (!sees(view)) return;
-    if (!base) build();
+    if (!art) build();
     const vw = view.right - view.left, vh = view.bottom - view.top;
     let gr = c.createLinearGradient(0, view.top, 0, view.bottom);
     gr.addColorStop(0, "#2a1842"); gr.addColorStop(0.55, "#4b2f72"); gr.addColorStop(1, "#33204f");
@@ -698,9 +809,22 @@
     }
     drawMist(c, view, t, 1);
     // the painted stone: only the part on screen
-    const sx = Math.max(0, view.left - OX - BX0), sy = Math.max(0, view.top - OY - BY0);
-    const ex = Math.min(base.width, view.right - OX - BX0 + 1), ey = Math.min(base.height, view.bottom - OY - BY0 + 1);
-    if (ex > sx && ey > sy) c.drawImage(base, sx, sy, ex - sx, ey - sy, OX + BX0 + sx, OY + BY0 + sy, ex - sx, ey - sy);
+    const i0 = Math.max(0, Math.floor((view.left - OX - BX0) / CH)), i1 = Math.min(Math.ceil((BX1 - BX0) / CH) - 1, Math.floor((view.right - OX - BX0) / CH));
+    const j0 = Math.max(0, Math.floor((view.top - OY - BY0) / CH)), j1 = Math.min(Math.ceil((BY1 - BY0) / CH) - 1, Math.floor((view.bottom - OY - BY0) / CH));
+    let made = 0;
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const key = i + "," + j;
+      let ch = chunks.get(key);
+      if (!ch && (made++ < 2 || chunks.size < 4)) { ch = paintChunk(i, j); chunks.set(key, ch); }
+      if (!ch) continue;
+      const x = OX + BX0 + i * CH, y = OY + BY0 + j * CH;
+      const sx = Math.max(0, view.left - x), sy = Math.max(0, view.top - y), ex = Math.min(CH, view.right - x + 1), ey = Math.min(CH, view.bottom - y + 1);
+      if (ex > sx && ey > sy) c.drawImage(ch, sx, sy, ex - sx, ey - sy, x + sx, y + sy, ex - sx, ey - sy);
+    }
+    if (chunks.size > 20) for (const key of [...chunks.keys()]) { // drop chunks far off screen
+      const [i, j] = key.split(",").map(Number);
+      if (i < i0 - 1 || i > i1 + 1 || j < j0 - 1 || j > j1 + 1) chunks.delete(key);
+    }
     // the rune ring, slowly turning, brighter when it wakes the Drowned
     const fl = G.spires ? G.spires.flare : 0;
     c.save();
@@ -727,7 +851,8 @@
 
   function drawMist(c, view, t, k) {
     for (const m of art.mist) {
-      const w = 128 * m.s, x = OX + ((m.x + t * m.v + 1300) % 2600) - 1300 - w / 2, y = OY + m.y - w / 2;
+      const w = 128 * m.s;
+      const x = OX + ((m.x + t * m.v + 2700) % 5400) - 2700 - w / 2, y = OY + m.y - w / 2;
       if (x > view.right || x + w < view.left || y > view.bottom || y + w < view.top) continue;
       c.globalAlpha = m.a * k;
       c.drawImage(art.puff, x, y, w, w);
@@ -746,14 +871,14 @@
   };
   function drawProp(c, q, x, y, t) {
     const kind = q[0];
-    const im = IMG[kind === "crystal" ? "crystal-" + (3 - q[4]) : kind === "banner" ? "exit-banner" : kind];
+    const im = IMG[kind === "crystal" ? "crystal-" + (3 - q[4]) : kind === "banner" ? "exit-banner" : kind === "well" ? (G.spires && G.spires.lit && G.spires.lit[q[3]] ? "well-lit" : "well-dark") : kind];
     if (im && kind !== "arch" && kind !== "ring") { // drawn: stand it on its foot
       const s = (kind === "crystal" ? q[3] : 1) / 2, w = im.width * s, h = im.height * s;
       c.drawImage(im, x - w / 2, y - h + (kind === "crystal" ? 3 : 5), w, h);
     } else if (kind === "crystal") {
       const s = q[3], img = art.crystals[q[4]];
       c.drawImage(img, x - 28 * s, y - 70 * s, 56 * s, 72 * s);
-    } else if (kind === "banner") {
+    } else if (kind === "banner" || kind === "throne" || kind === "well") {
       // coded until the art loads: nothing
     } else if (kind === "arch" && im) {
       const sz = q[3], ws = 0.341 * 0.5 * sz, w = (im.width / 2) * sz, h = (im.height / 2) * sz;
@@ -818,6 +943,8 @@
       else if (q[0] === "spire") glow(x, y - 136, 34, 0.7 * tw);
       else if (q[0] === "arch") glow(x, y - 90 * q[3], 110 * q[3], 0.35 * tw);
       else if (q[0] === "ring") glow(x, y - 124, 140, 0.4 * tw);
+      else if (q[0] === "throne") glow(x, y - 120, 150, 0.4 * tw);
+      else if (q[0] === "well" && G.spires && G.spires.lit && G.spires.lit[q[3]]) glow(x, y - 60, 90, 0.6 * tw);
     }
     for (const q of PILLARS) glow(OX + q[0], OY + q[1] - 14, 24, 0.35);
     const fl = G.spires ? G.spires.flare : 0;
@@ -842,7 +969,7 @@
     const near = (x, y) => Math.abs(x - p.x) < 900 && Math.abs(y - p.y) < 700;
     for (const q of PROPS) {
       const x = OX + q[1], y = OY + q[2];
-      if (!near(x, y) || q[0] === "banner") continue;
+      if (!near(x, y) || q[0] === "banner" || (q[0] === "well" && !(G.spires.lit && G.spires.lit[q[3]]))) continue;
       const big = q[0] === "arch" || q[0] === "ring";
       L.push({ x, y: y - (big ? 90 : 40), r: big ? 170 : q[0] === "crystal" ? 80 * q[3] : 70, s: big ? 0.8 : 0.6, col: GLOW, a: 0.8 });
     }

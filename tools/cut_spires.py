@@ -176,3 +176,11 @@ def frames(cs, H, name):
 
 frames(cells(os.path.join(SEN, 'poses-a.png'), 3, 2), 168, 'sentinel')
 frames(cells(os.path.join(SEN, 'orbit.png'), 6, 1), 168, 'sentinel-orbit')
+
+# the Rift Throne boss's arena floor and throne, and the Mist Wells (dark and lit)
+RB = 'rift-throne-boss'
+for src, name, w in ((S(RB, 'arena.png'), 'arena', 1400), (S(RB, 'throne.png'), 'throne', 330),
+                     (S(sp, 'well-dark.png'), 'well-dark', 260), (S(sp, 'well-lit.png'), 'well-lit', 260)):
+    im = key(load(src))
+    im = im.crop(bbox(im))
+    save(fit(im, w=w)[0], name)
