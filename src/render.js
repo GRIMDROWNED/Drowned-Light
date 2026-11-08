@@ -247,7 +247,7 @@
         if (size > 0.05) list.push({ y, f: () => Art.drawFire(c, x, y, size, t + i) });
       }
     }
-    for (const z of G.lightZones) if (z.fire) list.push({ y: z.y, f: () => Art.drawFire(c, z.x, z.y, 0.7 * Math.min(1, z.t), t + z.x) });
+    for (const z of G.lightZones) if (z.fire) list.push({ y: z.y, f: () => (z.brand && Art.sprites.brandFlame ? drawBrandFire(c, z, t) : Art.drawFire(c, z.x, z.y, 0.7 * Math.min(1, z.t), t + z.x)) });
     for (const k of G.pickups) list.push({ y: k.y, f: () => drawPickup(c, k, t) });
     for (const e of G.enemies) {
       if (e.x < left - 100 || e.x > view.right + 100 || e.y < top - 40 || e.y > view.bottom + 140) continue;
@@ -358,6 +358,8 @@
         c.strokeStyle = `rgba(${f.col},${(1 - k) * 0.9})`;
         c.lineWidth = f.w * (1 - k) + 1;
         c.beginPath(); c.ellipse(f.x, f.y, r, r * 0.7, 0, 0, Math.PI * 2); c.stroke();
+      } else if (f.type.startsWith("brand") && Art.sprites[f.type]) {
+        drawBrandFx(c, f);
       } else if (f.type === "slash") {
         drawSlash(c, f.x, f.y, f.ang, f.arc, f.r, f.t / f.max, f.col, f.w, false);
       } else if (f.type === "golemBeam") {
@@ -464,6 +466,7 @@
     }
     if (p && G.state !== "title") drawKitGlow(c, G, p, t);
     if (p && G.state !== "title" && G.state !== "dead") drawTithe(c, G, p, t);
+    if (p && G.state !== "title" && G.state !== "dead") drawHeat(c, G, p, t);
     if (p && G.state === "play" && G.save.attackMode === "manual") {
       // where a manual strike will go
       const a = p.aim != null ? p.aim : p.angle, r0 = 30, r1 = 40;
@@ -1003,11 +1006,15 @@
   function playerAnim(G, p, t) {
     const key = G.save.kit + p.stage, n = (anim) => Art.animLength(key, anim); // drawn frames (3 for most kits, 8 for the Jade Breaker)
     if (G.state === "dying") return ["death", Math.min(n("death") - 1, Math.floor((G.dying / 1.35) * n("death"))), p.angle];
-    if (p.dashT > 0 || p.tideDash) return ["dash", 0, p.angle];
+    if (p.dashT > 0 || p.tideDash || p.brandDash) return ["dash", 0, p.angle];
+    if (p.brandGuard && Art.sheet(key).down.guard) return ["guard", 0, p.brandGuard.ang]; // the Cinderbrand's planted sword
     if (p.waltz) return [p.moving ? "walk" : "idle", p.moving ? Math.floor(p.animT * stepRate(G.save.kit + p.stage, false)) : 0, t * 13]; // turning on the spot in Rose's Waltz
     if (p.tideCharge && p.tideCharge.t > 0.12) return [castAnim(key), n(castAnim(key)) > 3 ? 2 : 0, p.aim ?? p.angle]; // winding up Jade Tide (the blade raised)
     if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
-    if (p.swing) return ["attack", Math.min(n("attack") - 1, Math.floor((p.swing.t / p.swing.dur) * n("attack"))), p.swing.ang];
+    if (p.swing) {
+      const a = p.swing.anim && Art.sheet(key).down[p.swing.anim] ? p.swing.anim : "attack"; // the Cinderbrand's level slash
+      return [a, Math.min(n(a) - 1, Math.floor((p.swing.t / p.swing.dur) * n(a))), p.swing.ang];
+    }
     if (p.cast) return [castAnim(key), Math.min(n(castAnim(key)) - 1, Math.floor((p.cast.t / p.cast.dur) * n(castAnim(key)))), p.cast.ang];
     if (p.moving) return [moveAnim(G.save.kit + p.stage, p.running), Math.floor(p.animT * stepRate(G.save.kit + p.stage, p.running)), p.angle];
     return ["idle", Math.floor(t * (n("idle") > 1 ? 6 : 1.6)), p.angle]; // a drawn breathing idle plays at 6 frames a second
@@ -1983,6 +1990,51 @@
       h.addColorStop(0, `rgba(235,50,90,${0.1 * f})`); h.addColorStop(1, "rgba(235,50,90,0)");
       c.fillStyle = h; c.fillRect(p.x - 52, p.y - 86, 104, 104);
     }
+  }
+  // The Cinderbrand's Forge Heat: a glow round the blade as it fills, and a bar under him (white-hot when full).
+  function drawHeat(c, G, p, t) {
+    const K = DL.Kits, h = K.heat(p);
+    if (!h || p.held) return;
+    const H = DL.KITS.cinderbrand.passive.heat, f = h / H.max, full = K.heatFull(p);
+    const g = c.createRadialGradient(p.x, p.y - 40, 0, p.x, p.y - 40, 30 + f * 26);
+    g.addColorStop(0, `rgba(255,${full ? 190 : 120},50,${0.08 + f * 0.16 + (full ? Math.sin(t * 10) * 0.04 : 0)})`); g.addColorStop(1, "rgba(255,120,40,0)");
+    c.fillStyle = g; c.fillRect(p.x - 60, p.y - 100, 120, 120);
+    if (!(p.heatHold <= 0 && Math.floor(t * 8) % 2)) bar(c, p.x, p.y + 8, 30, f, full ? "#ffd27a" : "#e8762a");
+  }
+  /* The Cinderbrand's drawn effects (Robert's sheet, 2026-11-08): Brand Thrust's streak reaching out along the lunge,
+     Forgeheart's ring of fire spreading on the ground, the flash of a blocked blow and Riposte's slash, each fading out. */
+  function drawBrandFx(c, f) {
+    const s = Art.sprites[f.type], k = f.t / f.max, fade = Math.min(1, (1 - k) * 2.5);
+    let w = s.w * PS, h = s.h * PS;
+    c.save();
+    c.globalAlpha = fade;
+    c.translate(Math.round(f.x), Math.round(f.y));
+    if (f.type === "brandStreak") {
+      // shot out from his sword to its full length, then fading where it ends
+      const L = f.len * (f.big ? 1.3 : 1) * Math.min(1, k * 4);
+      c.rotate(f.ang);
+      c.drawImage(s.c, 0, -h * (f.big ? 0.8 : 0.5), L, h * (f.big ? 1.6 : 1));
+    } else if (f.type === "brandRing") {
+      const g = 0.35 + 0.65 * Math.sqrt(Math.min(1, k * 2)), rw = f.r * 2 * g, rh = rw * (h / w);
+      c.drawImage(s.c, -rw / 2, -rh * 0.62, rw, rh); // its front edge on the ground at his feet
+    } else {
+      if (f.type === "brandSlash") c.rotate(f.ang);
+      const g = f.type === "brandFlash" ? 0.6 + k * 0.6 : 1;
+      w *= g; h *= g;
+      c.drawImage(s.c, -w / 2, -h / 2, w, h);
+    }
+    c.restore();
+  }
+  // A fire his Brand Thrust left: the charred scorch under a flickering flame that dies down as it burns out.
+  function drawBrandFire(c, z, t) {
+    const sc = Art.sprites.brandScorch, fl = Art.sprites.brandFlame, life = Math.min(1, z.t);
+    c.save();
+    c.globalAlpha = Math.min(1, z.t * 1.5);
+    c.drawImage(sc.c, Math.round(z.x - sc.w * PS / 2), Math.round(z.y - sc.h * PS / 2), sc.w * PS, sc.h * PS);
+    const fk = (0.55 + 0.45 * life) * (0.9 + 0.1 * Math.sin(t * 14 + z.x * 0.3)), w = fl.w * PS * fk, h = fl.h * PS * fk * (0.9 + 0.12 * Math.sin(t * 9 + z.y));
+    c.globalAlpha = Math.min(1, z.t * 2);
+    c.drawImage(fl.c, Math.round(z.x - w / 2), Math.round(z.y + 3 - h), w, h);
+    c.restore();
   }
   function drawTithe(c, G, p, t) {
     const K = DL.Kits, n = K.stacks(p);

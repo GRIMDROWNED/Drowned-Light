@@ -158,6 +158,13 @@ GRIDS = {
     # and his last look, Crowned (30 stacks: form 3): the crowned knight in a white fur mantle, purple cape and lantern (hooded first try in bloodsworn-f3-v1)
     'bloodsworn-f3/poses-a.png': (3, 2, POSES_A),
     'bloodsworn-f3/poses-b.png': (3, 2, POSES_B),
+    # Kit 10, the Cinderbrand (Robert's art 2026-11-06, on green): front, back, side, the overhead wind-up and two thrusts;
+    # his side walk, hurt and death came as one row of six; the thrust stances (left, planted facing you, right) and the
+    # drive-down and kneeling planted guard
+    'crimson-greatsword/poses-a.png': (3, 2, POSES_A),
+    'crimson-greatsword/poses-b.png': (6, 1, POSES_B),
+    'crimson-greatsword/stances.png': (3, 1, ['13_lungeL', '14_guardF', '15_lunge']),
+    'crimson-greatsword/guard.png': (2, 1, ['16_chop', '17_guard']),
     # the Abyssal Spires' foes (src/spirefoes.js), on green: the Chain Leaper and the Bridge Bowman
     'chain-leaper/poses-a.png': (3, 2, POSES_A),
     'chain-leaper/poses-b.png': (3, 2, POSES_B),
@@ -208,7 +215,7 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
-KEY_OPTS = {'rift-throne-boss': {'key': (0, 255, 0)}, 'rift-mite': {'key': (0, 255, 0)}, 'shard-wisp': {'key': (0, 255, 0)}, 'throne-warden': {'key': (0, 255, 0)}, 'mist-shade': {'key': (0, 255, 0)}, 'rift-caller': {'key': (0, 255, 0)}, 'prism-knight': {'key': (0, 255, 0)}, 'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+KEY_OPTS = {'crimson-greatsword': {'key': (0, 255, 0)}, 'cinderbrand': {'key': (0, 255, 0)}, 'rift-throne-boss': {'key': (0, 255, 0)}, 'rift-mite': {'key': (0, 255, 0)}, 'shard-wisp': {'key': (0, 255, 0)}, 'throne-warden': {'key': (0, 255, 0)}, 'mist-shade': {'key': (0, 255, 0)}, 'rift-caller': {'key': (0, 255, 0)}, 'prism-knight': {'key': (0, 255, 0)}, 'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
 # Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
 def jade_match(x):
     """The Jade Breaker's sheets each came out a little different in colour: match them all to his front view."""
@@ -460,6 +467,12 @@ SETS = {
     'bloodsworn-f2': ('bloodsworn-f2', 'bloodsworn-f2/01_front.png', 90, 1, twelve('bloodsworn-f2', TWELVE_FILES)),
     # Crowned he grows again: the spiked mantle and hood a little taller still
     'bloodsworn-f3': ('bloodsworn-f3', 'bloodsworn-f3/01_front.png', 94, 1, twelve('bloodsworn-f3', TWELVE_FILES)),
+    # the Cinderbrand (kit 10): sturdy, the greatsword's hilt over his helm; the stance and guard sheets came at other scales
+    'cinderbrand': ('cinderbrand', 'crimson-greatsword/01_front.png', 96, 1, dict(twelve('crimson-greatsword', TWELVE_FILES), **{
+        'crimson-greatsword/15_lunge.png': ('side/lunge', {'height': 66}),
+        'crimson-greatsword/14_guardF.png': ('guardF', {'height': 70}),
+        'crimson-greatsword/16_chop.png': ('side/chop', {'height': 102}),
+        'crimson-greatsword/17_guard.png': ('side/guard', {'height': 76})})),
     'chain-reaper': ('chain-reaper', 'chain-reaper/01_front.png', 84, 1, dict(twelve('chain-reaper', TWELVE_FILES), **{
         'chain-reaper/13_dash.png': ('side/dash', {'height': 70})})),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
@@ -600,6 +613,11 @@ SHEETS = {
         ('bloodsworn/walk-side-4.png', 4, 1, 84, 'side/walk'),
         ('bloodsworn/walk-front.png', 4, 1, 86, 'walkF'),
         ('bloodsworn/walk-back.png', 4, 1, 86, 'walkB'),
+    ],
+    'cinderbrand': [
+        ('crimson-greatsword/walk-side-4.png', 4, 1, 94, 'side/walk'),
+        ('crimson-greatsword/walk-front.png', 4, 1, 96, 'walkF'),
+        ('crimson-greatsword/walk-back.png', 4, 1, 96, 'walkB'),
     ],
     'bloodsworn-f2': [
         ('bloodsworn-f2/walk-side-4.png', 4, 1, 86, 'side/walk'),
@@ -943,6 +961,9 @@ PROP_GRIDS = {
     # the Bloodsworn's pieces (src/render.js), on green: a blood thorn and a cluster of them (Reap the Tithe), the crimson
     # crescent his swings throw when Crowned, his thorn halo dull and lit, and a puff of blood mist
     'bloodsworn/effects.png': (3, 2, ['bloodThorn', 'bloodThorns', 'bloodCrescent', '', '', 'bloodMist']),
+    # the Cinderbrand's (kit 10) effects, on green: Brand Thrust's streak, an erupting flame, Forgeheart's ring of fire,
+    # the flash of a blow on his planted guard, Riposte's slash and the scorch his fire leaves
+    'crimson-greatsword/effects.png': (3, 2, ['brandStreak', 'brandFlame', 'brandRing', 'brandFlash', 'brandSlash', 'brandScorch']),
     # his halo seen from the front, from behind and from the side (facing right): dull, then lit when Crowned
     'bloodsworn/halos.png': (3, 2, ['haloF', 'haloB', 'haloS', 'haloLitF', 'haloLitB', 'haloLitS']),
     'jade-breaker/crystals.png': (4, 1, ['jadeCrystal1', 'jadeCrystal2', 'jadeCrystal3', 'jadeCrystal4']),
@@ -1025,11 +1046,14 @@ PROP_HEIGHT['bloodThorn'] = 46  # a thorn about half the knight (cluster at the 
 PROP_SAME.update({'bloodThorns': 'bloodThorn'})
 PROP_WIDTH.update({'bloodCrescent': 52, 'haloF': 46, 'bloodMist': 40})  # the halo a little wider than his hood
 PROP_SAME.update({n: 'haloF' for n in ('haloB', 'haloS', 'haloLitF', 'haloLitB', 'haloLitS')})
+# the Cinderbrand's: the streak about his thrust's reach, the flame half the knight, the ring as wide as Forgeheart (DL.KITS.cinderbrand.ability.ring x2)
+PROP_WIDTH.update({'brandStreak': 120, 'brandRing': 260, 'brandFlash': 34, 'brandSlash': 60, 'brandScorch': 56})
+PROP_HEIGHT['brandFlame'] = 44
 PROP_HEIGHT['jadeCrystal2'] = 60  # the grown crystals about two thirds of the knight
 PROP_SAME.update({'jadeCrystal1': 'jadeCrystal2', 'jadeCrystal3': 'jadeCrystal2', 'jadeCrystal4': 'jadeCrystal2'})
 PROP_SAME.update({'arbFlareBolt': 'arbBolt', 'arbFlare1': 'arbFlare2', 'arbFlare3': 'arbFlare2', 'arbFlare4': 'arbFlare2'})
 # Prop sheets drawn on another key colour than magenta, by folder.
-PROP_KEY = {'chain-reaper': (0, 255, 0), 'bloodsworn': (0, 255, 0)}
+PROP_KEY = {'chain-reaper': (0, 255, 0), 'bloodsworn': (0, 255, 0), 'crimson-greatsword': (0, 255, 0)}
 PROP_OUT = 'props'
 # Renders where the magenta background tinted the art pink (the trees' moss): pull it back out (see despill).
 PROP_DESPILL = set(['swampTree11', 'swampTree12', 'swampTree13', 'swampTree14', 'swampTree21', 'swampTree22', 'swampTree23', 'swampTree24', 'swampTree31', 'swampTree32', 'swampTree33', 'swampTree34'])

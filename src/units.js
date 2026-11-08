@@ -796,6 +796,7 @@
     bloodsworn: { weapon: "sword", offhand: "none" }, // stand-ins until his drawn sheets load
     bloodswornB: { weapon: "sword", offhand: "none" }, // (his second and last looks, src/render.js)
     bloodswornC: { weapon: "sword", offhand: "none" },
+    cinderbrand: { weapon: "greatsword", offhand: "none", bulk: 1 }, // stand-in until his drawn sheets load
   };
   Art.specs = {};
   Art.sheet = function (key) {

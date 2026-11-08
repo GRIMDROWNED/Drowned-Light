@@ -105,6 +105,7 @@
     bloodsworn(),
     bloodswornB(),
     bloodswornC(),
+    cinderbrand(),
     // the Pyramid Champion (barracks defender, src/pyramid.js): three side walk frames played 1-2-3-2, a front guard stance as its idle
     (() => {
       const W3 = [1, 1, 2, 2, 3, 3, 2, 2].map((i) => "side/walk" + i + "@-");
@@ -275,6 +276,21 @@
     return Object.assign(walking("bloodswornC", [37, 92], [28, 96], [24, 96]), { path: "assets/sprites/bloodsworn-f3/", keys: stages("bloodswornC") });
   }
 
+  /* The Cinderbrand (kit 10, Robert's art 2026-11-06, on green): the 12 poses and walk sheets. His Forge Cleave is the
+     overhead wind-up and the sword driven down, every other swing the low sword swept up level (`slash`); Brand Thrust is the low thrust and the level lunge (his dash too); his
+     planted guard kneels behind the sword from the side and stands behind it facing you. Feet of the single poses set
+     by hand: the sword's point reaches lower than his boots. */
+  function cinderbrand() {
+    const set = Object.assign(walking("cinderbrand", [40, 97], [40, 98], [36, 98]), { path: "assets/sprites/cinderbrand/", keys: stages("cinderbrand") });
+    for (const dir in set.views) {
+      Object.assign(set.views[dir], { attack: ["attackA", "side/chop", "side/chop"], slash: ["attackC", "side/lunge", "side/lunge"], cast: ["attackB", "side/lunge", "side/lunge"], dash: ["side/lunge"],
+        guard: [dir === "down" ? "guardF" : "side/guard"] });
+    }
+    Object.assign(set.feet, { front: [34, 97], back: [32, 94], right: [35, 95], attackA: [58, 84], attackB: [36, 73], attackC: [32, 77],
+      "side/lunge": [38, 67], "side/chop": [50, 100], "side/guard": [48, 77], guardF: [36, 71] });
+    return set;
+  }
+
   function reaper() {
     const set = Object.assign(walking("chainReaper", [44, 80], [26, 86], [29, 86]), { path: "assets/sprites/chain-reaper/", keys: stages("chainReaper") });
     for (const dir in set.views) Object.assign(set.views[dir], { attack: ["attackA", "attackB", "attackB"], cast: ["attackC"], dash: ["side/dash"] });
@@ -428,6 +444,8 @@
     "jadeCrystal1", "jadeCrystal2", "jadeCrystal3", "jadeCrystal4",
     // the Bloodsworn's blood thorns (Reap the Tithe), his crescent, blood mist and his thorn halo seen three ways, dull and lit
     "bloodThorn", "bloodThorns", "bloodCrescent", "bloodMist", "haloF", "haloB", "haloS", "haloLitF", "haloLitB", "haloLitS",
+    // the Cinderbrand's Brand Thrust streak, erupting flame and its scorch, Forgeheart's ring, his guard's flash and Riposte's slash
+    "brandStreak", "brandFlame", "brandRing", "brandFlash", "brandSlash", "brandScorch",
     // the Dragon Spear's spirit dragon: from the side, the front and behind (src/kits.js, drawn in src/render.js)
     "dragon1", "dragon2", "dragon3", "dragon4", "dragon5", "dragon6", "dragonF1", "dragonF2", "dragonF3", "dragonF4", "dragonF5", "dragonF6", "dragonB1", "dragonB2", "dragonB3", "dragonB4", "dragonB5", "dragonB6",
     // the Frostweaver's owl (standing, flying, casting), its shard, the staff's frost bolts, the Ice Bomb and its spikes (src/kits.js, src/render.js)
