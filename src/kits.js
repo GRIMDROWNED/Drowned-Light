@@ -227,7 +227,7 @@
     const g = G.kit().ability.guard, gd = p.brandGuard;
     if (!g || Math.abs(angleDiff(ang + Math.PI, gd.ang)) > g.arc / 2) return 1;
     K.heatAdd(forge() ? forge().perBlock : 0);
-    G.effects.push({ type: "ring", x: p.x + Math.cos(gd.ang) * 18, y: p.y - 30 + Math.sin(gd.ang) * 10, r0: 4, r1: 30, t: 0, max: 0.25, col: "255,190,90", w: 3 });
+    G.effects.push({ type: "brandFlash", x: p.x + Math.cos(gd.ang) * 18, y: p.y - 30 + Math.sin(gd.ang) * 10, t: 0, max: 0.25 });
     for (let i = 0; i < 8; i++) G.spark(p.x + Math.cos(gd.ang) * 20, p.y - 30, "255,190,90", 140);
     gd.blocked = (gd.blocked || 0) + 1;
     if (K.has(10) && (gd.riposteT || 0) <= 0) {
@@ -241,7 +241,7 @@
       if (best) {
         const st = G.stats(), a = Math.atan2(best.y - p.y, best.x - p.x);
         hit(best, G.kit().attack.dmg * K.power() * st.dmgMult * G.corruptBonus() * g.riposte, a, 220);
-        G.effects.push({ type: "slash", x: p.x, y: p.y - 24, ang: a, arc: 1.2, r: 60, t: 0, max: 0.2, col: G.kit().color, w: 8 });
+        G.effects.push({ type: "brandSlash", x: p.x + Math.cos(a) * 30, y: p.y - 26 + Math.sin(a) * 16, ang: a, t: 0, max: 0.25 });
       }
     }
     sfx("hit");
@@ -294,13 +294,13 @@
     p.cast = { t: 0.2, dur: 0.4, ang: d.ang };
     for (const e of onLine(p, d.ang, ab.reach, ab.width)) if (!d.hit.has(e)) strike(e);
     const ex = p.x + Math.cos(d.ang) * ab.reach, ey = p.y + Math.sin(d.ang) * ab.reach;
-    G.effects.push({ type: "slash", x: p.x, y: p.y - 24, ang: d.ang, arc: 0.5, r: ab.reach + 20, t: 0, max: 0.25, col: d.erupt ? "255,210,110" : kit.color, w: d.erupt ? 14 : 8 });
+    G.effects.push({ type: "brandStreak", x: p.x, y: p.y - 30, ang: d.ang, len: ab.reach + 50, t: 0, max: d.erupt ? 0.35 : 0.25, big: d.erupt });
     if (d.erupt || K.has(15)) {
       // a line of fire along the lunge and its point
       const len = dist(d.x0, d.y0, ex, ey), n = Math.max(2, Math.round(len / 34));
       for (let i = 0; i <= n; i++) {
         const x = d.x0 + (ex - d.x0) * i / n, y = d.y0 + (ey - d.y0) * i / n;
-        lightZone(x, y, d.erupt ? 46 : 34, d.erupt ? ab.fireT : ab.fireT * 0.6, { fire: true, dps: ab.fire * K.power() * (d.erupt ? 1 : 0.5) });
+        lightZone(x, y, d.erupt ? 46 : 34, d.erupt ? ab.fireT : ab.fireT * 0.6, { fire: true, brand: true, dps: ab.fire * K.power() * (d.erupt ? 1 : 0.5) });
         if (d.erupt) for (let k = 0; k < 3; k++) G.spark(x + rand(-10, 10), y - rand(0, 30), k % 2 ? "255,200,90" : "255,90,30", 160);
       }
     }
@@ -308,7 +308,7 @@
       G.camera.shake = 9;
       if (K.has(20)) {
         // Forgeheart: a ring of fire bursts where he stops
-        G.effects.push({ type: "ring", x: p.x, y: p.y - 6, r0: 10, r1: ab.ring, t: 0, max: 0.4, col: "255,150,50", w: 9 });
+        G.effects.push({ type: "brandRing", x: p.x, y: p.y, r: ab.ring, t: 0, max: 0.6 });
         for (const e of G.enemies.slice()) {
           if (e.rise > 0 || e.removed || dist(p.x, p.y, e.x, e.y) > ab.ring + e.def.radius) continue;
           hit(e, d.dmg * 0.6, Math.atan2(e.y - p.y, e.x - p.x), 200, burn);

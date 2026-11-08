@@ -247,7 +247,7 @@
         if (size > 0.05) list.push({ y, f: () => Art.drawFire(c, x, y, size, t + i) });
       }
     }
-    for (const z of G.lightZones) if (z.fire) list.push({ y: z.y, f: () => Art.drawFire(c, z.x, z.y, 0.7 * Math.min(1, z.t), t + z.x) });
+    for (const z of G.lightZones) if (z.fire) list.push({ y: z.y, f: () => (z.brand && Art.sprites.brandFlame ? drawBrandFire(c, z, t) : Art.drawFire(c, z.x, z.y, 0.7 * Math.min(1, z.t), t + z.x)) });
     for (const k of G.pickups) list.push({ y: k.y, f: () => drawPickup(c, k, t) });
     for (const e of G.enemies) {
       if (e.x < left - 100 || e.x > view.right + 100 || e.y < top - 40 || e.y > view.bottom + 140) continue;
@@ -358,6 +358,8 @@
         c.strokeStyle = `rgba(${f.col},${(1 - k) * 0.9})`;
         c.lineWidth = f.w * (1 - k) + 1;
         c.beginPath(); c.ellipse(f.x, f.y, r, r * 0.7, 0, 0, Math.PI * 2); c.stroke();
+      } else if (f.type.startsWith("brand") && Art.sprites[f.type]) {
+        drawBrandFx(c, f);
       } else if (f.type === "slash") {
         drawSlash(c, f.x, f.y, f.ang, f.arc, f.r, f.t / f.max, f.col, f.w, false);
       } else if (f.type === "golemBeam") {
@@ -1997,6 +1999,41 @@
     g.addColorStop(0, `rgba(255,${full ? 190 : 120},50,${0.08 + f * 0.16 + (full ? Math.sin(t * 10) * 0.04 : 0)})`); g.addColorStop(1, "rgba(255,120,40,0)");
     c.fillStyle = g; c.fillRect(p.x - 60, p.y - 100, 120, 120);
     if (!(p.heatHold <= 0 && Math.floor(t * 8) % 2)) bar(c, p.x, p.y + 8, 30, f, full ? "#ffd27a" : "#e8762a");
+  }
+  /* The Cinderbrand's drawn effects (Robert's sheet, 2026-11-08): Brand Thrust's streak reaching out along the lunge,
+     Forgeheart's ring of fire spreading on the ground, the flash of a blocked blow and Riposte's slash, each fading out. */
+  function drawBrandFx(c, f) {
+    const s = Art.sprites[f.type], k = f.t / f.max, fade = Math.min(1, (1 - k) * 2.5);
+    let w = s.w * PS, h = s.h * PS;
+    c.save();
+    c.globalAlpha = fade;
+    c.translate(Math.round(f.x), Math.round(f.y));
+    if (f.type === "brandStreak") {
+      // shot out from his sword to its full length, then fading where it ends
+      const L = f.len * (f.big ? 1.3 : 1) * Math.min(1, k * 4);
+      c.rotate(f.ang);
+      c.drawImage(s.c, 0, -h * (f.big ? 0.8 : 0.5), L, h * (f.big ? 1.6 : 1));
+    } else if (f.type === "brandRing") {
+      const g = 0.35 + 0.65 * Math.sqrt(Math.min(1, k * 2)), rw = f.r * 2 * g, rh = rw * (h / w);
+      c.drawImage(s.c, -rw / 2, -rh * 0.62, rw, rh); // its front edge on the ground at his feet
+    } else {
+      if (f.type === "brandSlash") c.rotate(f.ang);
+      const g = f.type === "brandFlash" ? 0.6 + k * 0.6 : 1;
+      w *= g; h *= g;
+      c.drawImage(s.c, -w / 2, -h / 2, w, h);
+    }
+    c.restore();
+  }
+  // A fire his Brand Thrust left: the charred scorch under a flickering flame that dies down as it burns out.
+  function drawBrandFire(c, z, t) {
+    const sc = Art.sprites.brandScorch, fl = Art.sprites.brandFlame, life = Math.min(1, z.t);
+    c.save();
+    c.globalAlpha = Math.min(1, z.t * 1.5);
+    c.drawImage(sc.c, Math.round(z.x - sc.w * PS / 2), Math.round(z.y - sc.h * PS / 2), sc.w * PS, sc.h * PS);
+    const fk = (0.55 + 0.45 * life) * (0.9 + 0.1 * Math.sin(t * 14 + z.x * 0.3)), w = fl.w * PS * fk, h = fl.h * PS * fk * (0.9 + 0.12 * Math.sin(t * 9 + z.y));
+    c.globalAlpha = Math.min(1, z.t * 2);
+    c.drawImage(fl.c, Math.round(z.x - w / 2), Math.round(z.y + 3 - h), w, h);
+    c.restore();
   }
   function drawTithe(c, G, p, t) {
     const K = DL.Kits, n = K.stacks(p);
