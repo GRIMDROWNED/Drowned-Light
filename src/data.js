@@ -402,8 +402,9 @@
     cinderbrand: {
       name: "Cinderbrand", tag: "Kit 10", motto: "The forge never cools.", roles: ["Heavy", "Guard", "Burst"],
       weapon: "Forge greatsword", color: "255,130,40",
-      desc: "A bronze knight with a forge-hot greatsword. Slow, crushing cleaves, overhead chops and wide level slashes in turn, build heat in the blade. Hold your ability to plant the sword and guard; let go to lunge in a Brand Thrust that pierces a whole line. At full heat the thrust erupts in flame.",
-      // every other swing is a wide level slash (`slash`): `arc` wide, x`dmg` the chop's damage (Robert: use both drawn swings, 2026-11-08)
+      desc: "A bronze knight with a forge-hot greatsword. Slow, crushing overhead chops, every other one sweeping wide, build heat in the blade. Hold your ability to plant the sword and guard; let go to lunge in a Brand Thrust that pierces a whole line. At full heat the thrust erupts in flame.",
+      // every other chop sweeps wider (`slash`): `arc` wide, x`dmg` the damage. Both are drawn as the downward chop: the level
+      // frames read as a stab (Robert, 2026-11-08)
       attack: { type: "arc", name: "Forge Cleave", dmg: 24, range: 80, arc: 1.7, cd: 0.85, kb: 230, slash: { arc: 2.8, dmg: 0.8 } },
       dash: { type: "plain" },
       passive: { heat: { perHit: 9, perBlock: 20, max: 100, hold: 3, cool: 14, dmg: 0.25, tempered: 1.5, burnAt: 50 } },
