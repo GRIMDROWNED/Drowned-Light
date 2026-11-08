@@ -94,6 +94,12 @@ body.touch kbd { display: none; }
 /* Robert's drawn egg over the coded one, once its file is there */
 .chip.egg i { width: 10px; height: 12px; border: 0; background: url("assets/sprites/props/wyvEgg.png") center / contain no-repeat, radial-gradient(circle at 40% 35%, #c04030, #5a0e0e); image-rendering: pixelated; }
 .chip.carcass i { background: #d9cdae; border-radius: 2px; transform: none; }
+/* the dungeon materials and loot sack: Robert's drawn icons (src/ui.js chip) */
+.chip.r-shard i, .chip.r-aether i { width: 10px; height: 14px; border: 0; transform: none; background: center / contain no-repeat; background-color: transparent !important; image-rendering: pixelated; }
+.chip.r-shard i { background-image: url("assets/sprites/spires/icon-shard.png"); }
+.chip.r-aether i { background-image: url("assets/sprites/spires/icon-aether.png"); }
+.lbl.bag::before { content: ""; display: inline-block; width: 13px; height: 16px; margin-right: 4px; vertical-align: -3px; background: url("assets/sprites/spires/icon-bag.png") center / contain no-repeat; image-rendering: pixelated; }
+.well-tok { display: inline-block; width: 14px; height: 14px; margin-right: 4px; vertical-align: -2px; background: url("assets/sprites/spires/icon-well.png") center / contain no-repeat; image-rendering: pixelated; }
 .chip.soul i { background: #071311; border-color: #5af5cd; border-radius: 50%; transform: none; box-shadow: 0 0 6px #5af5cd; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 

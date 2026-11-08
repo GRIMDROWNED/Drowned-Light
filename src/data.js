@@ -824,7 +824,7 @@
   // what the dungeons pay for at the base (src/rift.js): the Crystal Turret by level, the Mist Lantern, the Rift Portal
   DL.RIFT = {
     turret: { spots: [0, 2, 4, 4], every: [0, 2.4, 1.9, 1.5], n: [0, 6, 8, 10], dmg: [0, 9, 12, 16], range: 300, speed: 240, life: 1.4, along: 150 },
-    lantern: { ring: 150, corrupt: 0.5 },
+    lantern: { ring: [0, 150, 190, 230], corrupt: [1, 0.5, 0.4, 0.3] }, // by Mist Lantern level
   };
 
   DL.CAVE = {
@@ -1127,10 +1127,10 @@
       effect: (l) => { const T = DL.RIFT.turret; return l ? `${T.spots[l]} turrets · ${T.n[l]} shards a spiral every ${T.every[l]} s · ${T.dmg[l]} damage` : "No turrets"; },
       costs: [{ shard: 20, stone: 12 }, { shard: 40, aether: 2, iron: 10 }, { shard: 70, aether: 4, pearl: 3 }],
       reqFlame: () => 0 },
-    { id: "mistlantern", name: "Mist Lantern", max: 1, rift: true,
-      info: "An Aether Crystal caged in your lantern. In the mist of the dungeons it lights a wider ring round you and slows the corruption.",
-      effect: (l) => (l ? `In the mist: lantern ring ${DL.RIFT.lantern.ring} px · corruption x${DL.RIFT.lantern.corrupt}` : "Your lantern only"),
-      costs: [{ shard: 30, aether: 6 }],
+    { id: "mistlantern", name: "Mist Lantern", max: 3, rift: true,
+      info: "A lamp post at camp burning a sliver of Aether Crystal, kindred to your own lantern. In the mist of the dungeons your lantern lights a wider ring round you and the corruption builds slower.",
+      effect: (l) => { const M = DL.RIFT.lantern; return l ? `In the mist: lantern ring ${M.ring[l]} px · corruption x${M.corrupt[l]}` : "Your lantern only"; },
+      costs: [{ shard: 30, aether: 6 }, { shard: 50, aether: 8, iron: 10 }, { shard: 80, aether: 12, pearl: 4 }],
       reqFlame: () => 0 },
   ];
 

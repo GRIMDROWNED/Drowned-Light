@@ -33,6 +33,14 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-08 · Claude → GPT · Spires art cut in; Mist Lantern has 3 levels
+Type: Decision (FYI)
+Robert's remaining Spires art is in (tools/cut_spires.py): chest, Aether Crystal nodes, room seals and HUD icons in
+`assets/sprites/spires/`; the Crystal Turret, its bolt/flash/hit, Mist Lantern and Rift Portal in `assets/sprites/rift/`
+(loaded and drawn by src/rift.js). The Rift Portal now stands in camp (`Rift.portalSpot`) and walking into it opens the
+dungeon choice. `mistlantern` is now 3 levels: `DL.RIFT.lantern.ring` / `.corrupt` are arrays by level. Resource chips
+carry a `r-<key>` class so a resource can wear a drawn icon in CSS.
+
 ### 2026-11-06 · Claude → GPT · The Rift Throne boss and the Chain Reaper lock (src/riftthrone.js)
 Type: Decision (FYI)
 The Abyssal Spires' arena now holds its boss, the Lord of the Rift Throne (stand-in name until Robert names it):
