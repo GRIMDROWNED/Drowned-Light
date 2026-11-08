@@ -607,8 +607,8 @@
     if (DL.Input.take("torch") && !DL.Spires.burn()) placeTorch(); // in the Spires a carried Aether Crystal burns first
     if (DL.Input.take("boost")) DL.Wyvern.boost(); // David's Tailwind or War Fury (src/wyvern.js)
 
-    if (DL.Kits.tideTick(p, st, dt)) {
-      // the Jade Breaker's charged rush (src/kits.js) moves him
+    if (DL.Kits.tideTick(p, st, dt) || DL.Kits.brandTick(p, st, dt)) {
+      // the Jade Breaker's charged rush or the Cinderbrand's Brand Thrust (src/kits.js) moves him
     } else if (p.dashT > 0) {
       p.dashT -= dt;
       p.x += p.dashDir.x * 440 * dt;
@@ -645,7 +645,7 @@
     if (p.cast) { p.cast.t += dt; if (p.cast.t >= p.cast.dur) p.cast = null; }
     p.aim = aimAngle(p);
     G.mineTarget = G.save.attackMode === "manual" ? nodeNear(p, 34) : null;
-    if (p.atkCd <= 0 && p.dashT <= 0 && !p.tideDash && !p.tideCharge && !inMenu) {
+    if (p.atkCd <= 0 && p.dashT <= 0 && !p.tideDash && !p.tideCharge && !p.brandGuard && !p.brandDash && !inMenu) {
       if (G.save.attackMode === "manual") {
         if (DL.Input.attacking()) DL.Kits.attack(p, st, p.aim);
         else if (DL.Input.mining() && G.mineTarget) mineStrike(p, G.mineTarget);
@@ -709,6 +709,8 @@
     if (p.oil < ab.oil) { say("Not enough lantern oil. Refill it in firelight.", "warn"); sfx("deny"); return; }
     // the Jade Breaker charges Jade Tide while it's held, and it goes off (paid then) when let go (src/kits.js)
     if (ab.charge) { DL.Kits.tideStart(p); return; }
+    // the Cinderbrand plants his sword to guard while it's held, and lunges in Brand Thrust when let go (src/kits.js)
+    if (ab.guard) { DL.Kits.brandStart(p); return; }
     p.oil -= ab.oil;
     p.abiCd = DL.Kits.abilityCd();
     sfx("ability");
@@ -1399,7 +1401,7 @@
   function hurtPlayer(dmg, ang, by) {
     const p = G.player;
     if (p.inv > 0 || p.dashT > 0 || p.downT > 0 || G.state !== "play") return;
-    dmg *= DL.Kits.damageTaken(p);
+    dmg *= DL.Kits.damageTaken(p, ang);
     if (DL.Abigail.buffed()) dmg *= 1 - DL.Summons.wraith().buff; // Abigail's blessing
     const before = p.hp, LS = DL.LAST_STAND;
     G.lastHit = { by: by || "the Drowned", dmg, hp: before };
@@ -1414,7 +1416,7 @@
     }
     p.hurtFlash = 0.3;
     p.flash = 0.15;
-    if (!DL.Kits.steady(p)) { p.kx += Math.cos(ang) * 160; p.ky += Math.sin(ang) * 160; }
+    if (!DL.Kits.steady(p) && !p.brandGuard) { p.kx += Math.cos(ang) * 160; p.ky += Math.sin(ang) * 160; }
     G.camera.shake = 7;
     sfx("hurt");
     DL.Pad.rumble(0.6, 0.4, 140);
