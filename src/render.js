@@ -1094,6 +1094,7 @@
   const unitScale = (e) => { const lk = e.def.look && DL.Minions.look(e); return lk ? lk.scale : e.def.scale; };
 
   function enemyAnim(e, t) {
+    if (e.anim) return e.anim; // the Lord of the Rift Throne picks his own pose (src/riftthrone.js)
     if (e.pose != null) return ["attack", e.pose, e.aim]; // a Spires foe's own move (src/spirefoes.js)
     if (e.state === "windup") return ["attack", 0, e.aim];
     if (e.state === "recover") return ["attack", e.stT > 0.2 ? 1 : 2, e.aim];
@@ -1228,7 +1229,7 @@
       c.beginPath(); c.ellipse(e.x, e.y, 14 * s + 4, 4, 0, 0, Math.PI * 2); c.fill();
       return;
     }
-    shadow(c, e.x, e.y, (d.shadow || 14) * s, (d.shadow || 14) * 0.36 * s);
+    if (!e.lift) shadow(c, e.x, e.y, (d.shadow || 14) * s, (d.shadow || 14) * 0.36 * s); // lifted (the Rift lord on his throne): the throne is his shadow
     if (e.state === "windup" && d.colossus) DL.Colossus.drawWindup(c, e);
     else if (e.state === "windup") {
       // telegraph the coming blow

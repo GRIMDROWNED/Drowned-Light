@@ -176,6 +176,17 @@ GRIDS = {
     'rift-caller/poses-b.png': (3, 2, POSES_B),
     'prism-knight/poses-a.png': (3, 2, POSES_A),
     'prism-knight/poses-b.png': (3, 2, POSES_B),
+    # the Rift Throne boss (src/riftthrone.js) and his three minions, on green. Sheet C: asleep on the throne, waking,
+    # rising, and his second phase (front on): standing cracked open, the sweep, kneeling enraged
+    'rift-throne-boss/poses-a.png': (3, 2, POSES_A),
+    'rift-throne-boss/poses-b.png': (3, 2, POSES_B),
+    'rift-throne-boss/poses-c.png': (3, 2, ['13_seated', '14_waking', '15_rising', '16_p2front', '17_sweep', '18_enraged']),
+    'rift-mite/poses-a.png': (3, 2, POSES_A),
+    'rift-mite/poses-b.png': (3, 2, POSES_B),
+    'shard-wisp/poses-a.png': (3, 2, POSES_A),
+    'shard-wisp/poses-b.png': (3, 2, POSES_B),
+    'throne-warden/poses-a.png': (3, 2, POSES_A),
+    'throne-warden/poses-b.png': (3, 2, POSES_B),
     'colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '11_hurt']),
     'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
 }
@@ -204,7 +215,7 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
-KEY_OPTS = {'crimson-greatsword': {'key': (0, 255, 0)}, 'cinderbrand': {'key': (0, 255, 0)}, 'mist-shade': {'key': (0, 255, 0)}, 'rift-caller': {'key': (0, 255, 0)}, 'prism-knight': {'key': (0, 255, 0)}, 'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+KEY_OPTS = {'crimson-greatsword': {'key': (0, 255, 0)}, 'cinderbrand': {'key': (0, 255, 0)}, 'rift-throne-boss': {'key': (0, 255, 0)}, 'rift-mite': {'key': (0, 255, 0)}, 'shard-wisp': {'key': (0, 255, 0)}, 'throne-warden': {'key': (0, 255, 0)}, 'mist-shade': {'key': (0, 255, 0)}, 'rift-caller': {'key': (0, 255, 0)}, 'prism-knight': {'key': (0, 255, 0)}, 'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
 # Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
 def jade_match(x):
     """The Jade Breaker's sheets each came out a little different in colour: match them all to his front view."""
@@ -267,7 +278,17 @@ BOWMAN_H = 210  # the Bridge Bowman (Abyssal Spires), res 4: 105 world px, bow t
 SHADE_H = 200  # the Mist Shade (Abyssal Spires), res 4: 100 world px, hood to wisps, a knight tall
 CALLER_H = 290  # the Rift Caller, res 4: 145 world px floating, about one and a half knights
 PRISM_H = 250  # the Prism Knight (elite), res 4: 125 world px, a quarter taller than a knight
+THRONE_H = 400  # the Rift Throne boss, res 4: 200 world px (x1.5 in game, DL.BOSS.size: three knights tall)
+MITE_H = 100  # the Rift Mite, res 4: 50 world px, half a knight
+SWISP_H = 110  # the Shard Wisp, res 4: 55 world px, half a knight
+WARDEN_H = 250  # the Throne Warden, res 4: 125 world px, a knight and a quarter
 SETS = {
+    'rift-throne-boss': ('rift-throne', 'rift-throne-boss/01_front.png', THRONE_H, 1, {**twelve('rift-throne-boss', TWELVE_FILES),
+        'rift-throne-boss/13_seated.png': 'seated', 'rift-throne-boss/14_waking.png': 'waking', 'rift-throne-boss/15_rising.png': 'rising',
+        'rift-throne-boss/16_p2front.png': 'p2front', 'rift-throne-boss/17_sweep.png': 'p2sweep', 'rift-throne-boss/18_enraged.png': 'p2enraged'}),
+    'rift-mite': ('spires-foes/mite', 'rift-mite/01_front.png', MITE_H, 1, twelve('rift-mite', TWELVE_FILES)),
+    'shard-wisp': ('spires-foes/swisp', 'shard-wisp/01_front.png', SWISP_H, 1, twelve('shard-wisp', TWELVE_FILES)),
+    'throne-warden': ('spires-foes/warden', 'throne-warden/01_front.png', WARDEN_H, 1, twelve('throne-warden', TWELVE_FILES)),
     'mist-shade': ('spires-foes/shade', 'mist-shade/01_front.png', SHADE_H, 1, twelve('mist-shade', TWELVE_FILES)),
     'rift-caller': ('spires-foes/caller', 'rift-caller/01_front.png', CALLER_H, 1, twelve('rift-caller', TWELVE_FILES)),
     'prism-knight': ('spires-foes/prism', 'prism-knight/01_front.png', PRISM_H, 1, twelve('prism-knight', TWELVE_FILES)),
@@ -465,6 +486,27 @@ SETS = {
 # Frames come out on one shared canvas (numbered prefix1, prefix2, ...); put the printed foot point
 # in that unit's `feet` in src/sprites.js.
 SHEETS = {
+    'rift-throne-boss': [
+        ('rift-throne-boss/walk-side-4.png', 4, 1, 400, 'side/walk'),
+        ('rift-throne-boss/walk-front.png', 4, 1, 400, 'walkF'),
+        ('rift-throne-boss/walk-back.png', 4, 1, 400, 'walkB'),
+    ],
+    'rift-mite': [
+        ('rift-mite/walk-side-4.png', 4, 1, 100, 'side/walk'),
+        ('rift-mite/walk-front.png', 4, 1, 100, 'walkF'),
+        ('rift-mite/walk-back.png', 4, 1, 100, 'walkB'),
+    ],
+    # the Shard Wisp floats: its side "walk" is the four drift cells; front and back are its lit and dark idle strips
+    'shard-wisp': [
+        ('shard-wisp/walk-side-4.png', 4, 1, 110, 'side/walk'),
+        ('shard-wisp/idle-lit.png', 4, 1, 110, 'walkF'),
+        ('shard-wisp/idle-dark.png', 4, 1, 110, 'walkB'),
+    ],
+    'throne-warden': [
+        ('throne-warden/walk-side-4.png', 4, 1, 250, 'side/walk'),
+        ('throne-warden/walk-front.png', 4, 1, 250, 'walkF'),
+        ('throne-warden/walk-back.png', 4, 1, 250, 'walkB'),
+    ],
     'mist-shade': [
         ('mist-shade/walk-side-4.png', 4, 1, 200, 'side/walk'),
         ('mist-shade/walk-front.png', 4, 1, 200, 'walkF'),

@@ -159,6 +159,11 @@
     Object.assign(walking("shade", [86, 202], [71, 202], [70, 202], 4), { path: "assets/sprites/spires-foes/shade/", keys: { shade: [0, false] }, own: true }),
     Object.assign(walking("caller", [102, 292], [112, 302], [99, 292], 4), { path: "assets/sprites/spires-foes/caller/", keys: { caller: [0, false] }, own: true }),
     Object.assign(walking("prism", [194, 259], [101, 252], [80, 252], 4), { path: "assets/sprites/spires-foes/prism/", keys: { prism: [0, false] }, own: true }),
+    // the Rift Throne boss's minions (src/spirefoes.js): the Shard Wisp's front and back "walks" are its lit and dark idles
+    Object.assign(walking("mite", [87, 102], [61, 107], [60, 102], 4), { path: "assets/sprites/spires-foes/mite/", keys: { mite: [0, false] }, own: true }),
+    Object.assign(walking("swisp", [60, 124], [76, 134], [71, 132], 4), { path: "assets/sprites/spires-foes/swisp/", keys: { swisp: [0, false] }, own: true }),
+    Object.assign(walking("warden", [87, 252], [64, 252], [68, 256], 4), { path: "assets/sprites/spires-foes/warden/", keys: { warden: [0, false] }, own: true }),
+    riftLord(),
     minion("thornling", "thornling", 4, [[45, 87], [43, 82], [46, 83]]), // the Deadly Rose's Thornling Swarm Stalker
     minion("tidestalker", "tidestalker", 4, [[109, 123], [87, 134], [92, 138]]), // the Sunken King's Tide Stalker
     minion("wisp", "wisp", 4, [[108, 182], [112, 197], null]), // the Sunken Wisp: its front shows going away too (Robert)
@@ -346,6 +351,16 @@
     const set = Object.assign(walking(key, side, front, back, 4), { path: "assets/sprites/" + folder + "/", keys: { [key]: [0, false] } });
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
       Object.assign(set.views[dir], { attack: ["attackA", "attackB", "attackB"], roar: ["attackC"], hurt: ["side/hurt"], death: ["side/death"], idle: [p] });
+    return set;
+  }
+
+  // The Lord of the Rift Throne (src/riftthrone.js), cut at res 4 (200 px, x1.5 in game). Beside the twelve poses: asleep
+  // on his throne, waking and rising (front on), and his second phase, front on: standing cracked open, the sweep,
+  // kneeling enraged. They're the same in every view (src/riftthrone.js sets e.anim to one of them).
+  function riftLord() {
+    const set = Object.assign(walking("riftlord", [319, 405], [135, 402], [138, 402], 4), { path: "assets/sprites/rift-throne/", keys: { riftlord: [0, false] }, own: true });
+    const extra = { seated: ["seated"], waking: ["waking"], rising: ["rising"], p2: ["p2front"], sweep: ["p2sweep"], enraged: ["p2enraged"] };
+    for (const dir of ["down", "up", "side"]) Object.assign(set.views[dir], extra);
     return set;
   }
 

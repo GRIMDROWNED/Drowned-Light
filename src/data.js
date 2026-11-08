@@ -183,6 +183,16 @@
       ranged: true, keep: 200, fly: true, shot: "wispBolt", minion: true, look: "abigail", lookScale: 0.8, tint: "#4fe6f0", tintK: 0.35, drop: {} },
     tideleech: { name: "Tide Leech", hp: 70, speed: 50, dmg: 13, range: 34, windup: 0.5, cd: 1.6, scale: 1, radius: 14, mass: 2,
       armor: 0.2, burrow: 6, minion: true, look: "revenant", lookScale: 1.4, tint: "#2d302c", tintK: 0.45, drop: {} },
+    // the Abyssal Spires' boss (src/riftthrone.js; health in DL.BOSS.hp, x1.5 size in DL.BOSS.size) and his minions
+    // (src/spirefoes.js). The boss is still to be named by Robert: "the Lord of the Rift Throne" until then.
+    riftlord: { name: "The Lord of the Rift Throne", hp: 1800, speed: 52, dmg: 22, range: 0, windup: 1, cd: 99, scale: 1, radius: 24, mass: 30,
+      spire: "riftlord", riftlord: true, boss: true, shadow: 34, barY: 214, barW: 70, drop: {} },
+    mite: { name: "Rift Mite", hp: 18, speed: 120, dmg: 9, range: 0, windup: 1, cd: 99, scale: 1, radius: 10, mass: 0.5,
+      spire: "mite", minion: true, shadow: 14, barY: 56, drop: {} },
+    swisp: { name: "Shard Wisp", hp: 40, speed: 60, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1, radius: 11, mass: 0.6,
+      spire: "swisp", minion: true, shadow: 12, barY: 90, drop: {} },
+    warden: { name: "Throne Warden", hp: 120, speed: 62, dmg: 15, range: 0, windup: 1, cd: 99, scale: 1, radius: 16, mass: 3,
+      spire: "warden", minion: true, shadow: 20, barY: 132, barW: 34, drop: {} },
   };
 
   // Base kits. A kit = weapon + dash behaviour + signature ability.
@@ -284,7 +294,7 @@
       ],
     },
     // Fast and deadly, but frail: 70% health, a fifth faster, a dash every 1.1 s (src/game.js), and a kill gives the dash back.
-    chainReaper: {
+    chainReaper: { secret: true, // won from the Lord of the Rift Throne (src/riftthrone.js); worlds that already had him keep him
       name: "Chain Reaper", tag: "Kit 06", motto: "The dark is only a tether.", roles: ["Speed", "Burst", "Glass cannon"],
       weapon: "Chain sickle", color: "176,120,255",
       desc: "A sickle on a long chain, thrown out and torn back. The fastest and deadliest knight, but the most fragile: every kill gives you your dash back.",
@@ -633,9 +643,9 @@
      height (`barY`) in DL.ENEMIES are multiplied by `size[type]` below, so each stands about three knights tall. The
      Sunken King is a scene of his own and keeps his size. */
   DL.BOSS = {
-    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6 },
+    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6, riftlord: 1.5 },
     view: 820, viewR: 650, // within `viewR` px of an awake boss the camera pulls back to show at least `view` px top to bottom
-    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600 },
+    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600, riftlord: 1800 },
     perNight: 0.04, dmgNight: 0.05, perAlly: 0.6,
     stun: 0.3, immune: 3,
   };
@@ -673,6 +683,12 @@
       tidestalker: { max: 14 },
       wisp: { max: 3, start: 2, phase2: 1, slow: 0.6 },
       tideleech: { max: 3, every: 14, every2: 10, n: 1, party: true },
+    },
+    // the Lord of the Rift Throne's (src/riftthrone.js): they climb out of the arena floor, held to it
+    riftlord: {
+      mite: { max: 6, every: 11, every2: 7, n: 2, party: true },
+      swisp: { max: 3, start: 1, phase2: 2 },
+      warden: { max: 2, start: 1, phase2: 1 },
     },
     near: 1400, // a boss more than this far from every knight is left alone (no calling)
     /* Robert (2026-11-04): once a boss has been slain (save.archive), its minions also roam as ordinary Drowned at
@@ -766,6 +782,26 @@
     // it has soaked burstAt or every `every` s (one more bullet per `extra` soaked), and bashes what comes close
     prism: { reach: 520, front: 1.2, soak: 0.35, burstAt: 60, extra: 6, every: [7, 5], raise: 0.6, ring: [16, 26],
       speed: [100, 125], dmg: 8, bash: { reach: 66, wind: 0.45, time: 0.3, lunge: 260, kb: 360, cd: 1.6 } },
+    // the Rift Throne boss's minions: the Mite scuttles in, its back cracks and it bursts into a ring; the Wisp keeps its
+    // distance and flings stars and spins spirals; the Warden thrusts its halberd close in and plants it for a wall
+    mite: { crack: 0.6, near: 70, ring: 10, speed: 120, dmg: 7 },
+    swisp: { hover: 34, keep: [180, 300], every: [3.0, 2.2], charge: 0.6, star: 12, spin: 2.2, arms: 3, speed: 115, dmg: 7 },
+    warden: { reach: 84, draw: 0.5, thrust: 0.3, lunge: 280, kb: 300, cd: 1.4, plant: 0.8, every: 6, wall: [520, 22, 80], speed: 140, dmg: 7 },
+    /* the Lord of the Rift Throne (src/riftthrone.js). Asleep on his throne until you step into the arena: he wakes
+       (`wake` s), rises (`rise` s), then fights in three phases (below `phase` of his health he kneels for `kneel` s, can't
+       be hurt, bursts a ring and calls more minions). Between moves he waits `every[phase]` s.
+       Phase 1, side on, walking within keep[0]..keep[1]: Glaive Slam (raise, then a ring and a wall with a gap at you)
+       and Rift Storm (arms spread, a spiral). Phase 2 and 3, front on, his armour cracked: Sweep (fans swept across
+       you), Storm (more arms), Rift Tears (bursts round you), and he blinks across the arena. Phase 3 the rift also pours
+       a slow spiral the whole time. Beaten: `reward` into the run's loot, and everything carried comes home. */
+    riftlord: { wake: 1.4, rise: 1.0, keep: [170, 300], every: [2.0, 1.6, 1.2], phase: [0.66, 0.33], kneel: 2.2,
+      slam: { raise: 0.9, hit: 0.45, r: 84, ring: [20, 24, 28], wall: [760, 30, 100], speed: 130, dmg: 9 },
+      storm: { time: 3.2, arms: [3, 4, 5], rate: 6, spin: 1.3, speed: 105, dmg: 7 },
+      sweep: { wind: 0.7, fans: 4, n: 13, spread: 1.5, turn: 0.3, gap: 0.22, speed: 150, dmg: 8 },
+      tears: { n: [3, 4], r: [120, 200], open: 0.9, ring: 10, speed: 120, dmg: 7 },
+      blink: { out: 0.45, in: 0.45, far: 260 },
+      pour: { arms: 2, rate: 3, spin: 0.7, speed: 90, dmg: 6 },
+      reward: { shard: 60, aether: 4 } },
   };
 
   /* Abyssal Spires test room (Robert, 2026-11-05: try a dungeon with corridors and heights in the 3/4 view before
@@ -782,7 +818,7 @@
     mist: { corrupt: 3, see: 110, strike: 1.5, lantern: 85, torch: 120, bubble: 190, burn: 25, home: 1.5 }, // the zone the rooms' foes are made for (their health and damage); rooms: ROOMS in src/spires.js
     // a run's loot (step 6): Rift Shards per foe broken, per room cleared (by its heat, 0..1), in a side room's chest;
     // carried Aether Crystals come home too. Leave and you keep `keep` of it; fall and the mist keeps it all.
-    loot: { kill: { sentinel: 1, leaper: 1, bowman: 1, shade: 2, caller: 2, prism: 4 }, room: [2, 8], chest: { shard: [14, 20], aether: 2 }, keep: 0.5 },
+    loot: { kill: { sentinel: 1, leaper: 1, bowman: 1, shade: 2, caller: 2, prism: 4, swisp: 1, warden: 2 }, room: [2, 8], chest: { shard: [14, 20], aether: 2 }, keep: 0.5 },
   };
   // what the dungeons pay for at the base (src/rift.js): the Crystal Turret by level, the Mist Lantern, the Rift Portal
   DL.RIFT = {
