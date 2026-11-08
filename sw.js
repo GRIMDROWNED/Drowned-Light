@@ -2,7 +2,7 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.234";
+const VERSION = "0.15.235";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
@@ -148,7 +148,8 @@ const FILES = [
     "spires-foes/warden/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "rift-throne/": ["attackA", "attackB", "attackC", "back", "front", "right", "seated", "waking", "rising", "p2front", "p2sweep", "p2enraged", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "rift-throne/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
-    "spires/": ["arena", "throne", "well-dark", "well-lit", "floor-2", "floor-3", "floor-4", "kerb", "face-1-band", "face-1-foot", "face-2-band", "face-2-foot", "stairs", "bridge", "bridge-post", "post", "spire", "arch", "ring", "exit-banner", "crystal-1", "crystal-2", "crystal-3", "column-1", "column-1b", "column-2", "column-3", "rune-circle", "rune-glow", "bullet-0", "bullet-1", "bullet-2", "bullet-3", "sentinel", "sentinel-orbit"],
+    "spires/": ["arena", "throne", "well-dark", "well-lit", "floor-2", "floor-3", "floor-4", "kerb", "face-1-band", "face-1-foot", "face-2-band", "face-2-foot", "stairs", "bridge", "bridge-post", "post", "spire", "arch", "ring", "exit-banner", "crystal-1", "crystal-2", "crystal-3", "column-1", "column-1b", "column-2", "column-3", "rune-circle", "rune-glow", "bullet-0", "bullet-1", "bullet-2", "bullet-3", "sentinel", "sentinel-orbit", "chest-shut", "chest-open", "aether-1", "aether-2", "aether-3", "seal-1", "seal-2", "seal-3", "seal-4", "icon-shard", "icon-aether", "icon-bag", "icon-well"],
+    "rift/": ["turret-1", "turret-2", "turret-3", "bolt", "flash-1", "flash-2", "hit", "lantern-1", "lantern-2", "lantern-3", "portal-off", "portal-on"],
     "pyramid/": ["step-south", "step-north", "step-east", "step-west", "stair-south", "stair-north", "stair-east", "stair-west", "stairway-lane"],
     "ground/": ["campEarth", "campFlags", "campPaving", "grass", "dirt", "shore", "shallow", "deep", "boardwalk", "caveFloor", "rimDeep", "rimShore"],
   }).flatMap(([dir, names]) => names.map((n) => "assets/sprites/" + dir + n + ".png")),

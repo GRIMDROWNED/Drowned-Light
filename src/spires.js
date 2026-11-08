@@ -344,9 +344,9 @@
   // the knight is lost to this foe: they're in the mist and it's not close
   Sp.hidden = (p, e) => !!G.spires && Sp.misty(p.x, p.y) && Math.hypot(p.x - e.x, p.y - e.y) > DL.SPIRES.mist.see;
   // corruption per second in the Spires (0 out of the mist): updateCorruption in game.js
-  const lanternUp = () => !!(G.save.up && G.save.up.mistlantern);
-  Sp.corruption = (p) => (Sp.misty(p.x, p.y) ? DL.SPIRES.mist.corrupt * (lanternUp() ? DL.RIFT.lantern.corrupt : 1) : 0); // the Mist Lantern (src/rift.js) slows it
-  Sp.lanternR = () => (lanternUp() ? DL.RIFT.lantern.ring : DL.SPIRES.mist.lantern);
+  const lanternLv = () => Math.min(3, (G.save.up && G.save.up.mistlantern) || 0);
+  Sp.corruption = (p) => (Sp.misty(p.x, p.y) ? DL.SPIRES.mist.corrupt * DL.RIFT.lantern.corrupt[lanternLv()] : 0); // the Mist Lantern (src/rift.js) slows it
+  Sp.lanternR = () => (lanternLv() ? DL.RIFT.lantern.ring[lanternLv()] : DL.SPIRES.mist.lantern);
   // burn a carried Aether Crystal (the torch button in the Spires): false if none
   Sp.burn = function () {
     const sp = G.spires, M = DL.SPIRES.mist;
@@ -436,12 +436,12 @@
     AETHER.forEach(([lx, ly], i) => {
       const x = OX + lx, y = OY + ly;
       if (sp.took[i] || !mistAt(lx, ly, 1) || x < view.left - 40 || x > view.right + 40 || y < view.top - 60 || y > view.bottom + 20) return;
-      const pulse = 0.75 + 0.25 * Math.sin(t * 3 + i), im = IMG["crystal-3"];
+      const pulse = 0.75 + 0.25 * Math.sin(t * 3 + i), node = IMG["aether-" + (1 + (i % 3))], im = node || IMG["crystal-3"];
       c.globalCompositeOperation = "lighter";
       c.globalAlpha = 0.7 * pulse; c.drawImage(art.glow, x - 34, y - 46, 68, 68);
       c.globalAlpha = 1;
       c.globalCompositeOperation = "source-over";
-      if (im) { const w = im.width * 0.28, h = im.height * 0.28; c.drawImage(im, x - w / 2, y - h + 2, w, h); }
+      if (im) { const k = node ? 0.5 : 0.28, w = im.width * k, h = im.height * k; c.drawImage(im, x - w / 2, y - h + 2, w, h); }
       else c.drawImage(art.crystals[2], x - 10, y - 26, 20, 26);
       c.globalCompositeOperation = "lighter";
       c.globalAlpha = 0.5 * pulse; c.drawImage(art.glow, x - 14, y - 26, 28, 28);
@@ -599,7 +599,8 @@
   // until then (and in the node tests) the coded stone shows, and when the last one lands the room repaints.
   const ART_N = ["arena", "throne", "well-dark", "well-lit", "floor-2", "floor-3", "floor-4", "kerb", "face-1-band", "face-1-foot", "face-2-band", "face-2-foot", "stairs",
     "bridge", "bridge-post", "post", "spire", "arch", "ring", "exit-banner", "crystal-1", "crystal-2", "crystal-3",
-    "column-1", "column-1b", "column-2", "column-3", "rune-circle", "rune-glow"];
+    "column-1", "column-1b", "column-2", "column-3", "rune-circle", "rune-glow",
+    "chest-shut", "chest-open", "aether-1", "aether-2", "aether-3", "seal-1", "seal-2", "seal-3", "seal-4"];
   const IMG = {};
   let loading = false;
   function loadArt() {
@@ -1167,8 +1168,18 @@
       if (q) list.push({ y: OY + q[1], f: () => chest(c, OX + q[0], OY + q[1], t, !!sp.opened[id], !!sp.cleared[id]) });
     }
   };
-  // a side room's chest (coded until Robert's art): dark stone bound in violet, glowing once its room is won
+  // a side room's chest: dark stone bound in black iron, its crystal glowing once its room is won
   function chest(c, x, y, t, open, ready) {
+    const im = IMG[open ? "chest-open" : "chest-shut"];
+    if (im) {
+      const w = im.width / 2, h = im.height / 2;
+      c.save();
+      c.fillStyle = "rgba(0,0,0,0.35)"; c.beginPath(); c.ellipse(x, y + 1, 26, 7, 0, 0, Math.PI * 2); c.fill();
+      c.drawImage(im, x - w / 2, y - h + 3, w, h);
+      if (open || ready) { c.globalCompositeOperation = "lighter"; c.globalAlpha = (open ? 0.3 : 0.35) + 0.2 * Math.sin(t * 4); c.drawImage(art.glow, x - 34, y - (open ? 66 : 54), 68, 68); }
+      c.restore();
+      return;
+    }
     c.save();
     c.fillStyle = "rgba(0,0,0,0.35)"; c.beginPath(); c.ellipse(x, y + 2, 26, 8, 0, 0, Math.PI * 2); c.fill();
     c.fillStyle = "#2a2140"; c.fillRect(x - 22, y - 26, 44, 26);
@@ -1190,7 +1201,19 @@
   // a sealed way out: a wall of rune light standing across it
   function curtain(c, g, t, age) {
     const k = Math.min(1, age * 3), H = 70 * k, dx = (Math.cos(g.ang) * g.w) / 2, dy = (Math.sin(g.ang) * g.w) / 2;
-    const x = OX + g.x, y = OY + g.y;
+    const x = OX + g.x, y = OY + g.y, im = IMG["seal-" + (1 + (Math.floor(t * 8 + g.x) & 3))];
+    if (im && Math.abs(dx) > 12) { // Robert's flickering rune wall, its foot laid along the way out (sheared on a slanted bridge)
+      const s = (dx > 0 ? 1 : -1), ih = 78 * k;
+      c.save();
+      c.transform((2 * dx * s) / im.width, (2 * dy * s) / im.width, 0, ih / im.height, x - dx * s, y - dy * s - ih);
+      c.drawImage(im, 0, 0);
+      c.restore();
+      c.save(); c.lineCap = "round"; c.globalCompositeOperation = "lighter";
+      c.strokeStyle = "rgba(190,130,255,0.35)"; c.lineWidth = 10;
+      c.beginPath(); c.moveTo(x - dx, y - dy); c.lineTo(x + dx, y + dy); c.stroke();
+      c.restore();
+      return;
+    }
     c.save();
     c.globalCompositeOperation = "lighter";
     const gr = c.createLinearGradient(0, y - H, 0, y);

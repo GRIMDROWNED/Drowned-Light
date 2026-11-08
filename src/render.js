@@ -1780,6 +1780,7 @@
 
   function drawProjectile(c, b) {
     const a = Math.atan2(b.vy, b.vx), ux = Math.cos(a), uy = Math.sin(a);
+    if (b.crystal && DL.Rift.drawBolt(c, b, a)) return; // a Crystal Turret's drawn shard (src/rift.js)
     if (b.kind === "soul") {
       // Abigail's soul orb: a teal wisp trailing behind a dark round soul with two pale eyes
       const tt = DL.Game.t;

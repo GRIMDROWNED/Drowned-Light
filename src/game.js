@@ -1615,6 +1615,7 @@
             if (b.spore) DL.Fred.sporeHit(e, b);
             if (b.wyv) DL.Wyvern.boltHit(e, b); // David's bolt: burning, stunning, or leaping on as lightning
             if (b.ice) DL.Kits.chill(e, false); // the Frostweaver's frost bolt or his owl's shard: freezing, brittle
+            if (b.crystal) DL.Rift.hit(b.x, b.y); // a Crystal Turret's shard shatters on it
             const hp = e.hp;
             hitEnemy(e, b.dmg * DL.Kits.farShotMult(b), Math.atan2(b.vy, b.vx), b.soul ? 20 : 60);
             if (b.tithe) DL.Kits.blow(e, hp, b.dmg); // the Bloodsworn's crescent: its kills feed his Blood Tithe

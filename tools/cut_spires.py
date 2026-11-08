@@ -184,3 +184,60 @@ for src, name, w in ((S(RB, 'arena.png'), 'arena', 1400), (S(RB, 'throne.png'), 
     im = key(load(src))
     im = im.crop(bbox(im))
     save(fit(im, w=w)[0], name)
+
+# ---- step 8: the run's loot and the camp's dungeon buildings ----
+def crop(im):
+    return im.crop(bbox(im))
+
+
+def same_scale(cs, k, prefix, out=None):
+    """Each cell cut to its own bounds at one shared scale k (so levels keep their sizes against each other)."""
+    for i, c in enumerate(cs):
+        save(fit(crop(c), k=k)[0], f'{prefix}{i + 1}' if prefix[-1] == '-' else prefix + str(i + 1), **({} if out is None else out))
+
+
+# side-room chest, shut and open (one scale: the open lid stands taller)
+cs = cells(S(sp, 'chest.png'), 2, 1)
+k = 112 / (bbox(cs[0])[2] - bbox(cs[0])[0])
+save(fit(crop(cs[0]), k=k)[0], 'chest-shut')
+save(fit(crop(cs[1]), k=k)[0], 'chest-open')
+# Aether Crystal nodes in the mist: three shapes (the full-grown left column)
+cs = cells(S(sp, 'aether.png'), 3, 3)
+for i, c in enumerate((cs[0], cs[3], cs[6])):
+    save(fit(crop(c), h=64)[0], f'aether-{i + 1}')
+# the room seal's 4 flickering frames, each to one size so they swap cleanly
+cs = cells(S(sp, 'room-seal.png'), 4, 1)
+bs = [bbox(c) for c in cs]
+w = max(b[2] - b[0] for b in bs); h = max(b[3] - b[1] for b in bs)
+for i, (c, b) in enumerate(zip(cs, bs)):
+    cx = (b[0] + b[2]) // 2
+    f = c.crop((cx - w // 2, b[3] - h, cx - w // 2 + w, b[3]))
+    save(fit(f, h=150)[0], f'seal-{i + 1}')
+# icons: Rift Shard, Aether Crystal, loot sack, Mist Well token (small, for the HUD and menus)
+for src, name in ((S(sp, 'rift-shard.png'), 'icon-shard'), (S(sp, 'aether-icon.png'), 'icon-aether')):
+    save(fit(crop(key(load(src))), h=48)[0], name)
+cs = cells(S(sp, 'icons.png'), 2, 1)
+save(fit(crop(cs[0]), h=48)[0], 'icon-bag')
+save(fit(crop(cs[1]), h=48)[0], 'icon-well')
+
+# the camp's dungeon buildings, to assets/sprites/rift
+OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites', 'rift')
+os.makedirs(OUT, exist_ok=True)
+cs = cells(S('camp', 'crystal-turret.png'), 3, 1)  # levels 1-3; the launcher points right
+k = 190 / (bbox(cs[2])[3] - bbox(cs[2])[1])
+for i, c in enumerate(cs):
+    b = bbox(c)
+    print(f'turret-{i + 1} raw bbox', b)
+    save(fit(c.crop(b), k=k)[0], f'turret-{i + 1}')
+cs = cells(S('camp', 'crystal-turret-fx.png'), 4, 1)  # bolt, flash, big flash, shatter
+k = 56 / (bbox(cs[0])[2] - bbox(cs[0])[0])
+for c, name in zip(cs, ('bolt', 'flash-1', 'flash-2', 'hit')):
+    save(fit(crop(c), k=k)[0], name)
+cs = cells(S('camp', 'mist-lantern.png'), 3, 1)
+k = 230 / (bbox(cs[2])[3] - bbox(cs[2])[1])
+for i, c in enumerate(cs):
+    save(fit(crop(c), k=k)[0], f'lantern-{i + 1}')
+cs = cells(S('camp', 'rift-portal.png'), 2, 1)
+k = 330 / (bbox(cs[1])[3] - bbox(cs[1])[1])
+for c, name in zip(cs, ('portal-off', 'portal-on')):
+    save(fit(crop(c), k=k)[0], name)

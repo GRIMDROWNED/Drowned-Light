@@ -17,7 +17,8 @@
     else if (key === "hidden") el.classList.toggle("hidden", val);
     else el.style.setProperty(key, val);
   }
-  const chip = (k, n, cls = "") => `<span class="chip ${cls}"><i style="background:${DL.RESOURCES[k].color}"></i>${n}</span>`;
+  // the dungeon materials wear Robert's drawn icons (assets/sprites/spires/icon-*.png, style.css .chip.r-shard)
+  const chip = (k, n, cls = "") => `<span class="chip ${cls} r-${k}"><i style="background-color:${DL.RESOURCES[k].color}"></i>${n}</span>`;
   const costHtml = (cost) =>
     Object.entries(cost).map(([k, n]) => chip(k, n, (DL.Game.save.stash[k] || 0) >= n ? "ok" : "no") + `<span class="sr">${DL.RESOURCES[k].name}</span>`).join("");
 
@@ -476,7 +477,7 @@
     $("gateIntro").textContent = from === "portal"
       ? "The rift hums in the camp. Through it the roads beyond the Drowned Gate wait."
       : "Warm light breathes out of the open gate. Beyond it, roads lead down into the deep.";
-    $("gateList").innerHTML = DL.Rift.DUNGEONS.map((d) => `<button class="primary" data-dungeon="${d.id}" ${coop ? "disabled" : ""}>${d.name}<span class="sub">${d.text}${d.id === "spires" ? ` · Mist Wells lit: ${lit} of ${DL.Spires.WELLS_N}` : ""}</span></button>`).join("");
+    $("gateList").innerHTML = DL.Rift.DUNGEONS.map((d) => `<button class="primary" data-dungeon="${d.id}" ${coop ? "disabled" : ""}>${d.name}<span class="sub">${d.text}${d.id === "spires" ? ` · <i class="well-tok"></i>Mist Wells lit: ${lit} of ${DL.Spires.WELLS_N}` : ""}</span></button>`).join("");
     $("gateNote").textContent = coop ? "The dungeons can't be entered in co-op yet." : "Fall in a dungeon and the mist keeps everything you found. Walk out and you keep half.";
     $("screenGate").classList.remove("hidden");
   };
@@ -1163,7 +1164,7 @@
     const souls = DL.Abigail.won() ? 0 : DL.Abigail.held(), carcass = (DL.Den.carrying() ? `<span class="chip carcass"><i></i>Bone Wolf carcass</span>` : "") + (DL.Wyvern.carrying() ? `<span class="chip egg"><i></i>Wyvern egg</span>` : "");
     const bag = DL.Spires.bag(); // a dungeon run's finds (src/spires.js)
     const carried = DL.RES_KEYS.filter((k) => p.carried[k] > 0).map((k) => chip(k, p.carried[k])).join("") + (bag ? ["shard", "aether"].filter((k) => bag[k] > 0).map((k) => chip(k, bag[k])).join("") : "") + (souls ? `<span class="chip soul"><i></i>${souls} soul orb${souls > 1 ? "s" : ""}</span>` : "") + carcass;
-    set($("carried"), "html", carried ? `<span class="lbl">Carrying</span>${carried}` : "");
+    set($("carried"), "html", carried ? `<span class="lbl${bag ? " bag" : ""}">Carrying</span>${carried}` : ""); // in a dungeon: the loot sack
 
     // objective banner
     let obj = "";
