@@ -2,7 +2,7 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.237";
+const VERSION = "0.15.238";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
@@ -45,7 +45,7 @@ const FILES = [
     "bloodsworn/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "bloodsworn/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "cinderbrand/": ["attackA", "attackB", "attackC", "back", "front", "guardF", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
-    "cinderbrand/side/": ["chop", "death", "guard", "hurt", "lunge", "walk1", "walk2", "walk3", "walk4"],
+    "cinderbrand/side/": ["chop", "death", "guard", "guard1", "guard2", "guard3", "hurt", "lunge", "walk1", "walk2", "walk3", "walk4"],
     "bloodsworn-f2/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "bloodsworn-f2/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "bloodsworn-f3/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],

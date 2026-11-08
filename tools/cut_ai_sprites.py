@@ -165,6 +165,8 @@ GRIDS = {
     'crimson-greatsword/poses-b.png': (6, 1, POSES_B),
     'crimson-greatsword/stances.png': (3, 1, ['13_lungeL', '14_guardF', '15_lunge']),
     'crimson-greatsword/guard.png': (2, 1, ['16_chop', '17_guard']),
+    # his planted guard (kneeling) at three heats: cold, hot, white-hot (a standing set is kept as heat-stand.png)
+    'crimson-greatsword/heat-kneel.png': (3, 1, ['18_guard1', '19_guard2', '20_guard3']),
     # the Abyssal Spires' foes (src/spirefoes.js), on green: the Chain Leaper and the Bridge Bowman
     'chain-leaper/poses-a.png': (3, 2, POSES_A),
     'chain-leaper/poses-b.png': (3, 2, POSES_B),
@@ -472,7 +474,10 @@ SETS = {
         'crimson-greatsword/15_lunge.png': ('side/lunge', {'height': 66}),
         'crimson-greatsword/14_guardF.png': ('guardF', {'height': 70}),
         'crimson-greatsword/16_chop.png': ('side/chop', {'height': 102}),
-        'crimson-greatsword/17_guard.png': ('side/guard', {'height': 76})})),
+        'crimson-greatsword/17_guard.png': ('side/guard', {'height': 76}),
+        'crimson-greatsword/18_guard1.png': ('side/guard1', {'height': 78}),
+        'crimson-greatsword/19_guard2.png': ('side/guard2', {'height': 78}),
+        'crimson-greatsword/20_guard3.png': ('side/guard3', {'height': 78})})),
     'chain-reaper': ('chain-reaper', 'chain-reaper/01_front.png', 84, 1, dict(twelve('chain-reaper', TWELVE_FILES), **{
         'chain-reaper/13_dash.png': ('side/dash', {'height': 70})})),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
