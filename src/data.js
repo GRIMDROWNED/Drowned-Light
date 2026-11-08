@@ -415,12 +415,14 @@
       // Forgeheart (20): an eruption spends half the heat and bursts in a ring `ring` px round where he stops.
       ability: { id: "brand", name: "Brand Thrust", oil: 12, cd: 9, dmg: 30, kb: 260, burn: 5, reach: 70, width: 44, speed: 720, dash: 0.16, far: 1.5,
         erupt: 1.8, fire: 12, fireT: 3, ring: 130,
-        guard: { block: 0.7, arc: 2.2, max: 3, riposte: 1 },
+        // Riposte (10) also cracks the ground round him with magma while he guards: a ring from `r0` px spreading to `rMax`
+        // over `grow` s, lighting every Drowned standing in it (`burn` a second x his power) (Robert, 2026-11-08)
+        guard: { block: 0.7, arc: 2.2, max: 3, riposte: 1, magma: { r0: 40, rMax: 160, grow: 2.5, burn: 6 } },
         desc: "Hold to plant your greatsword and guard: blows from the front lose most of their force and stoke the blade. Let go to lunge in a thrust that pierces every Drowned in a line and sets them burning. At full heat it erupts in a line of fire." },
       special: { name: "Forge Heat", desc: "Every blow that lands heats your sword, and so does every blow you block. A hot blade cleaves up to 25% harder; at full heat your next Brand Thrust erupts in flame." },
       milestones: [
         { name: "Tempered Steel", desc: "Your sword heats half again as fast, and from half heat your cleaves set the Drowned alight." },
-        { name: "Riposte", desc: "A blow your guard blocks is struck straight back at the Drowned that threw it." },
+        { name: "Riposte", desc: "A blow your guard blocks is struck straight back at the Drowned that threw it, and while you guard the ground cracks with magma in a spreading ring that sets every Drowned in it alight." },
         { name: "Brand Line", desc: "Brand Thrust lunges half again as far and always leaves a burning line behind it." },
         { name: "Forgeheart", desc: "An erupting Brand Thrust spends only half your heat and bursts in a ring of fire where you stop." },
       ],
