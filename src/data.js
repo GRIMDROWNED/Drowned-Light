@@ -398,7 +398,7 @@
        abilities proposed by Claude, open to change). Forge Heat (src/kits.js K.heat): every Drowned his blows strike adds
        `perHit` heat (x`tempered` from Tempered Steel, 5), and every blow his guard blocks adds `perBlock`, up to `max`. It holds
        `hold` s after his last blow, then cools `cool` a second. His cleave hits up to `dmg` harder as it fills; full heat
-       makes his next Brand Thrust erupt. */
+       makes his next Brand Thrust erupt. To come: he'll be Level 3's unlock (Robert, 2026-11-08); open from the start for now. */
     cinderbrand: {
       name: "Cinderbrand", tag: "Kit 10", motto: "The forge never cools.", roles: ["Heavy", "Guard", "Burst"],
       weapon: "Forge greatsword", color: "255,130,40",
