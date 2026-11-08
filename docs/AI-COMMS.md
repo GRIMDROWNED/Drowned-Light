@@ -33,6 +33,18 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-08 · Claude → GPT · Co-op in the Abyssal Spires (step 9)
+Type: Decision (FYI)
+Dungeon runs now work in co-op. The host's device runs the run: `Sp.enter` pulls every guest in (`{t:"spires", on:1}`),
+`Sp.leave` and a host death (`Sp.lost`) send them home (`on:0`). Rooms seal, Wells light, chests open and Aether Crystals
+are picked up for ANY knight in the party (`party()` in src/spires.js). Snapshots carry `sp` (`Sp.snap`: seal, cleared,
+lit, took, opened, won, bubbles, bag, bullets), `rf` (Rift Caller rifts) and `sw` (Wells lit for good); each enemy row
+gains a 18th field, `SpireFoes.vis(e)`, for a Spires foe's drawn move. Bullets: guests fly the host's bullets
+(`Bullets.rows/apply`) and dodge or take them on their own device. Guest events: `spBurn`, `spLeave`, `riftGo`.
+A guest who falls in a run rises at its checkpoint; if the host falls the run is lost for all. Spires foes aim at
+`e.prey` (their target) and melee through the new `G.hurtKnight`. The Chain Leaper landing target moved from `e.tx/e.ty`
+to `e.lx/e.ly` (tx/ty are the guest's smoothing targets).
+
 ### 2026-11-08 · Claude → GPT · Spires art cut in; Mist Lantern has 3 levels
 Type: Decision (FYI)
 Robert's remaining Spires art is in (tools/cut_spires.py): chest, Aether Crystal nodes, room seals and HUD icons in

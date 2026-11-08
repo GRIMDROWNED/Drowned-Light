@@ -27,6 +27,7 @@
     const k = e.def.spire;
     if (!k) return false;
     e.state = "move";
+    e.prey = p; // the knight it hunts: its aimed volleys follow them (co-op: not always the host)
     if (DL.Kits.frozen(e)) { e.moving = false; return true; } // frozen solid: it holds still
     if (k !== "shade" && !e.act && DL.Spires.hidden(p, e)) { prowl(e, dt); return true; } // lost you in the mist: it prowls
     ({ leaper, bowman, shade, caller, prism, mite, swisp, warden, riftlord: DL.RiftThrone.busy })[k](e, dt, p, dp);
@@ -82,7 +83,7 @@
         const a = Math.atan2(p.y - e.y, p.x - e.x), far = Math.min(dp, L(e, S.hop));
         let tx = e.x + Math.cos(a) * far, ty = e.y + Math.sin(a) * far;
         for (let i = 0; i < 6 && !DL.Spires.canStand(e, tx, ty); i++) { tx = (tx + e.x) / 2; ty = (ty + e.y) / 2; }
-        e.tx = tx; e.ty = ty; e.aim = a; e.angle = a;
+        e.lx = tx; e.ly = ty; e.aim = a; e.angle = a;
       }
       return;
     }
@@ -93,7 +94,7 @@
       if (e.t <= 0) { e.act = "air"; e.t = S.air; e.pose = 1; e.x0 = e.x; e.y0 = e.y; }
     } else if (e.act === "air") {
       const u = 1 - Math.max(0, e.t) / S.air;
-      e.x = e.x0 + (e.tx - e.x0) * u; e.y = e.y0 + (e.ty - e.y0) * u;
+      e.x = e.x0 + (e.lx - e.x0) * u; e.y = e.y0 + (e.ly - e.y0) * u;
       e.lift = S.peak * Math.sin(Math.PI * u);
       if (e.t <= 0) slam(e, p);
     } else if (e.act === "slam") {
@@ -103,12 +104,12 @@
   function slam(e, p) {
     const S = B.leaper;
     e.act = "slam"; e.t = S.slam; e.pose = 2; e.lift = 0;
-    e.x = e.tx; e.y = e.ty;
+    e.x = e.lx; e.y = e.ly;
     G.camera.shake = Math.max(G.camera.shake || 0, 4);
     for (let i = 0; i < 14; i++) G.puff(e.x + rand(-22, 22), e.y - rand(0, 10), "rgba(210,160,255,0.75)", 90, 0.6);
     DL.Sound.play("hit");
     if (Math.hypot(p.x - e.x, p.y - e.y) < S.hitR && !(p.inv > 0) && !(p.dashT > 0))
-      G.hurtPlayer(e.dmg, Math.atan2(p.y - e.y, p.x - e.x), e.def.name);
+      G.hurtKnight(p, e.dmg, Math.atan2(p.y - e.y, p.x - e.x), e.def.name);
     // the shard ring: one, or two turned half a gap so the second fills the first's holes
     const n = N(e, S.ring), rings = N(e, S.rings), sp = L(e, S.speed), x = e.x, y = e.y - 10, o0 = rand(0, TAU);
     const o = { by: "a Chain Leaper's shards", dmg: S.dmg, speed: sp, kind: 1 };
@@ -204,7 +205,7 @@
     const S = B.shade, n = N(e, S.fan), volleys = N(e, S.volleys), x = e.x + Math.cos(e.aim) * 18, y = e.y - e.lift - 40;
     const o = { by: "a Mist Shade", dmg: S.dmg, speed: L(e, S.speed), kind: 0 };
     for (let i = 0; i < volleys; i++) DL.Bullets.later(i * 0.32, e, () => {
-      const p = G.player;
+      const p = e.prey || G.player; // whoever it hunts
       DL.Bullets.fan(x, y, Math.atan2(p.y - 18 - y, p.x - x), n, L(e, S.spread), o);
     });
     DL.Sound.play("whisper");
@@ -252,7 +253,7 @@
   }
   // each rift opens, spits its bursts at the knight, and closes; one dies with its Caller
   function tickRifts(e, dt) {
-    const S = B.caller, p = G.player;
+    const S = B.caller, p = e.prey || G.player;
     for (const r of rifts) {
       if (r.owner !== e) continue;
       r.t += dt;
@@ -288,6 +289,18 @@
   }
   F.drawRifts = function (c, t) { for (const r of rifts) if (!r.owner.removed) drawRift(c, r, t); };
 
+  /* ---------------- co-op ---------------- */
+  // Host: what a friend's screen needs to draw a Spires foe's move (its pose, telegraphs, fading, lift), per snapshot
+  const VIS = ["act", "t", "pose", "anim", "lift", "fade", "glint", "safe", "lanes", "width", "crack", "tearAt", "charge", "fireT", "phase", "lx", "ly"];
+  const r1 = (v) => (typeof v === "number" ? Math.round(v * 10) / 10 : v);
+  F.vis = (e) => { const o = {}; for (const k of VIS) o[k] = e[k] == null ? null : r1(e[k]); return o; };
+  // Host: the open rifts near a friend; guest: draw them as sent
+  F.rows = (near) => rifts.filter((r) => !r.owner.removed && near(r.x, r.y, 900)).map((r) => [Math.round(r.x), Math.round(r.y), r1(r.t)]);
+  F.applyRifts = function (rows) {
+    rifts.length = 0;
+    for (const r of rows || []) rifts.push({ x: r[0], y: r[1], t: r[2], owner: { removed: false }, shots: 99 });
+  };
+
   /* ---------------- the Prism Knight ---------------- */
   function prism(e, dt, p, dp) {
     const S = B.prism;
@@ -310,7 +323,7 @@
     } else if (e.act === "bash") {
       if (!e.hitDone && Math.hypot(p.x - e.x, p.y - e.y) < S.bash.reach && !(p.inv > 0) && !(p.dashT > 0)) {
         e.hitDone = true;
-        G.hurtPlayer(e.dmg, e.aim, e.def.name);
+        G.hurtKnight(p, e.dmg, e.aim, e.def.name);
         p.kx = (p.kx || 0) + Math.cos(e.aim) * S.bash.kb; p.ky = (p.ky || 0) + Math.sin(e.aim) * S.bash.kb;
       }
       if (e.t <= 0) { e.act = null; e.pose = null; e.bashCd = S.bash.cd; }
@@ -343,7 +356,7 @@
     if (Math.random() < 0.4) G.puff(e.x + rand(-8, 8), e.y - rand(0, 20), "rgba(220,170,255,0.7)", 50, 0.4);
     if (e.t <= 0) {
       DL.Bullets.ring(e.x, e.y - 12, S.ring, rand(0, TAU), { by: "a Rift Mite bursting", dmg: S.dmg, speed: S.speed, kind: 1 });
-      if (Math.hypot(p.x - e.x, p.y - e.y) < 40 && !(p.inv > 0) && !(p.dashT > 0)) G.hurtPlayer(e.dmg, Math.atan2(p.y - e.y, p.x - e.x), e.def.name);
+      if (Math.hypot(p.x - e.x, p.y - e.y) < 40 && !(p.inv > 0) && !(p.dashT > 0)) G.hurtKnight(p, e.dmg, Math.atan2(p.y - e.y, p.x - e.x), e.def.name);
       for (let i = 0; i < 12; i++) G.puff(e.x + rand(-14, 14), e.y - rand(0, 24), "rgba(220,170,255,0.85)", 90, 0.6);
       DL.Sound.play("hit");
       e.hp = 0; e.burst = true; G.kill(e);
@@ -392,7 +405,7 @@
     } else if (e.act === "thrust") {
       if (!e.hitDone && Math.hypot(p.x - e.x, p.y - e.y) < S.reach && !(p.inv > 0) && !(p.dashT > 0)) {
         e.hitDone = true;
-        G.hurtPlayer(e.dmg, e.aim, e.def.name);
+        G.hurtKnight(p, e.dmg, e.aim, e.def.name);
         p.kx = (p.kx || 0) + Math.cos(e.aim) * S.kb; p.ky = (p.ky || 0) + Math.sin(e.aim) * S.kb;
       }
       if (e.t <= 0) { e.act = null; e.pose = null; e.bashCd = S.cd; }
@@ -417,9 +430,9 @@
     if (e.def.spire === "leaper" && (e.act === "crouch" || e.act === "air")) {
       const S = B.leaper, k = e.act === "air" ? 1 - Math.max(0, e.t) / S.air : 0.3 * (1 - e.t / S.crouch);
       c.strokeStyle = `rgba(220,150,255,${0.35 + 0.5 * k})`; c.lineWidth = 2;
-      c.beginPath(); c.ellipse(e.tx, e.ty, S.hitR, S.hitR * 0.55, 0, 0, TAU); c.stroke();
+      c.beginPath(); c.ellipse(e.lx, e.ly, S.hitR, S.hitR * 0.55, 0, 0, TAU); c.stroke();
       c.fillStyle = `rgba(190,110,255,${0.08 + 0.25 * k})`;
-      c.beginPath(); c.ellipse(e.tx, e.ty, S.hitR * k, S.hitR * 0.55 * k, 0, 0, TAU); c.fill();
+      c.beginPath(); c.ellipse(e.lx, e.ly, S.hitR * k, S.hitR * 0.55 * k, 0, 0, TAU); c.fill();
     } else if (e.def.spire === "mite" && e.act === "crack") { // where it bursts
       const k = 1 - Math.max(0, e.t) / B.mite.crack;
       c.strokeStyle = `rgba(230,170,255,${0.3 + 0.5 * k})`; c.lineWidth = 2;

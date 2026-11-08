@@ -112,11 +112,11 @@
     if (e.t > 0) return;
     const S = T().slam, sc = e.def.scale, a = e.aim;
     e.act = "hit"; e.t = S.hit; e.anim = ["attack", 1, sideOn(a)];
-    const ix = e.x + Math.cos(a) * 90 * sc, iy = e.y + Math.sin(a) * 60 * sc, p = G.player;
+    const ix = e.x + Math.cos(a) * 90 * sc, iy = e.y + Math.sin(a) * 60 * sc, p = e.prey || G.player;
     G.camera.shake = 9;
     for (let i = 0; i < 18; i++) G.puff(ix + rand(-30, 30), iy - rand(0, 20), "rgba(220,170,255,0.8)", 110, 0.7);
     DL.Sound.play("hit");
-    if (Math.hypot(p.x - ix, p.y - iy) < S.r && !(p.inv > 0) && !(p.dashT > 0)) G.hurtPlayer(e.dmg, a, e.def.name);
+    if (Math.hypot(p.x - ix, p.y - iy) < S.r && !(p.inv > 0) && !(p.dashT > 0)) G.hurtKnight(p, e.dmg, a, e.def.name);
     const o = { by: "the Lord of the Rift Throne's glaive", dmg: S.dmg, speed: S.speed, kind: 1 };
     DL.Bullets.ring(ix, iy - 10, S.ring[e.phase], rand(0, TAU), o);
     DL.Bullets.later(0.35, e, () => DL.Bullets.wall(e.x, e.y - 40, Math.atan2(p.y - e.y, p.x - e.x), S.wall[0], S.wall[1], S.wall[2], { ...o, kind: 0 }));
@@ -150,7 +150,7 @@
     const S = T().blink;
     e.fade = Math.max(0, e.t / S.out);
     if (e.t > 0) return;
-    const p = G.player, f = DL.Spires.floorOf(e.room);
+    const p = e.prey || G.player, f = DL.Spires.floorOf(e.room);
     for (let i = 0; i < 20; i++) {
       const x = DL.rand(f[0] + 120, f[2] - 120) + DL.SPIRES.x, y = DL.rand(f[1] + 120, f[3] - 120) + DL.SPIRES.y;
       if (!DL.Spires.canStand(e, x, y, 50) || Math.hypot(x - p.x, y - p.y) < S.far) continue;
@@ -192,7 +192,13 @@
     G.save.riftlord = (G.save.riftlord || 0) + 1;
     DL.Spires.won(S.reward);
     G.persist();
-    say("The Lord of the Rift Throne drops to his knees, and the rift behind him tears him apart into light.", "good");
+    const fell = "The Lord of the Rift Throne drops to his knees, and the rift behind him tears him apart into light.";
+    say(fell, "good");
+    DL.Net.say(fell, "good"); // every friend in the run sees it too (and wins the Chain Reaper on their device: RT.guestWon)
+    RT.guestWon();
+  };
+  // The Chain Reaper answers whoever was there when he fell: the host here, a friend from the run's snapshot (src/spires.js)
+  RT.guestWon = function () {
     if (!G.kitOpen("chainReaper")) {
       G.unlockKit("chainReaper", true);
       setTimeout(() => say("Out of the light where he fell steps a knight in a violet gas mask, a chain sickle at his hip. The Chain Reaper answers you now: choose him when you begin a new game.", "good"), 3500);

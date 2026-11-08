@@ -8,7 +8,8 @@
    What it buys (DL.UPGRADES with `rift`, hidden until Rift Shards first come home):
      Crystal Turret  turrets by the camp's gates that spin out slow spirals of crystal at the Drowned (3 levels)
      Mist Lantern    in a dungeon's mist your lantern lights a wider ring and corruption builds slower (src/spires.js)
-   Numbers: DL.RIFT and DL.SPIRES.loot (src/data.js). Host only; co-op runs come with the co-op pass (step 9).
+   Numbers: DL.RIFT and DL.SPIRES.loot (src/data.js). Co-op (step 9): any knight may choose a dungeon, and the host's
+   device takes the whole party in (src/spires.js); the loot comes home to the host's stash, which is everyone's.
    Art (Robert's, cut by tools/cut_spires.py to assets/sprites/rift, drawn at half size): the turret's 3 levels (its
    launcher drawn pointing right, so it's mirrored to face Drowned on the left), its bolt, muzzle flash and shatter,
    the Mist Lantern's 3 levels and the Rift Portal (dormant and open). */
@@ -47,7 +48,8 @@
   ];
   Rift.go = function (id) {
     const d = Rift.DUNGEONS.find((q) => q.id === id);
-    if (!d || (DL.Net && DL.Net.role)) return false;
+    if (!d) return false;
+    if (G.isGuest()) { DL.Net.event({ t: "riftGo", id }); return true; } // the host's device takes everyone in
     d.go();
     return true;
   };
@@ -79,7 +81,7 @@
     if (!p || G.state !== "play" || G.cave) { atGate = atPortal = false; return; }
     // the Rift Portal at camp: step into its swirl (not in co-op yet: then it stands dormant)
     const ps = Rift.portalSpot();
-    if (ps && !(DL.Net && DL.Net.role)) {
+    if (ps) {
       const dx = p.x - ps.x, dy = p.y - ps.y;
       if (Math.abs(dx) < 34 && dy > -14 && dy < 16) { if (!atPortal) { atPortal = true; DL.UI.openGate("portal"); } }
       else if (Math.hypot(dx, dy) > 90) atPortal = false;
@@ -93,10 +95,9 @@
   // the Rift Portal's card, top of the camp's Buildings tab
   Rift.card = function () {
     if (!Rift.portal()) return "";
-    const coop = DL.Net && DL.Net.role;
     return `<article class="card rift-card"><header><h3>Rift Portal</h3><span class="tag">Open</span></header>
       <p>Every Mist Well in the Spires burns, and their light holds a rift open here in the camp: a way straight to the roads beyond the Drowned Gate.</p>
-      <footer>${coop ? `<span class="req">Not in co-op yet</span>` : ""}<button data-act="rift" ${coop ? "disabled" : ""}>Step through</button></footer></article>`;
+      <footer><button data-act="rift">Step through</button></footer></article>`;
   };
 
   /* ---------------- the Crystal Turret ---------------- */
@@ -142,7 +143,7 @@
     if (lv) Rift.spots().forEach((s, i) => list.push({ y: s.y, f: () => (IMG["turret-" + lv] ? turretArt(c, s, i, lv, t) : turret(c, s.x, s.y, t + i)) }));
     const ls = Rift.lanternSpot(), ll = Math.min(3, G.save.up.mistlantern || 0), li = IMG["lantern-" + ll];
     if (ls && li) list.push({ y: ls.y, f: () => draw(c, li, ls.x, ls.y + 4) });
-    const ps = Rift.portalSpot(), open = !(DL.Net && DL.Net.role), pi = IMG[open ? "portal-on" : "portal-off"];
+    const ps = Rift.portalSpot(), open = true, pi = IMG[open ? "portal-on" : "portal-off"];
     if (ps && pi) list.push({ y: ps.y, f: () => portalArt(c, pi, ps, open, t) });
     if (hits.length && IMG.hit) list.push({ y: 1e9, f: () => {
       for (const h of hits) { c.globalAlpha = 1 - h.t / 0.25; draw(c, IMG.hit, h.x, h.y + 11, 0.4 + h.t); }
@@ -210,6 +211,6 @@
     if (G.spires || G.cave) return;
     const ls = Rift.lanternSpot(), ps = Rift.portalSpot();
     if (ls) L.push({ x: ls.x, y: ls.y - 90, r: 70 + 20 * G.save.up.mistlantern, s: 0.5, col: "215,180,255", a: 0.8 });
-    if (ps && !(DL.Net && DL.Net.role)) L.push({ x: ps.x, y: ps.y - 60, r: 120, s: 0.6, col: "190,130,255", a: 0.85 });
+    if (ps) L.push({ x: ps.x, y: ps.y - 60, r: 120, s: 0.6, col: "190,130,255", a: 0.85 });
   };
 })(window.DL);

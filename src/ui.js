@@ -473,12 +473,13 @@
     if (G.state !== "play") return;
     G.state = "gate";
     UI.showHud(false);
-    const coop = !!(DL.Net && DL.Net.role), lit = DL.Rift.wellsLit();
+    const coop = !!(DL.Net && DL.Net.role), lit = DL.Rift.wellsLit(); // in co-op the whole party goes in together
     $("gateIntro").textContent = from === "portal"
       ? "The rift hums in the camp. Through it the roads beyond the Drowned Gate wait."
       : "Warm light breathes out of the open gate. Beyond it, roads lead down into the deep.";
-    $("gateList").innerHTML = DL.Rift.DUNGEONS.map((d) => `<button class="primary" data-dungeon="${d.id}" ${coop ? "disabled" : ""}>${d.name}<span class="sub">${d.text}${d.id === "spires" ? ` · <i class="well-tok"></i>Mist Wells lit: ${lit} of ${DL.Spires.WELLS_N}` : ""}</span></button>`).join("");
-    $("gateNote").textContent = coop ? "The dungeons can't be entered in co-op yet." : "Fall in a dungeon and the mist keeps everything you found. Walk out and you keep half.";
+    $("gateList").innerHTML = DL.Rift.DUNGEONS.map((d) => `<button class="primary" data-dungeon="${d.id}">${d.name}<span class="sub">${d.text}${d.id === "spires" ? ` · <i class="well-tok"></i>Mist Wells lit: ${lit} of ${DL.Spires.WELLS_N}` : ""}</span></button>`).join("");
+    $("gateNote").textContent = coop ? "Everyone goes in together and shares one bag. If the host falls, the mist keeps it all; a friend who falls rises at the last Mist Well. Walk out and you keep half."
+      : "Fall in a dungeon and the mist keeps everything you found. Walk out and you keep half.";
     $("screenGate").classList.remove("hidden");
   };
   UI.closeGate = function (go) {

@@ -193,6 +193,7 @@
       for (const c of DL.World.chunks.values()) for (const o of c.objects) if (o.harvested || o.dead || (o.maxHp && o.hp < o.maxHp)) harvested.push(objRow(o));
       sendTo(g, { t: "welcome", v: VERSION, id: g.id, up: G.save.up, difficulty: G.save.difficulty, day: G.save.day, nights: G.save.nights, time: G.time, ob: harvested });
       say(`A friend joined as the ${a.label} (Lv ${a.kitLevel}).`, "good");
+      DL.Spires.join(a); // in the middle of a run: straight in with you
       DL.Sound.play("dawn");
     } else if (m.t === "state") {
       const a = g.ally;
@@ -273,6 +274,15 @@
     } else if (ev.t === "wyvEgg") {
       // a friend walked into the wyvern's nest and took an egg: the mother comes for them
       DL.Wyvern.takeHost(g.id);
+    } else if (ev.t === "spBurn") {
+      // a friend burns one of the party's Aether Crystals: its light follows their knight
+      if (g && g.ally && !DL.Spires.burn(g.ally)) sendTo(g, { t: "say", m: "The party has no Aether Crystals left to burn.", k: "warn" });
+    } else if (ev.t === "spLeave") {
+      // a friend walked into the way out (or stood at a lit Well): the whole party goes home
+      if (G.spires && !G.spires.guest) { say(`${who} leads the way out of the mist.`, "good"); DL.Spires.leave(!!ev.all && !!G.spires.won); }
+    } else if (ev.t === "riftGo") {
+      // a friend chose a dungeon at the open Gate or the Rift Portal: everyone goes in
+      if (G.state === "play" && !G.spires && !G.cave && DL.Rift.go(ev.id)) say(`${who} opens the way. You all step through.`, "good");
     } else if (ev.t === "deposit") {
       const parts = [];
       for (const k of DL.RES_KEYS) if (ev.res[k] > 0) { G.save.stash[k] += ev.res[k]; parts.push(`${ev.res[k]} ${DL.RESOURCES[k].name}`); }
@@ -326,7 +336,9 @@
       en: G.enemies.filter((e) => near(e.x, e.y, 1100)).map((e) => [e.id, TYPES.indexOf(e.type), r1(e.x), r1(e.y), r1(e.angle), e.state === "windup" ? 1 : e.state === "recover" ? 2 : 0,
         r1(e.stT), r1(e.aim || 0), Math.round(e.hp), Math.round(e.maxHp), r1(e.rise), e.moving ? 1 : 0, e.dormant ? 1 : 0, r1(e.burn || 0), r1(e.bleed || 0), e.cursed ? 1 : 0,
         // Fred's marks: 1 befuddled, 2 turned, 4 asleep, 8 spored; the Frostweaver's: 16 frozen, 32 brittle
-        (e.conf > 0 ? 1 : 0) | (e.mind > 0 ? 2 : 0) | (e.sleep && e.stun > 0 ? 4 : 0) | (e.spore > 0 ? 8 : 0) | (e.frost > 0 ? 16 : 0) | (e.brittle > 0 ? 32 : 0)]),
+        (e.conf > 0 ? 1 : 0) | (e.mind > 0 ? 2 : 0) | (e.sleep && e.stun > 0 ? 4 : 0) | (e.spore > 0 ? 8 : 0) | (e.frost > 0 ? 16 : 0) | (e.brittle > 0 ? 32 : 0),
+        // a Spires foe's move as drawn: its pose, telegraphs, fading and lift (src/spirefoes.js)
+        e.def.spire || e.def.sentinel ? DL.SpireFoes.vis(e) : 0]),
       pr: G.projectiles.filter((b) => near(b.x, b.y, 900)).map((b) => [r1(b.x), r1(b.y), Math.round(b.vx), Math.round(b.vy), b.kind, b.col, b.hostile ? 1 : 0]),
       to: G.torches.map((o) => [r1(o.x), r1(o.y), r1(o.t), o.max, Math.round(o.r), o.type, Math.round(o.hp)]),
       lz: G.lightZones.map((z) => [r1(z.x), r1(z.y), Math.round(z.r), r1(z.t), z.heal ? 1 : 0, z.fire ? 1 : 0]),
@@ -345,6 +357,9 @@
       sw: G.stoneWalls.filter((w) => near(w.x, w.y, 1100)).map((w) => [w.id, w.owner, r1(w.x), r1(w.y), r1(w.ang), w.len, w.hits, r1(w.t)]),
       rs: DL.Rose.snap(), // the Deadly Rose: [her thorn vines, [her id, whirling, the move she's winding up]]
       cv: DL.Cave.snap(), // Derek's Hollow: [wave, fighting, seconds to the next wave, Drowned still to come]
+      // a run in the Abyssal Spires: its rooms, Wells, finds, bubbles of light and bullets; and the Rift Callers' rifts
+      sp: DL.Spires.snap(near), rf: G.spires ? DL.SpireFoes.rows(near) : 0,
+      sw: G.save.spiresWells || 0, // the Wells lit for good: the camp's Rift Portal opens on all of them
       // Kindles, one per knight who lit theirs: [id, owner, x, y, angle, moving, angle he leads toward or null]
       kd: DL.Kindle.rows(),
       // Abigails, one per knight who won her: [id, owner, x, y, angle, moving, throw time left, blessing left]
@@ -511,6 +526,7 @@
       DL.Wyvern.wonGuest(m.m);
       if (DL.UI.refreshCamp) DL.UI.refreshCamp();
     } else if (m.t === "cave" || m.t === "caveMend") DL.Cave.guestMsg(m);
+    else if (m.t === "spires") DL.Spires.guestMsg(m);
     else if (m.t === "snap") applySnap(m);
   }
 
@@ -525,6 +541,9 @@
     G.hostState = m.state;
     G.flame.hp = m.flame[0]; G.flame.max = m.flame[1]; G.flame.lit = !!m.flame[2];
     DL.Cave.applySnap(m.cv);
+    DL.Spires.applySnap(m.sp);
+    G.save.spiresWells = m.sw || {}; // (a guest's own save is never written)
+    DL.SpireFoes.applyRifts(m.rf);
     DL.Rose.applySnap(m.rs);
     if (m.sm) G.save.summons = m.sm;
     if (m.tr) G.save.trophies = m.tr;
@@ -560,6 +579,7 @@
       e.tx = r[2]; e.ty = r[3]; e.angle = r[4];
       e.state = r[5] === 1 ? "windup" : r[5] === 2 ? "recover" : "move";
       e.stT = r[6]; e.aim = r[7]; e.hp = r[8]; e.maxHp = r[9]; e.rise = r[10]; e.moving = !!r[11]; e.dormant = !!r[12]; e.burn = r[13]; e.bleed = r[14]; e.cursed = !!r[15]; e.fx = r[16] || 0;
+      if (r[17]) Object.assign(e, r[17]);
       next.push(e);
     }
     // a Bone Wolf leaves its carcass (sent with the den) instead of dissolving

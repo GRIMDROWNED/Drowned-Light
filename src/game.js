@@ -388,6 +388,9 @@
       updateCorruption(dt);
     }
     DL.Net.smooth(dt);
+    DL.Spires.update(dt); // a run in the host's Spires: the portals and seals round this knight (src/spires.js)
+    DL.Bullets.update(dt); // the host's bullets, flown on and dodged here (src/bullets.js)
+    DL.Rift.local(); // the open Drowned Gate and the camp's Rift Portal
     DL.Rose.local();
     DL.Finale.update(dt);
     DL.Finale.local();
@@ -406,13 +409,14 @@
     p.carried = emptyRes();
     sfx("death");
     for (let i = 0; i < 30; i++) puff(p.x + rand(-12, 12), p.y - rand(0, 60), "rgba(60,220,230,0.7)", 50, 1.4, -30);
-    say("You have fallen. You'll rise at the camp in a moment — whatever you carried is lost.", "danger");
+    say(G.spires ? "You have fallen. You'll rise at the run's last Mist Well in a moment; the party keeps its loot." : "You have fallen. You'll rise at the camp in a moment — whatever you carried is lost.", "danger");
   }
   function guestRise() {
-    const p = G.player, st = G.stats();
-    Object.assign(p, { x: 20, y: 70, hp: st.maxHp, corrupt: 0, oil: st.maxOil, downT: 0, inv: 1.5 });
+    const p = G.player, st = G.stats(), cp = G.spires ? DL.Spires.checkpoint() : null; // in a run: back at its checkpoint
+    Object.assign(p, { x: cp ? cp.x : 20, y: cp ? cp.y : 70, hp: st.maxHp, corrupt: 0, oil: st.maxOil, downT: 0, inv: 1.5 });
+    if (cp) { p.spx = p.x; p.spy = p.y; if (G.spires) G.spires.held = false; }
     G.camera.x = p.x; G.camera.y = p.y;
-    say("You rise beside the Central Flame.", "good");
+    say(cp ? "You rise again at the run's checkpoint." : "You rise beside the Central Flame.", "good");
   }
 
   function onNightfall() {
@@ -1008,6 +1012,7 @@
     else if (k !== G.player) DL.Net.hurtAlly(k, dmg, ang);
     else hurtPlayer(dmg, ang, by);
   }
+  G.hurtKnight = hurtKnight; // a blow on whoever it is: this knight, a friend's, a hound, a champion (src/spirefoes.js)
   // More knights, more Drowned: siege waves grow by a third per friend (and each Drowned has 15% more health per friend, in makeEnemy).
   G.partyScale = () => 1 + 0.35 * G.allies.length;
 
@@ -1815,6 +1820,7 @@
     const any = DL.RES_KEYS.some((k) => lost[k] > 0);
     const hadSelf = !!G.save.drownedSelf;
     const sp = G.spires, rift = sp && (sp.shard || sp.aether) ? { shard: sp.shard, aether: sp.aether } : null; // fallen in a dungeon: the mist keeps its loot
+    if (sp) DL.Spires.lost(); // and the friends in the run with you are cast out
     if (any) {
       G.save.drownedSelf = sp ? { x: sp.bx, y: sp.by, carried: lost } : { x: p.x, y: p.y, carried: lost }; // (out of a dungeon: where you went in)
       G.selfEnemy = null;

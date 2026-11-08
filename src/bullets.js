@@ -14,14 +14,16 @@
      Bullets.spiral(x, y, arms, rate, spin, time, o)  an emitter: `arms` bullets every `rate` s for `time` s, turning `spin` rad/s
    The Spire Sentinel (a crystal turret, DL.ENEMIES.sentinel) runs a loop of these: Bullets.sentinel. Its e.heat
    (0..1) sets how dense: gentle in the first rooms, dense deep in (rooms will set it per room).
-   Numbers: DL.BULLETS (src/data.js). Host only: the Spires is Sandbox-only and solo for now (co-op not synced). */
+   Numbers: DL.BULLETS (src/data.js). Co-op: the host's device fires them all and hits only its own knight; each
+   snapshot carries the bullets near a friend (Bu.rows), whose device flies them on between snapshots and dodges or
+   takes them itself (Bu.apply), so a dash through a wall feels the same on every screen. */
 "use strict";
 (function (DL) {
   const G = DL.Game, B = DL.BULLETS, TAU = Math.PI * 2;
   const Bu = (DL.Bullets = {});
-  let list = [], emitters = [], later = [];
+  let list = [], emitters = [], later = [], nextId = 1, struck = new Set(); // struck: bullets that hit this guest already
   Bu.list = () => list;
-  Bu.clear = () => { list = []; emitters = []; later = []; };
+  Bu.clear = () => { list = []; emitters = []; later = []; struck = new Set(); };
   // run fn after `s` seconds of game time (so a pause pauses it), unless `owner` has died by then
   const after = (s, owner, fn) => later.push({ t: s, owner, fn });
   Bu.later = after;
@@ -29,7 +31,7 @@
   function add(x, y, ang, o) {
     if (list.length >= B.cap) return;
     const sp = o.speed || B.speed;
-    list.push({ x, y, x0: x, y0: y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, r: o.r || B.r, dmg: o.dmg || B.dmg,
+    list.push({ id: nextId++, x, y, x0: x, y0: y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, r: o.r || B.r, dmg: o.dmg || B.dmg,
       by: o.by || "a crystal bolt", kind: o.kind || 0, curve: o.curve || 0, life: o.life || B.life, t: 0, dodged: false });
   }
   Bu.ring = function (x, y, n, offset, o = {}) { for (let i = 0; i < n; i++) add(x, y, offset + (i / n) * TAU, o); };
@@ -51,6 +53,26 @@
     const em = { x, y, arms, rate, spin, time, o, owner, t: 0, next: 0, a: Math.random() * TAU };
     emitters.push(em);
     return em;
+  };
+
+  /* ---------------- co-op ---------------- */
+  const r1 = (v) => Math.round(v * 10) / 10;
+  // Host: the bullets near a friend, [id, x, y, vx, vy, r, kind, curve, dmg, time left]
+  Bu.rows = function (near) {
+    const out = [];
+    for (const b of list) if (near(b.x, b.y, 800)) out.push([b.id, r1(b.x), r1(b.y), Math.round(b.vx), Math.round(b.vy), b.r, b.kind, r1(b.curve), b.dmg, r1(b.life - b.t)]);
+    return out;
+  };
+  // Guest: the host's bullets, flown on here until the next snapshot (one that already hit us stays spent)
+  Bu.apply = function (rows) {
+    const old = new Map(list.map((b) => [b.id, b]));
+    list = [];
+    for (const r of rows || []) {
+      if (struck.has(r[0])) continue;
+      const o = old.get(r[0]);
+      list.push({ id: r[0], x: r[1], y: r[2], x0: r[1], y0: r[2], vx: r[3], vy: r[4], r: r[5], kind: r[6], curve: r[7], dmg: r[8], life: r[9], t: 0, by: "a bolt of rift light", dodged: !!(o && o.dodged) });
+    }
+    if (struck.size > 400) struck = new Set([...struck].slice(-200));
   };
 
   /* ---------------- moving and hitting ---------------- */
@@ -90,6 +112,7 @@
       }
       G.hurtPlayer(b.dmg, Math.atan2(b.vy, b.vx), b.by);
       b.life = 0;
+      if (G.isGuest()) struck.add(b.id);
     }
     list = list.filter((b) => b.life > 0);
   };
@@ -161,7 +184,7 @@
     const x = e.x, y = e.y - S.mouth, aim = Math.atan2(p.y - 18 - y, p.x - x), o = { by: "a Spire Sentinel", dmg: S.dmg };
     // heat: 0 = a gentle first room, 1 = the dense rooms deep in (Robert, 2026-11-05)
     const h = Math.max(0, Math.min(1, e.heat || 0)), L = (a, b) => a + (b - a) * h, n = (a, b) => Math.round(L(a, b));
-    const aimNow = () => Math.atan2(G.player.y - 18 - y, G.player.x - x);
+    const aimNow = () => Math.atan2(p.y - 18 - y, p.x - x); // its prey, wherever they've got to
     if (e.pat === "spiral") { Bu.spiral(x, y, n(2, 4), L(0.16, 0.07), 1.3, 2.6, { ...o, speed: L(90, 120) }, e); e.bt = L(3.8, 3.0); }
     else if (e.pat === "rings") {
       const k = n(12, 26), rings = n(2, 3), sp = L(100, 125);
