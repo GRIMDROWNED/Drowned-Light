@@ -284,10 +284,10 @@
     const set = Object.assign(walking("cinderbrand", [40, 97], [40, 98], [36, 98]), { path: "assets/sprites/cinderbrand/", keys: stages("cinderbrand") });
     for (const dir in set.views) {
       Object.assign(set.views[dir], { attack: ["attackA", "side/chop", "side/chop"], slash: ["attackC", "side/lunge", "side/lunge"], cast: ["attackB", "side/lunge", "side/lunge"], dash: ["side/lunge"],
-        guard: [dir === "down" ? "guardF" : "side/guard"] });
+        guard: dir === "down" ? ["guardF", "guardF", "guardF"] : ["side/guard1", "side/guard2", "side/guard3"] }); // kneeling, cold / hot / white-hot (src/render.js)
     }
     Object.assign(set.feet, { front: [34, 97], back: [32, 94], right: [35, 95], attackA: [58, 84], attackB: [36, 73], attackC: [32, 77],
-      "side/lunge": [38, 67], "side/chop": [50, 100], "side/guard": [48, 77], guardF: [36, 71] });
+      "side/lunge": [38, 67], "side/chop": [50, 100], "side/guard": [48, 77], "side/guard1": [41, 77], "side/guard2": [41, 77], "side/guard3": [41, 78], guardF: [36, 71] });
     return set;
   }
 
