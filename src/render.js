@@ -1007,7 +1007,10 @@
     const key = G.save.kit + p.stage, n = (anim) => Art.animLength(key, anim); // drawn frames (3 for most kits, 8 for the Jade Breaker)
     if (G.state === "dying") return ["death", Math.min(n("death") - 1, Math.floor((G.dying / 1.35) * n("death"))), p.angle];
     if (p.dashT > 0 || p.tideDash || p.brandDash) return ["dash", 0, p.angle];
-    if (p.brandGuard && Art.sheet(key).down.guard) return ["guard", 0, p.brandGuard.ang]; // the Cinderbrand's planted sword
+    if (p.brandGuard && Art.sheet(key).down.guard) { // the Cinderbrand's planted sword, its blade glowing with his Forge Heat
+      const H = DL.KITS.cinderbrand.passive.heat, h = DL.Kits.heat(p);
+      return ["guard", h >= H.max ? 2 : h >= H.max / 2 ? 1 : 0, p.brandGuard.ang];
+    }
     if (p.waltz) return [p.moving ? "walk" : "idle", p.moving ? Math.floor(p.animT * stepRate(G.save.kit + p.stage, false)) : 0, t * 13]; // turning on the spot in Rose's Waltz
     if (p.tideCharge && p.tideCharge.t > 0.12) return [castAnim(key), n(castAnim(key)) > 3 ? 2 : 0, p.aim ?? p.angle]; // winding up Jade Tide (the blade raised)
     if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
