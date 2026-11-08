@@ -444,6 +444,8 @@
     "jadeCrystal1", "jadeCrystal2", "jadeCrystal3", "jadeCrystal4",
     // the Bloodsworn's blood thorns (Reap the Tithe), his crescent, blood mist and his thorn halo seen three ways, dull and lit
     "bloodThorn", "bloodThorns", "bloodCrescent", "bloodMist", "haloF", "haloB", "haloS", "haloLitF", "haloLitB", "haloLitS",
+    // the Cinderbrand's Brand Thrust streak, erupting flame and its scorch, Forgeheart's ring, his guard's flash and Riposte's slash
+    "brandStreak", "brandFlame", "brandRing", "brandFlash", "brandSlash", "brandScorch",
     // the Dragon Spear's spirit dragon: from the side, the front and behind (src/kits.js, drawn in src/render.js)
     "dragon1", "dragon2", "dragon3", "dragon4", "dragon5", "dragon6", "dragonF1", "dragonF2", "dragonF3", "dragonF4", "dragonF5", "dragonF6", "dragonB1", "dragonB2", "dragonB3", "dragonB4", "dragonB5", "dragonB6",
     // the Frostweaver's owl (standing, flying, casting), its shard, the staff's frost bolts, the Ice Bomb and its spikes (src/kits.js, src/render.js)
