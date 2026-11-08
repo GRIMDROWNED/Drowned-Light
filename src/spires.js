@@ -16,12 +16,18 @@
    A run (step 6, src/rift.js): you come in through the open Drowned Gate or the camp's Rift Portal (or the Sandbox pause
    menu). Foes, won rooms and the chests in the three side rooms give Rift Shards; walk out and half of them, and of your
    unburnt Aether Crystals, come home; fall and the mist keeps it all. The world clock stops while you're here.
+   Co-op (step 9): the host runs the run. Every knight is pulled in and sent home with the host's; the host's device
+   seals rooms, lights Wells, opens chests and picks up Aether Crystals for any knight who walks there, and sends the
+   run's state in each snapshot (Sp.snap). A guest's device moves its own knight through the portals, keeps it in a
+   sealed room it stood in, dodges the bullets itself, and asks the host (Net events) to burn a crystal or leave.
+   The party shares one bag. A guest who falls rises at the run's checkpoint; if the host falls, the run is lost.
    Numbers: DL.SPIRES (src/data.js). */
 "use strict";
 (function (DL) {
   const G = DL.Game, S = DL.SPIRES;
   const OX = S.x, OY = S.y, LH = S.lh;
   const say = (m, k) => DL.UI && DL.UI.toast(m, k);
+  const all = (m, k) => { say(m, k); if (DL.Net) DL.Net.say(m, k); }; // the host's news, on every friend's screen in the run too
   const Sp = (DL.Spires = {});
   G.spires = null;
 
@@ -225,11 +231,27 @@
     const at = saved.at != null && WELLS[saved.at] ? { x: WELLS[saved.at][0], y: WELLS[saved.at][1] + 60 } : SPAWN; // the last Well lit: a checkpoint
     p.x = OX + at.x; p.y = OY + at.y; p.spx = p.x; p.spy = p.y;
     p.kx = p.ky = 0; p.dashT = 0; p.angle = -Math.PI / 2;
+    for (const a of G.allies) pull(a);
     for (const f of followers()) { f.x = p.x + DL.rand(-30, 30); f.y = p.y + DL.rand(-10, 20); f.spx = null; }
     G.camera.x = p.x; G.camera.y = p.y - 20;
+    if (G.allies.length) DL.Net.say("Your host steps through, and the mist takes you with them: the Abyssal Spires.", "good");
     say(at === SPAWN ? "The Abyssal Spires. Causeways south-west, crystal terraces east, the high spires north and the throne at the top."
       : "Back at your Mist Well. Stand at a lit Well a moment to go home.", "good");
   };
+  // where a run starts: the last Well lit, or the rune plaza (world px)
+  function checkpoint() {
+    const at = wellsSave().at;
+    return at != null && WELLS[at] ? { x: OX + WELLS[at][0], y: OY + WELLS[at][1] + 60 } : { x: OX + SPAWN.x, y: OY + SPAWN.y };
+  }
+  Sp.checkpoint = () => (G.spires && G.spires.cp ? G.spires.cp : checkpoint());
+  // Host: bring a friend's knight in beside yours (their device moves it; the host's copy goes now so the Drowned see it)
+  function pull(a) {
+    const p = G.player, x = p.x + 34 * a.id * (a.id % 2 ? 1 : -1) / 2, y = p.y + 16;
+    a.x = a.tx = x; a.y = a.ty = y;
+    DL.Net.sendTo(a.id, { t: "spires", on: 1, x, y, cp: [Math.round(p.x), Math.round(p.y)] });
+  }
+  // Host: a friend who joins while the run is on comes straight in
+  Sp.join = (a) => { if (G.spires && !G.spires.guest) pull(a); };
   // what this run has found so far: Rift Shards and unburnt Aether Crystals
   Sp.bag = () => (G.spires ? { shard: G.spires.shard, aether: G.spires.aether } : null);
   // a foe of a room broken: Rift Shards (kill in src/game.js)
@@ -257,7 +279,73 @@
       for (const f of followers()) { f.x = p.x + DL.rand(-30, 30); f.y = p.y + DL.rand(-10, 20); }
       G.camera.x = p.x; G.camera.y = p.y - 20;
     }
-    say(home ? `You step back out of the mist with ${home}${all ? "" : " (half of what you carried: the mist keeps the rest)"}.` : "You step back out of the mist.", "good");
+    const msg = home ? `You step back out of the mist with ${home}${all ? "" : " (half of what you carried: the mist keeps the rest)"}.` : "You step back out of the mist.";
+    sendHome(msg, "good");
+    say(msg, "good");
+  };
+  // Host: every friend back out beside the host's knight (or lost with the run: the host fell)
+  function sendHome(msg, kind) {
+    const p = G.player, x0 = p && !Sp.inRegion(p.x, p.y) ? p.x : 0, y0 = p && !Sp.inRegion(p.x, p.y) ? p.y : 70;
+    for (const a of G.allies) {
+      const x = x0 + 34 * a.id * (a.id % 2 ? 1 : -1) / 2, y = y0 + 12;
+      a.x = a.tx = x; a.y = a.ty = y;
+      DL.Net.sendTo(a.id, { t: "spires", on: 0, x, y, m: msg, k: kind });
+    }
+  }
+  // Host: the host fell in a run (die in game.js): the mist keeps the bag, and the friends are cast out with them
+  Sp.lost = function () {
+    if (!G.spires || !G.allies.length) return;
+    sendHome("Your host has fallen in the mist. The run is lost, and everything it found with it.", "danger");
+  };
+
+  /* ---------------- co-op ---------------- */
+  const keys = (o) => Object.keys(o).filter((k) => o[k]);
+  const flags = (list) => { const o = {}; for (const k of list || []) o[k] = true; return o; };
+  // Host: the run's state for each snapshot (bubbles as world points: a guest can't follow a knight it doesn't run)
+  Sp.snap = function (near) {
+    const sp = G.spires;
+    if (!sp) return 0;
+    return [sp.seal, Math.round(sp.sealT * 10) / 10 || 0, keys(sp.cleared), keys(sp.lit), keys(sp.took), keys(sp.opened), sp.won ? 1 : 0,
+      Math.round(sp.flare * 100) / 100, bubbles().slice(0, sp.bubbles.length).map((b, i) => [Math.round(b.x), Math.round(b.y), sp.bubbles[i].r, Math.round(sp.bubbles[i].t * 10) / 10, sp.bubbles[i].max]),
+      sp.shard, sp.aether, DL.Bullets.rows(near)];
+  };
+  // Guest: the host's run, from a snapshot
+  Sp.applySnap = function (s) {
+    const sp = G.spires;
+    if (!s) { if (sp && sp.guest && !sp.fresh) { G.spires = null; DL.Bullets.clear(); } return; }
+    if (!sp || !sp.guest) return; // the "in" message comes first
+    sp.fresh = false;
+    const p = G.player;
+    if (s[0] !== sp.seal) { sp.held = !!(s[0] && p && inRect(p.x - OX, p.y - OY, FLOORS[s[0]], 34)); sp.seal = s[0]; } // held only if it sealed round you
+    sp.sealT = s[1];
+    sp.cleared = flags(s[2]);
+    for (const i of s[3]) if (!sp.lit[i]) { sp.lit[i] = true; sp.litT[i] = G.t; }
+    if (s[6] && !sp.won) DL.RiftThrone.guestWon(); // he fell with us in the arena
+    sp.took = flags(s[4]); sp.opened = flags(s[5]); sp.won = !!s[6]; sp.flare = s[7];
+    sp.bubbles = s[8].map((b) => ({ x: b[0], y: b[1], r: b[2], t: b[3], max: b[4] }));
+    sp.shard = s[9]; sp.aether = s[10];
+    DL.Bullets.apply(s[11]);
+  };
+  // Guest: the host took us in, or sent us home
+  Sp.guestMsg = function (m) {
+    const p = G.player;
+    if (m.on) {
+      if (G.state === "camp") DL.UI.closeCamp();
+      G.spires = { guest: true, fresh: true, inPortal: true, flare: 0, seal: null, held: false, sealT: 0, cleared: {}, lit: {}, litT: {}, away: {}, took: {}, aether: 0, shard: 0, opened: {}, bubbles: [],
+        cp: m.cp ? { x: m.cp[0], y: m.cp[1] + 12 } : null };
+      // the Wells already lit are lit from the start: no fade
+      G.enemies = []; G.projectiles = [];
+      DL.Bullets.clear();
+      p.downT = 0;
+    } else {
+      G.spires = null;
+      DL.Bullets.clear();
+      G.enemies = [];
+      if (p.downT > 0) { p.downT = 0; p.hp = Math.max(1, G.stats().maxHp * 0.5); }
+      if (m.m) say(m.m, m.k);
+    }
+    p.x = m.x; p.y = m.y; p.spx = p.x; p.spy = p.y; p.kx = p.ky = 0; p.dashT = 0; p.inv = 1.5;
+    G.camera.x = p.x; G.camera.y = p.y - 20;
   };
 
   /* ---------------- rooms (step 2 of the Level 2 plan) ----------------
@@ -332,7 +420,10 @@
   function bubbles() {
     const sp = G.spires, out = [];
     if (!sp) return out;
-    for (const b of sp.bubbles) out.push({ x: b.follow ? G.player.x : b.x, y: b.follow ? G.player.y : b.y, r: b.r * Math.min(1, b.t / 1.5, (b.max - b.t + 0.3) / 0.6) });
+    for (const b of sp.bubbles) {
+      const k = b.follow === true ? G.player : b.follow ? G.allies.find((a) => a.id === b.follow) : null; // a friend's crystal follows their knight
+      out.push({ x: k ? k.x : b.x, y: k ? k.y : b.y, r: b.r * Math.min(1, b.t / 1.5, (b.max - b.t + 0.3) / 0.6) });
+    }
     for (const t of G.torches) if (Sp.inRegion(t.x, t.y)) out.push({ x: t.x, y: t.y, r: DL.SPIRES.mist.torch });
     return out;
   }
@@ -348,26 +439,30 @@
   Sp.corruption = (p) => (Sp.misty(p.x, p.y) ? DL.SPIRES.mist.corrupt * DL.RIFT.lantern.corrupt[lanternLv()] : 0); // the Mist Lantern (src/rift.js) slows it
   Sp.lanternR = () => (lanternLv() ? DL.RIFT.lantern.ring[lanternLv()] : DL.SPIRES.mist.lantern);
   // burn a carried Aether Crystal (the torch button in the Spires): false if none
-  Sp.burn = function () {
+  Sp.burn = function (who) {
     const sp = G.spires, M = DL.SPIRES.mist;
     if (!sp || !sp.aether) return false;
     sp.aether--;
-    sp.bubbles.push({ follow: true, r: M.bubble, t: M.burn, max: M.burn });
+    if (sp.guest) DL.Net.event({ t: "spBurn" }); // the bag is the host's: it burns one there, round us
+    else sp.bubbles.push({ follow: who ? who.id : true, r: M.bubble, t: M.burn, max: M.burn });
+    if (who) { DL.Net.say(`The ${who.label} burns an Aether Crystal: the mist draws back.`, "good"); return true; }
     for (let i = 0; i < 20; i++) G.puff(G.player.x + DL.rand(-20, 20), G.player.y - DL.rand(0, 50), "rgba(230,200,255,0.8)", 90, 0.9);
     DL.Sound.play("torch");
+    if (sp.guest && !sp.bubbles.length) sp.bubbles.push({ x: G.player.x, y: G.player.y, r: M.bubble, t: M.burn, max: M.burn }); // till the host's answer
     say(`The Aether Crystal burns: the mist draws back from you.${sp.aether ? ` (${sp.aether} left)` : ""}`, "good");
     return true;
   };
   function mistUpdate(sp, p, dt) {
     for (const b of sp.bubbles) b.t -= dt;
     sp.bubbles = sp.bubbles.filter((b) => b.t > 0);
+    if (sp.guest) return guestHome(sp, p, dt);
     const lx = p.x - OX, ly = p.y - OY;
     AETHER.forEach(([x, y], i) => {
-      if (sp.took[i] || !mistAt(x, y, 1) || Math.hypot(lx - x, ly - y) > 26) return;
+      if (sp.took[i] || !mistAt(x, y, 1) || !party().some((k) => Math.hypot(k.x - OX - x, k.y - OY - y) < 26)) return;
       sp.took[i] = true; sp.aether++;
       for (let k = 0; k < 14; k++) G.puff(OX + x + DL.rand(-10, 10), OY + y - DL.rand(0, 30), "rgba(220,170,255,0.9)", 70, 0.7);
       DL.Sound.play("chime");
-      say(`An Aether Crystal (${sp.aether}). Burn it with the torch button for light in the mist.`, "good");
+      all(`An Aether Crystal (${sp.aether}). Burn it with the torch button for light in the mist.`, "good");
     });
     const m = mistAt(lx, ly);
     if (m && !sp.warned) { sp.warned = true; say("Thick mist: it hides you, and them. Corruption builds in here.", "danger"); }
@@ -380,6 +475,21 @@
         sp.homeT = (sp.homeT || 0) + dt;
         if (sp.homeT > DL.SPIRES.mist.home) { sp.homeT = 0; Sp.leave(); }
       } else if (d < 46) sp.homeT = 0;
+    });
+  }
+  // the knights on their feet in the run (the host's and the friends' copies)
+  const party = () => [...(G.player && !(G.player.downT > 0) ? [G.player] : []), ...G.allies.filter((a) => !a.down)];
+  // Guest: standing a moment at a lit Well, as on the host: ask the host to take everyone home
+  function guestHome(sp, p, dt) {
+    const lx = p.x - OX, ly = p.y - OY;
+    WELLS.forEach(([x, y], i) => {
+      if (!sp.lit[i]) return;
+      const d = Math.hypot(lx - x, ly - y - 50);
+      if (d > 140) sp.away[i] = true;
+      if (sp.away[i] && d < 46 && !sp.seal) {
+        sp.homeT = (sp.homeT || 0) + dt;
+        if (sp.homeT > DL.SPIRES.mist.home) { sp.homeT = -99; DL.Net.event({ t: "spLeave", all: 0 }); }
+      } else if (d < 46 && sp.homeT > 0) sp.homeT = 0;
     });
   }
   let fog = null; // one small canvas, reused for every patch
@@ -468,6 +578,7 @@
   function seal(sp, id, p) {
     const R = ROOMS[id], f = FLOORS[id];
     sp.seal = id; sp.sealT = 0;
+    sp.held = inRect(G.player.x - OX, G.player.y - OY, f, 34) && !(G.player.downT > 0);
     if (R.boss) DL.RiftThrone.wake(id);
     for (const [x, y] of R.sent) {
       G.enemies.push(G.makeEnemy("sentinel", OX + x, OY + y, S.wave.zone, { heat: R.heat, room: id }));
@@ -479,7 +590,7 @@
     }
     G.camera.shake = 5;
     DL.Sound.play("whisper");
-    if (!R.boss) say("Rune light seals the way out. Break everything in the room!", "danger");
+    if (!R.boss) all("Rune light seals the way out. Break everything in the room!", "danger");
   }
   Sp.seat = () => ({ x: OX + THRONE.x, y: OY + THRONE.y + SEAT.dy, lift: SEAT.lift });
   // the boss beaten (src/riftthrone.js): his reward into the run's loot, and the arena's arch now goes home with all of it
@@ -488,7 +599,7 @@
     if (!sp) return;
     sp.won = true;
     sp.shard += reward.shard; sp.aether += reward.aether;
-    setTimeout(() => say(`${reward.shard} Rift Shards and ${reward.aether} Aether Crystals glitter where he fell. The arch in the arena now takes you home with everything you carry.`, "good"), 2500);
+    setTimeout(() => all(`${reward.shard} Rift Shards and ${reward.aether} Aether Crystals glitter where he fell. The arch in the arena now takes you home with everything you carry.`, "good"), 2500);
   };
   function open(sp) {
     const id = sp.seal;
@@ -498,14 +609,14 @@
     for (const g of GATES[id] || []) for (let i = 0; i < 10; i++) G.puff(OX + g.x + DL.rand(-g.w / 2, g.w / 2) * Math.cos(g.ang), OY + g.y + DL.rand(-g.w / 2, g.w / 2) * Math.sin(g.ang) - DL.rand(0, 40), "rgba(220,180,255,0.8)", 60, 0.8);
     DL.Sound.play("chime");
     const left = Object.keys(ROOMS).filter((k) => !sp.cleared[k]).length;
-    say(`The rune light fades: ${n} Rift Shards.` + (ROOMS[id].chest ? " The chest can be opened now." : left ? ` The way on is open. (${left} room${left > 1 ? "s" : ""} left)` : DL.SANDBOX ? " Every room is clear. Step on the rune circle's heart to wake them again." : " Every room is clear."), "good");
+    all(`The rune light fades: ${n} Rift Shards.` + (ROOMS[id].chest ? " The chest can be opened now." : left ? ` The way on is open. (${left} room${left > 1 ? "s" : ""} left)` : DL.SANDBOX ? " Every room is clear. Step on the rune circle's heart to wake them again." : " Every room is clear."), "good");
   }
   // where the room's foes and a sealed-in knight may stand
   function heldIn(ent) {
     const sp = G.spires;
     if (!sp) return null;
     if (ent.room && FLOORS[ent.room]) return FLOORS[ent.room];
-    if (sp.seal && ent === G.player) return FLOORS[sp.seal];
+    if (sp.seal && ent === G.player && sp.held) return FLOORS[sp.seal]; // only a knight the room sealed round
     return null;
   }
 
@@ -518,8 +629,15 @@
     const lx = p.x - OX, ly = p.y - OY;
     const atW = Math.abs(lx - ARCH_W.x) < 36 && ly < ARCH_W.y - 4 && ly > ARCH_W.y - 40, atE = Math.abs(lx - RING_E.x) < 44 && ly < RING_E.y - 4 && ly > RING_E.y - 40;
     const atS = Math.abs(lx - ARCH_S.x) < 30 && ly < ARCH_S.y - 4 && ly > ARCH_S.y - 40;
-    if (atS) { Sp.leave(); return; }
-    if (Math.abs(lx - ARCH_T.x) < 30 && ly < ARCH_T.y - 4 && ly > ARCH_T.y - 40 && sp.won && !sp.seal) { Sp.leave(true); return; } // the boss beaten: home with it all
+    const atT = Math.abs(lx - ARCH_T.x) < 30 && ly < ARCH_T.y - 4 && ly > ARCH_T.y - 40;
+    if (sp.guest) { // a friend's device: ask the host to take everyone out
+      if ((atS || (atT && sp.won && !sp.seal)) && !sp.asked) { sp.asked = true; DL.Net.event({ t: "spLeave", all: atS ? 0 : 1 }); }
+      if (atS || (atT && sp.won && !sp.seal)) return;
+      sp.asked = false;
+    } else {
+      if (atS) { Sp.leave(); return; }
+      if (atT && sp.won && !sp.seal) { Sp.leave(true); return; } // the boss beaten: home with it all
+    }
     if (Math.abs(lx - ARCH_T.x) < 30 && ly < ARCH_T.y - 4 && ly > ARCH_T.y - 40) { // the arena's arch: back to the hub
       p.x = OX + SPAWN.x; p.y = OY + SPAWN.y; p.spx = p.x; p.spy = p.y; p.dashT = 0; p.kx = p.ky = 0;
       G.camera.x = p.x; G.camera.y = p.y - 20;
@@ -527,13 +645,13 @@
       DL.Sound.play("chime");
       return;
     }
-    WELLS.forEach(([x, y], i) => {
-      if (sp.lit[i] || Math.hypot(lx - x, ly - y - 30) > 70) return;
+    if (!sp.guest) WELLS.forEach(([x, y], i) => {
+      if (sp.lit[i] || !party().some((k) => Math.hypot(k.x - OX - x, k.y - OY - y - 30) < 70)) return;
       sp.lit[i] = true; sp.litT[i] = G.t;
       const sv = wellsSave(); sv[i] = true; sv.at = i; G.persist();
       for (let k = 0; k < 24; k++) G.puff(OX + x + DL.rand(-30, 30), OY + y - DL.rand(0, 90), "rgba(230,200,255,0.8)", 80, 0.9);
       DL.Sound.play("chime");
-      say("The Mist Well wakes and the mist round it clears for good. It's your checkpoint now.", "good");
+      all("The Mist Well wakes and the mist round it clears for good. It's your checkpoint now.", "good");
     });
     mistUpdate(sp, p, dt);
     if ((atW || atE) && !sp.inPortal) {
@@ -544,23 +662,25 @@
       DL.Sound.play("chime");
     }
     sp.inPortal = atW || atE;
+    if (sp.guest) { sp.sealT += dt; return; } // the rest is the host's
     // rooms: step in and it seals; clear it and it opens
+    const pt = party();
     if (sp.seal) {
       sp.sealT += dt;
       if (sp.sealT > 1 && !foesOf(sp.seal).length) open(sp);
     } else {
-      for (const id in ROOMS) if (!sp.cleared[id] && inRect(lx, ly, FLOORS[id], 34)) { seal(sp, id, p); break; }
+      for (const id in ROOMS) if (!sp.cleared[id] && pt.some((k) => inRect(k.x - OX, k.y - OY, FLOORS[id], 34))) { seal(sp, id, p); break; }
     }
     // a won side room's chest: walk up to it
     for (const id in ROOMS) {
       const q = ROOMS[id].chest;
-      if (!q || !sp.cleared[id] || sp.opened[id] || Math.hypot(lx - q[0], ly - q[1] - 10) > 44) continue;
+      if (!q || !sp.cleared[id] || sp.opened[id] || !pt.some((k) => Math.hypot(k.x - OX - q[0], k.y - OY - q[1] - 10) < 44)) continue;
       sp.opened[id] = true;
       const C = DL.SPIRES.loot.chest, n = Math.round(DL.rand(C.shard[0], C.shard[1]));
       sp.shard += n; sp.aether += C.aether;
       for (let k = 0; k < 26; k++) G.puff(OX + q[0] + DL.rand(-18, 18), OY + q[1] - DL.rand(0, 50), "rgba(230,190,255,0.85)", 90, 0.9);
       DL.Sound.play("milestone");
-      say(`The chest springs open: ${n} Rift Shards and ${C.aether} Aether Crystals.`, "good");
+      all(`The chest springs open: ${n} Rift Shards and ${C.aether} Aether Crystals.`, "good");
     }
     // the rune circle's heart wakes every cleared room again (Sandbox only: in a real run a room is won once)
     if (DL.SANDBOX && !sp.seal && Object.keys(sp.cleared).length && Math.hypot(lx - RUNE.x, (ly - RUNE.y) / RUNE.sq) < 34) {
