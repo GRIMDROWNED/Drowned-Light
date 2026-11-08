@@ -277,13 +277,13 @@
   }
 
   /* The Cinderbrand (kit 10, Robert's art 2026-11-06, on green): the 12 poses and walk sheets. His Forge Cleave is the
-     overhead wind-up and the sword driven down; Brand Thrust is the low thrust and the level lunge (his dash too); his
+     overhead wind-up and the sword driven down, every other swing the low sword swept up level (`slash`); Brand Thrust is the low thrust and the level lunge (his dash too); his
      planted guard kneels behind the sword from the side and stands behind it facing you. Feet of the single poses set
      by hand: the sword's point reaches lower than his boots. */
   function cinderbrand() {
     const set = Object.assign(walking("cinderbrand", [40, 97], [40, 98], [36, 98]), { path: "assets/sprites/cinderbrand/", keys: stages("cinderbrand") });
     for (const dir in set.views) {
-      Object.assign(set.views[dir], { attack: ["attackA", "side/chop", "side/chop"], cast: ["attackB", "side/lunge", "side/lunge"], dash: ["side/lunge"],
+      Object.assign(set.views[dir], { attack: ["attackA", "side/chop", "side/chop"], slash: ["attackC", "side/lunge", "side/lunge"], cast: ["attackB", "side/lunge", "side/lunge"], dash: ["side/lunge"],
         guard: [dir === "down" ? "guardF" : "side/guard"] });
     }
     Object.assign(set.feet, { front: [34, 97], back: [32, 94], right: [35, 95], attackA: [58, 84], attackB: [36, 73], attackC: [32, 77],

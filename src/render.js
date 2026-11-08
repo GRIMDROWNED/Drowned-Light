@@ -1009,7 +1009,10 @@
     if (p.waltz) return [p.moving ? "walk" : "idle", p.moving ? Math.floor(p.animT * stepRate(G.save.kit + p.stage, false)) : 0, t * 13]; // turning on the spot in Rose's Waltz
     if (p.tideCharge && p.tideCharge.t > 0.12) return [castAnim(key), n(castAnim(key)) > 3 ? 2 : 0, p.aim ?? p.angle]; // winding up Jade Tide (the blade raised)
     if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
-    if (p.swing) return ["attack", Math.min(n("attack") - 1, Math.floor((p.swing.t / p.swing.dur) * n("attack"))), p.swing.ang];
+    if (p.swing) {
+      const a = p.swing.anim && Art.sheet(key).down[p.swing.anim] ? p.swing.anim : "attack"; // the Cinderbrand's level slash
+      return [a, Math.min(n(a) - 1, Math.floor((p.swing.t / p.swing.dur) * n(a))), p.swing.ang];
+    }
     if (p.cast) return [castAnim(key), Math.min(n(castAnim(key)) - 1, Math.floor((p.cast.t / p.cast.dur) * n(castAnim(key)))), p.cast.ang];
     if (p.moving) return [moveAnim(G.save.kit + p.stage, p.running), Math.floor(p.animT * stepRate(G.save.kit + p.stage, p.running)), p.angle];
     return ["idle", Math.floor(t * (n("idle") > 1 ? 6 : 1.6)), p.angle]; // a drawn breathing idle plays at 6 frames a second

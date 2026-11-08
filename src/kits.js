@@ -412,13 +412,16 @@
 
     if (a.type === "arc") {
       let arc = a.arc;
+      // the Cinderbrand's cleaves alternate: the overhead chop, then a wide level slash
+      const level = a.slash && p.attackN % 2 === 0;
+      if (level) { arc = a.slash.arc; swing.anim = "slash"; }
       if (id === "lanternBlade" && K.has(20)) { arc *= 1.3; swing.col = "255,244,214"; }
       swing.arc = arc;
       const hot = forge(), burn = id === "lanternBlade" && K.has(5) ? 3 * pw : hot && K.has(5) && K.heat(p) >= hot.burnAt ? 3 * pw : 0;
       // the Jade Breaker's Momentum goes into the swing and is spent; Crystal Edge hurls harder, Shatter stuns
       const mom = momentum(p), jade = id === "jadeBreaker";
       // his sweep also grows `grow` a level on top of K.power (Robert's ask: it's his one-target blow)
-      const dmg = a.dmg * pw * (1 + mom) * (1 + heatDmg(p)) * (jade ? 1 + (a.grow || 0) * (K.level() - 1) : 1), kb = a.kb * (jade && K.has(5) ? 1.2 : 1) * jadeKb();
+      const dmg = a.dmg * pw * (level ? a.slash.dmg : 1) * (1 + mom) * (1 + heatDmg(p)) * (jade ? 1 + (a.grow || 0) * (K.level() - 1) : 1), kb = a.kb * (jade && K.has(5) ? 1.2 : 1) * jadeKb();
       // the Rose Paladin's Thorn Lash: Crown of Thorns (10) makes them bleed; Rosebriar Lash (15) binds what every third lash strikes
       const binds = a.lash && K.has(15) && (p.lashN = (p.lashN || 0) + 1) % 3 === 0;
       if (jade) { p.momT = 0; swing.dur = 0.3; if (mom > 0.15) swing.col = "180,255,200"; }
