@@ -181,6 +181,7 @@
     DL.Spires.drawGround(c, view, t); // the Abyssal Spires test room (src/spires.js)
 
     for (const d of G.decals) sprite(c, d.type, d.x, d.y, false, Math.min(1, d.t / 3));
+    if (DL.Kits.magma()) drawMagma(c, DL.Kits.magma(), t); // the Cinderbrand's Riposte: magma cracking the ground round his guard
 
     /* telegraphs on the ground */
     for (const tg of G.telegraphs) {
@@ -2025,6 +2026,42 @@
       const g = f.type === "brandFlash" ? 0.6 + k * 0.6 : 1;
       w *= g; h *= g;
       c.drawImage(s.c, -w / 2, -h / 2, w, h);
+    }
+    c.restore();
+  }
+  /* The ground cracking with magma round the Cinderbrand's planted guard (Riposte, 10): Robert's drawn cracks (prop
+     magmaCrack, a ring seen from above) scaled to the ring, or coded jagged cracks until it's drawn; it pulses, and
+     fades as it cools. The ring is squashed to 0.6 of its width, like the ground. */
+  function drawMagma(c, m, t) {
+    const r = m.r, ry = r * 0.6, pulse = 0.85 + 0.15 * Math.sin(t * 6);
+    c.save();
+    c.globalAlpha = Math.max(0, Math.min(1, m.a));
+    const g = c.createRadialGradient(m.x, m.y, r * 0.2, m.x, m.y, r);
+    g.addColorStop(0, "rgba(255,120,30,0)"); g.addColorStop(0.75, `rgba(255,110,30,${0.16 * pulse})`); g.addColorStop(1, "rgba(255,90,20,0)");
+    c.translate(m.x, m.y); c.scale(1, 0.6); c.translate(-m.x, -m.y);
+    c.fillStyle = g; c.fillRect(m.x - r, m.y - r, r * 2, r * 2);
+    c.restore();
+    const s = Art.sprites.magmaCrack;
+    c.save();
+    c.globalAlpha = Math.max(0, Math.min(1, m.a)) * (0.8 + 0.2 * pulse);
+    if (s) { const h = r * s.h / s.w; c.drawImage(s.c, m.x - r, m.y - h, r * 2, h * 2); c.restore(); return; } // Robert's cracks, kept to their own shape
+    // coded cracks: jagged lines from near his feet out to the ring's edge, dark rims round glowing magma
+    let seed = m.seed || 1;
+    const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+    const lines = [];
+    for (let i = 0; i < 16; i++) {
+      const a0 = (i / 16) * Math.PI * 2 + rnd() * 0.3, pts = [];
+      let a = a0;
+      for (let k = 0; k <= 5; k++) {
+        const d = r * (0.22 + 0.78 * k / 5);
+        a += (rnd() - 0.5) * 0.35;
+        pts.push([m.x + Math.cos(a) * d, m.y + Math.sin(a) * d * 0.6]);
+      }
+      lines.push(pts);
+    }
+    for (const [w, col] of [[5, "rgba(40,12,6,0.85)"], [2.5, "rgba(255,110,30,1)"], [1, "rgba(255,225,140,1)"]]) {
+      c.strokeStyle = col; c.lineWidth = w; c.lineJoin = "round";
+      for (const pts of lines) { c.beginPath(); pts.forEach(([x, y], k) => (k ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke(); }
     }
     c.restore();
   }

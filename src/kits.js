@@ -247,6 +247,23 @@
     sfx("hit");
     return 1 - g.block;
   }
+  /* Riposte (10): while his sword is planted the ground cracks with magma round him, a ring spreading from `r0` to
+     `rMax` px over `grow` s; a Drowned standing in it is set alight. Once he lets go it cools and fades. */
+  let magma = null;
+  K.magma = () => magma;
+  function magmaTick(p, st, gd) {
+    const M = G.kit().ability.guard.magma;
+    if (!M || !K.has(10)) return;
+    const r = M.r0 + (M.rMax - M.r0) * Math.min(1, gd.t / M.grow);
+    magma = { x: p.x, y: p.y, r, a: 1, seed: magma && magma.a > 0 ? magma.seed : Math.floor(Math.random() * 1000) };
+    if (G.isGuest()) return; // the host owns the Drowned (co-op untested)
+    const dps = M.burn * K.power() * st.dmgMult;
+    for (const e of G.enemies) {
+      if (e.rise > 0 || e.removed || Math.hypot(e.x - p.x, (e.y - p.y) / 0.6) > r + e.def.radius) continue;
+      e.burnDps = e.burn > 0 ? Math.max(e.burnDps || 0, dps) : dps; // a hotter fire already on it keeps burning
+      e.burn = Math.max(e.burn, 1.2);
+    }
+  }
   /* Brand Thrust held: the button plants the sword (K.brandStart) and he guards until it's let go or `guard.max` s pass,
      then lunges. Oil and cooldown are paid on letting go. Returns true while the lunge moves him. */
   K.brandStart = function (p) {
@@ -262,6 +279,7 @@
       gd.t += dt;
       gd.riposteT = (gd.riposteT || 0) - dt;
       gd.ang = aim();
+      magmaTick(p, st, gd);
       if (DL.Input.abilityHeld() && gd.t < ab.guard.max && G.state === "play" && !(p.downT > 0)) return false;
       p.brandGuard = null;
       if (p.oil < ab.oil) { sfx("deny"); return false; }
@@ -849,6 +867,7 @@
     p.rushT = Math.max(0, (p.rushT || 0) - dt);
     titheTick(p, st, dt);
     heatTick(p, dt);
+    if (magma && !p.brandGuard) { magma.a -= dt * 1.5; if (magma.a <= 0) magma = null; } // the cracks cool once he lifts his sword
     // Momentum builds while moving and drains twice as fast standing still
     if (kit.passive && kit.passive.momentum) p.momT = Math.max(0, Math.min(kit.passive.momentum.full, (p.momT || 0) + (p.moving ? dt : -2 * dt)));
     if (crystalLife !== p) { crystals = []; crystalLife = p; } // a new life clears them
