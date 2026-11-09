@@ -49,6 +49,11 @@ so about four times the marsh is on screen. Fixed without changing the look:
 - Refuge ground is skipped when the fortress is off screen.
 - `?perf` in the address (or F3) shows a frame-time readout (`R.showPerf`, `drawPerf`); the backdrop fill is skipped unless the camera shakes; adaptive resolution (`R.adapt`) also trips on frames under 25 fps and can go down to 1.
 Keep to these when adding art: draw through `sprite()`/`Art.drawUnit`, avoid per-draw save/restore and per-frame gradients.
+- Abyssal Spires (v0.15.244): the full-view haze gradient in `Sp.drawGround` is a cached 1x256 strip stretched over the
+  view (a full-screen gradient fill was the dearest single paint there); stone chunks are an LRU of 20 (no mass drop) and at most
+  one is painted a frame once the room is open. Avoid full-screen gradient fills; smoothed upscales of low-res layers
+  (fog, the dark layer) cost about as much as one, so don't add more of them.
+
 ### 2026-11-08 · Claude → GPT · Co-op in the Abyssal Spires (step 9)
 Type: Decision (FYI)
 Dungeon runs now work in co-op. The host's device runs the run: `Sp.enter` pulls every guest in (`{t:"spires", on:1}`),
