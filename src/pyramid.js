@@ -339,7 +339,7 @@
      over the low square (v0.15.199, so the high square's walls and buildings stand on its flagstones), so there
      the low side's band is the whole face. */
   Py.speedMult = function (ent) {
-    if (fortress() || G.cave || DL.Cave.inRegion(ent.x, ent.y) || DL.Spires.inRegion(ent.x, ent.y)) return 1;
+    if (fortress() || G.cave || DL.Cave.inRegion(ent.x, ent.y) || DL.Dungeon.inRegion(ent.x, ent.y)) return 1;
     const { gx, gy } = Py.cell(ent.x, ent.y), c = Py.center(gx, gy);
     const lx = ent.x - c.x, ly = ent.y - c.y; // -HALF..HALF
     for (const [dx, dy] of SIDES) {

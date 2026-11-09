@@ -157,7 +157,7 @@
 
   /* ---------------- where you can stand ---------------- */
   Sp.inRegion = (x, y) => Math.abs(x - OX) < S.halfW && Math.abs(y - OY) < S.halfH;
-  Sp.active = () => !!G.spires;
+  Sp.active = () => !!G.spires && !G.spires.lv; // a run in the Spires (a Molten Mines run carries lv: "mines")
   const inRect = (x, y, q, m) => {
     if (q[5] === "oval") { const rx = (q[2] - q[0]) / 2 - m, ry = (q[3] - q[1]) / 2 - m; return ((x - q[0] - rx - m) / rx) ** 2 + ((y - q[1] - ry - m) / ry) ** 2 < 1; }
     return x > q[0] + m && x < q[2] - m && y > q[1] + m && y < q[3] - m;

@@ -95,6 +95,11 @@
       UI.resume();
       if (DL.Spires.active()) DL.Spires.leave(); else DL.Spires.enter();
     });
+    // Sandbox only: the Molten Mines (src/mines.js), Level 3, while it's being built
+    $("btnMines").addEventListener("click", () => {
+      UI.resume();
+      if (DL.Mines.active()) DL.Mines.leave(); else DL.Mines.enter();
+    });
     $("btnCombat").addEventListener("click", () => {
       G.save.attackMode = G.save.attackMode === "manual" ? "auto" : "manual";
       G.persist();
@@ -317,8 +322,10 @@
     const G = DL.Game;
     if (G.state !== "play") return;
     $("btnLeaveCoop").classList.toggle("hidden", !DL.Net.role);
-    $("btnSpires").classList.toggle("hidden", !DL.SANDBOX || !!DL.Net.role || !!G.cave);
     $("btnSpires").textContent = DL.Spires.active() ? "Leave the Spires (keep half)" : "Sandbox: the Abyssal Spires";
+    $("btnSpires").classList.toggle("hidden", !DL.SANDBOX || !!DL.Net.role || !!G.cave || DL.Mines.active());
+    $("btnMines").classList.toggle("hidden", !DL.SANDBOX || !!DL.Net.role || !!G.cave || DL.Spires.active());
+    $("btnMines").textContent = DL.Mines.active() ? "Leave the Molten Mines" : "Sandbox: the Molten Mines";
     UI.renderCoopPlayers();
     $("pauseNote").textContent = G.isGuest()
       ? "The world keeps running while you're paused. Only the host can pause it for both of you."
@@ -477,7 +484,7 @@
     $("gateIntro").textContent = from === "portal"
       ? "The rift hums in the camp. Through it the roads beyond the Drowned Gate wait."
       : "Warm light breathes out of the open gate. Beyond it, roads lead down into the deep.";
-    $("gateList").innerHTML = DL.Rift.DUNGEONS.map((d) => `<button class="primary" data-dungeon="${d.id}">${d.name}<span class="sub">${d.text}${d.id === "spires" ? ` · <i class="well-tok"></i>Mist Wells lit: ${lit} of ${DL.Spires.WELLS_N}` : ""}</span></button>`).join("");
+    $("gateList").innerHTML = DL.Rift.DUNGEONS.filter((d) => !d.open || d.open()).map((d) => `<button class="primary" data-dungeon="${d.id}">${d.name}<span class="sub">${d.text}${d.id === "spires" ? ` · <i class="well-tok"></i>Mist Wells lit: ${lit} of ${DL.Spires.WELLS_N}` : ""}</span></button>`).join("");
     $("gateNote").textContent = coop ? "Everyone goes in together and shares one bag. If the host falls, the mist keeps it all; a friend who falls rises at the last Mist Well. Walk out and you keep half."
       : "Fall in a dungeon and the mist keeps everything you found. Walk out and you keep half.";
     $("screenGate").classList.remove("hidden");
@@ -1106,7 +1113,7 @@
     set($("phaseIcon"), "class", G.night ? "moon" : "sun");
     set($("clock"), "--prog", String(G.time / DL.CYCLE.total));
 
-    set($("zoneText"), "text", G.cave ? "Derek's Hollow" : G.spires ? "Abyssal Spires" : DL.ZONES[p.zi].name);
+    set($("zoneText"), "text", G.cave ? "Derek's Hollow" : G.spires ? DL.Dungeon.name() : DL.ZONES[p.zi].name);
     const N = DL.Net;
     const coopText = !N.role ? "" : N.role === "guest" ? "Co-op · your friend's world" : G.allies.length ? `Co-op · ${G.allies.length + 1} players · room ${N.code}` : `Room ${N.code} · waiting for friends`;
     set($("coopChip"), "text", coopText);
@@ -1163,7 +1170,7 @@
 
     // soul orbs and a hauled Bone Wolf carcass go in the satchel line too
     const souls = DL.Abigail.won() ? 0 : DL.Abigail.held(), carcass = (DL.Den.carrying() ? `<span class="chip carcass"><i></i>Bone Wolf carcass</span>` : "") + (DL.Wyvern.carrying() ? `<span class="chip egg"><i></i>Wyvern egg</span>` : "");
-    const bag = DL.Spires.bag(); // a dungeon run's finds (src/spires.js)
+    const bag = DL.Dungeon.bag(); // a dungeon run's finds (src/spires.js)
     const carried = DL.RES_KEYS.filter((k) => p.carried[k] > 0).map((k) => chip(k, p.carried[k])).join("") + (bag ? ["shard", "aether"].filter((k) => bag[k] > 0).map((k) => chip(k, bag[k])).join("") : "") + (souls ? `<span class="chip soul"><i></i>${souls} soul orb${souls > 1 ? "s" : ""}</span>` : "") + carcass;
     set($("carried"), "html", carried ? `<span class="lbl${bag ? " bag" : ""}">Carrying</span>${carried}` : ""); // in a dungeon: the loot sack
 

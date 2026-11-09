@@ -162,7 +162,7 @@
     const CH = W.CH;
     let built = 0;
     const paved = DL.Refuge.paved(DL.Camp.layout(G.save.up)) - 2; // the Refuge's floors cover the ground under them
-    if (!DL.Spires.covers(view)) for (let cy = Math.floor(top / CH); cy <= Math.floor(view.bottom / CH); cy++) {
+    if (!DL.Dungeon.covers(view)) for (let cy = Math.floor(top / CH); cy <= Math.floor(view.bottom / CH); cy++) {
       for (let cx = Math.floor(left / CH); cx <= Math.floor(view.right / CH); cx++) {
         if (paved > 0 && cx * CH >= -paved && (cx + 1) * CH <= paved && cy * CH >= -paved && (cy + 1) * CH <= paved) continue;
         let gc = W.groundCanvas(cx, cy, false);
@@ -178,7 +178,8 @@
     DL.Rose.drawGround(c, view);
     DL.Finale.drawGround(c, view, t);
     DL.Pyramid.drawGround(c, view); // the Pyramid's raised squares: rock faces, lips, stairs
-    DL.Spires.drawGround(c, view, t); // the Abyssal Spires test room (src/spires.js)
+    DL.Spires.drawGround(c, view, t); // the Abyssal Spires (src/spires.js)
+    DL.Mines.drawGround(c, view, t); // the Molten Mines (src/mines.js)
 
     for (const d of G.decals) sprite(c, d.type, d.x, d.y, false, Math.min(1, d.t / 3));
     if (DL.Kits.magma()) drawMagma(c, DL.Kits.magma(), t); // the Cinderbrand's Riposte: magma cracking the ground round his guard
@@ -217,6 +218,7 @@
     pushCamp(list, G, c, t);
     DL.Cave.push(list, c, t, view);
     DL.Spires.push(list, c, t, view);
+    DL.Mines.push(list, c, t, view);
     DL.Rift.push(list, c, t); // the Crystal Turrets at camp (src/rift.js)
     DL.Rose.push(list, c, t, view);
     DL.Trophies.push(list, c);
@@ -492,6 +494,7 @@
     drawFormEmbers(c, G, t);
     DL.Cave.drawGlow(c, t);
     DL.Spires.drawGlow(c, t, view);
+    DL.Mines.drawGlow(c, t, view);
     DL.Bullets.glow(c, t, view);
     DL.SpireFoes.drawRifts(c, t); // the Rift Callers' rifts, bright over the mist (src/spirefoes.js)
     DL.Rose.drawGlow(c, t, view);
@@ -2226,7 +2229,7 @@
     const zi = p ? W.zoneIndex(p.x, p.y) : 0;
     const dim = DL.ZONES[zi].dim;
     const D = G.diff();
-    const dark = G.spires ? DL.SPIRES.dark : Math.min(0.96, (0.12 + 0.84 * G.nightAmt) * D.darkness + (dim + D.dayDim) * (1 - G.nightAmt));
+    const dark = G.spires ? DL.Dungeon.dark() : Math.min(0.96, (0.12 + 0.84 * G.nightAmt) * D.darkness + (dim + D.dayDim) * (1 - G.nightAmt));
     G.darkness = dark;
     const L = R.lx, lw = R.lc.width, lh = R.lc.height, k = z / 2;
     const ox = shx / 2, oy = shy / 2;

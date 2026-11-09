@@ -14,8 +14,8 @@
 
   // The map's grid ends GRID px out (Camp.sq); past it a rim of Abyss shore, then black water to EDGE, where the
   // world ends (DL.MAP, docs/PYRAMID-PLAN.md). Derek's Hollow lies off the map and isn't bounded.
-  // Off the map: Derek's Hollow and the Abyssal Spires test room (nothing of the wetland is made there).
-  const offMap = (x, y) => DL.Cave.inRegion(x, y) || DL.Spires.inRegion(x, y);
+  // Off the map: Derek's Hollow and the dungeons (src/dungeon.js; nothing of the wetland is made there).
+  const offMap = (x, y) => DL.Cave.inRegion(x, y) || DL.Dungeon.inRegion(x, y);
   const GRID = DL.MAP.cell * (DL.MAP.rings + 0.5), EDGE = GRID + DL.MAP.rim, SEA = 160;
 
   const W = (DL.World = {
@@ -29,7 +29,7 @@
 
     zoneIndex(x, y) {
       if (DL.Cave.inRegion(x, y)) return DL.CAVE.zone; // Derek's Hollow, far off the map
-      if (DL.Spires.inRegion(x, y)) return 0; // the Abyssal Spires test room (src/spires.js)
+      if (DL.Dungeon.inRegion(x, y)) return 0; // the dungeons (src/dungeon.js)
       const d = DL.Camp.sq(x, y); // the zones are the map's square rings
       let z = 0;
       for (let i = 0; i < DL.ZONES.length; i++) if (d >= DL.ZONES[i].r) z = i;
@@ -206,7 +206,7 @@
     // Push a circle out of solid objects (trees, rocks, pillars, roots).
     collide(ent, r) {
       DL.Cave.collide(ent, r); // the cave mouth's mound, and the Hollow's walls
-      DL.Spires.collide(ent, r); // only the stone of the Spires test room holds you up
+      DL.Dungeon.collide(ent, r); // in a dungeon only its stone holds you up
       // nobody wades out past the world's end
       if (!offMap(ent.x, ent.y)) {
         const lim = EDGE - SEA - 120 - r;

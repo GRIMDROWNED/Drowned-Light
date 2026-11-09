@@ -824,6 +824,9 @@
     // carried Aether Crystals come home too. Leave and you keep `keep` of it; fall and the mist keeps it all.
     loot: { kill: { sentinel: 1, leaper: 1, bowman: 1, shade: 2, caller: 2, prism: 4, swisp: 1, warden: 2 }, room: [2, 8], chest: { shard: [14, 20], aether: 2 }, keep: 0.5 },
   };
+  // The Molten Mines (Level 3, src/mines.js): off the map at x -40000. lh/hang as in the Spires; dark is the run's
+  // darkness (the lava lights it); home is how long you stand at a lit Ember Shrine to go home.
+  DL.MINES = { x: -40000, y: 0, halfW: 2500, halfH: 2200, lh: 48, hang: 50, dark: 0.3, home: 1.5 };
   // what the dungeons pay for at the base (src/rift.js): the Crystal Turret by level, the Mist Lantern, the Rift Portal
   DL.RIFT = {
     turret: { spots: [0, 2, 4, 4], every: [0, 2.4, 1.9, 1.5], n: [0, 6, 8, 10], dmg: [0, 9, 12, 16], range: 300, speed: 240, life: 1.4, along: 150 },
