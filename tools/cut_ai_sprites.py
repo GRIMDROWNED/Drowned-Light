@@ -969,6 +969,8 @@ PROP_GRIDS = {
     # the Cinderbrand's (kit 10) effects, on green: Brand Thrust's streak, an erupting flame, Forgeheart's ring of fire,
     # the flash of a blow on his planted guard, Riposte's slash and the scorch his fire leaves
     'crimson-greatsword/effects.png': (3, 2, ['brandStreak', 'brandFlame', 'brandRing', 'brandFlash', 'brandSlash', 'brandScorch']),
+    # and Riposte's (10) ring of magma cracks round his guard, stretched by the game as it spreads
+    'crimson-greatsword/magma-cracks.png': (1, 1, ['magmaCrack']),
     # his halo seen from the front, from behind and from the side (facing right): dull, then lit when Crowned
     'bloodsworn/halos.png': (3, 2, ['haloF', 'haloB', 'haloS', 'haloLitF', 'haloLitB', 'haloLitS']),
     'jade-breaker/crystals.png': (4, 1, ['jadeCrystal1', 'jadeCrystal2', 'jadeCrystal3', 'jadeCrystal4']),
@@ -1052,7 +1054,7 @@ PROP_SAME.update({'bloodThorns': 'bloodThorn'})
 PROP_WIDTH.update({'bloodCrescent': 52, 'haloF': 46, 'bloodMist': 40})  # the halo a little wider than his hood
 PROP_SAME.update({n: 'haloF' for n in ('haloB', 'haloS', 'haloLitF', 'haloLitB', 'haloLitS')})
 # the Cinderbrand's: the streak about his thrust's reach, the flame half the knight, the ring as wide as Forgeheart (DL.KITS.cinderbrand.ability.ring x2)
-PROP_WIDTH.update({'brandStreak': 120, 'brandRing': 260, 'brandFlash': 34, 'brandSlash': 60, 'brandScorch': 56})
+PROP_WIDTH.update({'magmaCrack': 320, 'brandStreak': 120, 'brandRing': 260, 'brandFlash': 34, 'brandSlash': 60, 'brandScorch': 56})
 PROP_HEIGHT['brandFlame'] = 44
 PROP_HEIGHT['jadeCrystal2'] = 60  # the grown crystals about two thirds of the knight
 PROP_SAME.update({'jadeCrystal1': 'jadeCrystal2', 'jadeCrystal3': 'jadeCrystal2', 'jadeCrystal4': 'jadeCrystal2'})
