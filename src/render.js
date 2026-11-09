@@ -2098,7 +2098,7 @@
     const s = Art.sprites.magmaCrack;
     c.save();
     c.globalAlpha = Math.max(0, Math.min(1, m.a)) * (0.8 + 0.2 * pulse);
-    if (s) { c.drawImage(s.c, m.x - r, m.y - ry, r * 2, ry * 2); c.restore(); return; }
+    if (s) { const h = r * s.h / s.w; c.drawImage(s.c, m.x - r, m.y - h, r * 2, h * 2); c.restore(); return; } // Robert's cracks, kept to their own shape
     // coded cracks: jagged lines from near his feet out to the ring's edge, dark rims round glowing magma
     let seed = m.seed || 1;
     const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
