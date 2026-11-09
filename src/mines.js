@@ -13,8 +13,8 @@
    steps; for now it's stone to walk, Ember Shrines to light and a way home.
 
    Like the Spires it's 3/4 top-down, not isometric: a floor's world rect is where you walk and its basalt face hangs
-   DOWN from its south edge, longer the higher it stands, glowing where the lava licks its foot. The stone is painted
-   once into 1024 px chunks (made as they come into view). The lava sea is one small coded texture, laid as a pattern
+   DOWN from its south edge, longer the higher it stands, sinking into the mist at its foot. The stone is painted
+   once into 1024 px chunks (made as they come into view). The mist sea below (Robert: mist, not lava pools) is one small coded texture, laid as a pattern
    and slowly drifted: one fill a frame. Glows are the one cached glow picture; lights only near the knight.
 
    Ember Shrines (the Spires' Mist Wells, in lava): walk up to one and it lights and becomes your checkpoint (saved,
@@ -61,7 +61,7 @@
     sGreat: [-80, -272, 80, 412, 2], // the great stair: the Ash Hall up to the Bastion
     sThrone: [-80, -1032, 80, -808, 4],
   };
-  // stone causeways over the lava: x1, y1, x2, y2, half width
+  // stone causeways over the drop: x1, y1, x2, y2, half width
   const BRIDGES = {
     bw1: [-420, 660, -660, 660, 40], bw2: [-1260, 660, -1500, 660, 40],
     be1: [420, 660, 660, 660, 40], be2: [1260, 660, 1500, 660, 40],
@@ -249,7 +249,7 @@
     return out;
   }
 
-  // A basalt face hanging from a floor's south edge: tall columns, molten seams, the foot glowing over the lava.
+  // A basalt face hanging from a floor's south edge: tall columns, molten seams, the foot lost in the mist.
   function face(g, x0, x1, y, h, r) {
     const w = Math.round(x1 - x0), H = Math.round(h + 60), t = mk(w, H), q = t.getContext("2d");
     q.fillStyle = C.face;
@@ -283,13 +283,13 @@
       while (sy > top) { sx += (r() - 0.5) * 10; sy -= 6 + r() * 10; q.lineTo(sx, sy); }
       q.stroke();
     }
-    // the corners turn from the light; the foot glows from the lava below
+    // the corners turn from the light; the foot sinks into the mist below
     let gr = q.createLinearGradient(0, 0, w, 0);
     gr.addColorStop(0, "rgba(255,200,160,0.12)"); gr.addColorStop(Math.min(0.2, 24 / w), "rgba(255,200,160,0)");
     gr.addColorStop(Math.max(0.8, 1 - 24 / w), "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,0.45)");
     q.fillStyle = gr; q.fillRect(0, 0, w, H);
     gr = q.createLinearGradient(0, 0, 0, H);
-    gr.addColorStop(0, "rgba(0,0,0,0.05)"); gr.addColorStop(0.55, "rgba(10,0,0,0.35)"); gr.addColorStop(0.85, "rgba(140,40,0,0.35)"); gr.addColorStop(1, "rgba(255,120,20,0.75)");
+    gr.addColorStop(0, "rgba(0,0,0,0.05)"); gr.addColorStop(0.55, "rgba(10,0,0,0.35)"); gr.addColorStop(0.8, "rgba(60,48,50,0.5)"); gr.addColorStop(1, "rgba(80,70,72,0.95)");
     q.fillStyle = gr; q.fillRect(0, 0, w, H);
     q.fillStyle = "rgba(0,0,0,0.4)"; q.fillRect(0, 0, w, 3); // the floor's lip throws its shadow
     g.drawImage(t, x0, y);
@@ -380,7 +380,7 @@
     }
   }
 
-  // A stone causeway over the lava: a basalt deck on arches, parapets each side.
+  // A stone causeway over the misty drop: a basalt deck on arches, parapets each side.
   function causeway(g, q, r) {
     let [ax, ay, bx, by, hw] = q;
     if (bx < ax) [ax, ay, bx, by] = [bx, by, ax, ay];
@@ -390,10 +390,10 @@
     g.fillStyle = C.face; g.fillRect(-2, hw, len + 4, 70);
     for (let s = 20; s < len - 20; s += 60) {
       g.fillStyle = "#1a0c08"; g.beginPath(); g.ellipse(s + 20, hw + 70, 18, 46, 0, Math.PI, 0); g.fill();
-      g.fillStyle = "rgba(255,110,20,0.35)"; g.fillRect(s + 6, hw + 56, 28, 14);
+      g.fillStyle = "rgba(90,80,82,0.45)"; g.fillRect(s + 6, hw + 56, 28, 14); // mist drifting through the arch
     }
     const gr = g.createLinearGradient(0, hw, 0, hw + 70);
-    gr.addColorStop(0, "rgba(0,0,0,0.2)"); gr.addColorStop(1, "rgba(255,110,20,0.5)");
+    gr.addColorStop(0, "rgba(0,0,0,0.2)"); gr.addColorStop(1, "rgba(80,70,72,0.85)");
     g.fillStyle = gr; g.fillRect(-2, hw, len + 4, 70);
     // the deck
     g.fillStyle = C.grout; g.fillRect(-4, -hw, len + 8, hw * 2);
@@ -407,21 +407,18 @@
     g.restore();
   }
 
-  // A lava-sea tile: molten rock under drifting plates of crust (seamless; painted once).
-  function lavaTile() {
+  // A mist-sea tile: banks of ash-grey smoke over the drop (seamless; painted once). Robert (2026-11-09): mist below,
+  // not lava pools; the lava falls pour down into it.
+  function mistTile() {
     const N = 128, c = mk(N, N), g = c.getContext("2d"), im = g.createImageData(N, N), d = im.data;
-    const f = (x, y) => DL.fbm(x / 34, y / 34, 77);
+    const f = (x, y) => DL.fbm(x / 40, y / 40, 77) * 0.7 + DL.fbm(x / 14, y / 14, 31) * 0.3;
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
       // blend four offset samples so the tile wraps without a seam
       const u = x / N, v = y / N;
       const n = f(x, y) * (1 - u) * (1 - v) + f(x - N, y) * u * (1 - v) + f(x, y - N) * (1 - u) * v + f(x - N, y - N) * u * v;
-      let R, Gc, B;
-      const crust = n - 0.52;
-      if (crust > 0.035) { const k = Math.min(1, crust * 6); R = 70 - 30 * k; Gc = 28 - 12 * k; B = 18 - 6 * k; } // dark plates
-      else if (crust > -0.01) { R = 255; Gc = 220; B = 120; } // the bright cracks between them
-      else { const k = Math.min(1, -crust * 5); R = 250 - 20 * k; Gc = 140 - 60 * k; B = 30 - 10 * k; } // open molten rock
+      const k = Math.max(0, Math.min(1, (n - 0.3) * 2.6)); // 0 = the deep gaps, 1 = the thickest banks
       const i = (y * N + x) * 4;
-      d[i] = R; d[i + 1] = Gc; d[i + 2] = B; d[i + 3] = 255;
+      d[i] = 34 + 92 * k; d[i + 1] = 28 + 84 * k; d[i + 2] = 32 + 82 * k; d[i + 3] = 255;
     }
     g.putImageData(im, 0, 0);
     return c;
@@ -542,7 +539,7 @@
     return c;
   }
   function build() {
-    art = { glow: glowSprite(), arch: archSprite(), brazier: brazierSprite(), shrine: [shrineSprite(false), shrineSprite(true)], crystal: crystalSprite(), lava: lavaTile() };
+    art = { glow: glowSprite(), arch: archSprite(), brazier: brazierSprite(), shrine: [shrineSprite(false), shrineSprite(true)], crystal: crystalSprite(), mist: mistTile() };
     const m = rng(4242);
     art.embers = Array.from({ length: 140 }, () => ({ x: (m() - 0.5) * 4800, y: (m() - 0.5) * 4000, p: m() * 10, v: 14 + m() * 22 }));
   }
@@ -550,17 +547,17 @@
   /* ---------------- drawing each frame ---------------- */
   const sees = (view) => view.right > OX - S.halfW && view.left < OX + S.halfW && view.bottom > OY - S.halfH && view.top < OY + S.halfH;
   Mi.covers = (view) => sees(view) && G.camera && Mi.inRegion(G.camera.x, G.camera.y);
-  let lavaPat = null, lavaCtx = null;
-  // The lava sea (one drifting pattern fill), then the painted stone, then the lava falls.
+  let mistPat = null, mistCtx = null;
+  // The mist sea (one drifting pattern fill), then the painted stone, then the lava falls pouring into the mist.
   Mi.drawGround = function (c, view, t) {
     if (!sees(view)) return;
     if (!art) build();
-    if (!lavaPat || lavaCtx !== c) { lavaPat = c.createPattern(art.lava, "repeat"); lavaCtx = c; }
-    if (lavaPat.setTransform && typeof DOMMatrix !== "undefined") lavaPat.setTransform(new DOMMatrix().translate(OX + t * 5, OY + t * 2.5).scale(3));
-    c.fillStyle = lavaPat;
+    if (!mistPat || mistCtx !== c) { mistPat = c.createPattern(art.mist, "repeat"); mistCtx = c; }
+    if (mistPat.setTransform && typeof DOMMatrix !== "undefined") mistPat.setTransform(new DOMMatrix().translate(OX + t * 9, OY + t * 3).scale(4));
+    c.fillStyle = mistPat;
     c.fillRect(view.left - 2, view.top - 2, view.right - view.left + 4, view.bottom - view.top + 4);
-    // a slow heat-breath over it: darker and brighter in turn
-    c.fillStyle = `rgba(40,8,0,${0.32 + 0.08 * Math.sin(t * 0.7)})`;
+    // the mist slowly thickens and thins, warmed from far below
+    c.fillStyle = `rgba(40,22,18,${0.28 + 0.08 * Math.sin(t * 0.5)})`;
     c.fillRect(view.left - 2, view.top - 2, view.right - view.left + 4, view.bottom - view.top + 4);
     const i0 = Math.max(0, Math.floor((view.left - OX - BX0) / CH)), i1 = Math.min(Math.ceil((BX1 - BX0) / CH) - 1, Math.floor((view.right - OX - BX0) / CH));
     const j0 = Math.max(0, Math.floor((view.top - OY - BY0) / CH)), j1 = Math.min(Math.ceil((BY1 - BY0) / CH) - 1, Math.floor((view.bottom - OY - BY0) / CH));
@@ -580,10 +577,10 @@
     }
     // lava falls pouring down the faces
     for (const [fx, fw, id] of FALLS) {
-      const f = FLOORS[id], x = OX + fx - fw / 2, y = OY + f[3] + 4, len = S.hang + f[4] * LH + 40;
+      const f = FLOORS[id], x = OX + fx - fw / 2, y = OY + f[3] + 4, len = S.hang + f[4] * LH + 90;
       if (x > view.right || x + fw < view.left || y > view.bottom || y + len < view.top) continue;
       const gr = c.createLinearGradient(0, y, 0, y + len);
-      gr.addColorStop(0, "rgba(255,200,80,0.95)"); gr.addColorStop(1, "rgba(255,110,20,0.9)");
+      gr.addColorStop(0, "rgba(255,200,80,0.95)"); gr.addColorStop(0.65, "rgba(255,120,24,0.9)"); gr.addColorStop(1, "rgba(255,110,20,0)");
       c.fillStyle = gr; c.fillRect(x, y, fw, len);
       c.fillStyle = "rgba(255,240,190,0.85)";
       for (let i = 0; i < 6; i++) { const yy = y + ((t * (70 + i * 11) + i * 31) % len); c.fillRect(x + 3 + i * ((fw - 6) / 5), yy, 2, 14); }
@@ -661,7 +658,7 @@
     }
   }
 
-  // Above the darkness: brazier and lava-fall glow, the rune circle's bloom, embers rising off the lava.
+  // Above the darkness: brazier and lava-fall glow, the rune circle's bloom, embers rising out of the mist.
   Mi.drawGlow = function (c, t, view) {
     if (!sees(view) || !art) return;
     const glow = (x, y, r, a) => { c.globalAlpha = a; c.drawImage(art.glow, x - r, y - r, r * 2, r * 2); };
@@ -677,6 +674,8 @@
     for (const [fx, fw, id] of FALLS) {
       const f = FLOORS[id], x = OX + fx, y = OY + f[3] + (S.hang + f[4] * LH) * 0.6;
       if (x > view.left - 200 && x < view.right + 200 && y > view.top - 300 && y < view.bottom + 300) glow(x, y, 90, 0.4);
+      const fy = OY + f[3] + S.hang + f[4] * LH + 70; // where it pours into the mist, the mist glows
+      if (x > view.left - 200 && x < view.right + 200 && fy > view.top - 150 && fy < view.bottom + 150) glow(x, fy, 80 + fw, 0.35 + 0.05 * Math.sin(t * 2 + fx));
     }
     glow(OX + RUNE.x, OY + RUNE.y, 180, 0.12 + 0.06 * Math.sin(t * 1.4));
     c.globalAlpha = 1;
