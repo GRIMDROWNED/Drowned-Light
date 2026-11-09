@@ -15,7 +15,7 @@
   const CURRENT_SLOT = "drowned-light-" + SB + "slot";
   const say = (m, k) => DL.UI && DL.UI.toast(m, k);
   const sfx = (n) => DL.Sound.play(n);
-  const emptyRes = () => ({ wood: 0, stone: 0, resin: 0, iron: 0, pearl: 0, black: 0 });
+  const emptyRes = () => Object.fromEntries(DL.RES_KEYS.map((k) => [k, 0]));
 
   const G = (DL.Game = { state: "title", t: 0, time: 0, nightAmt: 0, night: false, allies: [], eid: 0, pid: 0, dirty: new Set() });
   // Co-op: the guest's device plays inside the host's world and never saves it.
@@ -26,7 +26,7 @@
   G.defaultSave = () => ({
     v: 1, day: 1, nights: 0, deepest: 0, muted: false,
     stash: emptyRes(),
-    up: { fortress: 1, flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, roost: 0, bell: 0, roseheart: 0 },
+    up: { fortress: 1, flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, roost: 0, bell: 0, roseheart: 0, crystal: 0, mistlantern: 0 },
     kit: "lanternBlade",
     kitLevel: 1,
     difficulty: "dark",
@@ -65,6 +65,8 @@
     pyramid: { sq: {} },
     // the finale (src/finale.js): stage (0 nothing yet, 1 the Fire Bearer waits in camp, 2 on the march, 3 at the gate, 4 won),
     // where the Bearer stands, its health (-1: full), guttered, its last camp, the gate found yet, and the day it was won
+    riftlord: 0, // how often the Lord of the Rift Throne has been beaten in this world (src/riftthrone.js)
+    riftHome: 0, // 1 once Rift Shards were first carried home from a dungeon: their buildings show from then (src/rift.js)
     finale: { stage: 0, x: 0, y: 0, hp: -1, down: false, rest: null, found: false, won: 0 },
     started: false,
     lastPlayed: 0,
@@ -167,7 +169,12 @@
       : `The ${DL.KITS[id].name} can now be chosen when you begin a new game.`, "good"), 900);
   };
   // A world already holding a full-grown Rose Heart (built before this check) earns him too.
-  const checkUnlocks = (quiet) => { if (G.save.up.roseheart >= 3) G.unlockKit("rosePaladin", quiet); };
+  // The Chain Reaper is won from the Lord of the Rift Throne (src/riftthrone.js) since v0.15.234: a device with a world
+  // already played as him keeps him.
+  const checkUnlocks = (quiet) => {
+    if (G.save.up.roseheart >= 3) G.unlockKit("rosePaladin", quiet);
+    if (!G.kitOpen("chainReaper") && (G.save.riftlord || G.listSlots().some((q) => q.save && q.save.kit === "chainReaper"))) G.unlockKit("chainReaper", true);
+  };
   G.diff = () => DL.DIFFICULTIES[G.save.difficulty] || DL.DIFFICULTIES.dark;
   G.siegeRadius = () => G.stats().flameR + 90;
   G.stage = (c) => (c < 25 ? 1 : c < 50 ? 2 : c < 75 ? 3 : 4);
@@ -243,7 +250,7 @@
     G.towerCd = [0, 0, 0, 0];
     G.resetPylons();
     G.siegeT = 5; G.spawnT = 3; G.rootEvent = null; G.selfEnemy = null; G.champSpawned = false;
-    G.dying = 0;
+    G.dying = 0; G.spires = null; DL.Bullets.clear();
     DL.Siege.reset();
     DL.Outposts.reset();
     DL.Pyramid.resetChampions();
@@ -303,6 +310,9 @@
     if (G.cave) {
       // the clock stands still while you're down in Derek's Hollow, where it's always dark
       G.nightAmt = 1; G.night = true;
+    } else if (G.spires) {
+      // the clock stands still in the Abyssal Spires test room too (src/spires.js), its own violet dusk
+      G.nightAmt = 0; G.night = false;
     } else {
       G.time += dt;
       if (G.time >= CYC.total) { G.time -= CYC.total; onNewDay(); }
@@ -327,6 +337,8 @@
     DL.Rose.update(dt);
     DL.Rose.local();
     DL.Cave.update(dt);
+    DL.Spires.update(dt);
+    DL.Bullets.update(dt);
     DL.Minions.update(dt);
     updateEnemies(dt);
     if (G.state === "dying") return;
@@ -339,6 +351,8 @@
     DL.Works.update(dt);
     DL.Finale.update(dt);
     DL.Finale.local();
+    DL.Rift.local(); // walking into the open Drowned Gate: the dungeons (src/rift.js)
+    DL.Rift.update(dt); // the Crystal Turrets
     updateDefenses(dt);
     DL.Trophies.update(dt);
     DL.Outposts.update(dt);
@@ -374,6 +388,9 @@
       updateCorruption(dt);
     }
     DL.Net.smooth(dt);
+    DL.Spires.update(dt); // a run in the host's Spires: the portals and seals round this knight (src/spires.js)
+    DL.Bullets.update(dt); // the host's bullets, flown on and dodged here (src/bullets.js)
+    DL.Rift.local(); // the open Drowned Gate and the camp's Rift Portal
     DL.Rose.local();
     DL.Finale.update(dt);
     DL.Finale.local();
@@ -392,13 +409,14 @@
     p.carried = emptyRes();
     sfx("death");
     for (let i = 0; i < 30; i++) puff(p.x + rand(-12, 12), p.y - rand(0, 60), "rgba(60,220,230,0.7)", 50, 1.4, -30);
-    say("You have fallen. You'll rise at the camp in a moment — whatever you carried is lost.", "danger");
+    say(G.spires ? "You have fallen. You'll rise at the run's last Mist Well in a moment; the party keeps its loot." : "You have fallen. You'll rise at the camp in a moment — whatever you carried is lost.", "danger");
   }
   function guestRise() {
-    const p = G.player, st = G.stats();
-    Object.assign(p, { x: 20, y: 70, hp: st.maxHp, corrupt: 0, oil: st.maxOil, downT: 0, inv: 1.5 });
+    const p = G.player, st = G.stats(), cp = G.spires ? DL.Spires.checkpoint() : null; // in a run: back at its checkpoint
+    Object.assign(p, { x: cp ? cp.x : 20, y: cp ? cp.y : 70, hp: st.maxHp, corrupt: 0, oil: st.maxOil, downT: 0, inv: 1.5 });
+    if (cp) { p.spx = p.x; p.spy = p.y; if (G.spires) G.spires.held = false; }
     G.camera.x = p.x; G.camera.y = p.y;
-    say("You rise beside the Central Flame.", "good");
+    say(cp ? "You rise again at the run's checkpoint." : "You rise beside the Central Flame.", "good");
   }
 
   function onNightfall() {
@@ -504,7 +522,7 @@
       if (o.type === "sprout") { if (!o.harvested) L.push({ x: o.x + 6, y: o.y - 30, r: 46, s: 0.45, col: "80,230,240", a: 0.6 }); continue; }
       L.push({ x: o.x, y: o.y - 24, r: o.def.light * G.diff().light, s: 0.92, col: "80,230,240", a: 0.95, kind: "bloom", obj: o });
     }
-    for (const o of G.amethysts) if (!o.harvested) L.push({ x: o.x, y: o.y - 4, r: 34, s: 0.45, col: "190,160,255", a: 0.9 });
+    for (const o of G.amethysts) if (!o.harvested) L.push({ x: o.x, y: o.y - 4, r: 34, s: 0.45, col: "130,195,255", a: 0.9 });
     if (p && G.state !== "title") {
       const lr = st.lanternR * (p.oil > 0 ? 1 : 0.4);
       L.push({ x: p.x, y: p.y - 28, r: lr, s: 0.8, col: "255,180,90", a: p.oil > 0 ? 0.75 : 0.3, flick: 1, lantern: true });
@@ -532,6 +550,8 @@
     for (const pr of G.projectiles) L.push({ x: pr.x, y: pr.y, r: pr.kind === "orb" ? 44 : 26, s: 0.3, col: pr.col, a: 0.8 });
     if (G.walls) DL.Kits.lights(L);
     if (p) DL.Cave.lights(L);
+    DL.Spires.lights(L);
+    DL.Rift.lights(L);
     G.lights = L;
   }
 
@@ -588,11 +608,11 @@
 
     if (DL.Input.take("dash")) tryDash(inp);
     if (DL.Input.take("ability")) useAbility();
-    if (DL.Input.take("torch")) placeTorch();
+    if (DL.Input.take("torch") && !DL.Spires.burn()) placeTorch(); // in the Spires a carried Aether Crystal burns first
     if (DL.Input.take("boost")) DL.Wyvern.boost(); // David's Tailwind or War Fury (src/wyvern.js)
 
-    if (DL.Kits.tideTick(p, st, dt)) {
-      // the Jade Breaker's charged rush (src/kits.js) moves him
+    if (DL.Kits.tideTick(p, st, dt) || DL.Kits.brandTick(p, st, dt)) {
+      // the Jade Breaker's charged rush or the Cinderbrand's Brand Thrust (src/kits.js) moves him
     } else if (p.dashT > 0) {
       p.dashT -= dt;
       p.x += p.dashDir.x * 440 * dt;
@@ -629,7 +649,7 @@
     if (p.cast) { p.cast.t += dt; if (p.cast.t >= p.cast.dur) p.cast = null; }
     p.aim = aimAngle(p);
     G.mineTarget = G.save.attackMode === "manual" ? nodeNear(p, 34) : null;
-    if (p.atkCd <= 0 && p.dashT <= 0 && !p.tideDash && !p.tideCharge && !inMenu) {
+    if (p.atkCd <= 0 && p.dashT <= 0 && !p.tideDash && !p.tideCharge && !p.brandGuard && !p.brandDash && !inMenu) {
       if (G.save.attackMode === "manual") {
         if (DL.Input.attacking()) DL.Kits.attack(p, st, p.aim);
         else if (DL.Input.mining() && G.mineTarget) mineStrike(p, G.mineTarget);
@@ -693,6 +713,8 @@
     if (p.oil < ab.oil) { say("Not enough lantern oil. Refill it in firelight.", "warn"); sfx("deny"); return; }
     // the Jade Breaker charges Jade Tide while it's held, and it goes off (paid then) when let go (src/kits.js)
     if (ab.charge) { DL.Kits.tideStart(p); return; }
+    // the Cinderbrand plants his sword to guard while it's held, and lunges in Brand Thrust when let go (src/kits.js)
+    if (ab.guard) { DL.Kits.brandStart(p); return; }
     p.oil -= ab.oil;
     p.abiCd = DL.Kits.abilityCd();
     sfx("ability");
@@ -746,7 +768,7 @@
     if (!G.hitNodes.includes(o)) G.hitNodes.push(o);
     const col = DL.RESOURCES[o.def.res].color, ix = o.x - Math.cos(ang) * 6, iy = o.y - 12;
     for (let i = 0; i < 6; i++) puff(ix, iy, col, 90, 0.45, -60);
-    if (o.type === "sprout" || o.type === "pearl") { for (let i = 0; i < 5; i++) spark(ix, iy, o.type === "pearl" ? "190,160,255" : "80,230,240", 90); sfx("chime"); }
+    if (o.type === "sprout" || o.type === "pearl") { for (let i = 0; i < 5; i++) spark(ix, iy, o.type === "pearl" ? "130,195,255" : "80,230,240", 90); sfx("chime"); }
     else sfx(o.type === "tree" ? "chop" : "clink");
     if (o.mineHp <= 0) shatter(o);
   }
@@ -798,7 +820,14 @@
     const D = G.diff();
     const darkness = G.night ? 1 : Z.abyss ? 0.45 : D.dayCorrupt && p.zi >= 2 ? 0.35 : 0;
     p.exposed = false;
-    if (prot === "human") {
+    if (G.spires) {
+      // the Abyssal Spires: corruption only in the Hollow Mist (src/spires.js); the lantern halves it
+      let rate = DL.Spires.corruption(p) * D.corrupt;
+      if (rate > 0) {
+        if (p.oil > 0) { rate *= 0.5; p.oil = Math.max(0, p.oil - 1.1 * DL.Kits.oilDrain() * dt); }
+        p.corrupt += rate * dt; p.exposed = true;
+      } else p.corrupt -= 0.7 * dt;
+    } else if (prot === "human") {
       p.corrupt -= 10 * dt;
       p.oil = Math.min(st.maxOil, p.oil + 14 * dt);
       p.hp = Math.min(st.maxHp, p.hp + 3 * dt);
@@ -837,7 +866,7 @@
     const p = a ? { x: a.x, y: a.y, zi: W.zoneIndex(a.x, a.y) } : G.player;
     const Z = DL.ZONES[Math.max(1, p.zi)], dCamp = Math.hypot(p.x, p.y);
     const active = G.night || (Z.abyss && G.nightAmt < 0.5);
-    if (!active || G.cave) return; // in the Hollow only its waves come (src/cave.js)
+    if (!active || G.cave || G.spires) return; // in the Hollow only its waves come (src/cave.js)
 
     const cap = (G.night ? 55 : 14) + G.allies.length * (G.night ? 15 : 4);
     if (G.enemies.length >= cap) return;
@@ -983,6 +1012,7 @@
     else if (k !== G.player) DL.Net.hurtAlly(k, dmg, ang);
     else hurtPlayer(dmg, ang, by);
   }
+  G.hurtKnight = hurtKnight; // a blow on whoever it is: this knight, a friend's, a hound, a champion (src/spirefoes.js)
   // More knights, more Drowned: siege waves grow by a third per friend (and each Drowned has 15% more health per friend, in makeEnemy).
   G.partyScale = () => 1 + 0.35 * G.allies.length;
 
@@ -998,7 +1028,7 @@
       }
       e.lx = e.x; e.ly = e.y; // where it stood, so climbing a Pyramid step can slow its move (below)
       const eZ = DL.ZONES[W.zoneIndex(e.x, e.y)];
-      if (!G.night && !eZ.abyss && !e.isSelf && !e.def.den && !e.def.wyvern && !e.march && !e.lord) { // (a boss's minions live as long as it fights) // (the Drowned that rise against the Fire Bearer brave the sun)
+      if (!G.night && !eZ.abyss && !G.spires && !e.isSelf && !e.def.den && !e.def.wyvern && !e.march && !e.lord) { // (a boss's minions live as long as it fights) // (the Drowned that rise against the Fire Bearer brave the sun)
         e.hp -= 30 * dt; // the sun unmakes them
         if (Math.random() < 0.3) puff(e.x + rand(-8, 8), e.y - rand(10, 40), "rgba(40,60,70,0.6)", 30, 0.8);
         if (e.hp <= 0) { kill(e, false); continue; }
@@ -1065,6 +1095,10 @@
         e.y += Math.sin(e.wanderA) * e.speed * 0.45 * dt;
         e.angle = e.wanderA;
         e.moving = true;
+      } else if (e.def.sentinel) {
+        e.state = "move"; e.moving = false; // a crystal turret: it only shoots
+      } else if (e.def.spire && DL.SpireFoes.busy(e, dt, p, dp)) {
+        // a foe of the Abyssal Spires: its own leaps and volleys (src/spirefoes.js)
       } else if (e.def.king && DL.Finale.busy()) {
         // the Sunken King: his hands do everything (src/finale.js)
       } else if (e.def.bell && DL.Bell.busy(e, dt, p, dp)) {
@@ -1099,7 +1133,7 @@
         const spd = e.speed * (humanLightAt(e.x, e.y) ? 0.72 : 1) * (e.slow > 0 ? 0.6 : 1) * (e.spore > 0 ? e.sporeK : 1) * (e.rallied > 0 ? 1.2 : 1);
         // Walls in the way: head for the nearest gate first.
         const campWp = want === 1 && !e.def.fly ? DL.Camp.route(e.x, e.y, tx, ty, G.save.up) : null;
-        const wp = want === 1 && !e.def.fly ? (DL.Pyramid.route(e.x, e.y, campWp ? campWp.x : tx, campWp ? campWp.y : ty) || campWp) : null; // what flies goes over the walls
+        const wp = want === 1 && !e.def.fly ? DL.Spires.route(e.x, e.y, tx, ty) || (DL.Pyramid.route(e.x, e.y, campWp ? campWp.x : tx, campWp ? campWp.y : ty) || campWp) : null; // what flies goes over the walls
         let mx = wp ? wp.x - e.x : dx, my = wp ? wp.y - e.y : dy;
         if (e.def.zigzag && want === 1 && !wp && d > 80) { // weave from side to side on the way in
           const w = Math.sin(e.animT * 5 + e.id) * 0.9, ox = mx;
@@ -1205,6 +1239,7 @@
       for (const a of G.enemies) if (a !== e && dist(e.x, e.y, a.x, a.y) < d.aura) a.rallied = 0.3;
     }
     if (d.caster) hexbearer(e, dt, p, dp);
+    if (d.sentinel) DL.Bullets.sentinel(e, dt, p, dp); // the Spire Sentinel's bullet patterns (src/bullets.js)
     if (d.bell) DL.Bell.behave(e, dt, p, dp);
     if (d.colossus) DL.Colossus.think(e, dt, p, dp);
     if (d.king) DL.Finale.think(e, dt); // the Sunken King picks his moves (src/finale.js)
@@ -1371,7 +1406,7 @@
   function hurtPlayer(dmg, ang, by) {
     const p = G.player;
     if (p.inv > 0 || p.dashT > 0 || p.downT > 0 || G.state !== "play") return;
-    dmg *= DL.Kits.damageTaken(p);
+    dmg *= DL.Kits.damageTaken(p, ang);
     if (DL.Abigail.buffed()) dmg *= 1 - DL.Summons.wraith().buff; // Abigail's blessing
     const before = p.hp, LS = DL.LAST_STAND;
     G.lastHit = { by: by || "the Drowned", dmg, hp: before };
@@ -1386,7 +1421,7 @@
     }
     p.hurtFlash = 0.3;
     p.flash = 0.15;
-    if (!DL.Kits.steady(p)) { p.kx += Math.cos(ang) * 160; p.ky += Math.sin(ang) * 160; }
+    if (!DL.Kits.steady(p) && !p.brandGuard) { p.kx += Math.cos(ang) * 160; p.ky += Math.sin(ang) * 160; }
     G.camera.shake = 7;
     sfx("hurt");
     DL.Pad.rumble(0.6, 0.4, 140);
@@ -1400,6 +1435,9 @@
     if (e.def.king && !DL.Finale.isOpen(e)) { if (!remote) DL.Finale.immune(e); return; }
     const crit = !remote && Math.random() < 0.12;
     let d = dmg * (crit ? 1.6 : 1);
+    if (!remote && !e.struck && G.spires && DL.Spires.misty(G.player.x, G.player.y)) d *= DL.SPIRES.mist.strike; // first strike from the mist
+    if (e.def.spire) d = DL.SpireFoes.soak(e, d, ang); // a faded Mist Shade, the Prism Knight's shield (src/spirefoes.js)
+    e.struck = true;
     if (G.isGuest()) {
       // Show the hit now; the host owns the Drowned and applies it.
       DL.Net.event({ t: "hit", id: e.id, dmg: d, ang, kb, burn: burn || 0 });
@@ -1458,9 +1496,11 @@
     if (e.def.rose) DL.Rose.slain(e);
     if (e.def.wyvern) DL.Wyvern.slain(e);
     if (e.def.king) { DL.Finale.slain(e); return; }
+    if (e.def.riftlord) { DL.RiftThrone.slain(e); return; } // the Spires' boss: the run is won (src/riftthrone.js)
     sfx("kill");
     G.effects.push({ type: "dissolve", e, t: 0, max: 0.6 });
     for (let i = 0; i < 16; i++) puff(e.x + rand(-10, 10), e.y - rand(0, 50) * e.def.scale, "rgba(60,220,230,0.7)", 50, 0.9, -40);
+    if (e.room) DL.Spires.onKill(e); // a dungeon room's foe: Rift Shards
     if (e.isSelf) {
       const c = G.save.drownedSelf ? G.save.drownedSelf.carried : {};
       for (const k in c) if (c[k] > 0) dropRes(e.x, e.y, k, c[k]);
@@ -1492,6 +1532,7 @@
   }
 
   /* ---------------- defenses, projectiles, telegraphs ---------------- */
+  G.nearestEnemy = (x, y, R) => nearestEnemy(x, y, R);
   function nearestEnemy(x, y, R) {
     let best = null, bd = R;
     for (const e of G.enemies) {
@@ -1581,6 +1622,7 @@
             if (b.spore) DL.Fred.sporeHit(e, b);
             if (b.wyv) DL.Wyvern.boltHit(e, b); // David's bolt: burning, stunning, or leaping on as lightning
             if (b.ice) DL.Kits.chill(e, false); // the Frostweaver's frost bolt or his owl's shard: freezing, brittle
+            if (b.crystal) DL.Rift.hit(b.x, b.y); // a Crystal Turret's shard shatters on it
             const hp = e.hp;
             hitEnemy(e, b.dmg * DL.Kits.farShotMult(b), Math.atan2(b.vy, b.vx), b.soul ? 20 : 60);
             if (b.tithe) DL.Kits.blow(e, hp, b.dmg); // the Bloodsworn's crescent: its kills feed his Blood Tithe
@@ -1777,13 +1819,15 @@
     G.save.carried = emptyRes();
     const any = DL.RES_KEYS.some((k) => lost[k] > 0);
     const hadSelf = !!G.save.drownedSelf;
+    const sp = G.spires, rift = sp && (sp.shard || sp.aether) ? { shard: sp.shard, aether: sp.aether } : null; // fallen in a dungeon: the mist keeps its loot
+    if (sp) DL.Spires.lost(); // and the friends in the run with you are cast out
     if (any) {
-      G.save.drownedSelf = { x: p.x, y: p.y, carried: lost };
+      G.save.drownedSelf = sp ? { x: sp.bx, y: sp.by, carried: lost } : { x: p.x, y: p.y, carried: lost }; // (out of a dungeon: where you went in)
       G.selfEnemy = null;
       G.enemies = G.enemies.filter((e) => !e.isSelf);
     }
     G.persist();
-    G.deathInfo = { cause, hit: cause === "wounds" ? G.lastHit : null, lost, kept, any, hadSelf, zone: DL.ZONES[p.zi].name, day: G.save.day, nights: G.save.nights };
+    G.deathInfo = { cause, hit: cause === "wounds" ? G.lastHit : null, lost, kept, any, hadSelf, rift, zone: sp ? "the marsh by the Drowned Gate" : DL.ZONES[p.zi].name, day: G.save.day, nights: G.save.nights };
     for (let i = 0; i < 40; i++) puff(p.x + rand(-12, 12), p.y - rand(0, 60), "rgba(60,220,230,0.7)", 50, 1.6, -30);
   }
 

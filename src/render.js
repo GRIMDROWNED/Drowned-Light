@@ -210,7 +210,7 @@
     let built = 0;
     const gt0 = performance.now(), canBuild = () => (R.zoomStep ? built < 8 : built < 1 || (built < 3 && performance.now() - gt0 < 6));
     const paved = DL.Refuge.paved(DL.Camp.layout(G.save.up)) - 2; // the Refuge's floors cover the ground under them
-    for (let cy = Math.floor(top / CH); cy <= Math.floor(view.bottom / CH); cy++) {
+    if (!DL.Spires.covers(view)) for (let cy = Math.floor(top / CH); cy <= Math.floor(view.bottom / CH); cy++) {
       for (let cx = Math.floor(left / CH); cx <= Math.floor(view.right / CH); cx++) {
         if (paved > 0 && cx * CH >= -paved && (cx + 1) * CH <= paved && cy * CH >= -paved && (cy + 1) * CH <= paved) continue;
         let gc = W.groundCanvas(cx, cy, false);
@@ -226,8 +226,10 @@
     DL.Rose.drawGround(c, view);
     DL.Finale.drawGround(c, view, t);
     DL.Pyramid.drawGround(c, view); // the Pyramid's raised squares: rock faces, lips, stairs
+    DL.Spires.drawGround(c, view, t); // the Abyssal Spires test room (src/spires.js)
 
     for (const d of G.decals) sprite(c, d.type, d.x, d.y, false, Math.min(1, d.t / 3));
+    if (DL.Kits.magma()) drawMagma(c, DL.Kits.magma(), t); // the Cinderbrand's Riposte: magma cracking the ground round his guard
 
     /* telegraphs on the ground */
     for (const tg of G.telegraphs) {
@@ -262,6 +264,8 @@
     });
     pushCamp(list, G, c, t);
     DL.Cave.push(list, c, t, view);
+    DL.Spires.push(list, c, t, view);
+    DL.Rift.push(list, c, t); // the Crystal Turrets at camp (src/rift.js)
     DL.Rose.push(list, c, t, view);
     DL.Trophies.push(list, c);
     DL.Outposts.push(list, c, t, view, sprite, Art.drawFire, bar);
@@ -292,7 +296,7 @@
         if (size > 0.05) list.push({ y, f: () => Art.drawFire(c, x, y, size, t + i) });
       }
     }
-    for (const z of G.lightZones) if (z.fire) list.push({ y: z.y, f: () => Art.drawFire(c, z.x, z.y, 0.7 * Math.min(1, z.t), t + z.x) });
+    for (const z of G.lightZones) if (z.fire) list.push({ y: z.y, f: () => (z.brand && Art.sprites.brandFlame ? drawBrandFire(c, z, t) : Art.drawFire(c, z.x, z.y, 0.7 * Math.min(1, z.t), t + z.x)) });
     for (const k of G.pickups) list.push({ y: k.y, f: () => drawPickup(c, k, t) });
     for (const e of G.enemies) {
       if (e.x < left - 100 || e.x > view.right + 100 || e.y < top - 40 || e.y > view.bottom + 140) continue;
@@ -361,6 +365,7 @@
     /* darkness + light */
     drawLighting(G, c, left, top, z, shx, shy);
     toWorld();
+    DL.Bullets.draw(c, view); // bullet-hell bullets: above the darkness so they always read (src/bullets.js)
 
     /* glowing things drawn above the darkness */
     c.globalCompositeOperation = "lighter";
@@ -403,6 +408,8 @@
         c.strokeStyle = `rgba(${f.col},${(1 - k) * 0.9})`;
         c.lineWidth = f.w * (1 - k) + 1;
         c.beginPath(); c.ellipse(f.x, f.y, r, r * 0.7, 0, 0, Math.PI * 2); c.stroke();
+      } else if (f.type.startsWith("brand") && Art.sprites[f.type]) {
+        drawBrandFx(c, f);
       } else if (f.type === "slash") {
         drawSlash(c, f.x, f.y, f.ang, f.arc, f.r, f.t / f.max, f.col, f.w, false);
       } else if (f.type === "golemBeam") {
@@ -509,6 +516,7 @@
     }
     if (p && G.state !== "title") drawKitGlow(c, G, p, t);
     if (p && G.state !== "title" && G.state !== "dead") drawTithe(c, G, p, t);
+    if (p && G.state !== "title" && G.state !== "dead") drawHeat(c, G, p, t);
     if (p && G.state === "play" && G.save.attackMode === "manual") {
       // where a manual strike will go
       const a = p.aim != null ? p.aim : p.angle, r0 = 30, r1 = 40;
@@ -532,6 +540,9 @@
     for (const m of G.golems) drawGolemHeart(c, m, t);
     drawFormEmbers(c, G, t);
     DL.Cave.drawGlow(c, t);
+    DL.Spires.drawGlow(c, t, view);
+    DL.Bullets.glow(c, t, view);
+    DL.SpireFoes.drawRifts(c, t); // the Rift Callers' rifts, bright over the mist (src/spirefoes.js)
     DL.Rose.drawGlow(c, t, view);
     DL.Minions.drawGlow(c, t);
     for (const k of G.kindles) drawKindleGlow(c, k, t);
@@ -1050,11 +1061,18 @@
   function playerAnim(G, p, t) {
     const key = G.save.kit + p.stage, n = (anim) => Art.animLength(key, anim); // drawn frames (3 for most kits, 8 for the Jade Breaker)
     if (G.state === "dying") return ["death", Math.min(n("death") - 1, Math.floor((G.dying / 1.35) * n("death"))), p.angle];
-    if (p.dashT > 0 || p.tideDash) return ["dash", 0, p.angle];
+    if (p.dashT > 0 || p.tideDash || p.brandDash) return ["dash", 0, p.angle];
+    if (p.brandGuard && Art.sheet(key).down.guard) { // the Cinderbrand's planted sword, its blade glowing with his Forge Heat
+      const H = DL.KITS.cinderbrand.passive.heat, h = DL.Kits.heat(p);
+      return ["guard", h >= H.max ? 2 : h >= H.max / 2 ? 1 : 0, p.brandGuard.ang];
+    }
     if (p.waltz) return [p.moving ? "walk" : "idle", p.moving ? Math.floor(p.animT * stepRate(G.save.kit + p.stage, false)) : 0, t * 13]; // turning on the spot in Rose's Waltz
     if (p.tideCharge && p.tideCharge.t > 0.12) return [castAnim(key), n(castAnim(key)) > 3 ? 2 : 0, p.aim ?? p.angle]; // winding up Jade Tide (the blade raised)
     if (p.hurtFlash > 0.15) return ["hurt", 0, p.angle];
-    if (p.swing) return ["attack", Math.min(n("attack") - 1, Math.floor((p.swing.t / p.swing.dur) * n("attack"))), p.swing.ang];
+    if (p.swing) {
+      const a = p.swing.anim && Art.sheet(key).down[p.swing.anim] ? p.swing.anim : "attack"; // the Cinderbrand's level slash
+      return [a, Math.min(n(a) - 1, Math.floor((p.swing.t / p.swing.dur) * n(a))), p.swing.ang];
+    }
     if (p.cast) return [castAnim(key), Math.min(n(castAnim(key)) - 1, Math.floor((p.cast.t / p.cast.dur) * n(castAnim(key)))), p.cast.ang];
     if (p.moving) return [moveAnim(G.save.kit + p.stage, p.running), Math.floor(p.animT * stepRate(G.save.kit + p.stage, p.running)), p.angle];
     return ["idle", Math.floor(t * (n("idle") > 1 ? 6 : 1.6)), p.angle]; // a drawn breathing idle plays at 6 frames a second
@@ -1139,6 +1157,8 @@
   const unitScale = (e) => { const lk = e.def.look && DL.Minions.look(e); return lk ? lk.scale : e.def.scale; };
 
   function enemyAnim(e, t) {
+    if (e.anim) return e.anim; // the Lord of the Rift Throne picks his own pose (src/riftthrone.js)
+    if (e.pose != null) return ["attack", e.pose, e.aim]; // a Spires foe's own move (src/spirefoes.js)
     if (e.state === "windup") return ["attack", 0, e.aim];
     if (e.state === "recover") return ["attack", e.stT > 0.2 ? 1 : 2, e.aim];
     if (e.moving) return ["walk", Math.floor(e.animT * walkRate(unitKey(e), e.def.crawl ? 8 : 5.5)), e.angle];
@@ -1255,6 +1275,7 @@
 
   function drawEnemy(c, e, t) {
     if (e.hidden) return; // a Tide Leech under the causeway
+    if (e.def.sentinel) return DL.Bullets.drawSentinel(c, e, t); // coded crystal turret (src/bullets.js)
     const d = e.def, s = unitScale(e), lk = d.look && DL.Minions.look(e);
     if (d.bell && e.dormant) { drawBuriedBell(c, e, t); return; }
     if (d.rose && e.dormant && Art.sprites.roseBud) return; // the Deadly Rose asleep inside her bud (src/rose.js)
@@ -1271,7 +1292,7 @@
       c.beginPath(); c.ellipse(e.x, e.y, 14 * s + 4, 4, 0, 0, Math.PI * 2); c.fill();
       return;
     }
-    shadow(c, e.x, e.y, (d.shadow || 14) * s, (d.shadow || 14) * 0.36 * s);
+    if (!e.lift) shadow(c, e.x, e.y, (d.shadow || 14) * s, (d.shadow || 14) * 0.36 * s); // lifted (the Rift lord on his throne): the throne is his shadow
     if (e.state === "windup" && d.colossus) DL.Colossus.drawWindup(c, e);
     else if (e.state === "windup") {
       // telegraph the coming blow
@@ -1296,8 +1317,9 @@
     let flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : icy ? 0.45 : d.beast ? WOLF_TINT : 0;
     let flashColor = e.flash > 0 ? "#ffffff" : icy ? "#bfe6ff" : d.beast && e.state !== "windup" ? WOLF_CAST : d.rose ? "#ff7a8a" : "#7ff6ff";
     if (lk && lk.tint && !flash) { flash = lk.tintK; flashColor = lk.tint; } // a stand-in minion, washed in its own colour
+    if (d.spire) DL.SpireFoes.drawMark(c, e, t); // where a Chain Leaper lands, a Bowman's lanes
     const [anim, fr, ang] = enemyAnim(e, t);
-    Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y, s, { flash, flashColor, alpha: e.dormant ? 0.8 : 1 });
+    Art.drawUnit(c, unitKey(e), anim, fr, ang, e.x, e.y - (e.lift || 0), s, { flash, flashColor, alpha: e.dormant ? 0.8 : e.fade != null ? e.fade : 1 });
     if (e.hp < e.maxHp) bar(c, e.x, e.y - (d.barY || (d.crawl ? 36 : d.beast ? 66 : 84) * s) - 4, Math.round((d.barW || 26) * Math.max(1, s)), e.hp / e.maxHp, d.boss ? "#7ff6ff" : "#c8484e");
     if (e.burn > 0) Art.drawFire(c, e.x + Math.sin(t * 7) * 4, e.y - 10, 0.5, t);
     if (frozen && Art.sprites.iceSpike2) {
@@ -1823,6 +1845,7 @@
 
   function drawProjectile(c, b) {
     const a = Math.atan2(b.vy, b.vx), ux = Math.cos(a), uy = Math.sin(a);
+    if (b.crystal && DL.Rift.drawBolt(c, b, a)) return; // a Crystal Turret's drawn shard (src/rift.js)
     if (b.kind === "soul") {
       // Abigail's soul orb: a teal wisp trailing behind a dark round soul with two pale eyes
       const tt = DL.Game.t;
@@ -2026,6 +2049,87 @@
       c.fillStyle = h; c.fillRect(p.x - 52, p.y - 86, 104, 104);
     }
   }
+  // The Cinderbrand's Forge Heat: a glow round the blade as it fills, and a bar under him (white-hot when full).
+  function drawHeat(c, G, p, t) {
+    const K = DL.Kits, h = K.heat(p);
+    if (!h || p.held) return;
+    const H = DL.KITS.cinderbrand.passive.heat, f = h / H.max, full = K.heatFull(p);
+    const g = c.createRadialGradient(p.x, p.y - 40, 0, p.x, p.y - 40, 30 + f * 26);
+    g.addColorStop(0, `rgba(255,${full ? 190 : 120},50,${0.08 + f * 0.16 + (full ? Math.sin(t * 10) * 0.04 : 0)})`); g.addColorStop(1, "rgba(255,120,40,0)");
+    c.fillStyle = g; c.fillRect(p.x - 60, p.y - 100, 120, 120);
+    if (!(p.heatHold <= 0 && Math.floor(t * 8) % 2)) bar(c, p.x, p.y + 8, 30, f, full ? "#ffd27a" : "#e8762a");
+  }
+  /* The Cinderbrand's drawn effects (Robert's sheet, 2026-11-08): Brand Thrust's streak reaching out along the lunge,
+     Forgeheart's ring of fire spreading on the ground, the flash of a blocked blow and Riposte's slash, each fading out. */
+  function drawBrandFx(c, f) {
+    const s = Art.sprites[f.type], k = f.t / f.max, fade = Math.min(1, (1 - k) * 2.5);
+    let w = s.w * PS, h = s.h * PS;
+    c.save();
+    c.globalAlpha = fade;
+    c.translate(Math.round(f.x), Math.round(f.y));
+    if (f.type === "brandStreak") {
+      // shot out from his sword to its full length, then fading where it ends
+      const L = f.len * (f.big ? 1.3 : 1) * Math.min(1, k * 4);
+      c.rotate(f.ang);
+      c.drawImage(s.c, 0, -h * (f.big ? 0.8 : 0.5), L, h * (f.big ? 1.6 : 1));
+    } else if (f.type === "brandRing") {
+      const g = 0.35 + 0.65 * Math.sqrt(Math.min(1, k * 2)), rw = f.r * 2 * g, rh = rw * (h / w);
+      c.drawImage(s.c, -rw / 2, -rh * 0.62, rw, rh); // its front edge on the ground at his feet
+    } else {
+      if (f.type === "brandSlash") c.rotate(f.ang);
+      const g = f.type === "brandFlash" ? 0.6 + k * 0.6 : 1;
+      w *= g; h *= g;
+      c.drawImage(s.c, -w / 2, -h / 2, w, h);
+    }
+    c.restore();
+  }
+  /* The ground cracking with magma round the Cinderbrand's planted guard (Riposte, 10): Robert's drawn cracks (prop
+     magmaCrack, a ring seen from above) scaled to the ring, or coded jagged cracks until it's drawn; it pulses, and
+     fades as it cools. The ring is squashed to 0.6 of its width, like the ground. */
+  function drawMagma(c, m, t) {
+    const r = m.r, ry = r * 0.6, pulse = 0.85 + 0.15 * Math.sin(t * 6);
+    c.save();
+    c.globalAlpha = Math.max(0, Math.min(1, m.a));
+    const g = c.createRadialGradient(m.x, m.y, r * 0.2, m.x, m.y, r);
+    g.addColorStop(0, "rgba(255,120,30,0)"); g.addColorStop(0.75, `rgba(255,110,30,${0.16 * pulse})`); g.addColorStop(1, "rgba(255,90,20,0)");
+    c.translate(m.x, m.y); c.scale(1, 0.6); c.translate(-m.x, -m.y);
+    c.fillStyle = g; c.fillRect(m.x - r, m.y - r, r * 2, r * 2);
+    c.restore();
+    const s = Art.sprites.magmaCrack;
+    c.save();
+    c.globalAlpha = Math.max(0, Math.min(1, m.a)) * (0.8 + 0.2 * pulse);
+    if (s) { c.drawImage(s.c, m.x - r, m.y - ry, r * 2, ry * 2); c.restore(); return; }
+    // coded cracks: jagged lines from near his feet out to the ring's edge, dark rims round glowing magma
+    let seed = m.seed || 1;
+    const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+    const lines = [];
+    for (let i = 0; i < 16; i++) {
+      const a0 = (i / 16) * Math.PI * 2 + rnd() * 0.3, pts = [];
+      let a = a0;
+      for (let k = 0; k <= 5; k++) {
+        const d = r * (0.22 + 0.78 * k / 5);
+        a += (rnd() - 0.5) * 0.35;
+        pts.push([m.x + Math.cos(a) * d, m.y + Math.sin(a) * d * 0.6]);
+      }
+      lines.push(pts);
+    }
+    for (const [w, col] of [[5, "rgba(40,12,6,0.85)"], [2.5, "rgba(255,110,30,1)"], [1, "rgba(255,225,140,1)"]]) {
+      c.strokeStyle = col; c.lineWidth = w; c.lineJoin = "round";
+      for (const pts of lines) { c.beginPath(); pts.forEach(([x, y], k) => (k ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke(); }
+    }
+    c.restore();
+  }
+  // A fire his Brand Thrust left: the charred scorch under a flickering flame that dies down as it burns out.
+  function drawBrandFire(c, z, t) {
+    const sc = Art.sprites.brandScorch, fl = Art.sprites.brandFlame, life = Math.min(1, z.t);
+    c.save();
+    c.globalAlpha = Math.min(1, z.t * 1.5);
+    c.drawImage(sc.c, Math.round(z.x - sc.w * PS / 2), Math.round(z.y - sc.h * PS / 2), sc.w * PS, sc.h * PS);
+    const fk = (0.55 + 0.45 * life) * (0.9 + 0.1 * Math.sin(t * 14 + z.x * 0.3)), w = fl.w * PS * fk, h = fl.h * PS * fk * (0.9 + 0.12 * Math.sin(t * 9 + z.y));
+    c.globalAlpha = Math.min(1, z.t * 2);
+    c.drawImage(fl.c, Math.round(z.x - w / 2), Math.round(z.y + 3 - h), w, h);
+    c.restore();
+  }
   function drawTithe(c, G, p, t) {
     const K = DL.Kits, n = K.stacks(p);
     if (!n || p.held) return;
@@ -2196,7 +2300,7 @@
     const zi = p ? W.zoneIndex(p.x, p.y) : 0;
     const dim = DL.ZONES[zi].dim;
     const D = G.diff();
-    const dark = Math.min(0.96, (0.12 + 0.84 * G.nightAmt) * D.darkness + (dim + D.dayDim) * (1 - G.nightAmt));
+    const dark = G.spires ? DL.SPIRES.dark : Math.min(0.96, (0.12 + 0.84 * G.nightAmt) * D.darkness + (dim + D.dayDim) * (1 - G.nightAmt));
     G.darkness = dark;
     const L = R.lx, lw = R.lc.width, lh = R.lc.height, k = z / 2;
     const ox = shx / 2, oy = shy / 2;

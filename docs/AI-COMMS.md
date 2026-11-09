@@ -49,6 +49,61 @@ so about four times the marsh is on screen. Fixed without changing the look:
 - Refuge ground is skipped when the fortress is off screen.
 - `?perf` in the address (or F3) shows a frame-time readout (`R.showPerf`, `drawPerf`); the backdrop fill is skipped unless the camera shakes; adaptive resolution (`R.adapt`) also trips on frames under 25 fps and can go down to 1.
 Keep to these when adding art: draw through `sprite()`/`Art.drawUnit`, avoid per-draw save/restore and per-frame gradients.
+### 2026-11-08 · Claude → GPT · Co-op in the Abyssal Spires (step 9)
+Type: Decision (FYI)
+Dungeon runs now work in co-op. The host's device runs the run: `Sp.enter` pulls every guest in (`{t:"spires", on:1}`),
+`Sp.leave` and a host death (`Sp.lost`) send them home (`on:0`). Rooms seal, Wells light, chests open and Aether Crystals
+are picked up for ANY knight in the party (`party()` in src/spires.js). Snapshots carry `sp` (`Sp.snap`: seal, cleared,
+lit, took, opened, won, bubbles, bag, bullets), `rf` (Rift Caller rifts) and `sw` (Wells lit for good); each enemy row
+gains a 18th field, `SpireFoes.vis(e)`, for a Spires foe's drawn move. Bullets: guests fly the host's bullets
+(`Bullets.rows/apply`) and dodge or take them on their own device. Guest events: `spBurn`, `spLeave`, `riftGo`.
+A guest who falls in a run rises at its checkpoint; if the host falls the run is lost for all. Spires foes aim at
+`e.prey` (their target) and melee through the new `G.hurtKnight`. The Chain Leaper landing target moved from `e.tx/e.ty`
+to `e.lx/e.ly` (tx/ty are the guest's smoothing targets).
+
+### 2026-11-08 · Claude → GPT · Spires art cut in; Mist Lantern has 3 levels
+Type: Decision (FYI)
+Robert's remaining Spires art is in (tools/cut_spires.py): chest, Aether Crystal nodes, room seals and HUD icons in
+`assets/sprites/spires/`; the Crystal Turret, its bolt/flash/hit, Mist Lantern and Rift Portal in `assets/sprites/rift/`
+(loaded and drawn by src/rift.js). The Rift Portal now stands in camp (`Rift.portalSpot`) and walking into it opens the
+dungeon choice. `mistlantern` is now 3 levels: `DL.RIFT.lantern.ring` / `.corrupt` are arrays by level. Resource chips
+carry a `r-<key>` class so a resource can wear a drawn icon in CSS.
+
+### 2026-11-06 · Claude → GPT · The Rift Throne boss and the Chain Reaper lock (src/riftthrone.js)
+Type: Decision (FYI)
+The Abyssal Spires' arena now holds its boss, the Lord of the Rift Throne (stand-in name until Robert names it):
+enemy `riftlord` with `spire: "riftlord"`, run by `DL.RiftThrone` (wakes when the arena seals, 3 phases, kneels at
+66% and 33%, minions Rift Mite / Shard Wisp / Throne Warden from `DL.MINIONS.riftlord`). Its kill goes through
+`DL.RiftThrone.slain` (returned early from `kill()`), which sets `G.save.riftlord` and unlocks the Chain Reaper
+(now `secret: true`; old saves that already use it keep it). Enemies may set `e.anim = [anim, frame, dir]` to
+override `enemyAnim`, and `e.lift` to draw raised (no shadow). New enemy types still go at the END of `DL.ENEMIES`.
+
+### 2026-11-06 · Claude → GPT · Dungeon runs and rewards (src/rift.js)
+Type: Decision (FYI)
+The Abyssal Spires is now Level 2 (no longer only a test room): it is entered by walking into the open Drowned Gate
+after the Sunken King (`DL.Rift.local`, a dungeon choice screen `#screenGate`), or from the camp's Rift Portal once
+every Mist Well is lit. Two new resources in `DL.RESOURCES` carry `rift: true` (`shard` Rift Shard, `aether` Aether
+Crystal): they are found only in dungeon runs and stay out of the stash row until they first come home
+(`G.save.riftHome`). A run's finds live on `G.spires` (not `p.carried`): walk out and keep `DL.SPIRES.loot.keep`
+(half), fall and lose all. New upgrades with `rift: true` (`crystal` Crystal Turret, `mistlantern`) are hidden until
+then. `emptyRes()` now builds from `DL.RES_KEYS`, so code that lists resources should use it, not a fixed list.
+
+### 2026-11-05 · Claude → GPT · Bullet hell core for dungeon levels (src/bullets.js)
+Type: Decision (FYI)
+Robert decided Level 2+ are dungeons (entered from the Drowned Gate) with bullet-hell fights. Hostile pattern
+bullets live in `DL.Bullets` (own pool, not `G.projectiles`: no light per bullet, one sprite each, drawn above the
+darkness). Patterns: ring, fan, wall (with a gap), lane, spiral emitter; numbers in `DL.BULLETS`. Invulnerable knights
+(dash window, post-hit) pass through. First enemy using it: `DL.ENEMIES.sentinel` (Spire Sentinel). New dungeon
+enemies should fire through `DL.Bullets`, not `G.projectiles`. Host-only for now (not synced to guests).
+
+### 2026-11-05 · Claude → GPT · Abyssal Spires test room (src/spires.js)
+Type: Decision (FYI)
+Robert asked for a playable test of a dungeon with corridors and heights, copied from his "Abyssal Spires" picture,
+before any Level 2 art. `DL.Spires` is a room far off the map (`DL.SPIRES` in data.js, x 40000) like Derek's Hollow,
+reached only from the Sandbox pause menu. It stays in the 3/4 top-down view (no isometric): floors are world rects,
+stone faces hang down from their south edges, longer per height level. `World` treats both off-map regions the same
+(`offMap` in world.js); `Spires.collide` keeps walkers on floors/stairs/bridges and `Spires.route` steers the Drowned
+over joins. It's a test, not Level 2: please don't build on it until Robert decides on the dungeon design.
 
 ### 2026-11-04 · Claude → GPT · Boss minions and bigger bosses
 Type: Decision

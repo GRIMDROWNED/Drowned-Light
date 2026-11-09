@@ -18,8 +18,11 @@
     stone: { name: "Stone", color: "#9a9d9e" },
     resin: { name: "Bloom Resin", color: "#43e6ee" },
     iron: { name: "Iron Scrap", color: "#c06a44" },
-    pearl: { name: "Amethyst", color: "#bfa8ff" },
+    pearl: { name: "Amethyst", color: "#9fd0ff" }, // blue since 2026-11-05: violet is the Aether Crystal's
     black: { name: "Black Pearl", color: "#5d6b8c" }, // found only in the Abyss
+    // brought home from the dungeons (src/spires.js, src/rift.js): kept out of sight until the first run home
+    shard: { name: "Rift Shard", color: "#d6a8ff", rift: true },
+    aether: { name: "Aether Crystal", color: "#9a5cff", rift: true },
   };
   DL.RES_KEYS = Object.keys(DL.RESOURCES);
 
@@ -93,6 +96,20 @@
   DL.ENEMIES = {
     squire: { name: "Mire Stalker", hp: 16, speed: 92, dmg: 6, range: 30, windup: 0.32, cd: 1.0, scale: 0.78,
       radius: 10, mass: 0.7, zigzag: true, lunge: 380, retreat: 0.7, drop: { iron: 0.15 } },
+    // A crystal turret of the Abyssal Spires: never moves, plays bullet patterns (src/bullets.js).
+    sentinel: { name: "Spire Sentinel", hp: 110, speed: 0, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1,
+      radius: 18, mass: 50, sentinel: true, shadow: 22, drop: {} },
+    // The Abyssal Spires' bullet-pattern foes (src/spirefoes.js): their moves are their own (range 0: no Drowned blow)
+    leaper: { name: "Chain Leaper", hp: 46, speed: 74, dmg: 12, range: 0, windup: 1, cd: 99, scale: 1, radius: 13, mass: 1.2,
+      spire: "leaper", shadow: 18, barY: 84, drop: {} },
+    bowman: { name: "Bridge Bowman", hp: 34, speed: 62, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1, radius: 12, mass: 0.9,
+      spire: "bowman", shadow: 15, barY: 112, drop: {} },
+    shade: { name: "Mist Shade", hp: 30, speed: 84, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1, radius: 11, mass: 0.6,
+      spire: "shade", shadow: 12, barY: 128, drop: {} },
+    caller: { name: "Rift Caller", hp: 70, speed: 46, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1, radius: 14, mass: 1.5,
+      spire: "caller", shadow: 18, barY: 176, drop: {} },
+    prism: { name: "Prism Knight", hp: 170, speed: 46, dmg: 16, range: 0, windup: 1, cd: 99, scale: 1, radius: 17, mass: 4,
+      spire: "prism", shadow: 22, barY: 132, barW: 40, drop: {} },
     footman: { name: "Drowned Wretch", hp: 34, speed: 58, dmg: 11, range: 36, windup: 0.45, cd: 1.4, scale: 1,
       radius: 13, mass: 1, corruptHit: 4, drop: { iron: 0.4 } },
     archer: { name: "Tide Archer", hp: 22, speed: 64, dmg: 9, range: 230, windup: 0.7, cd: 2.3, scale: 0.95,
@@ -166,6 +183,16 @@
       ranged: true, keep: 200, fly: true, shot: "wispBolt", minion: true, look: "abigail", lookScale: 0.8, tint: "#4fe6f0", tintK: 0.35, drop: {} },
     tideleech: { name: "Tide Leech", hp: 70, speed: 50, dmg: 13, range: 34, windup: 0.5, cd: 1.6, scale: 1, radius: 14, mass: 2,
       armor: 0.2, burrow: 6, minion: true, look: "revenant", lookScale: 1.4, tint: "#2d302c", tintK: 0.45, drop: {} },
+    // the Abyssal Spires' boss (src/riftthrone.js; health in DL.BOSS.hp, x1.5 size in DL.BOSS.size) and his minions
+    // (src/spirefoes.js). The boss is still to be named by Robert: "the Lord of the Rift Throne" until then.
+    riftlord: { name: "The Lord of the Rift Throne", hp: 1800, speed: 52, dmg: 22, range: 0, windup: 1, cd: 99, scale: 1, radius: 24, mass: 30,
+      spire: "riftlord", riftlord: true, boss: true, shadow: 34, barY: 214, barW: 70, drop: {} },
+    mite: { name: "Rift Mite", hp: 18, speed: 120, dmg: 9, range: 0, windup: 1, cd: 99, scale: 1, radius: 10, mass: 0.5,
+      spire: "mite", minion: true, shadow: 14, barY: 56, drop: {} },
+    swisp: { name: "Shard Wisp", hp: 40, speed: 60, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1, radius: 11, mass: 0.6,
+      spire: "swisp", minion: true, shadow: 12, barY: 90, drop: {} },
+    warden: { name: "Throne Warden", hp: 120, speed: 62, dmg: 15, range: 0, windup: 1, cd: 99, scale: 1, radius: 16, mass: 3,
+      spire: "warden", minion: true, shadow: 20, barY: 132, barW: 34, drop: {} },
   };
 
   // Base kits. A kit = weapon + dash behaviour + signature ability.
@@ -267,7 +294,7 @@
       ],
     },
     // Fast and deadly, but frail: 70% health, a fifth faster, a dash every 1.1 s (src/game.js), and a kill gives the dash back.
-    chainReaper: {
+    chainReaper: { secret: true, // won from the Lord of the Rift Throne (src/riftthrone.js); worlds that already had him keep him
       name: "Chain Reaper", tag: "Kit 06", motto: "The dark is only a tether.", roles: ["Speed", "Burst", "Glass cannon"],
       weapon: "Chain sickle", color: "176,120,255",
       desc: "A sickle on a long chain, thrown out and torn back. The fastest and deadliest knight, but the most fragile: every kill gives you your dash back.",
@@ -367,11 +394,44 @@
         { name: "Crowned in Thorns", desc: "At 30 stacks your swings throw red crescents, and Reap the Tithe spends only half your stacks." },
       ],
     },
+    /* Kit 10: a bronze knight in a ragged crimson cape with a forge-hot greatsword (Robert's art, 2026-11-06; name and
+       abilities proposed by Claude, open to change). Forge Heat (src/kits.js K.heat): every Drowned his blows strike adds
+       `perHit` heat (x`tempered` from Tempered Steel, 5), and every blow his guard blocks adds `perBlock`, up to `max`. It holds
+       `hold` s after his last blow, then cools `cool` a second. His cleave hits up to `dmg` harder as it fills; full heat
+       makes his next Brand Thrust erupt. To come: he'll be Level 3's unlock (Robert, 2026-11-08); open from the start for now. */
+    cinderbrand: {
+      name: "Cinderbrand", tag: "Kit 10", motto: "The forge never cools.", roles: ["Heavy", "Guard", "Burst"],
+      weapon: "Forge greatsword", color: "255,130,40",
+      desc: "A bronze knight with a forge-hot greatsword. Slow, crushing overhead chops, every other one sweeping wide, build heat in the blade. Hold your ability to plant the sword and guard; let go to lunge in a Brand Thrust that pierces a whole line. At full heat the thrust erupts in flame.",
+      // every other chop sweeps wider (`slash`): `arc` wide, x`dmg` the damage. Both are drawn as the downward chop: the level
+      // frames read as a stab (Robert, 2026-11-08)
+      attack: { type: "arc", name: "Forge Cleave", dmg: 24, range: 80, arc: 1.7, cd: 0.85, kb: 230, slash: { arc: 2.8, dmg: 0.8 } },
+      dash: { type: "plain" },
+      passive: { heat: { perHit: 9, perBlock: 20, max: 100, hold: 3, cool: 14, dmg: 0.25, tempered: 1.5, burnAt: 50 } },
+      // held (`guard`): the sword planted, he stands his ground; blows from within `arc` of his front lose `block` of their
+      // damage. Up to `max` s, then the thrust goes off by itself. Let go (or tap): he lunges `dash` s at `speed`, piercing
+      // all within `width` of his path and `reach` past where he stops. Full heat: x`erupt` damage, a line of fire
+      // (`fire` dps for `fireT` s) and the heat spent. Brand Line (15): `far` x farther and the line always burns.
+      // Forgeheart (20): an eruption spends half the heat and bursts in a ring `ring` px round where he stops.
+      ability: { id: "brand", name: "Brand Thrust", oil: 12, cd: 9, dmg: 30, kb: 260, burn: 5, reach: 70, width: 44, speed: 720, dash: 0.16, far: 1.5,
+        erupt: 1.8, fire: 12, fireT: 3, ring: 130,
+        // Riposte (10) also cracks the ground round him with magma while he guards: a ring from `r0` px spreading to `rMax`
+        // over `grow` s, lighting every Drowned standing in it (`burn` a second x his power) (Robert, 2026-11-08)
+        guard: { block: 0.7, arc: 2.2, max: 3, riposte: 1, magma: { r0: 40, rMax: 160, grow: 2.5, burn: 6 } },
+        desc: "Hold to plant your greatsword and guard: blows from the front lose most of their force and stoke the blade. Let go to lunge in a thrust that pierces every Drowned in a line and sets them burning. At full heat it erupts in a line of fire." },
+      special: { name: "Forge Heat", desc: "Every blow that lands heats your sword, and so does every blow you block. A hot blade cleaves up to 25% harder; at full heat your next Brand Thrust erupts in flame." },
+      milestones: [
+        { name: "Tempered Steel", desc: "Your sword heats half again as fast, and from half heat your cleaves set the Drowned alight." },
+        { name: "Riposte", desc: "A blow your guard blocks is struck straight back at the Drowned that threw it, and while you guard the ground cracks with magma in a spreading ring that sets every Drowned in it alight." },
+        { name: "Brand Line", desc: "Brand Thrust lunges half again as far and always leaves a burning line behind it." },
+        { name: "Forgeheart", desc: "An erupting Brand Thrust spends only half your heat and bursts in a ring of fire where you stop." },
+      ],
+    },
   };
   // The Frostweaver's frost (src/kits.js): how long freezing and brittle last, brittle's extra damage taken, and the shatter
   // of a frozen Drowned dying (it freezes up to `shatterN` others within `shatterR` px). The owl familiar from level 5.
   DL.ICE = { frost: 2.5, brittle: 0.2, brittleT: 4, shatterN: 3, shatterR: 150, owl: { range: 260, cd: 1.1, dmg: 6 } };
-  DL.KIT_ORDER = ["lanternBlade", "pikeWarden", "ashenArbalist", "relicBearer", "flameBastion", "chainReaper", "jadeBreaker", "rosePaladin", "bloodsworn"];
+  DL.KIT_ORDER = ["lanternBlade", "pikeWarden", "ashenArbalist", "relicBearer", "flameBastion", "chainReaper", "jadeBreaker", "rosePaladin", "bloodsworn", "cinderbrand"];
 
   /* ---------- pacing ----------
      Three levers slow everything down together:
@@ -587,9 +647,9 @@
      height (`barY`) in DL.ENEMIES are multiplied by `size[type]` below, so each stands about three knights tall. The
      Sunken King is a scene of his own and keeps his size. */
   DL.BOSS = {
-    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6 },
+    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6, riftlord: 1.5 },
     view: 820, viewR: 650, // within `viewR` px of an awake boss the camera pulls back to show at least `view` px top to bottom
-    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600 },
+    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600, riftlord: 1800 },
     perNight: 0.04, dmgNight: 0.05, perAlly: 0.6,
     stun: 0.3, immune: 3,
   };
@@ -627,6 +687,12 @@
       tidestalker: { max: 14 },
       wisp: { max: 3, start: 2, phase2: 1, slow: 0.6 },
       tideleech: { max: 3, every: 14, every2: 10, n: 1, party: true },
+    },
+    // the Lord of the Rift Throne's (src/riftthrone.js): they climb out of the arena floor, held to it
+    riftlord: {
+      mite: { max: 6, every: 11, every2: 7, n: 2, party: true },
+      swisp: { max: 3, start: 1, phase2: 2 },
+      warden: { max: 2, start: 1, phase2: 1 },
     },
     near: 1400, // a boss more than this far from every knight is left alone (no calling)
     /* Robert (2026-11-04): once a boss has been slain (save.archive), its minions also roam as ordinary Drowned at
@@ -695,6 +761,75 @@
      `intro` seconds before wave 1, `rest` between waves, a group pours out of a tunnel every `burst` seconds.
      Each wave brings `n` of its new kind plus `mix` of the kinds already met (both scaled by difficulty and party).
      After a wave everyone heals `heal` of their health and the fallen rise with `rise`; losing leaves you `failHp`. */
+  /* Bullet hell for the dungeon levels (src/bullets.js). Bullets are slow and readable; the dash threads them. */
+  DL.BULLETS = {
+    cap: 700, speed: 110, r: 6, dmg: 7, life: 7, reach: 1100,
+    hitbox: 6, // added to a bullet's radius: how close to the knight's middle it must come to hit
+    sentinel: { wake: 560, charge: 0.7, mouth: 52, dmg: 7 }, // the Spire Sentinel crystal turret
+    // [gentle, dense] pairs are read at the room's heat (src/spirefoes.js)
+    // the Chain Leaper: crouch, leap at you (no farther than hop), slam, a ring of shards
+    leaper: { reach: 480, every: [3.4, 2.2], crouch: 0.55, air: 0.6, slam: 0.45, hop: [230, 320], peak: 70, hitR: 44,
+      ring: [10, 20], rings: [1, 2], speed: [95, 125], dmg: 7 },
+    // the Bridge Bowman: keeps keep[0]..keep[1] away, draws, looses `lanes` parallel lanes of `per` arrows (one lane left empty)
+    bowman: { reach: 620, keep: [230, 340], every: [3.2, 2.2], draw: 0.85, loose: 0.25, quiver: 0.55, hand: 52,
+      lanes: [7, 9], per: [3, 5], step: 30, width: [280, 360], speed: [150, 190], dmg: 6 },
+    // the Mist Shade: lurks lurk[0]..[1] away faded (takes `faded` of a blow), surfaces when your light comes within
+    // find (in mist / out of it) or a bubble of light holds it, throws fans, fades and blinks away
+    shade: { hover: 16, lurk: [170, 240], find: [140, 250], surface: 0.35, gather: 0.55, throw: 0.3, fade: 0.5, rest: [2.6, 1.8],
+      fan: [7, 13], volleys: [1, 2], spread: [0.9, 1.2], speed: [115, 150], dmg: 7, faded: 0.3, blink: [170, 240] },
+    // the Rift Caller: keeps keep[0]..[1] away, tears `rifts` round you that each fire `bursts` aimed bursts, and calls
+    // `calls` Drowned every `call` s (no more than callMax of its own at once)
+    caller: { hover: 22, reach: 650, keep: [300, 420], every: [4.4, 3.0], tear: 0.6, rifts: [2, 3], ring: [150, 220], open: 0.8,
+      life: 2.6, bursts: 2, gap: 0.7, burst: [3, 5], spread: 0.5, speed: [120, 150], dmg: 7, call: 12, calls: 2, callMax: 4,
+      bow: 0.8, callType: "footman" },
+    // the Prism Knight: its shield takes all but `soak` of a blow within `front` rad of dead ahead; it bursts a ring when
+    // it has soaked burstAt or every `every` s (one more bullet per `extra` soaked), and bashes what comes close
+    prism: { reach: 520, front: 1.2, soak: 0.35, burstAt: 60, extra: 6, every: [7, 5], raise: 0.6, ring: [16, 26],
+      speed: [100, 125], dmg: 8, bash: { reach: 66, wind: 0.45, time: 0.3, lunge: 260, kb: 360, cd: 1.6 } },
+    // the Rift Throne boss's minions: the Mite scuttles in, its back cracks and it bursts into a ring; the Wisp keeps its
+    // distance and flings stars and spins spirals; the Warden thrusts its halberd close in and plants it for a wall
+    mite: { crack: 0.6, near: 70, ring: 10, speed: 120, dmg: 7 },
+    swisp: { hover: 34, keep: [180, 300], every: [3.0, 2.2], charge: 0.6, star: 12, spin: 2.2, arms: 3, speed: 115, dmg: 7 },
+    warden: { reach: 84, draw: 0.5, thrust: 0.3, lunge: 280, kb: 300, cd: 1.4, plant: 0.8, every: 6, wall: [520, 22, 80], speed: 140, dmg: 7 },
+    /* the Lord of the Rift Throne (src/riftthrone.js). Asleep on his throne until you step into the arena: he wakes
+       (`wake` s), rises (`rise` s), then fights in three phases (below `phase` of his health he kneels for `kneel` s, can't
+       be hurt, bursts a ring and calls more minions). Between moves he waits `every[phase]` s.
+       Phase 1, side on, walking within keep[0]..keep[1]: Glaive Slam (raise, then a ring and a wall with a gap at you)
+       and Rift Storm (arms spread, a spiral). Phase 2 and 3, front on, his armour cracked: Sweep (fans swept across
+       you), Storm (more arms), Rift Tears (bursts round you), and he blinks across the arena. Phase 3 the rift also pours
+       a slow spiral the whole time. Beaten: `reward` into the run's loot, and everything carried comes home. */
+    riftlord: { wake: 1.4, rise: 1.0, keep: [170, 300], every: [2.0, 1.6, 1.2], phase: [0.66, 0.33], kneel: 2.2,
+      slam: { raise: 0.9, hit: 0.45, r: 84, ring: [20, 24, 28], wall: [760, 30, 100], speed: 130, dmg: 9 },
+      storm: { time: 3.2, arms: [3, 4, 5], rate: 6, spin: 1.3, speed: 105, dmg: 7 },
+      sweep: { wind: 0.7, fans: 4, n: 13, spread: 1.5, turn: 0.3, gap: 0.22, speed: 150, dmg: 8 },
+      tears: { n: [3, 4], r: [120, 200], open: 0.9, ring: 10, speed: 120, dmg: 7 },
+      blink: { out: 0.45, in: 0.45, far: 260 },
+      pour: { arms: 2, rate: 3, spin: 0.7, speed: 90, dmg: 6 },
+      reward: { shard: 60, aether: 4 } },
+  };
+
+  /* Abyssal Spires test room (Robert, 2026-11-05: try a dungeon with corridors and heights in the 3/4 view before
+     drawing art for it). Far off the map like Derek's Hollow; reached from the pause menu in Sandbox. src/spires.js */
+  DL.SPIRES = {
+    x: 40000, y: 0, halfW: 2900, halfH: 3000,
+    lh: 48,      // world px of drop per height level (a face this much taller per level)
+    hang: 44,    // face showing under a level-0 floor before it fades into the mist
+    dark: 0.36,  // the room's darkness (violet dusk, not night)
+    wave: { zone: 1 },
+    // the Hollow Mist (src/spires.js): corruption a second in it, how near a foe still sees you in it, the first-strike
+    // bonus from it, the light holes cut by your lantern / a torch / a burning Aether Crystal (for `burn` s), and how
+    // long you stand at a lit Mist Well to go home
+    mist: { corrupt: 3, see: 110, strike: 1.5, lantern: 85, torch: 120, bubble: 190, burn: 25, home: 1.5 }, // the zone the rooms' foes are made for (their health and damage); rooms: ROOMS in src/spires.js
+    // a run's loot (step 6): Rift Shards per foe broken, per room cleared (by its heat, 0..1), in a side room's chest;
+    // carried Aether Crystals come home too. Leave and you keep `keep` of it; fall and the mist keeps it all.
+    loot: { kill: { sentinel: 1, leaper: 1, bowman: 1, shade: 2, caller: 2, prism: 4, swisp: 1, warden: 2 }, room: [2, 8], chest: { shard: [14, 20], aether: 2 }, keep: 0.5 },
+  };
+  // what the dungeons pay for at the base (src/rift.js): the Crystal Turret by level, the Mist Lantern, the Rift Portal
+  DL.RIFT = {
+    turret: { spots: [0, 2, 4, 4], every: [0, 2.4, 1.9, 1.5], n: [0, 6, 8, 10], dmg: [0, 9, 12, 16], range: 300, speed: 240, life: 1.4, along: 150 },
+    lantern: { ring: [0, 150, 190, 230], corrupt: [1, 0.5, 0.4, 0.3] }, // by Mist Lantern level
+  };
+
   DL.CAVE = {
     x: 0, y: 40000, radius: 360, dist: 1750, zone: 2,
     intro: 6, rest: 8, burst: 1.4, heal: 0.25, rise: 0.5, failHp: 0.35,
@@ -989,6 +1124,17 @@
       },
       costs: [{ wood: 16, resin: 16, pearl: 2 }, { wood: 24, resin: 24, pearl: 4 }, { resin: 34, pearl: 6, black: 3 }],
       reqFlame: (t) => [0, 3, 4, 5][t] },
+    // paid for with what the dungeons give (src/rift.js): hidden until you first carry Rift Shards home
+    { id: "crystal", name: "Crystal Turret", max: 3, rift: true,
+      info: "A shard of the Spires set by the gates. When the Drowned come near it spins out slow spirals of crystal at them.",
+      effect: (l) => { const T = DL.RIFT.turret; return l ? `${T.spots[l]} turrets · ${T.n[l]} shards a spiral every ${T.every[l]} s · ${T.dmg[l]} damage` : "No turrets"; },
+      costs: [{ shard: 20, stone: 12 }, { shard: 40, aether: 2, iron: 10 }, { shard: 70, aether: 4, pearl: 3 }],
+      reqFlame: () => 0 },
+    { id: "mistlantern", name: "Mist Lantern", max: 3, rift: true,
+      info: "A lamp post at camp burning a sliver of Aether Crystal, kindred to your own lantern. In the mist of the dungeons your lantern lights a wider ring round you and the corruption builds slower.",
+      effect: (l) => { const M = DL.RIFT.lantern; return l ? `In the mist: lantern ring ${M.ring[l]} px · corruption x${M.corrupt[l]}` : "Your lantern only"; },
+      costs: [{ shard: 30, aether: 6 }, { shard: 50, aether: 8, iron: 10 }, { shard: 80, aether: 12, pearl: 4 }],
+      reqFlame: () => 0 },
   ];
 
   // the bosses' size (DL.BOSS.size): `size` is kept on the def so drawing code can scale fixed offsets by it

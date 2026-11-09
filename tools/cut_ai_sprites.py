@@ -5,7 +5,7 @@ so poses keep their relative size."""
 import os, sys
 from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
-from cutlib import cool_violet, cut_glow, cut_keyed, cut_sheet, contact, match_colors, match_hist, mirror_legs, recolor_frames, split_grid
+from cutlib import blue_crystal, cool_violet, cut_glow, cut_keyed, cut_sheet, contact, match_colors, match_hist, mirror_legs, recolor_frames, split_grid
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else '/mnt/project-files/art-prompts/returned'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites')
@@ -158,6 +158,37 @@ GRIDS = {
     # and his last look, Crowned (30 stacks: form 3): the crowned knight in a white fur mantle, purple cape and lantern (hooded first try in bloodsworn-f3-v1)
     'bloodsworn-f3/poses-a.png': (3, 2, POSES_A),
     'bloodsworn-f3/poses-b.png': (3, 2, POSES_B),
+    # Kit 10, the Cinderbrand (Robert's art 2026-11-06, on green): front, back, side, the overhead wind-up and two thrusts;
+    # his side walk, hurt and death came as one row of six; the thrust stances (left, planted facing you, right) and the
+    # drive-down and kneeling planted guard
+    'crimson-greatsword/poses-a.png': (3, 2, POSES_A),
+    'crimson-greatsword/poses-b.png': (6, 1, POSES_B),
+    'crimson-greatsword/stances.png': (3, 1, ['13_lungeL', '14_guardF', '15_lunge']),
+    'crimson-greatsword/guard.png': (2, 1, ['16_chop', '17_guard']),
+    # his planted guard (kneeling) at three heats: cold, hot, white-hot (a standing set is kept as heat-stand.png)
+    'crimson-greatsword/heat-kneel.png': (3, 1, ['18_guard1', '19_guard2', '20_guard3']),
+    # the Abyssal Spires' foes (src/spirefoes.js), on green: the Chain Leaper and the Bridge Bowman
+    'chain-leaper/poses-a.png': (3, 2, POSES_A),
+    'chain-leaper/poses-b.png': (3, 2, POSES_B),
+    'bridge-bowman/poses-a.png': (3, 2, POSES_A),
+    'bridge-bowman/poses-b.png': (3, 2, POSES_B),
+    'mist-shade/poses-a.png': (3, 2, POSES_A),
+    'mist-shade/poses-b.png': (3, 2, POSES_B),
+    'rift-caller/poses-a.png': (3, 2, POSES_A),
+    'rift-caller/poses-b.png': (3, 2, POSES_B),
+    'prism-knight/poses-a.png': (3, 2, POSES_A),
+    'prism-knight/poses-b.png': (3, 2, POSES_B),
+    # the Rift Throne boss (src/riftthrone.js) and his three minions, on green. Sheet C: asleep on the throne, waking,
+    # rising, and his second phase (front on): standing cracked open, the sweep, kneeling enraged
+    'rift-throne-boss/poses-a.png': (3, 2, POSES_A),
+    'rift-throne-boss/poses-b.png': (3, 2, POSES_B),
+    'rift-throne-boss/poses-c.png': (3, 2, ['13_seated', '14_waking', '15_rising', '16_p2front', '17_sweep', '18_enraged']),
+    'rift-mite/poses-a.png': (3, 2, POSES_A),
+    'rift-mite/poses-b.png': (3, 2, POSES_B),
+    'shard-wisp/poses-a.png': (3, 2, POSES_A),
+    'shard-wisp/poses-b.png': (3, 2, POSES_B),
+    'throne-warden/poses-a.png': (3, 2, POSES_A),
+    'throne-warden/poses-b.png': (3, 2, POSES_B),
     'colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '11_hurt']),
     'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
 }
@@ -186,13 +217,23 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
-KEY_OPTS = {'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+KEY_OPTS = {'crimson-greatsword': {'key': (0, 255, 0)}, 'cinderbrand': {'key': (0, 255, 0)}, 'rift-throne-boss': {'key': (0, 255, 0)}, 'rift-mite': {'key': (0, 255, 0)}, 'shard-wisp': {'key': (0, 255, 0)}, 'throne-warden': {'key': (0, 255, 0)}, 'mist-shade': {'key': (0, 255, 0)}, 'rift-caller': {'key': (0, 255, 0)}, 'prism-knight': {'key': (0, 255, 0)}, 'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
 # Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
 def jade_match(x):
     """The Jade Breaker's sheets each came out a little different in colour: match them all to his front view."""
     if not hasattr(jade_match, 'f'): jade_match.f = match_hist(Image.open(os.path.join(SRC, 'jade-breaker/01_front.png')))
     return jade_match.f(x)
-RECOLOR = {'chain-reaper': cool_violet, 'jade-breaker': jade_match}
+def mist_violet(x):
+    """The Mist Shade's see-through poses (fading, hurt, dying) let the green key through: any pixel greener than its
+    red and blue is turned back to the shade's violet at the same brightness."""
+    import numpy as np
+    r, g, b = x[..., 0], x[..., 1], x[..., 2]
+    v = (r + g + b) / 3
+    green = g > np.maximum(r, b) * 0.92
+    out = x.copy()
+    out[green] = np.stack([v * 1.05, v * 0.7, v * 1.3], -1)[green]
+    return out
+RECOLOR = {'chain-reaper': cool_violet, 'jade-breaker': jade_match, 'mist-shade': mist_violet}
 HOUND_H = 60
 EMBER_H = 136  # the Ember Hound (third form), cut at res 4: drawn 34 px tall with its flames, a little bigger than the hound
 WARG_H = 152  # the Grave Warg (last form), cut at res 4: drawn 38 px tall with its horns and mist, a quarter bigger than the hound
@@ -234,7 +275,27 @@ BELL_H = 224  # the Starved Bell boss, cut at res 4: drawn 56 art px tall (x1.25
 ROSE_H = 368  # the Deadly Rose, cut at res 4: drawn 92 art px tall standing (x0.8 in game), about twice the knight
 ICE_MAGE_H = 104  # the Frostweaver, hat and staff tip included: the body about the other knights' height (res 2)
 COLOSSUS_H = 256  # the Drowned Colossus, cut at res 4: drawn 64 art px tall crouched, about one and a half knights
+LEAPER_H = 150  # the Chain Leaper (Abyssal Spires), res 4: 75 world px crouched front on, about a knight tall standing
+BOWMAN_H = 210  # the Bridge Bowman (Abyssal Spires), res 4: 105 world px, bow tip to boots, a gaunt knight's height
+SHADE_H = 200  # the Mist Shade (Abyssal Spires), res 4: 100 world px, hood to wisps, a knight tall
+CALLER_H = 290  # the Rift Caller, res 4: 145 world px floating, about one and a half knights
+PRISM_H = 250  # the Prism Knight (elite), res 4: 125 world px, a quarter taller than a knight
+THRONE_H = 400  # the Rift Throne boss, res 4: 200 world px (x1.5 in game, DL.BOSS.size: three knights tall)
+MITE_H = 100  # the Rift Mite, res 4: 50 world px, half a knight
+SWISP_H = 110  # the Shard Wisp, res 4: 55 world px, half a knight
+WARDEN_H = 250  # the Throne Warden, res 4: 125 world px, a knight and a quarter
 SETS = {
+    'rift-throne-boss': ('rift-throne', 'rift-throne-boss/01_front.png', THRONE_H, 1, {**twelve('rift-throne-boss', TWELVE_FILES),
+        'rift-throne-boss/13_seated.png': 'seated', 'rift-throne-boss/14_waking.png': 'waking', 'rift-throne-boss/15_rising.png': 'rising',
+        'rift-throne-boss/16_p2front.png': 'p2front', 'rift-throne-boss/17_sweep.png': 'p2sweep', 'rift-throne-boss/18_enraged.png': 'p2enraged'}),
+    'rift-mite': ('spires-foes/mite', 'rift-mite/01_front.png', MITE_H, 1, twelve('rift-mite', TWELVE_FILES)),
+    'shard-wisp': ('spires-foes/swisp', 'shard-wisp/01_front.png', SWISP_H, 1, twelve('shard-wisp', TWELVE_FILES)),
+    'throne-warden': ('spires-foes/warden', 'throne-warden/01_front.png', WARDEN_H, 1, twelve('throne-warden', TWELVE_FILES)),
+    'mist-shade': ('spires-foes/shade', 'mist-shade/01_front.png', SHADE_H, 1, twelve('mist-shade', TWELVE_FILES)),
+    'rift-caller': ('spires-foes/caller', 'rift-caller/01_front.png', CALLER_H, 1, twelve('rift-caller', TWELVE_FILES)),
+    'prism-knight': ('spires-foes/prism', 'prism-knight/01_front.png', PRISM_H, 1, twelve('prism-knight', TWELVE_FILES)),
+    'chain-leaper': ('spires-foes/leaper', 'chain-leaper/01_front.png', LEAPER_H, 1, twelve('chain-leaper', TWELVE_FILES)),
+    'bridge-bowman': ('spires-foes/bowman', 'bridge-bowman/01_front.png', BOWMAN_H, 1, twelve('bridge-bowman', TWELVE_FILES)),
     # the Pyramid Champion: broad and armoured, a little taller than the Lantern Knight (shown at 0.85x, DL.PYRAMID.champion.scale)
     'pyramid-champion': ('pyramid-champion', 'pyramid-champion/01_front.png', 88, 1, {
         'pyramid-champion/01_front.png': 'front', 'pyramid-champion/02_back.png': 'back', 'pyramid-champion/03_right.png': 'right',
@@ -408,6 +469,15 @@ SETS = {
     'bloodsworn-f2': ('bloodsworn-f2', 'bloodsworn-f2/01_front.png', 90, 1, twelve('bloodsworn-f2', TWELVE_FILES)),
     # Crowned he grows again: the spiked mantle and hood a little taller still
     'bloodsworn-f3': ('bloodsworn-f3', 'bloodsworn-f3/01_front.png', 94, 1, twelve('bloodsworn-f3', TWELVE_FILES)),
+    # the Cinderbrand (kit 10): sturdy, the greatsword's hilt over his helm; the stance and guard sheets came at other scales
+    'cinderbrand': ('cinderbrand', 'crimson-greatsword/01_front.png', 96, 1, dict(twelve('crimson-greatsword', TWELVE_FILES), **{
+        'crimson-greatsword/15_lunge.png': ('side/lunge', {'height': 66}),
+        'crimson-greatsword/14_guardF.png': ('guardF', {'height': 70}),
+        'crimson-greatsword/16_chop.png': ('side/chop', {'height': 102}),
+        'crimson-greatsword/17_guard.png': ('side/guard', {'height': 76}),
+        'crimson-greatsword/18_guard1.png': ('side/guard1', {'height': 78}),
+        'crimson-greatsword/19_guard2.png': ('side/guard2', {'height': 78}),
+        'crimson-greatsword/20_guard3.png': ('side/guard3', {'height': 78})})),
     'chain-reaper': ('chain-reaper', 'chain-reaper/01_front.png', 84, 1, dict(twelve('chain-reaper', TWELVE_FILES), **{
         'chain-reaper/13_dash.png': ('side/dash', {'height': 70})})),
     'colossus': ('colossus', 'colossus/01_front.png', COLOSSUS_H, 1, {
@@ -421,6 +491,52 @@ SETS = {
 # Frames come out on one shared canvas (numbered prefix1, prefix2, ...); put the printed foot point
 # in that unit's `feet` in src/sprites.js.
 SHEETS = {
+    'rift-throne-boss': [
+        ('rift-throne-boss/walk-side-4.png', 4, 1, 400, 'side/walk'),
+        ('rift-throne-boss/walk-front.png', 4, 1, 400, 'walkF'),
+        ('rift-throne-boss/walk-back.png', 4, 1, 400, 'walkB'),
+    ],
+    'rift-mite': [
+        ('rift-mite/walk-side-4.png', 4, 1, 100, 'side/walk'),
+        ('rift-mite/walk-front.png', 4, 1, 100, 'walkF'),
+        ('rift-mite/walk-back.png', 4, 1, 100, 'walkB'),
+    ],
+    # the Shard Wisp floats: its side "walk" is the four drift cells; front and back are its lit and dark idle strips
+    'shard-wisp': [
+        ('shard-wisp/walk-side-4.png', 4, 1, 110, 'side/walk'),
+        ('shard-wisp/idle-lit.png', 4, 1, 110, 'walkF'),
+        ('shard-wisp/idle-dark.png', 4, 1, 110, 'walkB'),
+    ],
+    'throne-warden': [
+        ('throne-warden/walk-side-4.png', 4, 1, 250, 'side/walk'),
+        ('throne-warden/walk-front.png', 4, 1, 250, 'walkF'),
+        ('throne-warden/walk-back.png', 4, 1, 250, 'walkB'),
+    ],
+    'mist-shade': [
+        ('mist-shade/walk-side-4.png', 4, 1, 200, 'side/walk'),
+        ('mist-shade/walk-front.png', 4, 1, 200, 'walkF'),
+        ('mist-shade/walk-back.png', 4, 1, 200, 'walkB'),
+    ],
+    'rift-caller': [
+        ('rift-caller/walk-side-4.png', 4, 1, 290, 'side/walk'),
+        ('rift-caller/walk-front.png', 4, 1, 290, 'walkF'),
+        ('rift-caller/walk-back.png', 4, 1, 290, 'walkB'),
+    ],
+    'prism-knight': [
+        ('prism-knight/walk-side-4.png', 4, 1, 250, 'side/walk'),
+        ('prism-knight/walk-front.png', 4, 1, 250, 'walkF'),
+        ('prism-knight/walk-back.png', 4, 1, 250, 'walkB'),
+    ],
+    'chain-leaper': [
+        ('chain-leaper/walk-side-4.png', 4, 1, 150, 'side/walk'),
+        ('chain-leaper/walk-front.png', 4, 1, 150, 'walkF'),
+        ('chain-leaper/walk-back.png', 4, 1, 150, 'walkB'),
+    ],
+    'bridge-bowman': [
+        ('bridge-bowman/walk-side-4.png', 4, 1, 210, 'side/walk'),
+        ('bridge-bowman/walk-front.png', 4, 1, 210, 'walkF'),
+        ('bridge-bowman/walk-back.png', 4, 1, 210, 'walkB'),
+    ],
     # the Pyramid Champion's side walk has three frames (the GRIDS strip), played 1-2-3-2 (src/sprites.js)
     'pyramid-champion': [
         ('pyramid-champion/walk-side-4.png', 3, 1, 88, 'side/walk'),
@@ -502,6 +618,11 @@ SHEETS = {
         ('bloodsworn/walk-side-4.png', 4, 1, 84, 'side/walk'),
         ('bloodsworn/walk-front.png', 4, 1, 86, 'walkF'),
         ('bloodsworn/walk-back.png', 4, 1, 86, 'walkB'),
+    ],
+    'cinderbrand': [
+        ('crimson-greatsword/walk-side-4.png', 4, 1, 94, 'side/walk'),
+        ('crimson-greatsword/walk-front.png', 4, 1, 96, 'walkF'),
+        ('crimson-greatsword/walk-back.png', 4, 1, 96, 'walkB'),
     ],
     'bloodsworn-f2': [
         ('bloodsworn-f2/walk-side-4.png', 4, 1, 86, 'side/walk'),
@@ -845,6 +966,9 @@ PROP_GRIDS = {
     # the Bloodsworn's pieces (src/render.js), on green: a blood thorn and a cluster of them (Reap the Tithe), the crimson
     # crescent his swings throw when Crowned, his thorn halo dull and lit, and a puff of blood mist
     'bloodsworn/effects.png': (3, 2, ['bloodThorn', 'bloodThorns', 'bloodCrescent', '', '', 'bloodMist']),
+    # the Cinderbrand's (kit 10) effects, on green: Brand Thrust's streak, an erupting flame, Forgeheart's ring of fire,
+    # the flash of a blow on his planted guard, Riposte's slash and the scorch his fire leaves
+    'crimson-greatsword/effects.png': (3, 2, ['brandStreak', 'brandFlame', 'brandRing', 'brandFlash', 'brandSlash', 'brandScorch']),
     # his halo seen from the front, from behind and from the side (facing right): dull, then lit when Crowned
     'bloodsworn/halos.png': (3, 2, ['haloF', 'haloB', 'haloS', 'haloLitF', 'haloLitB', 'haloLitS']),
     'jade-breaker/crystals.png': (4, 1, ['jadeCrystal1', 'jadeCrystal2', 'jadeCrystal3', 'jadeCrystal4']),
@@ -868,6 +992,8 @@ PROP_WIDTH.update({'grave2': 60, 'soulFly1': 56, 'soulFly2': 56})
 # tolerance than the default 120 and without the purple-fringe filter, so the art isn't eaten.
 PROP_TOL = {n: 60 for n in ['amethyst11', 'amethyst12', 'amethyst13', 'amethyst21', 'amethyst22', 'amethyst23', 'amethyst31', 'amethyst32', 'amethyst33']}
 PROP_TOL['resPearl'] = 60
+# Amethyst is blue since 2026-11-05 (Robert): purple belongs to the Aether Crystal of the Abyssal Spires now.
+PROP_RECOLOR = {n: blue_crystal for n in ['amethyst11', 'amethyst12', 'amethyst13', 'amethyst21', 'amethyst22', 'amethyst23', 'amethyst31', 'amethyst32', 'amethyst33', 'resPearl']}
 # Props whose footing isn't in the middle of the picture (a leaning stake, a post with a lamp hung out to one
 # side): padded so the footing is centred, since sprites are drawn centred on their spot.
 PROP_FOOT_CENTRE = {'stake', 'gatePost', 'gatePost2', 'fire1', 'fire2', 'fire3', 'fire4', 'fire5', 'fire6'}
@@ -925,11 +1051,14 @@ PROP_HEIGHT['bloodThorn'] = 46  # a thorn about half the knight (cluster at the 
 PROP_SAME.update({'bloodThorns': 'bloodThorn'})
 PROP_WIDTH.update({'bloodCrescent': 52, 'haloF': 46, 'bloodMist': 40})  # the halo a little wider than his hood
 PROP_SAME.update({n: 'haloF' for n in ('haloB', 'haloS', 'haloLitF', 'haloLitB', 'haloLitS')})
+# the Cinderbrand's: the streak about his thrust's reach, the flame half the knight, the ring as wide as Forgeheart (DL.KITS.cinderbrand.ability.ring x2)
+PROP_WIDTH.update({'brandStreak': 120, 'brandRing': 260, 'brandFlash': 34, 'brandSlash': 60, 'brandScorch': 56})
+PROP_HEIGHT['brandFlame'] = 44
 PROP_HEIGHT['jadeCrystal2'] = 60  # the grown crystals about two thirds of the knight
 PROP_SAME.update({'jadeCrystal1': 'jadeCrystal2', 'jadeCrystal3': 'jadeCrystal2', 'jadeCrystal4': 'jadeCrystal2'})
 PROP_SAME.update({'arbFlareBolt': 'arbBolt', 'arbFlare1': 'arbFlare2', 'arbFlare3': 'arbFlare2', 'arbFlare4': 'arbFlare2'})
 # Prop sheets drawn on another key colour than magenta, by folder.
-PROP_KEY = {'chain-reaper': (0, 255, 0), 'bloodsworn': (0, 255, 0)}
+PROP_KEY = {'chain-reaper': (0, 255, 0), 'bloodsworn': (0, 255, 0), 'crimson-greatsword': (0, 255, 0)}
 PROP_OUT = 'props'
 # Renders where the magenta background tinted the art pink (the trees' moss): pull it back out (see despill).
 PROP_DESPILL = set(['swampTree11', 'swampTree12', 'swampTree13', 'swampTree14', 'swampTree21', 'swampTree22', 'swampTree23', 'swampTree24', 'swampTree31', 'swampTree32', 'swampTree33', 'swampTree34'])
@@ -1084,6 +1213,7 @@ if not only or 'props' in only or any(os.path.dirname(sh) in only for sh in PROP
     for n, cell in cells.items():
         im = cut_glow(cell, PROP_GLOW[n]) if n in PROP_GLOW else cut_keyed(cell, k[n], key=keys[n], fringe=1, tol=PROP_TOL.get(n, 120), tint=n not in PROP_TOL)
         if n in PROP_DESPILL: im = despill(im)
+        if n in PROP_RECOLOR: im = recolor_frames([im], PROP_RECOLOR[n])[0]
         if n in PROP_FOOT_CENTRE: im = centre_foot(im)
         # even sizes, so the art-pixel size (half) is whole; the padding goes on the top and the left
         w, h = im.width + im.width % 2, im.height + im.height % 2

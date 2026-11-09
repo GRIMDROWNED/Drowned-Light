@@ -105,6 +105,7 @@
     bloodsworn(),
     bloodswornB(),
     bloodswornC(),
+    cinderbrand(),
     // the Pyramid Champion (barracks defender, src/pyramid.js): three side walk frames played 1-2-3-2, a front guard stance as its idle
     (() => {
       const W3 = [1, 1, 2, 2, 3, 3, 2, 2].map((i) => "side/walk" + i + "@-");
@@ -152,6 +153,17 @@
     minion("cairn", "cairn", 4, [[94, 122], [75, 120], [74, 114]]), // the Colossus's Cairn Crawler
     minion("servitor", "servitor", 4, [[160, 321], [148, 348], [136, 334]]), // the Colossus's Bog Totem Servitor
     minion("siltfist", "siltfist", 4, [[258, 338], [216, 362], [336, 385]]), // the Colossus's Silt Fist Fragment
+    // the Abyssal Spires' foes (src/spirefoes.js), cut at res 4 on green
+    Object.assign(walking("leaper", [94, 158], [58, 152], [54, 152], 4), { path: "assets/sprites/spires-foes/leaper/", keys: { leaper: [0, false] }, own: true }),
+    Object.assign(walking("bowman", [113, 220], [62, 212], [56, 212], 4), { path: "assets/sprites/spires-foes/bowman/", keys: { bowman: [0, false] }, own: true }),
+    Object.assign(walking("shade", [86, 202], [71, 202], [70, 202], 4), { path: "assets/sprites/spires-foes/shade/", keys: { shade: [0, false] }, own: true }),
+    Object.assign(walking("caller", [102, 292], [112, 302], [99, 292], 4), { path: "assets/sprites/spires-foes/caller/", keys: { caller: [0, false] }, own: true }),
+    Object.assign(walking("prism", [194, 259], [101, 252], [80, 252], 4), { path: "assets/sprites/spires-foes/prism/", keys: { prism: [0, false] }, own: true }),
+    // the Rift Throne boss's minions (src/spirefoes.js): the Shard Wisp's front and back "walks" are its lit and dark idles
+    Object.assign(walking("mite", [87, 102], [61, 107], [60, 102], 4), { path: "assets/sprites/spires-foes/mite/", keys: { mite: [0, false] }, own: true }),
+    Object.assign(walking("swisp", [60, 124], [76, 134], [71, 132], 4), { path: "assets/sprites/spires-foes/swisp/", keys: { swisp: [0, false] }, own: true }),
+    Object.assign(walking("warden", [87, 252], [64, 252], [68, 256], 4), { path: "assets/sprites/spires-foes/warden/", keys: { warden: [0, false] }, own: true }),
+    riftLord(),
     minion("thornling", "thornling", 4, [[45, 87], [43, 82], [46, 83]]), // the Deadly Rose's Thornling Swarm Stalker
     minion("tidestalker", "tidestalker", 4, [[109, 123], [87, 134], [92, 138]]), // the Sunken King's Tide Stalker
     minion("wisp", "wisp", 4, [[108, 182], [112, 197], null]), // the Sunken Wisp: its front shows going away too (Robert)
@@ -264,6 +276,21 @@
     return Object.assign(walking("bloodswornC", [37, 92], [28, 96], [24, 96]), { path: "assets/sprites/bloodsworn-f3/", keys: stages("bloodswornC") });
   }
 
+  /* The Cinderbrand (kit 10, Robert's art 2026-11-06, on green): the 12 poses and walk sheets. His Forge Cleave is the
+     overhead wind-up and the sword driven down (every swing: the low-to-level frames read as a stab, Robert 2026-11-08); Brand Thrust is the low thrust and the level lunge (his dash too); his
+     planted guard kneels behind the sword from the side and stands behind it facing you. Feet of the single poses set
+     by hand: the sword's point reaches lower than his boots. */
+  function cinderbrand() {
+    const set = Object.assign(walking("cinderbrand", [40, 97], [40, 98], [36, 98]), { path: "assets/sprites/cinderbrand/", keys: stages("cinderbrand") });
+    for (const dir in set.views) {
+      Object.assign(set.views[dir], { attack: ["attackA", "side/chop", "side/chop"], cast: ["attackB", "side/lunge", "side/lunge"], dash: ["side/lunge"],
+        guard: dir === "down" ? ["guardF", "guardF", "guardF"] : ["side/guard1", "side/guard2", "side/guard3"] }); // kneeling, cold / hot / white-hot (src/render.js)
+    }
+    Object.assign(set.feet, { front: [34, 97], back: [32, 94], right: [35, 95], attackA: [58, 84], attackB: [36, 73], attackC: [32, 77],
+      "side/lunge": [38, 67], "side/chop": [50, 100], "side/guard": [48, 77], "side/guard1": [41, 77], "side/guard2": [41, 77], "side/guard3": [41, 78], guardF: [36, 71] });
+    return set;
+  }
+
   function reaper() {
     const set = Object.assign(walking("chainReaper", [44, 80], [26, 86], [29, 86]), { path: "assets/sprites/chain-reaper/", keys: stages("chainReaper") });
     for (const dir in set.views) Object.assign(set.views[dir], { attack: ["attackA", "attackB", "attackB"], cast: ["attackC"], dash: ["side/dash"] });
@@ -324,6 +351,16 @@
     const set = Object.assign(walking(key, side, front, back, 4), { path: "assets/sprites/" + folder + "/", keys: { [key]: [0, false] } });
     for (const [dir, p] of [["down", "front"], ["up", "back"], ["side", "right"]])
       Object.assign(set.views[dir], { attack: ["attackA", "attackB", "attackB"], roar: ["attackC"], hurt: ["side/hurt"], death: ["side/death"], idle: [p] });
+    return set;
+  }
+
+  // The Lord of the Rift Throne (src/riftthrone.js), cut at res 4 (200 px, x1.5 in game). Beside the twelve poses: asleep
+  // on his throne, waking and rising (front on), and his second phase, front on: standing cracked open, the sweep,
+  // kneeling enraged. They're the same in every view (src/riftthrone.js sets e.anim to one of them).
+  function riftLord() {
+    const set = Object.assign(walking("riftlord", [319, 405], [135, 402], [138, 402], 4), { path: "assets/sprites/rift-throne/", keys: { riftlord: [0, false] }, own: true });
+    const extra = { seated: ["seated"], waking: ["waking"], rising: ["rising"], p2: ["p2front"], sweep: ["p2sweep"], enraged: ["p2enraged"] };
+    for (const dir of ["down", "up", "side"]) Object.assign(set.views[dir], extra);
     return set;
   }
 
@@ -407,6 +444,8 @@
     "jadeCrystal1", "jadeCrystal2", "jadeCrystal3", "jadeCrystal4",
     // the Bloodsworn's blood thorns (Reap the Tithe), his crescent, blood mist and his thorn halo seen three ways, dull and lit
     "bloodThorn", "bloodThorns", "bloodCrescent", "bloodMist", "haloF", "haloB", "haloS", "haloLitF", "haloLitB", "haloLitS",
+    // the Cinderbrand's Brand Thrust streak, erupting flame and its scorch, Forgeheart's ring, his guard's flash and Riposte's slash
+    "brandStreak", "brandFlame", "brandRing", "brandFlash", "brandSlash", "brandScorch",
     // the Dragon Spear's spirit dragon: from the side, the front and behind (src/kits.js, drawn in src/render.js)
     "dragon1", "dragon2", "dragon3", "dragon4", "dragon5", "dragon6", "dragonF1", "dragonF2", "dragonF3", "dragonF4", "dragonF5", "dragonF6", "dragonB1", "dragonB2", "dragonB3", "dragonB4", "dragonB5", "dragonB6",
     // the Frostweaver's owl (standing, flying, casting), its shard, the staff's frost bolts, the Ice Bomb and its spikes (src/kits.js, src/render.js)
