@@ -713,7 +713,7 @@
   const GLOW = "190,130,255";
   const BX0 = -2800, BY0 = -2800, BX1 = 2900, BY1 = 1800; // the painted extent (local)
   const CH = 1024; // painted in square chunks, made as they come into view and dropped far away (phones)
-  let chunks = new Map(), art = null;
+  let chunks = new Map(), art = null, sky = null;
 
   // Robert's drawn pieces (tools/cut_spires.py, 2 file px per world px). They load when the room is first drawn;
   // until then (and in the node tests) the coded stone shows, and when the last one lands the room repaints.
@@ -1215,9 +1215,19 @@
     if (!sees(view)) return;
     if (!art) build();
     const vw = view.right - view.left, vh = view.bottom - view.top;
-    let gr = c.createLinearGradient(0, view.top, 0, view.bottom);
-    gr.addColorStop(0, "#2a1842"); gr.addColorStop(0.55, "#4b2f72"); gr.addColorStop(1, "#33204f");
-    c.fillStyle = gr; c.fillRect(view.left - 2, view.top - 2, vw + 4, vh + 4);
+    // the violet haze, top to bottom of the view: a 1 px strip of it stretched over the screen (a gradient fill
+    // this size cost a phone ten times as much)
+    if (!sky) {
+      sky = mk(1, 256);
+      const sg = sky.getContext("2d"), g0 = sg.createLinearGradient(0, 0, 0, 256);
+      g0.addColorStop(0, "#2a1842"); g0.addColorStop(0.55, "#4b2f72"); g0.addColorStop(1, "#33204f");
+      sg.fillStyle = g0; sg.fillRect(0, 0, 1, 256);
+    }
+    const sm = c.imageSmoothingEnabled;
+    c.imageSmoothingEnabled = true;
+    c.drawImage(sky, 0, 0.5, 1, 255, view.left - 2, view.top - 2, vw + 4, vh + 4);
+    c.imageSmoothingEnabled = sm;
+    let gr;
     // far columns, drifting slower than the camera (they're further down)
     const cam = G.camera, px = (cam.x - OX) * 0.45, py = (cam.y - OY) * 0.45;
     c.fillStyle = "rgba(34,20,56,0.45)";
@@ -1233,19 +1243,22 @@
     // the painted stone: only the part on screen
     const i0 = Math.max(0, Math.floor((view.left - OX - BX0) / CH)), i1 = Math.min(Math.ceil((BX1 - BX0) / CH) - 1, Math.floor((view.right - OX - BX0) / CH));
     const j0 = Math.max(0, Math.floor((view.top - OY - BY0) / CH)), j1 = Math.min(Math.ceil((BY1 - BY0) / CH) - 1, Math.floor((view.bottom - OY - BY0) / CH));
+    // a chunk is a big paint: one a frame while walking (all at once when the room opens), and the last 20 seen are
+    // kept, so walking back and forth doesn't paint them again
     let made = 0;
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
       const key = i + "," + j;
       let ch = chunks.get(key);
-      if (!ch && (made++ < 2 || chunks.size < 4)) { ch = paintChunk(i, j); chunks.set(key, ch); }
+      if (ch) { chunks.delete(key); chunks.set(key, ch); } // most recently seen last
+      else if (made++ < 1 || chunks.size < 4) { ch = paintChunk(i, j); chunks.set(key, ch); }
       if (!ch) continue;
       const x = OX + BX0 + i * CH, y = OY + BY0 + j * CH;
       const sx = Math.max(0, view.left - x), sy = Math.max(0, view.top - y), ex = Math.min(CH, view.right - x + 1), ey = Math.min(CH, view.bottom - y + 1);
       if (ex > sx && ey > sy) c.drawImage(ch, sx, sy, ex - sx, ey - sy, x + sx, y + sy, ex - sx, ey - sy);
     }
-    if (chunks.size > 20) for (const key of [...chunks.keys()]) { // drop chunks far off screen
-      const [i, j] = key.split(",").map(Number);
-      if (i < i0 - 1 || i > i1 + 1 || j < j0 - 1 || j > j1 + 1) chunks.delete(key);
+    for (const key of chunks.keys()) { // drop the longest unseen (never one on screen: those were just moved last)
+      if (chunks.size <= Math.max(20, (i1 - i0 + 1) * (j1 - j0 + 1))) break;
+      chunks.delete(key);
     }
     // the rune ring, slowly turning, brighter when it wakes the Drowned
     const fl = G.spires ? G.spires.flare : 0;
