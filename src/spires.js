@@ -1289,7 +1289,8 @@
   function drawSea(c, view, t) {
     const cam = G.camera;
     for (const [img, sc, par, vx, vy, a] of [[art.sea, 2.2, 0.55, 9, 3, 1], [art.veil, 1.6, 0.8, -14, 5, 0.8]]) {
-      const pat = c.createPattern(img, "repeat"), T = 512 * sc;
+      if (!img.pat || img.patC !== c) { img.pat = c.createPattern(img, "repeat"); img.patC = c; } // made once, not every frame
+      const pat = img.pat, T = 512 * sc;
       const ox = ((((cam.x - OX) * par + t * vx) % T) + T) % T, oy = ((((cam.y - OY) * par + t * vy) % T) + T) % T;
       c.save();
       c.globalAlpha = a;
