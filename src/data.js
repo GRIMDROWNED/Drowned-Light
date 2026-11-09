@@ -827,6 +827,15 @@
   // The Molten Mines (Level 3, src/mines.js): off the map at x -40000. lh/hang as in the Spires; dark is the run's
   // darkness (the lava lights it); home is how long you stand at a lit Ember Shrine to go home.
   DL.MINES = { x: -40000, y: 0, halfW: 2500, halfH: 2200, lh: 48, hang: 50, dark: 0.3, home: 1.5 };
+  // the Molten Mines' traps (src/minetraps.js): seconds, px, damage. Every one warns first; a dash gets through.
+  DL.MINE_TRAPS = {
+    grate: { every: 3.4, warn: 0.8, burn: 1, wave: 0.35, dmg: 14 }, // the Grate Run: a new pattern every 3.4 s
+    cage: { every: 1.7, warn: 0.9, max: 3, lead: 0.5, r: 30, dmg: 6, lock: 3, shake: 0.5, stand: 3.5, after: 1.5 }, // the Gibbet Gallery
+    jet: { every: 3.2, warn: 0.8, burn: 0.9, half: 18, dmg: 16 }, // the Crystal Stair
+    tile: { crack: 1, gone: 5, dmg: 12 }, // crumbling tiles
+    geyser: { every: 3.6, warn: 1.6, burn: 0.5, r: 34, dmg: 16, globs: 6, speed: 150, globDmg: 8, globLife: 1.8 }, // the Broken Causeway
+    cart: { every: 3.2, warn: 1.2, speed: 680, dmg: 22, kb: 420 }, // the Slag Mine
+  };
   // what the dungeons pay for at the base (src/rift.js): the Crystal Turret by level, the Mist Lantern, the Rift Portal
   DL.RIFT = {
     turret: { spots: [0, 2, 4, 4], every: [0, 2.4, 1.9, 1.5], n: [0, 6, 8, 10], dmg: [0, 9, 12, 16], range: 300, speed: 240, life: 1.4, along: 150 },

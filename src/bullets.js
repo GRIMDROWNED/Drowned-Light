@@ -118,8 +118,8 @@
   };
 
   /* ---------------- drawing ---------------- */
-  // one sprite per kind: a dark rim (so it reads on light stone), a violet glow and a white-hot core
-  const COLS = [["170,110,255", "#f4e6ff"], ["255,110,200", "#ffe6f6"], ["110,220,255", "#e6fbff"]];
+  // one sprite per kind: a dark rim (so it reads on light stone), a coloured glow and a white-hot core
+  const COLS = [["170,110,255", "#f4e6ff"], ["255,110,200", "#ffe6f6"], ["110,220,255", "#e6fbff"], ["170,110,255", "#f4e6ff"], ["255,130,40", "#fff0c0"]]; // 4: a lava glob (the Molten Mines)
   let sprites = null;
   // Robert's drawn bullets and Sentinel (tools/cut_spires.py); the coded ones show until they load
   const ART = {};

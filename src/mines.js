@@ -104,7 +104,7 @@
     ["banner", -120, -800], ["banner", 120, -800], ["banner", -160, 420], ["banner", 160, 420],
     ["throne", THRONE.x, THRONE.y],
     // the Slag Mine: carts on the track, a pit-head frame
-    ["cart", -1120, 652], ["cart", -820, 668], ["headframe", -1200, 590],
+    ["cart", -1120, 606], ["cart", -820, 734], ["headframe", -1200, 590], // parked off the track (the runaway carts use it)
     // the Gibbet Gallery: a crane with a cage hanging over the way
     ["crane", 720, 592], ["cage", 860, 640], ["crane", 1180, 592], ["cage", 1060, 660],
     // the Crystal Stair: glowing magma crystals
@@ -120,7 +120,7 @@
     ...PROPS.filter((q) => q[0] === "crane" || q[0] === "headframe").map((q) => [q[1], q[2], 16]),
     ...PROPS.filter((q) => q[0] === "crystal").map((q) => [q[1], q[2] - 6, 14 * q[3]]),
     ...PROPS.filter((q) => q[0] === "crates").map((q) => [q[1], q[2] - 8, 26]),
-    [-1120, 646, 18], [-820, 662, 18],
+    [-1120, 600, 18], [-820, 728, 18],
   ];
   // basalt columns standing up out of the lava (not walkable): x, y, width, level
   const PILLARS = [
@@ -140,6 +140,7 @@
   Mi.walkable = geo.walkable;
   Mi.collide = function (ent, r) {
     if (!Mi.inRegion(ent.x, ent.y)) return;
+    DL.MineTraps.collide(ent, r); // a fallen cage is a wall (src/minetraps.js)
     geo.collide(ent, r, null, ent === G.player ? { x: OX + SPAWN.x, y: OY + SPAWN.y } : null);
   };
   Mi.route = (x, y, tx, ty) => (Mi.active() && Mi.inRegion(x, y) ? geo.route(x, y, tx, ty) : null);
@@ -159,6 +160,7 @@
     const saved = shrinesSave();
     G.spires = { lv: "mines", bx: p.x, by: p.y, flare: 0, seal: null, held: false, cleared: {}, lit: {}, litT: {}, away: {}, shard: 0, aether: 0 };
     for (const i in saved) if (i !== "at" && saved[i]) { G.spires.lit[i] = true; G.spires.litT[i] = -99; }
+    DL.MineTraps.reset();
     const cp = checkpoint();
     p.x = cp.x; p.y = cp.y; p.spx = p.x; p.spy = p.y;
     p.kx = p.ky = 0; p.dashT = 0; p.angle = -Math.PI / 2;
@@ -175,6 +177,7 @@
     if (!sp || sp.lv !== "mines") return;
     G.spires = null;
     DL.Bullets.clear();
+    DL.MineTraps.reset();
     for (const e of G.enemies) if (Mi.inRegion(e.x, e.y)) e.removed = true;
     G.enemies = G.enemies.filter((e) => !e.removed);
     if (p) {
@@ -194,6 +197,7 @@
     sp.flare = Math.max(0, sp.flare - dt * 0.5);
     const lx = p.x - OX, ly = p.y - OY;
     if (Math.abs(lx - EXIT.x) < 30 && ly < EXIT.y - 4 && ly > EXIT.y - 40) { Mi.leave(); return; }
+    DL.MineTraps.update(dt); // the corridors' traps (src/minetraps.js)
     SHRINES.forEach(([x, y, name], i) => {
       const d = Math.hypot(lx - x, ly - y - 50);
       if (!sp.lit[i]) {
@@ -575,6 +579,7 @@
       const [i, j] = key.split(",").map(Number);
       if (i < i0 - 1 || i > i1 + 1 || j < j0 - 1 || j > j1 + 1) chunks.delete(key);
     }
+    DL.MineTraps.drawFloor(c, view, t); // grates, vents, crumbling tiles, cage shadows (src/minetraps.js)
     // lava falls pouring down the faces
     for (const [fx, fw, id] of FALLS) {
       const f = FLOORS[id], x = OX + fx - fw / 2, y = OY + f[3] + 4, len = S.hang + f[4] * LH + 90;
@@ -597,6 +602,7 @@
       if (x < view.left - 160 || x > view.right + 160 || y < view.top - 20 || y > view.bottom + 260) continue;
       list.push({ y, f: () => drawProp(c, q, x, y, t) });
     }
+    DL.MineTraps.push(list, c, t, view);
   };
   function flame(c, x, y, s, t) {
     for (let i = 0; i < 3; i++) {
@@ -679,6 +685,7 @@
     }
     glow(OX + RUNE.x, OY + RUNE.y, 180, 0.12 + 0.06 * Math.sin(t * 1.4));
     c.globalAlpha = 1;
+    DL.MineTraps.drawGlow(c, t, view);
     for (const m of art.embers) {
       const life = ((t + m.p) % 5) / 5, x = OX + m.x + Math.sin(t * 1.5 + m.p) * 12, y = OY + m.y - life * m.v * 5;
       if (x < view.left || x > view.right || y < view.top || y > view.bottom) continue;
