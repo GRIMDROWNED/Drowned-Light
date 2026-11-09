@@ -28,11 +28,15 @@
     G.update(dt);
     DL.Net.tick(dt);
     DL.Finale.tick(); // the victory screen, once the Drowned Gate has opened
+    const t1 = performance.now();
     // Messages and the objective banner stay hidden while paused or in a menu.
     document.body.classList.toggle("menu-open", G.state !== "play");
     DL.Render.draw(G);
+    const t2 = performance.now();
     UI.update();
-    DL.Render.perf(gap, (performance.now() - t0) / 1000, G.state === "play"); // drops the resolution if the phone can't keep up
+    const t3 = performance.now();
+    // drops the resolution if the device can't keep up, and feeds the ?perf readout
+    DL.Render.perf(gap, (t3 - t0) / 1000, G.state === "play", { update: (t1 - t0) / 1000, draw: (t2 - t1) / 1000, hud: (t3 - t2) / 1000 });
   }
 
   // Studio splash: shown from the first paint, held briefly, then fades into the title.

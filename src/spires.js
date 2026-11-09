@@ -713,7 +713,7 @@
   const GLOW = "190,130,255";
   const BX0 = -2800, BY0 = -2800, BX1 = 2900, BY1 = 1800; // the painted extent (local)
   const CH = 1024; // painted in square chunks, made as they come into view and dropped far away (phones)
-  let chunks = new Map(), art = null;
+  let chunks = new Map(), art = null, sky = null;
 
   // Robert's drawn pieces (tools/cut_spires.py, 2 file px per world px). They load when the room is first drawn;
   // until then (and in the node tests) the coded stone shows, and when the last one lands the room repaints.
@@ -1100,6 +1100,19 @@
     g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
     return c;
   }
+  // a seamless square of soft mist: puffs drawn wrapped round the edges so it tiles with no seam
+  function mistTile(seed, n, tint) {
+    const N = 512, r = rng(seed), c = mk(N, N), g = c.getContext("2d");
+    for (let i = 0; i < n; i++) {
+      const x = r() * N, y = r() * N, R = 50 + r() * 150, a = 0.05 + r() * r() * 0.4;
+      for (const dx of [-N, 0, N]) for (const dy of [-N, 0, N]) {
+        const gr = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, R);
+        gr.addColorStop(0, `rgba(${tint},${a})`); gr.addColorStop(0.6, `rgba(${tint},${a * 0.45})`); gr.addColorStop(1, `rgba(${tint},0)`);
+        g.fillStyle = gr; g.fillRect(x + dx - R, y + dy - R, R * 2, R * 2);
+      }
+    }
+    return c;
+  }
   function glowSprite() {
     const c = mk(64, 64), g = c.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
     gr.addColorStop(0, `rgba(${GLOW},0.9)`); gr.addColorStop(0.35, `rgba(${GLOW},0.35)`); gr.addColorStop(1, `rgba(${GLOW},0)`);
@@ -1184,7 +1197,7 @@
     const r = rng(99);
     art = {
       crystals: [0, 1, 2].map(crystalSprite), arch: archSprite(1), archS: archSprite(0.8), ring: ringSprite(),
-      post: postSprite(48, r), spire: postSprite(118, r), puff: puffSprite(), glow: glowSprite(), runes: runeRing(),
+      post: postSprite(48, r), spire: postSprite(118, r), puff: puffSprite(), sea: mistTile(57, 34, "172,128,224"), veil: mistTile(91, 18, "214,186,250"), glow: glowSprite(), runes: runeRing(),
     };
     // mist puffs drifting below the platforms, and far columns in the haze
     const m = rng(4242);
@@ -1202,9 +1215,19 @@
     if (!sees(view)) return;
     if (!art) build();
     const vw = view.right - view.left, vh = view.bottom - view.top;
-    let gr = c.createLinearGradient(0, view.top, 0, view.bottom);
-    gr.addColorStop(0, "#2a1842"); gr.addColorStop(0.55, "#4b2f72"); gr.addColorStop(1, "#33204f");
-    c.fillStyle = gr; c.fillRect(view.left - 2, view.top - 2, vw + 4, vh + 4);
+    // the violet haze, top to bottom of the view: a 1 px strip of it stretched over the screen (a gradient fill
+    // this size cost a phone ten times as much)
+    if (!sky) {
+      sky = mk(1, 256);
+      const sg = sky.getContext("2d"), g0 = sg.createLinearGradient(0, 0, 0, 256);
+      g0.addColorStop(0, "#2a1842"); g0.addColorStop(0.55, "#4b2f72"); g0.addColorStop(1, "#33204f");
+      sg.fillStyle = g0; sg.fillRect(0, 0, 1, 256);
+    }
+    const sm = c.imageSmoothingEnabled;
+    c.imageSmoothingEnabled = true;
+    c.drawImage(sky, 0, 0.5, 1, 255, view.left - 2, view.top - 2, vw + 4, vh + 4);
+    c.imageSmoothingEnabled = sm;
+    let gr;
     // far columns, drifting slower than the camera (they're further down)
     const cam = G.camera, px = (cam.x - OX) * 0.45, py = (cam.y - OY) * 0.45;
     c.fillStyle = "rgba(34,20,56,0.45)";
@@ -1215,23 +1238,27 @@
       c.fillStyle = "rgba(60,40,90,0.4)"; c.fillRect(x - f.w / 2, y - f.h / 2, f.w, 6); c.fillStyle = "rgba(34,20,56,0.45)";
       c.fillStyle = `rgba(${GLOW},0.5)`; c.fillRect(x - 2, y - f.h / 2 - 8, 4, 8); c.fillStyle = "rgba(34,20,56,0.45)";
     }
+    drawSea(c, view, t);
     drawMist(c, view, t, 1);
     // the painted stone: only the part on screen
     const i0 = Math.max(0, Math.floor((view.left - OX - BX0) / CH)), i1 = Math.min(Math.ceil((BX1 - BX0) / CH) - 1, Math.floor((view.right - OX - BX0) / CH));
     const j0 = Math.max(0, Math.floor((view.top - OY - BY0) / CH)), j1 = Math.min(Math.ceil((BY1 - BY0) / CH) - 1, Math.floor((view.bottom - OY - BY0) / CH));
+    // a chunk is a big paint: one a frame while walking (all at once when the room opens), and the last 20 seen are
+    // kept, so walking back and forth doesn't paint them again
     let made = 0;
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
       const key = i + "," + j;
       let ch = chunks.get(key);
-      if (!ch && (made++ < 2 || chunks.size < 4)) { ch = paintChunk(i, j); chunks.set(key, ch); }
+      if (ch) { chunks.delete(key); chunks.set(key, ch); } // most recently seen last
+      else if (made++ < 1 || chunks.size < 4) { ch = paintChunk(i, j); chunks.set(key, ch); }
       if (!ch) continue;
       const x = OX + BX0 + i * CH, y = OY + BY0 + j * CH;
       const sx = Math.max(0, view.left - x), sy = Math.max(0, view.top - y), ex = Math.min(CH, view.right - x + 1), ey = Math.min(CH, view.bottom - y + 1);
       if (ex > sx && ey > sy) c.drawImage(ch, sx, sy, ex - sx, ey - sy, x + sx, y + sy, ex - sx, ey - sy);
     }
-    if (chunks.size > 20) for (const key of [...chunks.keys()]) { // drop chunks far off screen
-      const [i, j] = key.split(",").map(Number);
-      if (i < i0 - 1 || i > i1 + 1 || j < j0 - 1 || j > j1 + 1) chunks.delete(key);
+    for (const key of chunks.keys()) { // drop the longest unseen (never one on screen: those were just moved last)
+      if (chunks.size <= Math.max(20, (i1 - i0 + 1) * (j1 - j0 + 1))) break;
+      chunks.delete(key);
     }
     // the rune ring, slowly turning, brighter when it wakes the Drowned
     const fl = G.spires ? G.spires.flare : 0;
@@ -1257,6 +1284,23 @@
     c.restore();
   };
 
+  // the mist sea filling the gaps between the platforms: two seamless layers, drifting at different
+  // speeds and sitting at different depths, so no stretch of the void is left bare
+  function drawSea(c, view, t) {
+    const cam = G.camera;
+    for (const [img, sc, par, vx, vy, a] of [[art.sea, 2.2, 0.55, 9, 3, 1], [art.veil, 1.6, 0.8, -14, 5, 0.8]]) {
+      if (!img.pat || img.patC !== c) { img.pat = c.createPattern(img, "repeat"); img.patC = c; } // made once, not every frame
+      const pat = img.pat, T = 512 * sc;
+      const ox = ((((cam.x - OX) * par + t * vx) % T) + T) % T, oy = ((((cam.y - OY) * par + t * vy) % T) + T) % T;
+      c.save();
+      c.globalAlpha = a;
+      c.translate(view.left - ((view.left - ox) % T + T) % T, view.top - ((view.top - oy) % T + T) % T);
+      c.scale(sc, sc);
+      c.fillStyle = pat;
+      c.fillRect(0, 0, (view.right - view.left) / sc + 1024, (view.bottom - view.top) / sc + 1024);
+      c.restore();
+    }
+  }
   function drawMist(c, view, t, k) {
     for (const m of art.mist) {
       const w = 128 * m.s;
