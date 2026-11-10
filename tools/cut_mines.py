@@ -156,3 +156,8 @@ im = key(load('cinder-colossus/extras.png'))
 for name, box, w in (('colossus-mortar', (100, 600, 450, 930), 70), ('colossus-chain', (530, 640, 980, 880), 90),
                      ('colossus-fist', (1020, 600, 1520, 940), 170)):
     save(fit(crop(im.crop(box)), w=w)[0], name)
+
+# ---- the Storeroom's and the Vault's chest (returned/crucible/chest.png): shut, and open full of obsidian
+im = key(load('chest.png'))
+for name, box in (('chest-shut', (40, 200, 840, 887)), ('chest-open', (940, 30, 1730, 887))):
+    save(fit(crop(im.crop(box)), w=150)[0], name)

@@ -95,6 +95,8 @@
   ];
   Mi.SHRINES_N = SHRINES.length;
   // things that stand up, drawn y-sorted with the knights: kind, x, y (, size)
+  // the side rooms' chests (open once their guards fall): room -> x, y
+  const CHESTS = { store: [-890, 1075], vault: [-1250, -945] };
   const PROPS = [
     ["arch", EXIT.x, EXIT.y], ["banner", EXIT.x - 70, 1500], ["banner", EXIT.x + 70, 1500],
     ...SHRINES.map(([x, y], i) => ["shrine", x, y, i]),
@@ -183,7 +185,7 @@
     const saved = shrinesSave();
     for (const e of G.enemies) if (Mi.inRegion(e.x, e.y) && !e.def.den) e.removed = true; // a run starts fresh (the den's pack keeps its own count)
     G.enemies = G.enemies.filter((e) => !e.removed);
-    G.spires = { lv: "mines", bx: p.x, by: p.y, flare: 0, seal: null, held: false, cleared: {}, lit: {}, litT: {}, away: {}, shard: 0, aether: 0 };
+    G.spires = { lv: "mines", bx: p.x, by: p.y, flare: 0, seal: null, held: false, cleared: {}, lit: {}, litT: {}, away: {}, shard: 0, aether: 0, obsidian: 0, heart: 0, opened: {}, won: false };
     for (const i in saved) if (i !== "at" && saved[i]) { G.spires.lit[i] = true; G.spires.litT[i] = -99; }
     DL.MineTraps.reset();
     DL.MineFoes.reset();
@@ -196,10 +198,30 @@
     say(saved.at != null ? "Back at your Ember Shrine. Walk away and come back to it to go home." : "The Molten Mines. The Ash Hall lies up the Grate Run: four wings round it, and the throne at the top.", "good");
   };
   Mi.join = () => {};
-  Mi.bag = () => null; // Obsidian and Magma Hearts come with the rooms (step 3 on)
+  // what this run has found so far (DL.MINE_LOOT)
+  Mi.bag = () => (G.spires && G.spires.lv === "mines" ? { obsidian: G.spires.obsidian, heart: G.spires.heart } : null);
+  const gain = (x, y, n, heart) => {
+    const sp = G.spires;
+    if (heart) sp.heart += heart;
+    sp.obsidian += n;
+    G.texts.push({ x, y: y - 50, txt: (n ? `+${n} Obsidian` : "") + (heart ? `${n ? "  " : ""}+${heart} Magma Heart` : ""), col: heart ? "#ff8a3a" : "#c3b2d6", t: 0, max: heart ? 2 : 1, scale: heart ? 1.2 : 0.9 });
+  };
+  // a mini boss's Magma Heart comes once per world, the first time it dies
+  function bossLoot(e) {
+    const L = DL.MINE_LOOT, hearts = (G.save.minesHearts = G.save.minesHearts || {}), sov = e.def.mine === "sovereign";
+    const heart = !sov && !hearts[e.type] ? 1 : 0;
+    if (heart) hearts[e.type] = 1;
+    gain(e.x, e.y - 100, sov ? L.sovereign : L.boss, heart);
+    if (heart) setTimeout(() => say("A Magma Heart beats where it fell: carry it home.", "good"), 1500);
+    if (sov) {
+      G.spires.won = true;
+      setTimeout(() => say("Walk back out the way you came: everything you carry comes home with you.", "good"), 6000);
+    }
+  }
   // a room's foe fell: Wretches feed; the last of a shut room's group opens it
   Mi.onKill = function (e) {
-    if (e.def.boss) DL.MineBosses.slain(e);
+    if (e.def.boss) { DL.MineBosses.slain(e); bossLoot(e); }
+    else if (e.def.minion && DL.MINE_LOOT.kill[e.type]) gain(e.x, e.y, DL.MINE_LOOT.kill[e.type]);
     DL.MineFoes.slain(e);
     const sp = G.spires;
     if (sp && sp.seal === e.room && !DL.MineFoes.left(e.room)) {
@@ -225,7 +247,9 @@
       for (const f of followers()) { f.x = p.x + DL.rand(-30, 30); f.y = p.y + DL.rand(-10, 20); }
       G.camera.x = p.x; G.camera.y = p.y - 20;
     }
-    say("You climb back out of the heat.", "good");
+    const k = sp.won ? 1 : DL.MINE_LOOT.keep, got = { obsidian: Math.floor(sp.obsidian * k), heart: sp.heart }; // a Magma Heart is never halved
+    const home = DL.Rift.bringHome(got);
+    say(home ? `You climb back out of the heat with ${home}${sp.won ? "" : " (half the Obsidian: the Mines keep the rest)"}.` : "You climb back out of the heat.", "good");
   };
 
   // The way home, and the Ember Shrines.
@@ -239,6 +263,17 @@
     DL.MineTraps.update(dt); // the corridors' traps (src/minetraps.js)
     DL.MineFoes.update(dt); // the Sovereign's minions at their posts (src/minefoes.js)
     DL.MineBosses.update(dt, geo.pieceAt(lx, ly, 30)); // a mini boss wakes when you step into its room (src/minebosses.js)
+    // a cleared side room's chest: walk up to it
+    for (const id in CHESTS) {
+      const q = CHESTS[id];
+      if (!sp.cleared[id] || sp.opened[id] || Math.hypot(lx - q[0], ly - q[1] - 14) > 48) continue;
+      sp.opened[id] = true;
+      const C = DL.MINE_LOOT.chest, n = Math.round(DL.rand(C[0], C[1]));
+      gain(p.x, p.y, n);
+      for (let k = 0; k < 24; k++) G.puff(OX + q[0] + DL.rand(-20, 20), OY + q[1] - DL.rand(0, 50), "rgba(255,170,80,0.85)", 90, 0.9, -20);
+      DL.Sound.play("milestone");
+      say(`The chest springs open: ${n} Obsidian.`, "good");
+    }
     // a side room with its guards still standing shuts behind you (fire curtains over its doors) until they fall
     if (!sp.seal) {
       const room = geo.pieceAt(lx, ly, 30);
@@ -300,7 +335,7 @@
     "seal-1", "seal-2", "seal-3", "crane", "cage-hang", "cart-side", "cart-front", "cart-broken", "rail",
     // the traps' (src/minetraps.js)
     "grate-1", "grate-2", "grate-3", "grate-flame-1", "grate-flame-2", "grate-flame-3", "grate-flame-4", "cage-down", "cage-broken",
-    "golem-fist", "golem-pool", "golem-core", "shard-1", "shard-2", "shard-3", "shard-crack", "shard-break", "shard-burst", "colossus-mortar", "colossus-chain", "colossus-fist", "jet-head", "jet-1", "jet-2", "jet-3", "jet-4", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "geyser-1", "geyser-2", "geyser-3", "geyser-4"];
+    "golem-fist", "golem-pool", "golem-core", "shard-1", "shard-2", "shard-3", "shard-crack", "shard-break", "shard-burst", "colossus-mortar", "colossus-chain", "colossus-fist", "chest-shut", "chest-open", "jet-head", "jet-1", "jet-2", "jet-3", "jet-4", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "geyser-1", "geyser-2", "geyser-3", "geyser-4"];
   const IMG = {};
   Mi.IMG = IMG; // src/minetraps.js draws from it too
   let loading = false;
@@ -748,6 +783,16 @@
     DL.MineTraps.push(list, c, t, view);
     DL.MineBosses.push(list, c, t, view);
     DL.MineBosses.pushSeated(list, c);
+    for (const id in CHESTS) {
+      const q = CHESTS[id], x = OX + q[0], y = OY + q[1];
+      if (x < view.left - 100 || x > view.right + 100 || y < view.top - 100 || y > view.bottom + 150) continue;
+      const open = G.spires && G.spires.opened && G.spires.opened[id];
+      list.push({ y, f: () => {
+        const im = IMG[open ? "chest-open" : "chest-shut"];
+        if (im) { const w = 64, h = (w * im.height) / im.width; c.drawImage(im, x - w / 2, y - h + 6, w, h); return; }
+        c.fillStyle = "#4a2a22"; c.fillRect(x - 26, y - 30, 52, 30); c.fillStyle = "#c9862e"; c.fillRect(x - 26, y - 20, 52, 4); c.fillRect(x - 3, y - 26, 6, 10);
+      } });
+    }
     // a shut room's fire curtains, across each of its doors (and the great stair's, until the wings are cleared)
     const sp = G.spires;
     if (sp && sp.lv === "mines" && Mi.wingsLeft()) {

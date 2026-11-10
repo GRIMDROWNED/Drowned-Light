@@ -1824,7 +1824,7 @@
     G.save.carried = emptyRes();
     const any = DL.RES_KEYS.some((k) => lost[k] > 0);
     const hadSelf = !!G.save.drownedSelf;
-    const sp = G.spires, rift = sp && (sp.shard || sp.aether) ? { shard: sp.shard, aether: sp.aether } : null; // fallen in a dungeon: the mist keeps its loot
+    const sp = G.spires, bag = sp ? DL.Dungeon.bag() : null, rift = bag && Object.values(bag).some((n) => n > 0) ? bag : null; // fallen in a dungeon: it keeps its loot
     if (sp) DL.Dungeon.lost(); // and the friends in the run with you are cast out
     if (any) {
       G.save.drownedSelf = sp ? { x: sp.bx, y: sp.by, carried: lost } : { x: p.x, y: p.y, carried: lost }; // (out of a dungeon: where you went in)

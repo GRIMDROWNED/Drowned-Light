@@ -23,6 +23,9 @@
     // brought home from the dungeons (src/spires.js, src/rift.js): kept out of sight until the first run home
     shard: { name: "Rift Shard", color: "#d6a8ff", rift: true },
     aether: { name: "Aether Crystal", color: "#9a5cff", rift: true },
+    // from the Molten Mines (src/mines.js): Obsidian from the Sovereign's guard and chests, a Magma Heart per mini boss
+    obsidian: { name: "Obsidian", color: "#6b5a7a", rift: true },
+    heart: { name: "Magma Heart", color: "#ff6a1a", rift: true },
   };
   DL.RES_KEYS = Object.keys(DL.RESOURCES);
 
@@ -940,6 +943,11 @@
       spiral: { arms: 5, rate: 0.16, spin: 1.4, time: 2.6, speed: 130 },
       decree: { every: 13, warn: 2.2, grid: 90, safe: 3, r: 70, dmg: 2.5 } },
   };
+  /* A Molten Mines run's finds (src/mines.js): Obsidian per minion broken (`kill`), `chest` from the Storeroom's and
+     the Vault's chests once their guards fall, `boss` from each mini boss and `sovereign` from him; a Magma Heart from
+     each of the five mini bosses the first time it dies. Walking out keeps `keep` of it; beating the Sovereign brings
+     it all home; falling loses it. */
+  DL.MINE_LOOT = { kill: { wretch: 1, ashguard: 3, halberdier: 2, acolyte: 2 }, chest: [10, 14], boss: 15, sovereign: 40, keep: 0.5 };
   DL.MINE_TRAPS = {
     grate: { every: 3.4, warn: 0.8, burn: 1, wave: 0.35, dmg: 14 }, // the Grate Run: a new pattern every 3.4 s
     cage: { every: 1.7, warn: 0.9, max: 3, lead: 0.5, r: 30, dmg: 6, lock: 3, shake: 0.5, stand: 3.5, after: 1.5 }, // the Gibbet Gallery

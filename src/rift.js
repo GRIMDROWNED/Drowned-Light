@@ -24,7 +24,7 @@
   // Into the stash: what came home, in words ("" for nothing).
   Rift.bringHome = function (got) {
     const parts = [];
-    for (const k of ["shard", "aether"]) if (got[k] > 0) {
+    for (const k of Object.keys(got)) if (got[k] > 0) {
       if (!G.isGuest()) G.save.stash[k] = (G.save.stash[k] || 0) + got[k];
       parts.push(name(k, got[k]));
     }

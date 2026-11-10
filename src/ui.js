@@ -456,7 +456,7 @@
       : `<p class="muted">You carried nothing. Your stored supplies and camp are safe.${info.hadSelf ? " Your drowned self still waits where you last fell." : ""}</p>`;
     const kept = info.kept && DL.RES_KEYS.filter((k) => info.kept[k] > 0).map((k) => chip(k, info.kept[k])).join("");
     if (kept && info.cause !== "camp") $("deathLost").innerHTML += `<p>The Storehouse kept half of it safe:</p><div class="chips">${kept}</div>`;
-    if (info.rift) $("deathLost").innerHTML += `<p>The mist keeps everything the run had found:</p><div class="chips">${["shard", "aether"].filter((k) => info.rift[k] > 0).map((k) => chip(k, info.rift[k])).join("")}</div>`;
+    if (info.rift) $("deathLost").innerHTML += `<p>The dungeon keeps everything the run had found:</p><div class="chips">${Object.keys(info.rift).filter((k) => info.rift[k] > 0).map((k) => chip(k, info.rift[k])).join("")}</div>`;
     $("deathStats").textContent = `Day ${info.day} · nights survived: ${info.nights}`;
     $("screenDeath").classList.remove("hidden");
   };
@@ -1171,7 +1171,7 @@
     // soul orbs and a hauled Bone Wolf carcass go in the satchel line too
     const souls = DL.Abigail.won() ? 0 : DL.Abigail.held(), carcass = (DL.Den.carrying() ? `<span class="chip carcass"><i></i>Bone Wolf carcass</span>` : "") + (DL.Wyvern.carrying() ? `<span class="chip egg"><i></i>Wyvern egg</span>` : "");
     const bag = DL.Dungeon.bag(); // a dungeon run's finds (src/spires.js)
-    const carried = DL.RES_KEYS.filter((k) => p.carried[k] > 0).map((k) => chip(k, p.carried[k])).join("") + (bag ? ["shard", "aether"].filter((k) => bag[k] > 0).map((k) => chip(k, bag[k])).join("") : "") + (souls ? `<span class="chip soul"><i></i>${souls} soul orb${souls > 1 ? "s" : ""}</span>` : "") + carcass;
+    const carried = DL.RES_KEYS.filter((k) => p.carried[k] > 0).map((k) => chip(k, p.carried[k])).join("") + (bag ? Object.keys(bag).filter((k) => bag[k] > 0).map((k) => chip(k, bag[k])).join("") : "") + (souls ? `<span class="chip soul"><i></i>${souls} soul orb${souls > 1 ? "s" : ""}</span>` : "") + carcass;
     set($("carried"), "html", carried ? `<span class="lbl${bag ? " bag" : ""}">Carrying</span>${carried}` : ""); // in a dungeon: the loot sack
 
     // objective banner
