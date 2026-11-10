@@ -948,13 +948,15 @@
       const k = Math.max(0, Math.min(1, f.t / f.fly));
       if (!f.r) continue;
       c.fillStyle = `rgba(0,0,0,${0.2 + 0.4 * k})`; c.beginPath(); c.ellipse(f.tx, f.ty, 20 + 40 * k, (20 + 40 * k) * 0.5, 0, 0, TAU); c.fill();
-      c.strokeStyle = `rgba(255,140,40,${0.4 + 0.5 * k})`; c.lineWidth = 2; c.beginPath(); c.ellipse(f.tx, f.ty, f.r, f.r * 0.55, 0, 0, TAU); c.stroke();
+      if (!DL.Mines.ring(c, f.tx, f.ty, f.r, f.r * 0.55, k)) { c.strokeStyle = `rgba(255,140,40,${0.4 + 0.5 * k})`; c.lineWidth = 2; c.beginPath(); c.ellipse(f.tx, f.ty, f.r, f.r * 0.55, 0, 0, TAU); c.stroke(); }
     }
     for (const e of G.enemies) {
       if (e.def.mine !== "golem" || e.removed || e.act !== "raise" || !vis(view, e.x, e.y, 200)) continue;
       const R = n.r * e.def.size, k = 1 - Math.max(0, e.t) / n.raise;
-      c.strokeStyle = `rgba(255,150,50,${0.35 + 0.5 * k})`; c.lineWidth = 3;
-      c.beginPath(); c.ellipse(e.x, e.y, R, R / 1.5, 0, 0, TAU); c.stroke();
+      if (!DL.Mines.ring(c, e.x, e.y, R, R / 1.5, k)) {
+        c.strokeStyle = `rgba(255,150,50,${0.35 + 0.5 * k})`; c.lineWidth = 3;
+        c.beginPath(); c.ellipse(e.x, e.y, R, R / 1.5, 0, 0, TAU); c.stroke();
+      }
       c.fillStyle = `rgba(255,110,30,${0.1 + 0.25 * k})`;
       c.beginPath(); c.ellipse(e.x, e.y, R * k, (R / 1.5) * k, 0, 0, TAU); c.fill();
     }
@@ -975,9 +977,9 @@
       }
       if ((e.act === "dive" || e.act === "slamDown") && e.wx != null) {
         const k = e.act === "dive" ? 1 - Math.max(0, e.t) / n.diveAim : 1, R = n.slamR * s;
-        c.strokeStyle = `rgba(255,150,50,${0.4 + 0.5 * k})`; c.lineWidth = 3;
-        c.beginPath(); c.ellipse(e.wx, e.wy, R, R / 1.4, 0, 0, TAU); c.stroke();
+        c.beginPath(); c.ellipse(e.wx, e.wy, R, R / 1.4, 0, 0, TAU);
         c.fillStyle = `rgba(255,110,30,${0.08 + 0.2 * k})`; c.fill();
+        if (!DL.Mines.ring(c, e.wx, e.wy, R, R / 1.4, k)) { c.strokeStyle = `rgba(255,150,50,${0.4 + 0.5 * k})`; c.lineWidth = 3; c.stroke(); }
       }
     }
     // the Ashen Sovereign: the lava flood's rim, and the Decree's marked floor with its safe stones
@@ -990,11 +992,19 @@
       }
       if (decree) {
         const d = n.decree, k = Math.min(1, decree.t / d.warn);
+        // Robert's tiles: cracking (1), splitting (2), then the burst (3) and its smoke (4) once it goes
+        const after = decree.t - d.warn, ti = IMG("decree-" + (after < 0 ? (k < 0.6 ? 1 : 2) : after < 0.3 ? 3 : 4));
+        const tw = d.grid, tk = tw / 120, tq = after > 0.3 ? Math.max(0, 1 - (after - 0.3) / 0.3) : 1;
+        if (ti) c.globalAlpha = after < 0 ? Math.min(1, 0.35 + k) : tq;
         for (let y = A.y - A.ry; y < A.y + A.ry; y += d.grid) for (let x = A.x - A.rx; x < A.x + A.rx; x += d.grid) {
-          if (!inArena(x, y, 0.97) || decree.safe.some((q) => Math.hypot(x - q.x, y - q.y) < d.r) || !vis(view, x, y, 60)) continue;
+          if (!inArena(x, y, 0.97) || decree.safe.some((q) => Math.hypot(x - q.x, y - q.y) < d.r) || !vis(view, x, y, 160)) continue;
+          if (ti) { c.drawImage(ti, x - tw / 2, y - 85.5 * tk, tw, 137 * tk); continue; }
           c.fillStyle = `rgba(255,120,30,${0.12 + 0.35 * k})`; c.beginPath(); c.ellipse(x, y, d.grid * 0.38, d.grid * 0.22, 0, 0, TAU); c.fill();
         }
+        c.globalAlpha = 1;
+        const si = IMG("decree-safe");
         for (const q of decree.safe) {
+          if (si) { const sk = (2 * d.r) / 120; c.drawImage(si, q.x - d.r, q.y - 84 * sk, 2 * d.r, 137 * sk); continue; }
           c.fillStyle = "rgba(40,30,30,0.75)"; c.beginPath(); c.ellipse(q.x, q.y, d.r * 0.8, d.r * 0.45, 0, 0, TAU); c.fill();
           c.strokeStyle = "rgba(160,220,255,0.8)"; c.lineWidth = 3; c.beginPath(); c.ellipse(q.x, q.y, d.r * 0.8, d.r * 0.45, 0, 0, TAU); c.stroke();
         }

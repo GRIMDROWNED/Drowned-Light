@@ -20,7 +20,7 @@
 
   /* ---------------- Robert's art ---------------- */
   const OWN = ["magma-forge", "brazier-tower", "forge-gate-off", "forge-gate-on"];
-  const MINES = ["grate-1", "grate-2", "grate-3", "grate-flame-1", "grate-flame-2", "grate-flame-3", "grate-flame-4", "colossus-mortar"];
+  const MINES = ["grate-1", "grate-2", "grate-3", "grate-flame-1", "grate-flame-2", "grate-flame-3", "grate-flame-4", "colossus-mortar", "warn-1", "warn-2", "warn-3"];
   const IMG = {};
   let loading = false;
   function loadArt() {
@@ -162,8 +162,9 @@
       if (!s.done) {
         // the mark where it lands, tightening as it falls
         const k = s.t / s.T;
-        c.strokeStyle = `rgba(255,120,40,${0.4 + 0.4 * k})`; c.lineWidth = 2;
-        c.beginPath(); c.ellipse(s.tx, s.ty, B.r, B.r * 0.55, 0, 0, Math.PI * 2); c.stroke();
+        const wi = IMG["warn-" + (k < 0.45 ? 1 : k < 0.85 ? 2 : 3)];
+        if (wi) { const sx = (2 * B.r) / 187, sy = (1.1 * B.r) / 102; c.drawImage(wi, s.tx - 100 * sx, s.ty - 64 * sy, 200 * sx, 120 * sy); }
+        else { c.strokeStyle = `rgba(255,120,40,${0.4 + 0.4 * k})`; c.lineWidth = 2; c.beginPath(); c.ellipse(s.tx, s.ty, B.r, B.r * 0.55, 0, 0, Math.PI * 2); c.stroke(); }
         c.fillStyle = `rgba(255,90,20,${0.12 + 0.15 * k})`;
         c.beginPath(); c.ellipse(s.tx, s.ty, B.r * k, B.r * 0.55 * k, 0, 0, Math.PI * 2); c.fill();
         // the shell on its arc
