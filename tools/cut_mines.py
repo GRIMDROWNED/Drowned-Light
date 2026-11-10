@@ -188,6 +188,29 @@ for i, a in enumerate((33, 459, 886, 1318, 1743)):
 for i, c in enumerate(cells('obsidian.png', [(85, 667), (800, 1379)])):
     save(fit(c, w=120)[0], f'obsidian-{i + 1}')
 
+# Robert's room edges, bridge arches and floating pillars (2026-11-10), at 2 file px per world px; the arches' and
+# pillars' feet are faded out here (once) so they sink into the mist
+def fade_foot(im, frac):
+    a = np.asarray(im).astype(float)
+    h = a.shape[0]; y0 = int(h * (1 - frac))
+    ramp = np.ones(h); ramp[y0:] = np.linspace(1, 0, h - y0) ** 1.4
+    a[..., 3] *= ramp[:, None]
+    return Image.fromarray(a.clip(0, 255).astype('uint8'), 'RGBA')
+def sized(im, w=None, h=None):
+    if w is None: w = round(im.width * h / im.height)
+    if h is None: h = round(im.height * w / im.width)
+    return im.resize((w, h), Image.LANCZOS)
+ed = key(load('edges.png'))
+save(sized(ed.crop((322, 62, 1340, 249)), h=52), 'edge-south')   # 3 merlons, repeats left to right
+save(sized(ed.crop((17, 316, 1763, 386)), h=20), 'edge-north')   # the kerb, left to right
+save(sized(ed.crop((45, 418, 112, 689)), w=20), 'edge-side')     # the kerb, top to bottom
+save(sized(ed.crop((18, 719, 147, 864)), w=32), 'edge-corner')
+ar = key(load('bridge-arches.png')).crop((585, 103, 1585, 700))   # pier middle to pier middle: 2 arches, repeats
+save(fade_foot(sized(ar, h=168), 0.45), 'bridge-arches')
+pl = key(load('pillars.png'))
+for i, (a, b) in enumerate([(89, 663), (868, 1206), (1434, 1635)]):
+    save(fade_foot(sized(crop(pl.crop((a, 0, b, pl.height))), w=(180, 120, 80)[i]), 0.4), f'pillar-{i + 1}')
+
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites', 'mines-camp')
 os.makedirs(OUT, exist_ok=True)
 save(fit(crop(key(load('magma-forge.png'))), w=224)[0], 'magma-forge', 128)

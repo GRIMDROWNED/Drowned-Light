@@ -449,7 +449,7 @@
     "seal-1", "seal-2", "seal-3", "crane", "cage-hang", "cart-side", "cart-front", "cart-broken", "rail",
     // the traps' (src/minetraps.js)
     "grate-1", "grate-2", "grate-3", "grate-flame-1", "grate-flame-2", "grate-flame-3", "grate-flame-4", "cage-down", "cage-broken",
-    "golem-fist", "golem-pool", "golem-core", "shard-1", "shard-2", "shard-3", "shard-crack", "shard-break", "shard-burst", "colossus-mortar", "colossus-chain", "colossus-fist", "chest-shut", "chest-open", "jet-head", "jet-head-side", "puddle-1", "puddle-2", "puddle-3", "warn-1", "warn-2", "warn-3", "decree-1", "decree-2", "decree-3", "decree-4", "decree-safe", "obsidian-1", "obsidian-2", "jet-1", "jet-2", "jet-3", "jet-4", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "geyser-1", "geyser-2", "geyser-3", "geyser-4"];
+    "golem-fist", "golem-pool", "golem-core", "shard-1", "shard-2", "shard-3", "shard-crack", "shard-break", "shard-burst", "colossus-mortar", "colossus-chain", "colossus-fist", "chest-shut", "chest-open", "jet-head", "jet-head-side", "puddle-1", "puddle-2", "puddle-3", "warn-1", "warn-2", "warn-3", "decree-1", "decree-2", "decree-3", "decree-4", "decree-safe", "obsidian-1", "obsidian-2", "edge-south", "edge-north", "edge-side", "edge-corner", "bridge-arches", "pillar-1", "pillar-2", "pillar-3", "jet-1", "jet-2", "jet-3", "jet-4", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "geyser-1", "geyser-2", "geyser-3", "geyser-4"];
   const IMG = {};
   Mi.IMG = IMG; // src/minetraps.js draws from it too
   // Robert's warning ring (warn-1..3, faint to white-hot as k goes 0..1) laid on an oval rx by ry round (x, y); false
@@ -596,6 +596,24 @@
       g.fillStyle = mix(C.rimD, C.rim, 0.4 + r() * 0.5); g.fillRect(x + 1, y + 1, w - 2, h - 3);
       g.fillStyle = "rgba(255,230,210,0.15)"; g.fillRect(x + 1, y + 1, w - 2, 1);
     };
+    const eN = IMG["edge-north"], eS = IMG["edge-south"], eW = IMG["edge-side"], eC = IMG["edge-corner"];
+    if (eN && eS && eW && eC) { // Robert's kerbs and parapet: slices of his strips (2 file px per world px), on the Mines grid
+      const sl = (v, n) => (((v * 2) % n) + n) % n;
+      for (let x = x0; x < x1; x += 24) if (!open(x + 12, y0)) g.drawImage(eN, sl(x - BX0, eN.width - 48), 0, 48, eN.height, x, y0, 24, 10);
+      for (let y = y0 + 10; y < y1 - 20; y += 24) {
+        const h = Math.min(24, y1 - 20 - y), sy = sl(y - BY0, eW.height - 48);
+        if (!open(x0, y + 12)) g.drawImage(eW, 0, sy, 20, h * 2, x0, y, 10, h);
+        if (!open(x1, y + 12)) g.drawImage(eW, 0, sy, 20, h * 2, x1 - 10, y, 10, h);
+      }
+      for (const [a, b] of runs(x0, x1, y1, gaps)) { // the south parapet, merlons and all
+        g.save(); g.beginPath(); g.rect(a, y1 - 26, b - a, 26); g.clip();
+        for (let x = a - sl(a - BX0, eS.width) / 2; x < b; x += eS.width / 2) g.drawImage(eS, x, y1 - 26, eS.width / 2, 26);
+        g.restore();
+      }
+      for (const [cx, cy] of [[x0, y0], [x1 - 16, y0], [x0, y1 - 24], [x1 - 16, y1 - 24]]) if (!open(cx + 8, cy < y1 - 30 ? y0 : y1)) g.drawImage(eC, cx, cy, 16, 18);
+      g.restore();
+      return;
+    }
     for (let x = x0; x < x1; x += 24) {
       if (!open(x + 12, y0)) kerb(x, y0, 24, 8);
       if (!open(x + 12, y1)) kerb(x, y1 - 8, 24, 8);
@@ -674,6 +692,13 @@
     const len = Math.hypot(bx - ax, by - ay), ang = Math.atan2(by - ay, bx - ax);
     g.save(); g.translate(ax, ay); g.rotate(ang);
     // the arches under it, seen past its south edge
+    const ba = IMG["bridge-arches"];
+    if (ba) { // Robert's arcade, repeated along under the deck's south edge, its piers fading into the mist
+      const H = 84, Wt = (ba.width * H) / ba.height, off = r() * Wt;
+      g.save(); g.beginPath(); g.rect(-4, hw - 2, len + 8, H + 2); g.clip();
+      for (let s = -off; s < len + 4; s += Wt) g.drawImage(ba, s, hw - 2, Wt + 0.5, H);
+      g.restore();
+    } else {
     g.fillStyle = C.face; g.fillRect(-2, hw, len + 4, 70);
     for (let s = 20; s < len - 20; s += 60) {
       g.fillStyle = "#1a0c08"; g.beginPath(); g.ellipse(s + 20, hw + 70, 18, 46, 0, Math.PI, 0); g.fill();
@@ -682,6 +707,7 @@
     const gr = g.createLinearGradient(0, hw, 0, hw + 70);
     gr.addColorStop(0, "rgba(0,0,0,0.2)"); gr.addColorStop(1, "rgba(80,70,72,0.85)");
     g.fillStyle = gr; g.fillRect(-2, hw, len + 4, 70);
+    }
     // the deck
     g.fillStyle = C.grout; g.fillRect(-4, -hw, len + 8, hw * 2);
     if (IMG["floor-1"]) { // Robert's flagstones along the deck
@@ -691,7 +717,9 @@
     } else for (let s = -4; s < len + 4; s += 20) for (let w = -hw; w < hw; w += 16) {
       g.fillStyle = mix(C.topD, C.topL, 0.25 + r() * 0.35); g.fillRect(s + 1, w + 1, 18, 14);
     }
-    for (const sd of [-1, 1]) { // parapets
+    const kb = IMG["edge-north"];
+    for (const sd of [-1, 1]) { // parapets (Robert's kerb when it's in)
+      if (kb) { for (let s = -4; s < len + 4; s += 240) g.drawImage(kb, 0, 0, Math.min(480, (len + 4 - s) * 2), kb.height, s, sd > 0 ? hw - 10 : -hw, Math.min(240, len + 4 - s), 10); continue; }
       g.fillStyle = C.rimD; g.fillRect(-4, sd > 0 ? hw - 8 : -hw, len + 8, 8);
       g.fillStyle = C.rim; g.fillRect(-4, sd > 0 ? hw - 8 : -hw, len + 8, 3);
     }
@@ -737,7 +765,13 @@
       add(q[3] - 0.5, [q[0] - 60, q[1] - 60, q[2] + 60, q[3] + S.hang + q[4] * LH + 80], (g, r) => { face(g, q[0] - 4, q[2] + 4, q[3], S.hang + q[4] * LH, r); stairs(g, q, r); });
     }
     PILLARS.forEach((q) => add(q[1] + q[2] * 0.4, [q[0] - q[2], q[1] - q[2], q[0] + q[2], q[1] + 800], (g, r) => {
-      const w = q[2], d = w * 0.8;
+      const w = q[2], d = w * 0.8, pi = IMG["pillar-" + (w >= 70 ? 1 : w >= 60 ? 2 : 3)];
+      if (pi) { // Robert's pillar: its top as drawn, its columns stretched down to the depth, its foot faded into the mist
+        const W = w * 1.25, k = W / pi.width, cap = pi.height * 0.35, H = d + S.hang + 30 + q[3] * LH + 40, y = q[1] - d / 2 - 8;
+        g.drawImage(pi, 0, 0, pi.width, cap, q[0] - W / 2, y, W, cap * k);
+        g.drawImage(pi, 0, cap, pi.width, pi.height - cap, q[0] - W / 2, y + cap * k - 1, W, Math.max(H - cap * k, (pi.height - cap) * k) + 1);
+        return;
+      }
       face(g, q[0] - w / 2, q[0] + w / 2, q[1] + d / 2, S.hang + 30 + q[3] * LH, r);
       top(g, q[0] - w / 2, q[1] - d / 2, q[0] + w / 2, q[1] + d / 2, r, []);
     }));
