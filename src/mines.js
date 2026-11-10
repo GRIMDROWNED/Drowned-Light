@@ -146,6 +146,20 @@
     [1700, -800, 70, 3], [-1700, -900, 70, 3], [0, -2050, 80, 5], [-250, -500, 40, 3], [250, -500, 40, 3],
   ].filter((q) => !Object.values(FLOORS).some((f) => q[0] + q[2] > f[0] - 30 && q[0] - q[2] < f[2] + 30 && q[1] + q[2] > f[1] - 30 && q[1] - q[2] < f[3] + 260));
   // lava falls pouring from cracks in the faces: x, width, the floor whose face they pour down
+  // A fall's frame without its splash, the stream's lower part faded out once (cached, no per-frame gradient)
+  const FALL_CAP = 45, FALL_SPL = 30, faded = new Map();
+  function fadedFall(im) {
+    let fc = faded.get(im);
+    if (fc) return fc;
+    fc = document.createElement("canvas"); fc.width = im.width; fc.height = im.height - FALL_SPL;
+    const x = fc.getContext("2d");
+    x.drawImage(im, 0, 0, im.width, fc.height, 0, 0, im.width, fc.height);
+    const s0 = FALL_CAP + (fc.height - FALL_CAP) * 0.35, g = x.createLinearGradient(0, s0, 0, fc.height);
+    g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(0.6, "rgba(0,0,0,0.75)"); g.addColorStop(1, "rgba(0,0,0,1)");
+    x.globalCompositeOperation = "destination-out"; x.fillStyle = g; x.fillRect(0, s0, fc.width, fc.height - s0);
+    faded.set(im, fc);
+    return fc;
+  }
   const FALLS = [[-250, 34, "hall"], [260, 26, "hall"], [-1820, 40, "forge"], [1840, 40, "pit"], [-1200, 30, "choir"], [1230, 30, "roost"], [-200, 30, "bastion"], [0, 26, "gate"]];
 
   /* ---------------- where you can stand ---------------- */
@@ -855,11 +869,10 @@
       const f = FLOORS[id], x = OX + fx - fw / 2, y = OY + f[3] + 4, len = S.hang + f[4] * LH + 90;
       if (x - fw > view.right || x + 2 * fw < view.left || y - 20 > view.bottom || y + len < view.top) return;
       const im = IMG["fall-" + (1 + (Math.floor(t * 8 + n) % 4))];
-      if (im) { // Robert's fall: the spout and the splash as drawn, the stream stretched between them
-        const W = fw * 1.9, k = W / im.width, X = OX + fx - W / 2, CAP = 45, SPL = 30, top = y - 8, bot = y + len - 30;
-        c.drawImage(im, 0, 0, im.width, CAP, X, top, W, CAP * k);
-        c.drawImage(im, 0, CAP, im.width, im.height - CAP - SPL, X, top + CAP * k - 1, W, bot - top - CAP * k + 2);
-        c.drawImage(im, 0, im.height - SPL, im.width, SPL, X, bot, W, SPL * k);
+      if (im) { // Robert's fall: the spout as drawn, the stream stretched below it and fading into the mist (no splash)
+        const fc = fadedFall(im), W = fw * 1.9, k = W / im.width, X = OX + fx - W / 2, top = y - 8, bot = y + len;
+        c.drawImage(fc, 0, 0, im.width, FALL_CAP, X, top, W, FALL_CAP * k);
+        c.drawImage(fc, 0, FALL_CAP, im.width, fc.height - FALL_CAP, X, top + FALL_CAP * k - 1, W, bot - top - FALL_CAP * k + 1);
         return;
       }
       const gr = c.createLinearGradient(0, y, 0, y + len);
