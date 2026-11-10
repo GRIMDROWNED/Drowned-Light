@@ -51,7 +51,7 @@
   Rift.DUNGEONS = [
     { id: "spires", name: "The Abyssal Spires", text: "Floating stone in a sea of violet mist.", go: () => DL.Spires.enter() },
     // Level 3 (src/mines.js): in the Sandbox while it's being built; later, once the Rift Throne has fallen
-    { id: "mines", name: "The Molten Mines", text: "A fortress of basalt over a sea of lava.", open: () => DL.SANDBOX && !(DL.Net && DL.Net.role), go: () => DL.Mines.enter() },
+    { id: "mines", name: "The Molten Mines", text: "A fortress of basalt over a sea of lava.", open: () => DL.SANDBOX, go: () => DL.Mines.enter() },
   ];
   Rift.go = function (id) {
     const d = Rift.DUNGEONS.find((q) => q.id === id);

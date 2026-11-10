@@ -20,7 +20,12 @@
    Ember Shrines (the Spires' Mist Wells, in lava): walk up to one and it lights and becomes your checkpoint (saved,
    G.save.minesShrines; the next run starts at the last one lit). Walk away from a lit shrine and back, and stand at it
    a moment, to go home. The arch in the Gate Hall goes home too.
-   Co-op comes in step 9: for now a party can't go in (Mi.enter says so). Numbers: DL.MINES (src/data.js). */
+   Co-op (step 9, like the Spires): the host's device runs the run (rooms, foes, bosses, loot) and takes the whole
+   party in and out; each friend's device moves its own knight, keeps it on the stone and runs the corridors' traps for
+   it, and draws the run from the host's snapshots (Mi.snap: rooms, shrines, bag, bullets, the bosses' fists, pools,
+   flood and Decree; each foe's move rides its row, MineBosses.vis). Every boss blow is tested on every knight in the
+   run (MineBosses.party). The party shares one bag; a friend who falls rises at the run's checkpoint; if the host
+   falls the run is lost. Numbers: DL.MINES (src/data.js). */
 "use strict";
 (function (DL) {
   const G = DL.Game, S = DL.MINES;
@@ -152,7 +157,7 @@
   Mi.collide = function (ent, r) {
     if (!Mi.inRegion(ent.x, ent.y)) return;
     DL.MineTraps.collide(ent, r); // a fallen cage is a wall (src/minetraps.js)
-    const sp = G.spires, hold = sp && sp.lv === "mines" && sp.seal && (ent === G.player || ent.room === sp.seal) ? FLOORS[sp.seal] : null; // a shut room keeps you (and its guards) in
+    const sp = G.spires, hold = sp && sp.lv === "mines" && sp.seal && ((ent === G.player && sp.held) || ent.room === sp.seal) ? FLOORS[sp.seal] : null; // a shut room keeps you (if it shut round you) and its guards in
     geo.collide(ent, r, hold, ent === G.player ? { x: OX + SPAWN.x, y: OY + SPAWN.y } : null);
     if (sp && sp.lv === "mines") barGreat(ent);
   };
@@ -177,11 +182,10 @@
     const at = shrinesSave().at;
     return at != null && SHRINES[at] ? { x: OX + SHRINES[at][0], y: OY + SHRINES[at][1] + 60 } : { x: OX + SPAWN.x, y: OY + SPAWN.y };
   }
-  Mi.checkpoint = checkpoint;
+  Mi.checkpoint = () => (G.spires && G.spires.cp) || checkpoint(); // a friend's device: the host's
   Mi.enter = function () {
     const p = G.player;
     if (!p || G.spires || G.cave) return;
-    if (G.allies.length) { say("The Molten Mines can't take a party in yet. Co-op comes in a later step.", "warn"); return; }
     const saved = shrinesSave();
     for (const e of G.enemies) if (Mi.inRegion(e.x, e.y) && !e.def.den) e.removed = true; // a run starts fresh (the den's pack keeps its own count)
     G.enemies = G.enemies.filter((e) => !e.removed);
@@ -195,9 +199,27 @@
     p.kx = p.ky = 0; p.dashT = 0; p.angle = -Math.PI / 2;
     for (const f of followers()) { f.x = p.x + DL.rand(-30, 30); f.y = p.y + DL.rand(-10, 20); f.spx = null; }
     G.camera.x = p.x; G.camera.y = p.y - 20;
+    for (const a of G.allies) pull(a);
+    if (G.allies.length) DL.Net.say("Your host steps through, and the heat takes you with them: the Molten Mines.", "good");
     say(saved.at != null ? "Back at your Ember Shrine. Walk away and come back to it to go home." : "The Molten Mines. The Ash Hall lies up the Grate Run: four wings round it, and the throne at the top.", "good");
   };
-  Mi.join = () => {};
+  // Host: bring a friend's knight in beside yours (their device moves it; the host's copy goes now so the foes see it)
+  function pull(a) {
+    const p = G.player, x = p.x + 34 * a.id * (a.id % 2 ? 1 : -1) / 2, y = p.y + 16;
+    a.x = a.tx = x; a.y = a.ty = y;
+    DL.Net.sendTo(a.id, { t: "mines", on: 1, x, y, cp: [Math.round(p.x), Math.round(p.y)] });
+  }
+  // Host: a friend who joins while the run is on comes straight in
+  Mi.join = (a) => { if (Mi.active() && !G.spires.guest) pull(a); };
+  // Host: every friend back out beside the host's knight (or cast out with the run: the host fell)
+  function sendHome(msg, kind) {
+    const p = G.player, out = p && !Mi.inRegion(p.x, p.y), x0 = out ? p.x : 0, y0 = out ? p.y : 70;
+    for (const a of G.allies) {
+      const x = x0 + 34 * a.id * (a.id % 2 ? 1 : -1) / 2, y = y0 + 12;
+      a.x = a.tx = x; a.y = a.ty = y;
+      DL.Net.sendTo(a.id, { t: "mines", on: 0, x, y, m: msg, k: kind });
+    }
+  }
   // what this run has found so far (DL.MINE_LOOT)
   Mi.bag = () => (G.spires && G.spires.lv === "mines" ? { obsidian: G.spires.obsidian, heart: G.spires.heart } : null);
   const gain = (x, y, n, heart) => {
@@ -230,7 +252,7 @@
       say("The fire curtains die down. The way is open.", "good");
     }
   };
-  Mi.lost = () => {};
+  Mi.lost = () => { if (G.spires && !G.spires.guest && G.allies.length) sendHome("Your host has fallen in the Mines. The run is lost, and everything it found with it.", "danger"); };
   Mi.leave = function () {
     const sp = G.spires, p = G.player;
     if (!sp || sp.lv !== "mines") return;
@@ -248,8 +270,9 @@
       G.camera.x = p.x; G.camera.y = p.y - 20;
     }
     const k = sp.won ? 1 : DL.MINE_LOOT.keep, got = { obsidian: Math.floor(sp.obsidian * k), heart: sp.heart }; // a Magma Heart is never halved
-    const home = DL.Rift.bringHome(got);
-    say(home ? `You climb back out of the heat with ${home}${sp.won ? "" : " (half the Obsidian: the Mines keep the rest)"}.` : "You climb back out of the heat.", "good");
+    const home = DL.Rift.bringHome(got), msg = home ? `You climb back out of the heat with ${home}${sp.won ? "" : " (half the Obsidian: the Mines keep the rest)"}.` : "You climb back out of the heat.";
+    sendHome(msg, "good");
+    say(msg, "good");
   };
 
   // The way home, and the Ember Shrines.
@@ -258,40 +281,44 @@
     if (!sp || !p) return;
     if (!Mi.inRegion(p.x, p.y)) { G.spires = null; return; }
     sp.flare = Math.max(0, sp.flare - dt * 0.5);
-    const lx = p.x - OX, ly = p.y - OY;
-    if (Math.abs(lx - EXIT.x) < 30 && ly < EXIT.y - 4 && ly > EXIT.y - 40) { Mi.leave(); return; }
+    const lx = p.x - OX, ly = p.y - OY, atExit = Math.abs(lx - EXIT.x) < 30 && ly < EXIT.y - 4 && ly > EXIT.y - 40;
+    if (sp.guest) return guestUpdate(sp, p, dt, lx, ly, atExit);
+    if (atExit) { Mi.leave(); return; }
     DL.MineTraps.update(dt); // the corridors' traps (src/minetraps.js)
     DL.MineFoes.update(dt); // the Sovereign's minions at their posts (src/minefoes.js)
-    DL.MineBosses.update(dt, geo.pieceAt(lx, ly, 30)); // a mini boss wakes when you step into its room (src/minebosses.js)
+    const pt = DL.MineBosses.party(), pieces = pt.map((k) => geo.pieceAt(k.x - OX, k.y - OY, 30));
+    // a mini boss wakes when any knight steps into its room (src/minebosses.js)
+    DL.MineBosses.update(dt, pieces.find((r) => r && DL.MineBosses.ROOMS[r] && !sp.cleared[r]) || null);
     // a cleared side room's chest: walk up to it
     for (const id in CHESTS) {
       const q = CHESTS[id];
-      if (!sp.cleared[id] || sp.opened[id] || Math.hypot(lx - q[0], ly - q[1] - 14) > 48) continue;
+      if (!sp.cleared[id] || sp.opened[id] || !pt.some((k) => Math.hypot(k.x - OX - q[0], k.y - OY - q[1] - 14) < 48)) continue;
       sp.opened[id] = true;
       const C = DL.MINE_LOOT.chest, n = Math.round(DL.rand(C[0], C[1]));
-      gain(p.x, p.y, n);
+      gain(OX + q[0], OY + q[1], n);
       for (let k = 0; k < 24; k++) G.puff(OX + q[0] + DL.rand(-20, 20), OY + q[1] - DL.rand(0, 50), "rgba(255,170,80,0.85)", 90, 0.9, -20);
       DL.Sound.play("milestone");
-      say(`The chest springs open: ${n} Obsidian.`, "good");
+      all(`The chest springs open: ${n} Obsidian.`, "good");
     }
     // a side room with its guards still standing shuts behind you (fire curtains over its doors) until they fall
     if (!sp.seal) {
-      const room = geo.pieceAt(lx, ly, 30);
-      if (room && DL.MineFoes.SEAL.includes(room) && !sp.cleared[room] && DL.MineFoes.left(room)) {
+      const room = pieces.find((r) => r && DL.MineFoes.SEAL.includes(r) && !sp.cleared[r] && DL.MineFoes.left(r));
+      if (room) {
         sp.seal = room;
         DL.Sound.play("torch");
-        say("Fire curtains roar up across the doors. Break the guards to open them.", "warn");
+        all("Fire curtains roar up across the doors. Break the guards to open them.", "warn");
       }
     }
+    heldBy(sp, p);
     SHRINES.forEach(([x, y, name], i) => {
       const d = Math.hypot(lx - x, ly - y - 50);
       if (!sp.lit[i]) {
-        if (d > 80) return;
+        if (!pt.some((k) => Math.hypot(k.x - OX - x, k.y - OY - y - 50) < 80)) return;
         sp.lit[i] = true; sp.litT[i] = G.t; sp.away[i] = false;
         const sv = shrinesSave(); sv[i] = true; sv.at = i; G.persist();
         for (let k = 0; k < 24; k++) G.puff(OX + x + DL.rand(-26, 26), OY + y - DL.rand(0, 80), "rgba(255,190,90,0.85)", 80, 0.9);
         DL.Sound.play("chime");
-        say(`The Ember Shrine of ${name} kindles. It's your checkpoint now.`, "good");
+        all(`The Ember Shrine of ${name} kindles. It's your checkpoint now.`, "good");
         return;
       }
       // a lit shrine, walked away from and come back to: stand at it a moment to go home
@@ -301,6 +328,79 @@
         if (sp.homeT > S.home) { sp.homeT = 0; Mi.leave(); }
       } else if (d < 46) sp.homeT = 0;
     });
+  };
+
+  // a room shut round this device's knight keeps it in; one that shut while it stood outside doesn't
+  function heldBy(sp, p) {
+    if (sp.seal === sp.sealWas) return;
+    sp.sealWas = sp.seal;
+    sp.held = !!(sp.seal && geo.inRect(p.x - OX, p.y - OY, FLOORS[sp.seal], 20));
+  }
+  // A friend's device: traps for its own knight, the host's pieces moving between snapshots, and the ways home (the
+  // arch, a lit shrine walked back to), which ask the host to take everyone out.
+  function guestUpdate(sp, p, dt, lx, ly, atExit) {
+    DL.MineTraps.update(dt);
+    DL.MineBosses.tick(dt);
+    DL.MineFoes.tick(dt);
+    heldBy(sp, p);
+    let home = atExit;
+    SHRINES.forEach(([x, y], i) => {
+      if (!sp.lit[i]) return;
+      const d = Math.hypot(lx - x, ly - y - 50);
+      if (d > 140) sp.away[i] = true;
+      if (sp.away[i] && d < 46 && !sp.seal) { sp.homeT = (sp.homeT || 0) + dt; if (sp.homeT > S.home) home = true; }
+    });
+    if (home && !sp.asked) { sp.asked = true; sp.homeT = 0; DL.Net.event({ t: "spLeave", all: 0 }); }
+    if (!home) sp.asked = false;
+  }
+
+  /* ---------------- co-op ---------------- */
+  const all = (m, k) => { say(m, k); if (DL.Net && G.allies.length) DL.Net.say(m, k); }; // the host's news, on every friend's screen too
+  const keys = (o) => Object.keys(o).filter((k) => o[k]);
+  const flags = (list) => { const o = {}; for (const k of list || []) o[k] = true; return o; };
+  // Host: the run's state for each snapshot (`m` marks it as the Mines' for DL.Dungeon.applySnap)
+  Mi.snap = function (near) {
+    const sp = G.spires;
+    if (!sp) return 0;
+    return { m: 1, s: [sp.seal, keys(sp.cleared), keys(sp.lit), keys(sp.opened), sp.won ? 1 : 0, sp.obsidian, sp.heart, Math.round(sp.flare * 100) / 100],
+      b: DL.Bullets.rows(near), mb: DL.MineBosses.snap(near), pu: DL.MineFoes.snap(near) };
+  };
+  // Guest: the host's run, from a snapshot
+  Mi.applySnap = function (q) {
+    const sp = G.spires;
+    if (!q) { if (sp && sp.guest && sp.lv === "mines" && !sp.fresh) guestOut(); return; }
+    if (!sp || !sp.guest || sp.lv !== "mines") return; // the "in" message comes first
+    sp.fresh = false;
+    const s = q.s;
+    sp.seal = s[0]; sp.cleared = flags(s[1]);
+    for (const i of s[2]) if (!sp.lit[i]) { sp.lit[i] = true; sp.litT[i] = G.t; }
+    sp.opened = flags(s[3]); sp.won = !!s[4]; sp.obsidian = s[5]; sp.heart = s[6]; sp.flare = s[7];
+    DL.Bullets.apply(q.b);
+    DL.MineBosses.apply(q.mb);
+    DL.MineFoes.apply(q.pu);
+  };
+  function guestOut() {
+    G.spires = null;
+    DL.Bullets.clear(); DL.MineTraps.reset(); DL.MineFoes.reset(); DL.MineBosses.reset();
+  }
+  // Guest: the host took us in, or sent us home
+  Mi.guestMsg = function (m) {
+    const p = G.player;
+    if (m.on) {
+      if (G.state === "camp") DL.UI.closeCamp();
+      G.spires = { lv: "mines", guest: true, fresh: true, flare: 0, seal: null, held: false, cleared: {}, lit: {}, litT: {}, away: {}, opened: {}, shard: 0, aether: 0, obsidian: 0, heart: 0, won: false,
+        cp: m.cp ? { x: m.cp[0], y: m.cp[1] + 12 } : null };
+      G.enemies = []; G.projectiles = [];
+      DL.Bullets.clear(); DL.MineTraps.reset(); DL.MineFoes.reset(); DL.MineBosses.reset();
+      p.downT = 0;
+    } else {
+      guestOut();
+      G.enemies = [];
+      if (p.downT > 0) { p.downT = 0; p.hp = Math.max(1, G.stats().maxHp * 0.5); }
+      if (m.m) say(m.m, m.k);
+    }
+    p.x = m.x; p.y = m.y; p.spx = p.x; p.spy = p.y; p.kx = p.ky = 0; p.dashT = 0; p.inv = 1.5;
+    G.camera.x = p.x; G.camera.y = p.y - 20;
   };
 
   /* ---------------- painting (all once, into canvases) ---------------- */

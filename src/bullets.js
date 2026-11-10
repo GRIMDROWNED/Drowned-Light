@@ -70,7 +70,7 @@
     for (const r of rows || []) {
       if (struck.has(r[0])) continue;
       const o = old.get(r[0]);
-      list.push({ id: r[0], x: r[1], y: r[2], x0: r[1], y0: r[2], vx: r[3], vy: r[4], r: r[5], kind: r[6], curve: r[7], dmg: r[8], life: r[9], t: 0, by: "a bolt of rift light", dodged: !!(o && o.dodged) });
+      list.push({ id: r[0], x: r[1], y: r[2], x0: r[1], y0: r[2], vx: r[3], vy: r[4], r: r[5], kind: r[6], curve: r[7], dmg: r[8], life: r[9], t: 0, by: G.spires && G.spires.lv === "mines" ? "a shot of molten slag" : "a bolt of rift light", dodged: !!(o && o.dodged) });
     }
     if (struck.size > 400) struck = new Set([...struck].slice(-200));
   };

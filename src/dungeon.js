@@ -35,8 +35,13 @@
   D.dark = () => (D.cur() === DL.Mines ? DL.MINES.dark : DL.SPIRES.dark);
   D.name = () => (D.cur() === DL.Mines ? "Molten Mines" : "Abyssal Spires");
   D.covers = (view) => levels().some((m) => m.covers(view));
-  // the run's state for a co-op snapshot (only the Spires have co-op so far: the Mines' comes in step 9)
-  D.snap = (near) => (D.cur() === DL.Spires ? DL.Spires.snap(near) : 0);
+  // the run's state for a co-op snapshot, and a friend's device taking it in (the Mines' is an object marked `m`)
+  D.snap = (near) => { const m = D.cur(); return m ? m.snap(near) : 0; };
+  D.applySnap = function (s) {
+    if (s && s.m) DL.Mines.applySnap(s);
+    else if (s) DL.Spires.applySnap(s);
+    else { DL.Spires.applySnap(0); DL.Mines.applySnap(0); } // no run: out of whichever we were in
+  };
 
   /* ---------------- the shared stone ---------------- */
   DL.DungeonGeo = function (L) {

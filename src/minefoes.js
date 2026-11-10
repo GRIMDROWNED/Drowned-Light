@@ -44,8 +44,10 @@
     const ox = OX(), oy = OY(), n = N();
     sp.posts = sp.posts || {};
     POSTS.forEach((q, i) => {
-      if (sp.posts[i] || Math.hypot(p.x - ox - q[1], p.y - oy - q[2]) > WAKE) return;
-      if (F.SEAL.includes(q[0]) && DL.Mines.pieceAt(p.x, p.y, 30) !== q[0]) return; // a side room's guards rise once you're in it
+      // any knight in the run wakes a post (co-op: the host's device runs them)
+      const ks = DL.MineBosses.party().filter((k) => Math.hypot(k.x - ox - q[1], k.y - oy - q[2]) < WAKE);
+      if (sp.posts[i] || !ks.length) return;
+      if (F.SEAL.includes(q[0]) && !ks.some((k) => DL.Mines.pieceAt(k.x, k.y, 30) === q[0])) return; // a side room's guards rise once you're in it
       sp.posts[i] = true;
       q.slice(3).forEach((type, k) => {
         const a = (k / Math.max(1, q.length - 3)) * TAU, r = q.length > 4 ? 40 : 0;
@@ -57,7 +59,7 @@
     // burning puddles
     for (const u of puddles) {
       u.t += dt;
-      if (Math.hypot(p.x - u.x, (p.y - u.y) * 1.6) < u.r) G.hurtPlayer(n.wretch.dmg, -Math.PI / 2, "a molten puddle");
+      for (const k of DL.MineBosses.party()) if (Math.hypot(k.x - u.x, (k.y - u.y) * 1.6) < u.r) DL.MineBosses.hurt(k, n.wretch.dmg, -Math.PI / 2, "a molten puddle");
     }
     puddles = puddles.filter((u) => u.t < n.wretch.burns);
     for (const e of G.enemies) {
@@ -144,6 +146,11 @@
       for (let j = 0; j < 5; j++) G.puff(e.x + rand(-10, 10), e.y - rand(0, 16), "rgba(255,120,40,0.7)", 50, 0.6, -20);
     }
   };
+
+  // co-op: the Wretches' puddles for a friend's device to draw
+  F.snap = (near) => puddles.filter((u) => near(u.x, u.y, 1000)).map((u) => [Math.round(u.x), Math.round(u.y), u.r, Math.round(u.t * 10) / 10]);
+  F.apply = (s) => { puddles = (s || []).map((u) => ({ x: u[0], y: u[1], r: u[2], t: u[3] })); };
+  F.tick = (dt) => { for (const u of puddles) u.t += dt; };
 
   /* ---------------- drawing ---------------- */
   const vis = (view, x, y, m) => x > view.left - m && x < view.right + m && y > view.top - m && y < view.bottom + m;
