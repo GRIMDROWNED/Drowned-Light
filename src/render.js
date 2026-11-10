@@ -114,6 +114,8 @@
     c.globalAlpha = a0;
   }
 
+  R.sprite = (c, name, x, y, flip, alpha) => sprite(c, name, x, y, flip, alpha); // for the dungeons' props (src/mines.js)
+
   function shadow(c, x, y, rx, ry, a = 0.38) {
     c.fillStyle = `rgba(0,0,0,${a})`;
     c.beginPath();
@@ -210,7 +212,7 @@
     let built = 0;
     const gt0 = performance.now(), canBuild = () => (R.zoomStep ? built < 8 : built < 1 || (built < 3 && performance.now() - gt0 < 6));
     const paved = DL.Refuge.paved(DL.Camp.layout(G.save.up)) - 2; // the Refuge's floors cover the ground under them
-    if (!DL.Spires.covers(view)) for (let cy = Math.floor(top / CH); cy <= Math.floor(view.bottom / CH); cy++) {
+    if (!DL.Dungeon.covers(view)) for (let cy = Math.floor(top / CH); cy <= Math.floor(view.bottom / CH); cy++) {
       for (let cx = Math.floor(left / CH); cx <= Math.floor(view.right / CH); cx++) {
         if (paved > 0 && cx * CH >= -paved && (cx + 1) * CH <= paved && cy * CH >= -paved && (cy + 1) * CH <= paved) continue;
         let gc = W.groundCanvas(cx, cy, false);
@@ -226,13 +228,15 @@
     DL.Rose.drawGround(c, view);
     DL.Finale.drawGround(c, view, t);
     DL.Pyramid.drawGround(c, view); // the Pyramid's raised squares: rock faces, lips, stairs
-    DL.Spires.drawGround(c, view, t); // the Abyssal Spires test room (src/spires.js)
+    DL.Spires.drawGround(c, view, t); // the Abyssal Spires (src/spires.js)
+    DL.Mines.drawGround(c, view, t); // the Molten Mines (src/mines.js)
 
     for (const d of G.decals) sprite(c, d.type, d.x, d.y, false, Math.min(1, d.t / 3));
     if (DL.Kits.magma()) drawMagma(c, DL.Kits.magma(), t); // the Cinderbrand's Riposte: magma cracking the ground round his guard
 
     /* telegraphs on the ground */
     for (const tg of G.telegraphs) {
+      if (tg.fire) continue; // a Cinder Acolyte's fire circle: drawn bright, over the dark (src/minefoes.js)
       const k = Math.min(1, tg.t / tg.delay);
       // the Deadly Rose's are red, the mother wyvern's a pale storm-white
       c.fillStyle = tg.rose ? `rgba(200,30,50,${0.12 + 0.25 * k})` : tg.wyv ? `rgba(200,220,255,${0.1 + 0.22 * k})` : `rgba(60,220,230,${0.12 + 0.25 * k})`;
@@ -265,6 +269,7 @@
     pushCamp(list, G, c, t);
     DL.Cave.push(list, c, t, view);
     DL.Spires.push(list, c, t, view);
+    DL.Mines.push(list, c, t, view);
     DL.Rift.push(list, c, t); // the Crystal Turrets at camp (src/rift.js)
     DL.Rose.push(list, c, t, view);
     DL.Trophies.push(list, c);
@@ -541,6 +546,7 @@
     drawFormEmbers(c, G, t);
     DL.Cave.drawGlow(c, t);
     DL.Spires.drawGlow(c, t, view);
+    DL.Mines.drawGlow(c, t, view);
     DL.Bullets.glow(c, t, view);
     DL.SpireFoes.drawRifts(c, t); // the Rift Callers' rifts, bright over the mist (src/spirefoes.js)
     DL.Rose.drawGlow(c, t, view);
@@ -1281,6 +1287,8 @@
     if (d.rose && e.dormant && Art.sprites.roseBud) return; // the Deadly Rose asleep inside her bud (src/rose.js)
     if (d.wyvern) return DL.Wyvern.drawMother(c, e, t); // the mother wyvern, drawn in code until her drawings are in (src/wyvern.js)
     if (d.king) return; // the Sunken King is drawn behind the gate, with his hands (src/finale.js)
+    if (d.mine === "shard") return DL.MineBosses.drawShard(c, e, t); // the Seething Seraph's orbiting shards (src/minebosses.js)
+    if (d.mine === "tower") return DL.MineBosses.drawTower(c, e, t); // the Cinder Colossus's shoulder towers (src/minebosses.js)
     if (e.rise > 0) {
       // clawing up out of the water
       const k = 1 - e.rise / 0.9;
@@ -1304,7 +1312,7 @@
         c.lineWidth = 1.5;
         c.beginPath(); c.moveTo(e.x, e.y - 30); c.lineTo(e.x + Math.cos(e.aim) * 240, e.y - 30 + Math.sin(e.aim) * 240); c.stroke();
       } else {
-        c.fillStyle = `rgba(60,220,230,${0.08 + 0.22 * k})`;
+        c.fillStyle = d.mine ? `rgba(255,120,40,${0.1 + 0.25 * k})` : `rgba(60,220,230,${0.08 + 0.22 * k})`; // the Sovereign's minions wind up in ember
         c.beginPath();
         c.moveTo(e.x, e.y);
         c.ellipse(e.x, e.y, d.range + 14, (d.range + 14) * 0.7, 0, e.aim - 0.95, e.aim + 0.95);
@@ -1315,7 +1323,7 @@
     // Bone Wolves wear the hound's bones with a drowned, cyan cast
     const frozen = DL.Kits.frozen(e), icy = frozen && e.flash <= 0 && e.state !== "windup"; // frozen by the Frostweaver: frosted over
     let flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : icy ? 0.45 : d.beast ? WOLF_TINT : 0;
-    let flashColor = e.flash > 0 ? "#ffffff" : icy ? "#bfe6ff" : d.beast && e.state !== "windup" ? WOLF_CAST : d.rose ? "#ff7a8a" : "#7ff6ff";
+    let flashColor = e.flash > 0 ? "#ffffff" : icy ? "#bfe6ff" : d.beast && e.state !== "windup" ? wolfCast() : d.rose ? "#ff7a8a" : d.mine ? "#ffa060" : "#7ff6ff";
     if (lk && lk.tint && !flash) { flash = lk.tintK; flashColor = lk.tint; } // a stand-in minion, washed in its own colour
     if (d.spire) DL.SpireFoes.drawMark(c, e, t); // where a Chain Leaper lands, a Bowman's lanes
     const [anim, fr, ang] = enemyAnim(e, t);
@@ -1378,16 +1386,19 @@
     const lk = DL.Summons.look("hound"), s = lk.scale;
     shadow(c, h.x, h.y, 18 * s, 5 * s);
     const [anim, fr] = houndAnim(h, t);
-    Art.drawUnit(c, lk.key, anim, fr, h.angle, h.x, h.y, s, h.flash > 0 ? { flash: 0.8, flashColor: "#ffb0a0" } : lk);
+    // the plain Bone Hound, risen from the Molten Mines' den, keeps a light ember cast (Robert 2026-11-09)
+    const ember = DL.Summons.form("hound") === 0 && !lk.flash && DL.Den.inMines() ? { flash: 0.14, flashColor: "#ff7a30" } : lk;
+    Art.drawUnit(c, lk.key, anim, fr, h.angle, h.x, h.y, s, h.flash > 0 ? { flash: 0.8, flashColor: "#ffb0a0" } : ember);
     // knocked out: the bar fills as it pulls itself back together
     if (h.down > 0) bar(c, h.x, h.y - 34, 22, 1 - h.down / (h.downMax || DL.HOUND.downTime), "#8f846b");
     else if (h.hp < h.maxHp) bar(c, h.x, h.y - 70 * s, 22, Math.max(0, h.hp) / h.maxHp, "#d9cdae");
   }
-  const WOLF_TINT = 0.22, WOLF_CAST = "#4fb8bf";
+  // the Bone Wolves: a drowned cyan cast in the Mire, an ember one in the Molten Mines (Robert: a light lava recolour)
+  const WOLF_TINT = 0.22, wolfCast = () => (DL.Den.inMines() ? "#ff6a24" : "#4fb8bf");
   // A Bone Wolf's carcass at the den (one being hauled shows under Carrying in the HUD, not on the knight).
   function drawCarcass(c, b) {
     shadow(c, b[0], b[1], 16, 4, 0.3);
-    Art.drawUnit(c, "boneHound", "death", 2, b[2], b[0], b[1], 1, { flash: WOLF_TINT, flashColor: WOLF_CAST });
+    Art.drawUnit(c, "boneHound", "death", 2, b[2], b[0], b[1], 1, { flash: WOLF_TINT, flashColor: wolfCast() });
   }
   // Derek: casting plays his attack (fists up, then slammed down), otherwise he plods or stands.
   function golemAnim(m, t) {
@@ -1599,7 +1610,7 @@
 
   // A soft cyan halo around the visor so the Drowned read in the dark.
   function drawEyes(c, e, t) {
-    if (e.def.beast) { const [anim, fr, ang] = enemyAnim(e, t); beastEyes(c, e.x, e.y, ang, anim, fr, e.id, "80,235,245", t); return; }
+    if (e.def.beast) { const [anim, fr, ang] = enemyAnim(e, t); beastEyes(c, e.x, e.y, ang, anim, fr, e.id, DL.Den.inMines() ? "255,170,60" : "80,235,245", t); return; }
     const s = e.def.scale;
     const ang = e.state === "move" ? e.angle : e.aim;
     const { dir, flip } = Art.unitDir(ang);
@@ -2300,7 +2311,7 @@
     const zi = p ? W.zoneIndex(p.x, p.y) : 0;
     const dim = DL.ZONES[zi].dim;
     const D = G.diff();
-    const dark = G.spires ? DL.SPIRES.dark : Math.min(0.96, (0.12 + 0.84 * G.nightAmt) * D.darkness + (dim + D.dayDim) * (1 - G.nightAmt));
+    const dark = G.spires ? DL.Dungeon.dark() : Math.min(0.96, (0.12 + 0.84 * G.nightAmt) * D.darkness + (dim + D.dayDim) * (1 - G.nightAmt));
     G.darkness = dark;
     const L = R.lx, lw = R.lc.width, lh = R.lc.height, k = z / 2;
     const ox = shx / 2, oy = shy / 2;

@@ -23,6 +23,9 @@
     // brought home from the dungeons (src/spires.js, src/rift.js): kept out of sight until the first run home
     shard: { name: "Rift Shard", color: "#d6a8ff", rift: true },
     aether: { name: "Aether Crystal", color: "#9a5cff", rift: true },
+    // from the Molten Mines (src/mines.js): Obsidian from the Sovereign's guard and chests, a Magma Heart per mini boss
+    obsidian: { name: "Obsidian", color: "#6b5a7a", rift: true },
+    heart: { name: "Magma Heart", color: "#ff6a1a", rift: true },
   };
   DL.RES_KEYS = Object.keys(DL.RESOURCES);
 
@@ -193,6 +196,36 @@
       spire: "swisp", minion: true, shadow: 12, barY: 90, drop: {} },
     warden: { name: "Throne Warden", hp: 120, speed: 62, dmg: 15, range: 0, windup: 1, cd: 99, scale: 1, radius: 16, mass: 3,
       spire: "warden", minion: true, shadow: 20, barY: 132, barW: 34, drop: {} },
+    /* The Ashen Sovereign's minions (Robert's sheet, 2026-11-09): the Molten Mines' only small foes (src/minefoes.js,
+       numbers in DL.MINE_FOES). They walk and strike like the Drowned, with their own extras (`mine` names them). Until
+       Robert's drawings are in they wear another unit's (`look`), washed with ember colours. */
+    wretch: { name: "Molten Wretch", hp: 26, speed: 118, dmg: 7, range: 28, windup: 0.32, cd: 1.1, scale: 0.85, radius: 10, mass: 0.6,
+      lunge: 340, zigzag: true, mine: "wretch", minion: true, look: "rosewretch", lookScale: 0.9, tint: "#ff6a1a", tintK: 0.4, drop: {} },
+    ashguard: { name: "Ash Guard", hp: 150, speed: 40, dmg: 18, range: 44, windup: 0.8, cd: 2.2, scale: 1.2, radius: 16, mass: 4,
+      shield: 0.75, mine: "guard", minion: true, look: "blackguard", lookScale: 1, tint: "#4a3a34", tintK: 0.35, barY: 110, drop: {} },
+    halberdier: { name: "Ember Halberdier", hp: 95, speed: 60, dmg: 16, range: 66, windup: 0.7, cd: 1.8, scale: 1, radius: 14, mass: 2,
+      lunge: 280, mine: "halberd", minion: true, look: "warden", lookScale: 0.9, tint: "#e8501a", tintK: 0.6, barY: 120, drop: {} },
+    // The Molten Mines' mini bosses (src/minebosses.js, numbers in DL.MINE_BOSSES; health in DL.BOSS.hp, size DL.BOSS.size)
+    golem: { name: "The Magma Golem", hp: 1500, speed: 34, dmg: 24, range: 0, windup: 1, cd: 99, scale: 1, radius: 34, mass: 30,
+      mine: "golem", boss: true, shadow: 60, barY: 200, barW: 70, drop: {} },
+    hydra: { name: "The Furnace Hydra", hp: 1500, speed: 0, dmg: 22, range: 0, windup: 1, cd: 99, scale: 1, radius: 70, mass: 999,
+      mine: "hydra", boss: true, shadow: 0, barY: 220, barW: 90, drop: {} },
+    wyrm: { name: "The Crucible Wyrm", hp: 1500, speed: 70, dmg: 24, range: 0, windup: 1, cd: 99, scale: 1, radius: 40, mass: 40,
+      mine: "wyrm", boss: true, shadow: 70, barY: 200, barW: 90, drop: {} },
+    seraph: { name: "The Seething Seraph", hp: 1500, speed: 40, dmg: 22, range: 0, windup: 1, cd: 99, scale: 1, radius: 30, mass: 999,
+      mine: "seraph", boss: true, shadow: 0, barY: 200, barW: 80, drop: {} },
+    cinder: { name: "The Cinder Colossus", hp: 1800, speed: 30, dmg: 26, range: 0, windup: 1, cd: 99, scale: 1, radius: 50, mass: 999,
+      mine: "cinder", boss: true, shadow: 80, barY: 210, barW: 100, drop: {} },
+    sovereign: { name: "The Ashen Sovereign", hp: 2400, speed: 58, dmg: 26, range: 0, windup: 1, cd: 99, scale: 1, radius: 30, mass: 999,
+      mine: "sovereign", boss: true, shadow: 50, barY: 210, barW: 110, drop: {} },
+    // one of the Cinder Colossus's two shoulder towers (src/minebosses.js): struck at its feet on that side
+    cinderTower: { name: "Shoulder Tower", hp: 90, speed: 0, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1, radius: 26, mass: 999,
+      mine: "tower", ghost: true, shadow: 0, barY: 40, barW: 30, drop: {} },
+    // one of the eight obsidian shards orbiting the Seething Seraph (src/minebosses.js): break them all to hurt it
+    seraphShard: { name: "Obsidian Shard", hp: 40, speed: 0, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1, radius: 18, mass: 999,
+      mine: "shard", ghost: true, shadow: 0, barY: 70, barW: 24, drop: {} },
+    acolyte: { name: "Cinder Acolyte", hp: 55, speed: 62, dmg: 12, range: 250, windup: 0.6, cd: 2.6, scale: 1, radius: 12, mass: 0.9,
+      hang: 250, mine: "acolyte", minion: true, look: "hexbearer", lookScale: 1, tint: "#d04010", tintK: 0.4, drop: {} },
   };
 
   // Base kits. A kit = weapon + dash behaviour + signature ability.
@@ -647,9 +680,9 @@
      height (`barY`) in DL.ENEMIES are multiplied by `size[type]` below, so each stands about three knights tall. The
      Sunken King is a scene of his own and keeps his size. */
   DL.BOSS = {
-    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6, riftlord: 1.5 },
+    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6, riftlord: 1.5, golem: 1.25, hydra: 1.6, wyrm: 1.35, seraph: 1.3, cinder: 1.4, sovereign: 1.5 },
     view: 820, viewR: 650, // within `viewR` px of an awake boss the camera pulls back to show at least `view` px top to bottom
-    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600, riftlord: 1800 },
+    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600, riftlord: 1800, golem: 1500, hydra: 1500, wyrm: 1500, seraph: 1500, cinder: 1800, sovereign: 2400 },
     perNight: 0.04, dmgNight: 0.05, perAlly: 0.6,
     stun: 0.3, immune: 3,
   };
@@ -823,6 +856,105 @@
     // a run's loot (step 6): Rift Shards per foe broken, per room cleared (by its heat, 0..1), in a side room's chest;
     // carried Aether Crystals come home too. Leave and you keep `keep` of it; fall and the mist keeps it all.
     loot: { kill: { sentinel: 1, leaper: 1, bowman: 1, shade: 2, caller: 2, prism: 4, swisp: 1, warden: 2 }, room: [2, 8], chest: { shard: [14, 20], aether: 2 }, keep: 0.5 },
+  };
+  // The Molten Mines (Level 3, src/mines.js): off the map at x -40000. lh/hang as in the Spires; dark is the run's
+  // darkness (the lava lights it); home is how long you stand at a lit Ember Shrine to go home.
+  DL.MINES = { x: -40000, y: 0, halfW: 2500, halfH: 2200, lh: 48, hang: 50, dark: 0.3, home: 1.5 };
+  /* the Ashen Sovereign's minions in the Molten Mines (src/minefoes.js; their bodies are in DL.ENEMIES).
+     wretch: drips burning puddles (`puddle` px, `burns` s, `dmg` a touch) every `drip` s while it moves, and heals
+       `feast` of its health when a minion falls within `feastR` px. guard: its slam throws a ring of `ring` fire globs.
+     halberd: every `throwEvery` s, from `near`..`far` px, it winds up `throwWind` s and throws a 3-way fire crescent.
+     acolyte: lights a fire circle (`circle` px, `fuse` s) under a knight instead of striking, and every `wardEvery` s
+       wards the nearest other minion within `wardR` px: half damage for `wardFor` s. */
+  DL.MINE_FOES = {
+    zone: 4, // they grow like the Abyss's Drowned
+    wretch: { drip: 1.1, puddle: 22, burns: 3, dmg: 4, feast: 0.35, feastR: 220 },
+    guard: { ring: 10, speed: 140, dmg: 8, life: 1.4 },
+    halberd: { throwEvery: 4.5, near: 120, far: 320, throwWind: 0.55, speed: 230, dmg: 10, spread: 0.55 },
+    acolyte: { circle: 46, fuse: 1.1, wardEvery: 5, wardR: 260, wardFor: 4 },
+  };
+  // the Molten Mines' traps (src/minetraps.js): seconds, px, damage. Every one warns first; a dash gets through.
+  /* The Molten Mines' mini bosses (src/minebosses.js). Each wakes when a knight steps into its room, which then shuts
+     (fire curtains) until it falls. Between moves it waits `every` s (`every2` below `half` health).
+     golem (A, the Fused Forge): walks at you to `keep` px. Slam: fists up for `raise` s (the floor marks `r` px round
+       him), down: `dmg` in the mark and a ring of `ring` slag bullets with one `gap` (radians) to slip through. Every
+       `cores` slams its chest splits open for `core` s: blows deal x`coreDmg`. Hurl: winds up `wind` s, throws its fist
+       (`fly` s, a shadow where it lands, aimed `lead` s ahead of you): `fistDmg` within `fistR`, a molten pool (`poolR`
+       px, `poolLife` s, `poolDmg` a touch) and `shards` bullets; the fist regrows in `regrow` s. Below half: two fists.
+     hydra (B, the Furnace Pit): rooted at `at`. Its heads take turns every `every` s. breath (left): `wind` s of a cone
+       on the floor, then for `time` s a fan of `n` sparks across `spread` every `rate` s, sweeping `sweep` radians.
+       spiral (middle): `arms` (+1 per lost head) fireballs every `rate` s for `time` s. lob (right): `n` globs (+1 once a
+       head is lost) round you within `spread` px, landing in `fly` s: `dmg` within `r`, `shards` spatters, a pool.
+       A lost head grows back in `regrow` s unless the next is cut first.
+     wyrm (D, the Deepfire Roost): on foot it stalks to `reach` px, then claw (`claw` s wind, `clawDmg` within `clawR`)
+       and tail (`tail` s, `tailDmg` all round within `tailR`, `tailRocks` bullets); a knight close for `crowd` s gets a
+       wing beat (`gust` px/s push within `gustR`). After `ground` s it rises (`rise` s, to `alt` px) for `runs` strafing
+       runs (+1 below half): marked `mark` s, flown at `dash` px/s, a burning pool every `laneStep` px (`laneR`,
+       `laneLife`, `laneDmg`). Then the dive: a circle follows you `diveAim` s (locks `diveLock` s before), a `diveFly` s
+       swoop, `slamDmg` within `slamR` and `slamRocks` rocks. It pants `pant` s after: blows deal x`pantDmg`.
+     seraph (E, the Molten Choir): floats round the room's middle, `shards` obsidian shards (DL.ENEMIES.seraphShard)
+       orbiting `orbitR` px out; while any stands it takes no harm; broken ones grow back after `regrow` s. Moves in
+       turn every `every` s: spiral (`arms` sparks every `rate` s for `time` s), Judgement (lines marked `mark` s, then a
+       molten column runs out along each at `beamSpeed`, `beamDmg` within `beamR`, leaving pools; two lines below
+       half), ring (`ringN` orbs, twice).
+     cinder (F, the Bound Bastion): chained within `chainR` of `at` (chains to rings `anchorX`/`anchorY` off it) until
+       half health, then tears free (`tear` s) and walks x`free` faster. Two towers (DL.ENEMIES.cinderTower) `towerOff`
+       px either side: while one stands blows deal x`guard`; both down opens the furnace for `open` s (x`openDmg`), then
+       they rise again. mortar (towers up): `n` shells per tower round you within `spread`, `fly` s, `dmg` within `r`,
+       `shards`, a pool. sweep: `wind` s arc marked, `dmg` within `r` across `arc`, `rocks` bullets. rocket (free): a
+       line marked `wind` s, a fist at `speed` along `len`, `dmg` within `r`.
+     sovereign (C, the Ashen Throne): seated at `at`, rising `wake` s. Kneels `kneel` s (no harm) at 66% and 33%,
+       calling `calls[phase-1]` (the first on waking). Walks to `keep`; moves every `every` s (quicker later). sweep:
+       `wind` s arc marked, `dmg` within `r` across `arc`, `n` (+2 a phase) crescents. thrust: 3 (5 later) lanes of `n`
+       fire cracks `step` apart, `split` rad apart. Phase 2+: `braziers` spin spirals every `every` s; the `flood` fills
+       the rim outside `safe` of the arena's size every `every` s (`warn` s marked, `time` s, `dmg` a touch). Phase 3:
+       every third move a blink (`sink` s pillar, out `min`..`max` px from you, `rise` s, a `ring`), a `spiral`, and
+       the `decree` every `every` s: the floor marked (`grid` px cells) `warn` s, then x`dmg` bullet damage unless you
+       stand on one of `safe` stones (`r` px). */
+  DL.MINE_BOSSES = {
+    zone: 4,
+    golem: { at: [-1860, 560], every: 1.7, every2: 1.2, half: 0.5, keep: 110, raise: 1.0, hit: 0.6, r: 120, dmg: 1, ring: 26, gap: 0.55,
+      speed: 125, bulletDmg: 9, cores: 3, core: 3, coreDmg: 2, wind: 0.8, fly: 1.0, lead: 0.4, fistDmg: 1, fistR: 70,
+      poolR: 62, poolLife: 6, poolDmg: 10, shards: 8, regrow: 1.0 },
+    hydra: { at: [1830, 600], every: 1.4, regrow: 12, bulletDmg: 9, poolR: 52, poolLife: 5, poolDmg: 10,
+      breath: { wind: 0.7, time: 1.4, rate: 0.08, n: 3, spread: 0.35, sweep: 0.9, speed: 260, life: 1.6 },
+      spiral: { wind: 0.6, arms: 3, rate: 0.2, spin: 1.5, time: 2.4, speed: 125 },
+      lob: { wind: 0.6, n: 3, spread: 140, fly: 1.1, r: 56, dmg: 0.8, shards: 6, speed: 150 } },
+    wyrm: { at: [1210, -200], every: 0.9, reach: 120, claw: 0.55, clawR: 150, clawDmg: 1, tail: 0.5, tailR: 150, tailDmg: 0.8, tailRocks: 10,
+      crowd: 2.5, beat: 0.5, gust: 700, gustR: 220, ground: 9, rise: 0.8, alt: 150, runs: 2, mark: 0.8, fly: 420, dash: 620,
+      laneStep: 46, laneR: 40, laneLife: 5, laneDmg: 8, runDmg: 0.8, diveAim: 1.4, diveLock: 0.4, diveFly: 0.45, slamR: 130, slamDmg: 1.2,
+      slamRocks: 16, pant: 3, pantDmg: 1.5, bulletDmg: 9, rockSpeed: 150 },
+    seraph: { at: [-1210, -260], every: 1.2, shards: 8, orbitR: 120, orbitSpin: 0.8, regrow: 20, lift: 34, bulletDmg: 9,
+      spiral: { wind: 0.6, arms: 4, rate: 0.17, spin: 1.3, time: 3, speed: 120 },
+      judge: { mark: 1.1, lock: 0.3, len: 1000, beamSpeed: 800, beamR: 48, beamDmg: 1.1, split: 0.45, poolStep: 70, poolR: 34, poolLife: 2.5, poolDmg: 8 },
+      ringN: 20, ringSpeed: 140 },
+    cinder: { at: [0, -560], every: 1.3, keep: 140, chainR: 150, anchorX: 300, anchorY: -150, tear: 1.4, free: 1.8,
+      towerOff: 62, guard: 0.25, open: 9, openDmg: 2, bulletDmg: 10, poolR: 50, poolLife: 5, poolDmg: 10,
+      mortar: { wind: 0.8, n: 3, spread: 170, fly: 1.25, r: 66, dmg: 0.9, shards: 6, speed: 140 },
+      sweep: { wind: 0.75, r: 210, arc: 2.6, dmg: 1.1, rocks: 11, speed: 160 },
+      rocket: { wind: 0.8, speed: 760, r: 52, dmg: 1, len: 900 } },
+    sovereign: { at: [0, -1615], wake: 2.2, kneel: 3, keep: 130, every: 1.2, bulletDmg: 10,
+      calls: [["ashguard", "wretch", "wretch", "wretch"], ["acolyte", "halberdier", "halberdier"], ["ashguard", "acolyte", "wretch", "wretch"]],
+      sweep: { wind: 0.8, r: 200, arc: 2.4, dmg: 1, n: 7, speed: 170 },
+      thrust: { wind: 0.7, n: 7, step: 46, split: 0.32, speed: 260 },
+      braziers: { at: [[-560, -1380], [560, -1380]], every: 7, arms: 3, rate: 0.22, spin: 1.2, time: 2.6, speed: 120 },
+      flood: { every: 15, warn: 1.6, time: 5, safe: 0.62, dmg: 10 },
+      blink: { sink: 0.8, rise: 0.6, min: 220, max: 380, ring: 18, speed: 150 },
+      spiral: { arms: 5, rate: 0.16, spin: 1.4, time: 2.6, speed: 130 },
+      decree: { every: 13, warn: 2.2, grid: 90, safe: 3, r: 70, dmg: 2.5 } },
+  };
+  /* A Molten Mines run's finds (src/mines.js): Obsidian per minion broken (`kill`), `chest` from the Storeroom's and
+     the Vault's chests once their guards fall, `boss` from each mini boss and `sovereign` from him; a Magma Heart from
+     each of the five mini bosses the first time it dies. Walking out keeps `keep` of it; beating the Sovereign brings
+     it all home; falling loses it. */
+  DL.MINE_LOOT = { kill: { wretch: 1, ashguard: 3, halberdier: 2, acolyte: 2 }, chest: [10, 14], boss: 15, sovereign: 40, keep: 0.5 };
+  DL.MINE_TRAPS = {
+    grate: { every: 3.4, warn: 0.8, burn: 1, wave: 0.35, dmg: 14 }, // the Grate Run: a new pattern every 3.4 s
+    cage: { every: 1.7, warn: 0.9, max: 3, lead: 0.5, r: 30, dmg: 6, lock: 3, shake: 0.5, stand: 3.5, after: 1.5 }, // the Gibbet Gallery
+    jet: { every: 3.2, warn: 0.8, burn: 0.9, half: 18, dmg: 16 }, // the Crystal Stair
+    tile: { crack: 1, gone: 5, dmg: 12 }, // crumbling tiles
+    geyser: { every: 3.6, warn: 1.6, burn: 0.5, r: 34, dmg: 16, globs: 6, speed: 150, globDmg: 8, globLife: 1.8 }, // the Broken Causeway
+    cart: { every: 3.2, warn: 1.2, speed: 680, dmg: 22, kb: 420 }, // the Slag Mine
   };
   // what the dungeons pay for at the base (src/rift.js): the Crystal Turret by level, the Mist Lantern, the Rift Portal
   DL.RIFT = {

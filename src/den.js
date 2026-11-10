@@ -1,4 +1,6 @@
-/* Drowned Light — the Bone Wolf den: one lair out in the Mire, where a pack of five Bone Wolves sleeps.
+/* Drowned Light — the Bone Wolf den: one lair, where a pack of five Bone Wolves sleeps. Out in the Mire, or (Robert,
+   2026-11-09) in its own room of the Molten Mines wherever the Mines can be entered (Den.inMines; the wolves there
+   wear a light ember cast).
    Kill all five, haul one of their carcasses back into the camp, and it rises as your Bone Hound
    (src/hounds.js). In co-op every knight hauls their own. The host's device runs the den and the pack;
    guests see the carcasses and who carries one in the snapshots (src/net.js). Numbers are in DL.DEN. */
@@ -14,7 +16,9 @@
   /* Where it lies: the same spot for every visit and every co-op friend in a world of this difficulty,
      on dry land and well away from the bloom groves, so holding a grove and raiding the den don't mix. */
   let spot = null, spotFor = null;
+  Den.inMines = () => !!(DL.Mines && DL.Mines.open && DL.Mines.open());
   Den.spot = function () {
+    if (Den.inMines()) return { x: DL.MINES.x + DL.Mines.DEN.x, y: DL.MINES.y + DL.Mines.DEN.y };
     if (spot && spotFor === G.save.difficulty) return spot;
     const W = DL.World, Dif = G.diff(), GR = DL.GROVE;
     const dry = (x, y) => !W.isWater(x, y) && [0, 1, 2, 3, 4, 5, 6, 7].every((i) => !W.isWater(x + Math.cos(i * 0.785) * 110, y + Math.sin(i * 0.785) * 80));
@@ -37,6 +41,8 @@
     return spot;
   };
   // Which way it lies from the camp, in words.
+  // Where it lies, as a phrase: "in the Molten Mines" or "in the Mire, to the north-east"
+  Den.where = () => (Den.inMines() ? "in the Molten Mines" : `in the Mire, to the ${Den.direction()}`);
   Den.direction = function () {
     const s = Den.spot(), a = Math.atan2(s.y, s.x);
     return ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"][((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8];

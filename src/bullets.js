@@ -118,8 +118,12 @@
   };
 
   /* ---------------- drawing ---------------- */
-  // one sprite per kind: a dark rim (so it reads on light stone), a violet glow and a white-hot core
-  const COLS = [["170,110,255", "#f4e6ff"], ["255,110,200", "#ffe6f6"], ["110,220,255", "#e6fbff"]];
+  // one sprite per kind: a dark rim (so it reads on light stone), a coloured glow and a white-hot core
+  const COLS = [["170,110,255", "#f4e6ff"], ["255,110,200", "#ffe6f6"], ["110,220,255", "#e6fbff"], ["170,110,255", "#f4e6ff"], ["255,130,40", "#fff0c0"],
+    // the Molten Mines (Robert's drawn set, tools/cut_mines.py): 4 lava orb, 5 fire crescent, 6 comet, 7 rock, 8 shard, 9 spark
+    ["255,130,40", "#fff0c0"], ["255,130,40", "#fff0c0"], ["255,110,30", "#fff0c0"], ["255,150,60", "#fff0c0"], ["255,170,80", "#fff0c0"]];
+  const MINE_ART = { 4: 0, 5: 2, 6: 1, 7: 3, 8: 4, 9: 5 }; // kind -> assets/sprites/mines/bullet-N
+  const TURNS = new Set([2, 5, 6, 8, 9]); // drawn pointing east: turned the way they fly
   let sprites = null;
   // Robert's drawn bullets and Sentinel (tools/cut_spires.py); the coded ones show until they load
   const ART = {};
@@ -127,6 +131,11 @@
     const im = new Image();
     im.onload = () => { ART[n] = im; if (n.startsWith("bullet")) sprites = null; };
     im.src = DL.asset("assets/sprites/spires/" + n + ".png");
+  }
+  if (typeof Image !== "undefined") for (const kind in MINE_ART) {
+    const im = new Image();
+    im.onload = () => { ART["bullet-" + kind] = im; sprites = null; };
+    im.src = DL.asset("assets/sprites/mines/bullet-" + MINE_ART[kind] + ".png");
   }
   function build() {
     sprites = COLS.map(([glow, core], i) => {
@@ -158,7 +167,7 @@
     for (const b of list) {
       if (b.x < view.left - 12 || b.x > view.right + 12 || b.y < view.top - 12 || b.y > view.bottom + 12) continue;
       const sp = sprites[b.kind] || sprites[0], s = (b.r / B.r) * (sp.drawn ? 30 : 24);
-      if (sp.drawn && b.kind === 2) { // the arrow points the way it flies
+      if (sp.drawn && TURNS.has(b.kind)) { // the arrow points the way it flies
         c.save(); c.translate(b.x, b.y); c.rotate(Math.atan2(b.vy, b.vx)); c.drawImage(sp, -s / 2, -s / 2, s, s); c.restore();
       } else c.drawImage(sp, b.x - s / 2, b.y - s / 2, s, s);
     }

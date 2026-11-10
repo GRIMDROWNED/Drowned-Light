@@ -24,7 +24,7 @@
   // Into the stash: what came home, in words ("" for nothing).
   Rift.bringHome = function (got) {
     const parts = [];
-    for (const k of ["shard", "aether"]) if (got[k] > 0) {
+    for (const k of Object.keys(got)) if (got[k] > 0) {
       if (!G.isGuest()) G.save.stash[k] = (G.save.stash[k] || 0) + got[k];
       parts.push(name(k, got[k]));
     }
@@ -45,10 +45,12 @@
   Rift.portal = () => Rift.wellsLit() >= DL.Spires.WELLS_N; // every Mist Well lit once
   Rift.DUNGEONS = [
     { id: "spires", name: "The Abyssal Spires", text: "Floating stone in a sea of violet mist.", go: () => DL.Spires.enter() },
+    // Level 3 (src/mines.js): in the Sandbox while it's being built; later, once the Rift Throne has fallen
+    { id: "mines", name: "The Molten Mines", text: "A fortress of basalt over a sea of lava.", open: () => DL.SANDBOX && !(DL.Net && DL.Net.role), go: () => DL.Mines.enter() },
   ];
   Rift.go = function (id) {
     const d = Rift.DUNGEONS.find((q) => q.id === id);
-    if (!d) return false;
+    if (!d || (d.open && !d.open())) return false;
     if (G.isGuest()) { DL.Net.event({ t: "riftGo", id }); return true; } // the host's device takes everyone in
     d.go();
     return true;

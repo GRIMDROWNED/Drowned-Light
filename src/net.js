@@ -193,7 +193,7 @@
       for (const c of DL.World.chunks.values()) for (const o of c.objects) if (o.harvested || o.dead || (o.maxHp && o.hp < o.maxHp)) harvested.push(objRow(o));
       sendTo(g, { t: "welcome", v: VERSION, id: g.id, up: G.save.up, difficulty: G.save.difficulty, day: G.save.day, nights: G.save.nights, time: G.time, ob: harvested });
       say(`A friend joined as the ${a.label} (Lv ${a.kitLevel}).`, "good");
-      DL.Spires.join(a); // in the middle of a run: straight in with you
+      DL.Dungeon.join(a); // in the middle of a run: straight in with you
       DL.Sound.play("dawn");
     } else if (m.t === "state") {
       const a = g.ally;
@@ -279,7 +279,7 @@
       if (g && g.ally && !DL.Spires.burn(g.ally)) sendTo(g, { t: "say", m: "The party has no Aether Crystals left to burn.", k: "warn" });
     } else if (ev.t === "spLeave") {
       // a friend walked into the way out (or stood at a lit Well): the whole party goes home
-      if (G.spires && !G.spires.guest) { say(`${who} leads the way out of the mist.`, "good"); DL.Spires.leave(!!ev.all && !!G.spires.won); }
+      if (G.spires && !G.spires.guest) { say(`${who} leads the way out of the mist.`, "good"); DL.Dungeon.leave(!!ev.all && !!G.spires.won); }
     } else if (ev.t === "riftGo") {
       // a friend chose a dungeon at the open Gate or the Rift Portal: everyone goes in
       if (G.state === "play" && !G.spires && !G.cave && DL.Rift.go(ev.id)) say(`${who} opens the way. You all step through.`, "good");
@@ -358,7 +358,7 @@
       rs: DL.Rose.snap(), // the Deadly Rose: [her thorn vines, [her id, whirling, the move she's winding up]]
       cv: DL.Cave.snap(), // Derek's Hollow: [wave, fighting, seconds to the next wave, Drowned still to come]
       // a run in the Abyssal Spires: its rooms, Wells, finds, bubbles of light and bullets; and the Rift Callers' rifts
-      sp: DL.Spires.snap(near), rf: G.spires ? DL.SpireFoes.rows(near) : 0,
+      sp: DL.Dungeon.snap(near), rf: G.spires && !G.spires.lv ? DL.SpireFoes.rows(near) : 0,
       sw: G.save.spiresWells || 0, // the Wells lit for good: the camp's Rift Portal opens on all of them
       // Kindles, one per knight who lit theirs: [id, owner, x, y, angle, moving, angle he leads toward or null]
       kd: DL.Kindle.rows(),

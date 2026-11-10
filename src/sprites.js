@@ -164,6 +164,18 @@
     Object.assign(walking("swisp", [60, 124], [76, 134], [71, 132], 4), { path: "assets/sprites/spires-foes/swisp/", keys: { swisp: [0, false] }, own: true }),
     Object.assign(walking("warden", [87, 252], [64, 252], [68, 256], 4), { path: "assets/sprites/spires-foes/warden/", keys: { warden: [0, false] }, own: true }),
     riftLord(),
+    magmaGolem(),
+    furnaceHydra(),
+    crucibleWyrm(),
+    cinderColossus(),
+    ashenSovereign(),
+    // the Seething Seraph (src/minebosses.js), res 4: floats, so its walks are drifts; attackA = the ember spiral,
+    // attackB = Judgement (arms up, halo blazing), attackC = arms crossed (regrowing its shards)
+    Object.assign(walking("seraph", [123, 332], [129, 332], [128, 332], 4), { path: "assets/sprites/mines-bosses/seraph/", keys: { seraph: [0, false] }, own: true }),
+    // the Molten Mines' minions (src/minefoes.js), cut at res 4 on green
+    Object.assign(walking("wretch", [108, 122], [65, 133], [70, 139], 4), { path: "assets/sprites/mines-foes/wretch/", keys: { wretch: [0, false] }, own: true }),
+    Object.assign(walking("ashguard", [114, 186], [82, 178], [78, 178], 4), { path: "assets/sprites/mines-foes/ashguard/", keys: { ashguard: [0, false] }, own: true }),
+    Object.assign(walking("acolyte", [89, 162], [76, 163], [50, 162], 4), { path: "assets/sprites/mines-foes/acolyte/", keys: { acolyte: [0, false] }, own: true }),
     minion("thornling", "thornling", 4, [[45, 87], [43, 82], [46, 83]]), // the Deadly Rose's Thornling Swarm Stalker
     minion("tidestalker", "tidestalker", 4, [[109, 123], [87, 134], [92, 138]]), // the Sunken King's Tide Stalker
     minion("wisp", "wisp", 4, [[108, 182], [112, 197], null]), // the Sunken Wisp: its front shows going away too (Robert)
@@ -360,6 +372,52 @@
   function riftLord() {
     const set = Object.assign(walking("riftlord", [319, 405], [135, 402], [138, 402], 4), { path: "assets/sprites/rift-throne/", keys: { riftlord: [0, false] }, own: true });
     const extra = { seated: ["seated"], waking: ["waking"], rising: ["rising"], p2: ["p2front"], sweep: ["p2sweep"], enraged: ["p2enraged"] };
+    for (const dir of ["down", "up", "side"]) Object.assign(set.views[dir], extra);
+    return set;
+  }
+
+  // The Magma Golem, the Molten Mines' mini boss A (src/minebosses.js), cut at res 4 (200 px, x1.25 in game). Beside the
+  // twelve poses: fists raised, the slam, the core split open, and the hurl (wound back, the fist gone, fusing back);
+  // they're drawn side on and used in every view (src/minebosses.js sets e.anim to one of them).
+  /* The Furnace Hydra (src/minebosses.js): rooted, front on only, every frame on one canvas (tools/cut_hydra.py) with the
+     mound's foot at the same point. It picks its own pose (e.anim): idle1-4 with three heads, cut1-3 as heads fall. */
+  function furnaceHydra() {
+    const files = ["idle1", "idle2", "idle3", "idle4", "still", "breath", "spiral", "lob", "hurt", "roar", "cut1", "cut2", "cut3", "regrow", "dead"];
+    const view = { idle: ["idle1", "idle2", "idle3", "idle4"], walk: ["idle1", "idle2", "idle3", "idle4"], attack: ["breath"], dash: ["still"],
+      hurt: ["hurt"], death: ["cut3", "dead", "dead"] };
+    for (const f of files.slice(4)) if (!view[f]) view[f] = [f];
+    return { path: "assets/sprites/mines-bosses/hydra/", keys: { hydra: [0, false] }, own: true, res: 4,
+      views: { down: view, up: view, side: view }, feet: sheetFeet(files, [196, 400]) };
+  }
+  // The Crucible Wyrm (src/minebosses.js), cut at res 4: walks in all three views; flies, dives, lands and attacks
+  // side on only (claw = attackA, tail = attackB, panting = attackC). The side wing beats share one foot point.
+  function crucibleWyrm() {
+    const set = Object.assign(walking("wyrm", [256, 365], [202, 366], [198, 374], 4), { path: "assets/sprites/mines-bosses/wyrm/", keys: { wyrm: [0, false] }, own: true });
+    Object.assign(set.feet, sheetFeet([1, 2, 3, 4].map((i) => "side/fly" + i), [262, 389]));
+    const fly = [1, 1, 2, 2, 3, 3, 4, 4].map((i) => "side/fly" + i + "@-");
+    for (const dir of ["down", "up", "side"])
+      Object.assign(set.views[dir], { fly, dive: ["side/dive"], land: ["side/land"], attackA: ["attackA"], attackB: ["attackB"], attackC: ["attackC"] });
+    return set;
+  }
+  // The Cinder Colossus (src/minebosses.js), res 4: oneTower/noTowers are its front still with towers broken (the
+  // furnace open), unchained tearing its chains free; attackA fist drawn back, attackB the sweep, attackC towers erupting.
+  // The Ashen Sovereign (src/minebosses.js), res 4: seated/rising on his throne, cloak and crown are his phase 2 and 3
+  // stills, pillar/stepOut his blink; attackA the halberd sweep, attackB the thrust, attackC kneeling to call his guard.
+  function ashenSovereign() {
+    const set = Object.assign(walking("sovereign", [222, 394], [156, 402], [162, 404], 4), { path: "assets/sprites/mines-bosses/sovereign/", keys: { sovereign: [0, false] }, own: true });
+    const extra = Object.fromEntries(["seated", "rising", "cloak", "crown", "pillar", "stepOut", "attackA", "attackB", "attackC"].map((k) => [k, [k]]));
+    for (const dir of ["down", "up", "side"]) Object.assign(set.views[dir], extra);
+    return set;
+  }
+  function cinderColossus() {
+    const set = Object.assign(walking("cinder", [187, 394], [166, 402], [153, 388], 4), { path: "assets/sprites/mines-bosses/colossus/", keys: { cinder: [0, false] }, own: true });
+    const extra = { oneTower: ["oneTower"], noTowers: ["noTowers"], unchained: ["unchained"], attackA: ["attackA"], attackB: ["attackB"], attackC: ["attackC"] };
+    for (const dir of ["down", "up", "side"]) Object.assign(set.views[dir], extra);
+    return set;
+  }
+  function magmaGolem() {
+    const set = Object.assign(walking("golem", [148, 361], [159, 362], [166, 362], 4), { path: "assets/sprites/mines-bosses/golem/", keys: { golem: [0, false] }, own: true });
+    const extra = { attack: ["attackA", "attackB", "attackB"], raise: ["attackA"], slam: ["attackB"], core: ["core"], windup: ["windup"], hurl: ["hurl"], regrow: ["regrow"] };
     for (const dir of ["down", "up", "side"]) Object.assign(set.views[dir], extra);
     return set;
   }

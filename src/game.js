@@ -311,7 +311,7 @@
       // the clock stands still while you're down in Derek's Hollow, where it's always dark
       G.nightAmt = 1; G.night = true;
     } else if (G.spires) {
-      // the clock stands still in the Abyssal Spires test room too (src/spires.js), its own violet dusk
+      // the clock stands still in a dungeon too (src/dungeon.js): its own dusk
       G.nightAmt = 0; G.night = false;
     } else {
       G.time += dt;
@@ -337,7 +337,7 @@
     DL.Rose.update(dt);
     DL.Rose.local();
     DL.Cave.update(dt);
-    DL.Spires.update(dt);
+    DL.Dungeon.update(dt); // a dungeon run: the Spires (src/spires.js) or the Mines (src/mines.js)
     DL.Bullets.update(dt);
     DL.Minions.update(dt);
     updateEnemies(dt);
@@ -388,7 +388,7 @@
       updateCorruption(dt);
     }
     DL.Net.smooth(dt);
-    DL.Spires.update(dt); // a run in the host's Spires: the portals and seals round this knight (src/spires.js)
+    DL.Dungeon.update(dt); // a run in the host's Spires: the portals and seals round this knight (src/spires.js)
     DL.Bullets.update(dt); // the host's bullets, flown on and dodged here (src/bullets.js)
     DL.Rift.local(); // the open Drowned Gate and the camp's Rift Portal
     DL.Rose.local();
@@ -409,10 +409,10 @@
     p.carried = emptyRes();
     sfx("death");
     for (let i = 0; i < 30; i++) puff(p.x + rand(-12, 12), p.y - rand(0, 60), "rgba(60,220,230,0.7)", 50, 1.4, -30);
-    say(G.spires ? "You have fallen. You'll rise at the run's last Mist Well in a moment; the party keeps its loot." : "You have fallen. You'll rise at the camp in a moment — whatever you carried is lost.", "danger");
+    say(G.spires ? "You have fallen. You'll rise at the run's checkpoint in a moment; the party keeps its loot." : "You have fallen. You'll rise at the camp in a moment — whatever you carried is lost.", "danger");
   }
   function guestRise() {
-    const p = G.player, st = G.stats(), cp = G.spires ? DL.Spires.checkpoint() : null; // in a run: back at its checkpoint
+    const p = G.player, st = G.stats(), cp = G.spires ? DL.Dungeon.checkpoint() : null; // in a run: back at its checkpoint
     Object.assign(p, { x: cp ? cp.x : 20, y: cp ? cp.y : 70, hp: st.maxHp, corrupt: 0, oil: st.maxOil, downT: 0, inv: 1.5 });
     if (cp) { p.spx = p.x; p.spy = p.y; if (G.spires) G.spires.held = false; }
     G.camera.x = p.x; G.camera.y = p.y;
@@ -550,7 +550,7 @@
     for (const pr of G.projectiles) L.push({ x: pr.x, y: pr.y, r: pr.kind === "orb" ? 44 : 26, s: 0.3, col: pr.col, a: 0.8 });
     if (G.walls) DL.Kits.lights(L);
     if (p) DL.Cave.lights(L);
-    DL.Spires.lights(L);
+    DL.Dungeon.lights(L);
     DL.Rift.lights(L);
     G.lights = L;
   }
@@ -1099,6 +1099,8 @@
         e.state = "move"; e.moving = false; // a crystal turret: it only shoots
       } else if (e.def.spire && DL.SpireFoes.busy(e, dt, p, dp)) {
         // a foe of the Abyssal Spires: its own leaps and volleys (src/spirefoes.js)
+      } else if (e.def.mine && DL.MineFoes.busy(e, dt, p, dp)) {
+        // an Ember Halberdier winding up its throw (src/minefoes.js)
       } else if (e.def.king && DL.Finale.busy()) {
         // the Sunken King: his hands do everything (src/finale.js)
       } else if (e.def.bell && DL.Bell.busy(e, dt, p, dp)) {
@@ -1133,7 +1135,7 @@
         const spd = e.speed * (humanLightAt(e.x, e.y) ? 0.72 : 1) * (e.slow > 0 ? 0.6 : 1) * (e.spore > 0 ? e.sporeK : 1) * (e.rallied > 0 ? 1.2 : 1);
         // Walls in the way: head for the nearest gate first.
         const campWp = want === 1 && !e.def.fly ? DL.Camp.route(e.x, e.y, tx, ty, G.save.up) : null;
-        const wp = want === 1 && !e.def.fly ? DL.Spires.route(e.x, e.y, tx, ty) || (DL.Pyramid.route(e.x, e.y, campWp ? campWp.x : tx, campWp ? campWp.y : ty) || campWp) : null; // what flies goes over the walls
+        const wp = want === 1 && !e.def.fly ? DL.Dungeon.route(e.x, e.y, tx, ty) || (DL.Pyramid.route(e.x, e.y, campWp ? campWp.x : tx, campWp ? campWp.y : ty) || campWp) : null; // what flies goes over the walls
         let mx = wp ? wp.x - e.x : dx, my = wp ? wp.y - e.y : dy;
         if (e.def.zigzag && want === 1 && !wp && d > 80) { // weave from side to side on the way in
           const w = Math.sin(e.animT * 5 + e.id) * 0.9, ox = mx;
@@ -1185,10 +1187,10 @@
     const es = G.enemies;
     for (let i = 0; i < es.length; i++) {
       const a = es[i];
-      if (a.rise > 0 || a.hidden) continue;
+      if (a.rise > 0 || a.hidden || a.def.ghost) continue; // ghost: a boss's part that rides it (src/minebosses.js)
       for (let j = i + 1; j < es.length; j++) {
         const b = es[j];
-        if (b.rise > 0 || b.hidden) continue;
+        if (b.rise > 0 || b.hidden || b.def.ghost) continue;
         const dx = b.x - a.x, dy = b.y - a.y, min = a.def.radius + b.def.radius;
         if (Math.abs(dx) > min || Math.abs(dy) > min) continue;
         const d = Math.hypot(dx, dy) || 0.01;
@@ -1305,6 +1307,7 @@
   function strike(e) {
     if (e.def.colossus) return DL.Colossus.strike(e);
     if (e.def.rose) return DL.Rose.strike(e);
+    if (e.def.mine && DL.MineFoes.strike(e)) return; // a Cinder Acolyte's fire circle; an Ash Guard's slam adds its ring (src/minefoes.js)
     const p = e.tgt || G.player;
     const dmg = e.dmg * (e.rallied > 0 ? 1.2 : 1);
     if (p.def) {
@@ -1436,6 +1439,7 @@
     const crit = !remote && Math.random() < 0.12;
     let d = dmg * (crit ? 1.6 : 1);
     if (!remote && !e.struck && G.spires && DL.Spires.misty(G.player.x, G.player.y)) d *= DL.SPIRES.mist.strike; // first strike from the mist
+    if (e.def.mine) d = DL.MineFoes.soak(e, d); // warded by a Cinder Acolyte (src/minefoes.js)
     if (e.def.spire) d = DL.SpireFoes.soak(e, d, ang); // a faded Mist Shade, the Prism Knight's shield (src/spirefoes.js)
     e.struck = true;
     if (G.isGuest()) {
@@ -1500,7 +1504,7 @@
     sfx("kill");
     G.effects.push({ type: "dissolve", e, t: 0, max: 0.6 });
     for (let i = 0; i < 16; i++) puff(e.x + rand(-10, 10), e.y - rand(0, 50) * e.def.scale, "rgba(60,220,230,0.7)", 50, 0.9, -40);
-    if (e.room) DL.Spires.onKill(e); // a dungeon room's foe: Rift Shards
+    if (e.room) DL.Dungeon.onKill(e); // a dungeon room's foe: Rift Shards
     if (e.isSelf) {
       const c = G.save.drownedSelf ? G.save.drownedSelf.carried : {};
       for (const k in c) if (c[k] > 0) dropRes(e.x, e.y, k, c[k]);
@@ -1666,8 +1670,9 @@
         for (const a of G.allies) if (!a.down && dist(t.x, t.y, a.x, a.y) < t.r + 6) DL.Net.hurtAlly(a, t.dmg, Math.atan2(a.y - t.y, a.x - t.x));
         for (const h of G.hounds.slice()) if (dist(t.x, t.y, h.x, h.y) < t.r + 4) DL.Hounds.hurt(h, t.dmg, Math.atan2(h.y - t.y, h.x - t.x));
         for (const h of G.champions.slice()) if (dist(t.x, t.y, h.x, h.y) < t.r + DL.PYRAMID.champion.radius) DL.Pyramid.hurtChampion(h, t.dmg);
-        for (let i = 0; i < 10; i++) spark(t.x + rand(-t.r, t.r) * 0.6, t.y + rand(-t.r, t.r) * 0.3, t.rose ? "220,40,60" : t.wyv ? "170,210,255" : "90,235,245", 120);
+        for (let i = 0; i < 10; i++) spark(t.x + rand(-t.r, t.r) * 0.6, t.y + rand(-t.r, t.r) * 0.3, t.rose ? "220,40,60" : t.wyv ? "170,210,255" : t.fire ? "255,150,50" : "90,235,245", 120);
         if (t.bolt) { G.effects.push({ type: "wyvStrike", x: t.x, y: t.y, t: 0, max: 0.35 }); G.camera.shake = Math.max(G.camera.shake, 4); } // the mother wyvern's lightning
+        else if (t.fire) for (let i = 0; i < 14; i++) puff(t.x + rand(-t.r, t.r) * 0.7, t.y + rand(-t.r, t.r) * 0.35, "rgba(255,140,40,0.85)", 60, 0.7, -60); // a Cinder Acolyte's circle flares
         else if (!t.rose) G.effects.push({ type: "spikes", x: t.x, y: t.y, r: t.r, t: 0, max: 0.5 }); // the Deadly Rose's thorns draw themselves
       }
     }
@@ -1819,8 +1824,8 @@
     G.save.carried = emptyRes();
     const any = DL.RES_KEYS.some((k) => lost[k] > 0);
     const hadSelf = !!G.save.drownedSelf;
-    const sp = G.spires, rift = sp && (sp.shard || sp.aether) ? { shard: sp.shard, aether: sp.aether } : null; // fallen in a dungeon: the mist keeps its loot
-    if (sp) DL.Spires.lost(); // and the friends in the run with you are cast out
+    const sp = G.spires, bag = sp ? DL.Dungeon.bag() : null, rift = bag && Object.values(bag).some((n) => n > 0) ? bag : null; // fallen in a dungeon: it keeps its loot
+    if (sp) DL.Dungeon.lost(); // and the friends in the run with you are cast out
     if (any) {
       G.save.drownedSelf = sp ? { x: sp.bx, y: sp.by, carried: lost } : { x: p.x, y: p.y, carried: lost }; // (out of a dungeon: where you went in)
       G.selfEnemy = null;

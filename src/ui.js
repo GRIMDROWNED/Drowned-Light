@@ -95,6 +95,11 @@
       UI.resume();
       if (DL.Spires.active()) DL.Spires.leave(); else DL.Spires.enter();
     });
+    // Sandbox only: the Molten Mines (src/mines.js), Level 3, while it's being built
+    $("btnMines").addEventListener("click", () => {
+      UI.resume();
+      if (DL.Mines.active()) DL.Mines.leave(); else DL.Mines.enter();
+    });
     $("btnCombat").addEventListener("click", () => {
       G.save.attackMode = G.save.attackMode === "manual" ? "auto" : "manual";
       G.persist();
@@ -317,8 +322,10 @@
     const G = DL.Game;
     if (G.state !== "play") return;
     $("btnLeaveCoop").classList.toggle("hidden", !DL.Net.role);
-    $("btnSpires").classList.toggle("hidden", !DL.SANDBOX || !!DL.Net.role || !!G.cave);
     $("btnSpires").textContent = DL.Spires.active() ? "Leave the Spires (keep half)" : "Sandbox: the Abyssal Spires";
+    $("btnSpires").classList.toggle("hidden", !DL.SANDBOX || !!DL.Net.role || !!G.cave || DL.Mines.active());
+    $("btnMines").classList.toggle("hidden", !DL.SANDBOX || !!DL.Net.role || !!G.cave || DL.Spires.active());
+    $("btnMines").textContent = DL.Mines.active() ? "Leave the Molten Mines" : "Sandbox: the Molten Mines";
     UI.renderCoopPlayers();
     $("pauseNote").textContent = G.isGuest()
       ? "The world keeps running while you're paused. Only the host can pause it for both of you."
@@ -449,7 +456,7 @@
       : `<p class="muted">You carried nothing. Your stored supplies and camp are safe.${info.hadSelf ? " Your drowned self still waits where you last fell." : ""}</p>`;
     const kept = info.kept && DL.RES_KEYS.filter((k) => info.kept[k] > 0).map((k) => chip(k, info.kept[k])).join("");
     if (kept && info.cause !== "camp") $("deathLost").innerHTML += `<p>The Storehouse kept half of it safe:</p><div class="chips">${kept}</div>`;
-    if (info.rift) $("deathLost").innerHTML += `<p>The mist keeps everything the run had found:</p><div class="chips">${["shard", "aether"].filter((k) => info.rift[k] > 0).map((k) => chip(k, info.rift[k])).join("")}</div>`;
+    if (info.rift) $("deathLost").innerHTML += `<p>The dungeon keeps everything the run had found:</p><div class="chips">${Object.keys(info.rift).filter((k) => info.rift[k] > 0).map((k) => chip(k, info.rift[k])).join("")}</div>`;
     $("deathStats").textContent = `Day ${info.day} · nights survived: ${info.nights}`;
     $("screenDeath").classList.remove("hidden");
   };
@@ -477,7 +484,7 @@
     $("gateIntro").textContent = from === "portal"
       ? "The rift hums in the camp. Through it the roads beyond the Drowned Gate wait."
       : "Warm light breathes out of the open gate. Beyond it, roads lead down into the deep.";
-    $("gateList").innerHTML = DL.Rift.DUNGEONS.map((d) => `<button class="primary" data-dungeon="${d.id}">${d.name}<span class="sub">${d.text}${d.id === "spires" ? ` · <i class="well-tok"></i>Mist Wells lit: ${lit} of ${DL.Spires.WELLS_N}` : ""}</span></button>`).join("");
+    $("gateList").innerHTML = DL.Rift.DUNGEONS.filter((d) => !d.open || d.open()).map((d) => `<button class="primary" data-dungeon="${d.id}">${d.name}<span class="sub">${d.text}${d.id === "spires" ? ` · <i class="well-tok"></i>Mist Wells lit: ${lit} of ${DL.Spires.WELLS_N}` : ""}</span></button>`).join("");
     $("gateNote").textContent = coop ? "Everyone goes in together and shares one bag. If the host falls, the mist keeps it all; a friend who falls rises at the last Mist Well. Walk out and you keep half."
       : "Fall in a dungeon and the mist keeps everything you found. Walk out and you keep half.";
     $("screenGate").classList.remove("hidden");
@@ -812,7 +819,7 @@
           <li>Your <b>lantern oil</b> halves corruption in the dark until it runs dry.</li>
           <li><b>Amethyst</b> deposits glow blue in the Drowned Reaches and the Abyss, farther out than iron. They stay day and night and regrow at dawn.</li>
           <li>Defend a <b>Mother Root</b> until dawn for a rich reward.</li>
-          <li>${owns("hound") ? `Your <b>Bone Hound</b> rose from the pack that denned in the Mire, to the ${DL.Den.direction()}.` : `Bone Wolves den in the Mire, to the ${DL.Den.direction()}. Break the pack and carry a carcass home, and see what rises.`}</li>
+          <li>${owns("hound") ? `Your <b>Bone Hound</b> rose from the pack that denned ${DL.Den.where()}.` : `Bone Wolves den ${DL.Den.where()}. Break the pack and carry a carcass home, and see what rises.`}</li>
           <li>${DL.Kindle.guideLine()}</li>
           <li>${DL.Abigail.guideLine()}</li>
           <li>${DL.Fred.guideLine()}</li>
@@ -911,9 +918,9 @@
     if (mine && mine.down > 0) action = `<span class="req">Knocked out · gets up in ${Math.ceil(mine.down)} s</span>`;
     else if (mine) action = `<span class="maxed">At your side · ${Math.ceil(mine.hp)} / ${mine.maxHp}</span>`;
     else if (DL.Den.carrying()) action = `<span class="req">You carry a carcass: bring it into the camp</span>`;
-    else if (den.cleared && den.bodies.length) action = `<span class="req">The pack is broken: ${den.bodies.length} carcass${den.bodies.length > 1 ? "es lie" : " lies"} at the den, to the ${DL.Den.direction()}</span>`;
-    else action = `<span class="req">Hunt the pack: the den lies in the Mire, to the ${DL.Den.direction()} of the camp</span>`;
-    if (!owns("hound")) return lockedCard(`data-hound="1"`, "Five things sleep at a den of bones out in the Mire, by day and by night. Break the pack, then carry what's left of one back into the camp. In co-op every knight carries their own.", action);
+    else if (den.cleared && den.bodies.length) action = `<span class="req">The pack is broken: ${den.bodies.length} carcass${den.bodies.length > 1 ? "es lie" : " lies"} at the den ${DL.Den.where()}</span>`;
+    else action = `<span class="req">Hunt the pack: the den lies ${DL.Den.where()}</span>`;
+    if (!owns("hound")) return lockedCard(`data-hound="1"`, `Five things sleep at a den of bones ${DL.Den.inMines() ? "deep in the Molten Mines" : "out in the Mire"}, by day and by night. Break the pack, then carry what's left of one back into the camp. In co-op every knight carries their own.`, action);
     return `<article class="card hound-card">
       <header><canvas class="portrait" data-hound="1" width="66" height="52"></canvas>
         <div><span class="tag">Ally · Melee</span><h3>${H.name}</h3><span class="motto">It hunts what runs.</span></div></header>
@@ -1106,7 +1113,7 @@
     set($("phaseIcon"), "class", G.night ? "moon" : "sun");
     set($("clock"), "--prog", String(G.time / DL.CYCLE.total));
 
-    set($("zoneText"), "text", G.cave ? "Derek's Hollow" : G.spires ? "Abyssal Spires" : DL.ZONES[p.zi].name);
+    set($("zoneText"), "text", G.cave ? "Derek's Hollow" : G.spires ? DL.Dungeon.name() : DL.ZONES[p.zi].name);
     const N = DL.Net;
     const coopText = !N.role ? "" : N.role === "guest" ? "Co-op · your friend's world" : G.allies.length ? `Co-op · ${G.allies.length + 1} players · room ${N.code}` : `Room ${N.code} · waiting for friends`;
     set($("coopChip"), "text", coopText);
@@ -1163,8 +1170,8 @@
 
     // soul orbs and a hauled Bone Wolf carcass go in the satchel line too
     const souls = DL.Abigail.won() ? 0 : DL.Abigail.held(), carcass = (DL.Den.carrying() ? `<span class="chip carcass"><i></i>Bone Wolf carcass</span>` : "") + (DL.Wyvern.carrying() ? `<span class="chip egg"><i></i>Wyvern egg</span>` : "");
-    const bag = DL.Spires.bag(); // a dungeon run's finds (src/spires.js)
-    const carried = DL.RES_KEYS.filter((k) => p.carried[k] > 0).map((k) => chip(k, p.carried[k])).join("") + (bag ? ["shard", "aether"].filter((k) => bag[k] > 0).map((k) => chip(k, bag[k])).join("") : "") + (souls ? `<span class="chip soul"><i></i>${souls} soul orb${souls > 1 ? "s" : ""}</span>` : "") + carcass;
+    const bag = DL.Dungeon.bag(); // a dungeon run's finds (src/spires.js)
+    const carried = DL.RES_KEYS.filter((k) => p.carried[k] > 0).map((k) => chip(k, p.carried[k])).join("") + (bag ? Object.keys(bag).filter((k) => bag[k] > 0).map((k) => chip(k, bag[k])).join("") : "") + (souls ? `<span class="chip soul"><i></i>${souls} soul orb${souls > 1 ? "s" : ""}</span>` : "") + carcass;
     set($("carried"), "html", carried ? `<span class="lbl${bag ? " bag" : ""}">Carrying</span>${carried}` : ""); // in a dungeon: the loot sack
 
     // objective banner
