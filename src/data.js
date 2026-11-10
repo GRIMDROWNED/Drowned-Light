@@ -198,8 +198,8 @@
        Robert's drawings are in they wear another unit's (`look`), washed with ember colours. */
     wretch: { name: "Molten Wretch", hp: 26, speed: 118, dmg: 7, range: 28, windup: 0.32, cd: 1.1, scale: 0.85, radius: 10, mass: 0.6,
       lunge: 340, zigzag: true, mine: "wretch", minion: true, look: "rosewretch", lookScale: 0.9, tint: "#ff6a1a", tintK: 0.4, drop: {} },
-    ashguard: { name: "Ash Guard", hp: 150, speed: 40, dmg: 18, range: 44, windup: 0.8, cd: 2.2, scale: 1, radius: 16, mass: 4,
-      shield: 0.75, mine: "guard", minion: true, look: "blackguard", lookScale: 1, tint: "#4a3a34", tintK: 0.35, barY: 100, drop: {} },
+    ashguard: { name: "Ash Guard", hp: 150, speed: 40, dmg: 18, range: 44, windup: 0.8, cd: 2.2, scale: 1.2, radius: 16, mass: 4,
+      shield: 0.75, mine: "guard", minion: true, look: "blackguard", lookScale: 1, tint: "#4a3a34", tintK: 0.35, barY: 110, drop: {} },
     halberdier: { name: "Ember Halberdier", hp: 95, speed: 60, dmg: 16, range: 66, windup: 0.7, cd: 1.8, scale: 1, radius: 14, mass: 2,
       lunge: 280, mine: "halberd", minion: true, look: "warden", lookScale: 0.9, tint: "#e8501a", tintK: 0.6, barY: 120, drop: {} },
     acolyte: { name: "Cinder Acolyte", hp: 55, speed: 62, dmg: 12, range: 250, windup: 0.6, cd: 2.6, scale: 1, radius: 12, mass: 0.9,

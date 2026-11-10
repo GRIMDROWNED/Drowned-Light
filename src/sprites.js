@@ -166,6 +166,7 @@
     riftLord(),
     // the Molten Mines' minions (src/minefoes.js), cut at res 4 on green
     Object.assign(walking("wretch", [108, 122], [65, 133], [70, 139], 4), { path: "assets/sprites/mines-foes/wretch/", keys: { wretch: [0, false] }, own: true }),
+    Object.assign(walking("ashguard", [114, 186], [82, 178], [78, 178], 4), { path: "assets/sprites/mines-foes/ashguard/", keys: { ashguard: [0, false] }, own: true }),
     minion("thornling", "thornling", 4, [[45, 87], [43, 82], [46, 83]]), // the Deadly Rose's Thornling Swarm Stalker
     minion("tidestalker", "tidestalker", 4, [[109, 123], [87, 134], [92, 138]]), // the Sunken King's Tide Stalker
     minion("wisp", "wisp", 4, [[108, 182], [112, 197], null]), // the Sunken Wisp: its front shows going away too (Robert)
