@@ -33,11 +33,16 @@
       G.save.riftHome = 1;
       setTimeout(() => say("Rift Shards hum in the stash. New things can be built in the camp with them.", "good"), 2500);
     }
+    if (got.obsidian > 0 && !G.save.minesHome) {
+      G.save.minesHome = 1;
+      setTimeout(() => say("Obsidian glints in the stash. The camp's buildings can be rebuilt for lava with it.", "good"), 2500);
+    }
     G.persist();
     return parts.join(" and ");
   };
   // the dungeon materials show in the stash once any have come home
   Rift.seen = () => !!G.save.riftHome || DL.SANDBOX;
+  Rift.minesSeen = () => !!G.save.minesHome || DL.SANDBOX; // the Molten Mines' camp buildings (src/lavacamp.js)
 
   /* ---------------- the way in ---------------- */
   const wells = () => G.save.spiresWells || {};

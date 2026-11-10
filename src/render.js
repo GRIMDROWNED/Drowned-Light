@@ -271,6 +271,7 @@
     DL.Spires.push(list, c, t, view);
     DL.Mines.push(list, c, t, view);
     DL.Rift.push(list, c, t); // the Crystal Turrets at camp (src/rift.js)
+    DL.LavaCamp.push(list, c, t); // the Forge Gate, Fire Grate Gates and lava mortars (src/lavacamp.js)
     DL.Rose.push(list, c, t, view);
     DL.Trophies.push(list, c);
     DL.Outposts.push(list, c, t, view, sprite, Art.drawFire, bar);
@@ -780,7 +781,7 @@
     const building = (b, name) => {
       const m = L.fortress && /^([a-z]+)(\d)$/.exec(name);
       if (m && DL.Refuge.drawBuilding(c, m[1], +m[2], b.x, b.y)) return; groundShadow(c, name, b.x, b.y + 4, false, Art.sprites[name].w * 0.75, 7); sprite(c, name, b.x, b.y + 4); };
-    if (L.forge) put(L.forge.y, () => building(L.forge, drawn ? "forge" + u.forge : "forge"));
+    if (L.forge) put(L.forge.y, () => DL.LavaCamp.drawForge(c, L.forge, L.fortress) || building(L.forge, drawn ? "forge" + u.forge : "forge")); // the Magma Forge (src/lavacamp.js)
     if (L.armory) put(L.armory.y, () => {
       if (drawn) return building(L.armory, "armory" + u.armory);
       shadow(c, L.armory.x, L.armory.y + 2, 26, 7);
@@ -798,7 +799,7 @@
     for (const k of ["kennel", "workshop", "shrine", "toadstool", "roost"]) if (L[k]) put(L[k].y, () => building(L[k], k + u[k]));
     if (L.bell) put(L.bell.y, () => { if (!(L.fortress && DL.Refuge.drawBuilding(c, "bell", 1, L.bell.x, L.bell.y))) building(L.bell, "bellTower"); });
     if (L.roseheart) put(L.roseheart.y, () => drawRoseHeart(c, L.roseheart, u.roseheart, night, t, L.fortress));
-    for (const tw of L.towers) put(tw.y, () => { if (L.fortress && DL.Refuge.drawBuilding(c, "tower", u.tower, tw.x, tw.y)) return; const n = drawn ? "tower" + u.tower : "tower"; groundShadow(c, n, tw.x, tw.y + 4, false, 20, 6); sprite(c, n, tw.x, tw.y + 4); });
+    for (const tw of L.towers) put(tw.y, () => { if (DL.LavaCamp.drawTower(c, tw, L.fortress)) return; if (L.fortress && DL.Refuge.drawBuilding(c, "tower", u.tower, tw.x, tw.y)) return; const n = drawn ? "tower" + u.tower : "tower"; groundShadow(c, n, tw.x, tw.y + 4, false, 20, 6); sprite(c, n, tw.x, tw.y + 4); });
     const pyl = drawn ? "pylon" + u.pylon : "pylon", lamps = drawn ? PYLON_LAMPS[u.pylon] : [[-11, -77], [11, -77]];
     for (const q of G.pylons) put(q.y, () => {
       if (L.fortress && DL.Refuge.drawBuilding(c, "pylon", u.pylon, q.x, q.y)) {
