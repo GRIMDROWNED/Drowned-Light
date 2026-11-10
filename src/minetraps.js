@@ -34,6 +34,10 @@
     { y: 190, side: -1, off: 0 }, { y: 100, side: 1, off: 0.8 }, { y: 10, side: -1, off: 1.6 }, { y: -80, side: 1, off: 2.4 },
   ];
   const JET_X0 = -580, JET_X1 = -340;
+  // Robert's side-view head (jet-head-side, drawn facing east): HEAD_W world px wide, its wall block sunk HEAD_IN px into
+  // the wall, its nozzle's mouth at NOZ (fractions of the picture); the flame starts at the mouth
+  const HEAD_W = 72, HEAD_IN = 10, NOZ = [913 / 1192, 581 / 1030];
+  const mouthOut = () => (art("jet-head-side") ? HEAD_W * NOZ[0] - HEAD_IN : 0); // how far the mouth stands out of the wall
   const TILES = [ // crumbling tiles: x0, y0, x1, y1
     ...[0, 1, 2, 3, 4].flatMap((i) => [[-580 + i * 48, -254, -532 + i * 48, -206], [-580 + i * 48, -206, -532 + i * 48, -158]]),
     ...[0, 1, 2, 3, 4].map((i) => [618 + i * 46, -190, 664 + i * 46, -110]),
@@ -286,6 +290,12 @@
       const x = ox + (j.side < 0 ? JET_X0 : JET_X1), y = oy + j.y;
       if (!vis(view, x, y, 60)) continue;
       const k = jk(j), warm = k < n.jet.warn ? k / n.jet.warn : k < n.jet.warn + n.jet.burn ? 1 : 0;
+      const hs = art("jet-head-side");
+      if (hs) { // mirrored for the east wall's heads, so every mouth faces across the stair
+        const H = (HEAD_W * hs.height) / hs.width, top = y - 18 - NOZ[1] * H;
+        c.save(); c.translate(x, 0); c.scale(-j.side, 1); c.drawImage(hs, -HEAD_IN, top, HEAD_W, H); c.restore();
+        continue;
+      }
       const hi = art("jet-head");
       if (hi) { put(c, hi, x, y + 4, 42); continue; }
       c.fillStyle = "#2a2020"; c.fillRect(x - 12, y - 30, 24, 28);
@@ -359,11 +369,11 @@
       if (k < 0 || k > n.jet.burn) continue;
       const y = oy + j.y, x0 = ox + JET_X0, x1 = ox + JET_X1;
       if (!vis(view, (x0 + x1) / 2, y, 200)) continue;
-      const s = Math.min(1, k * 8, (n.jet.burn - k) * 6), from = j.side < 0 ? x0 : x1, len = (x1 - x0) * s;
+      const s = Math.min(1, k * 8, (n.jet.burn - k) * 6), from = (j.side < 0 ? x0 : x1) + j.side * -mouthOut(), len = (x1 - x0) * s;
       const fi = art("jet-" + (k < 0.12 ? 1 : k > n.jet.burn - 0.2 ? 4 : 2 + (Math.floor(t * 12 + j.y) & 1)));
       if (fi) { // Robert's flame, drawn pointing east: mirrored for the east wall's nozzles
         list.push({ y: y + n.jet.half, f: () => {
-          const L = Math.max(30, (x1 - x0 + 20) * Math.min(1, k * 8)), H = 2.2 * n.jet.half;
+          const L = Math.max(30, (x1 - x0 + 20 - mouthOut()) * Math.min(1, k * 8)), H = 2.2 * n.jet.half;
           c.save(); c.translate(from, y - 18); c.scale(-j.side, 1); c.drawImage(fi, 0, -H / 2, L, H); c.restore();
         } });
         continue;
