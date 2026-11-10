@@ -121,6 +121,12 @@ for name, c in zip(('crane', 'cage-hang', 'cage-down', 'cage-broken'), cells('cr
 # the dragon-head nozzle and its 4 flame frames (pointing east)
 hd, = cells('jet.png', [(52, 562)])
 save(fit(hd, w=84)[0], 'jet-head')
+# Robert's side-view head (2026-11-10), facing east, its wall block on the left; the game mirrors it for the east wall.
+# Its nozzle's mouth sits at (913, 581) of the 1192 x 1030 crop: NOZ in src/minetraps.js
+if os.path.exists(os.path.join(SRC, 'jet-head-side.png')):
+    hs = crop(key(load('jet-head-side.png')))
+    print('jet-head-side crop', hs.size)
+    save(fit(hs, w=144)[0], 'jet-head-side')
 im = key(load('jet.png'))
 for i, (a, b) in enumerate([(37, 158), (188, 335), (369, 518), (549, 685)]):
     c = im.crop((668, a, 1990, b))
