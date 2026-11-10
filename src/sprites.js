@@ -167,6 +167,9 @@
     magmaGolem(),
     furnaceHydra(),
     crucibleWyrm(),
+    // the Seething Seraph (src/minebosses.js), res 4: floats, so its walks are drifts; attackA = the ember spiral,
+    // attackB = Judgement (arms up, halo blazing), attackC = arms crossed (regrowing its shards)
+    Object.assign(walking("seraph", [123, 332], [129, 332], [128, 332], 4), { path: "assets/sprites/mines-bosses/seraph/", keys: { seraph: [0, false] }, own: true }),
     // the Molten Mines' minions (src/minefoes.js), cut at res 4 on green
     Object.assign(walking("wretch", [108, 122], [65, 133], [70, 139], 4), { path: "assets/sprites/mines-foes/wretch/", keys: { wretch: [0, false] }, own: true }),
     Object.assign(walking("ashguard", [114, 186], [82, 178], [78, 178], 4), { path: "assets/sprites/mines-foes/ashguard/", keys: { ashguard: [0, false] }, own: true }),

@@ -142,3 +142,10 @@ for i, c in enumerate(cells('bullets.png', [(99, 252), (347, 653), (747, 1000), 
 im = key(load('magma-golem/attacks.png'))
 for name, box, w in (('golem-fist', (29, 600, 474, 900), 130), ('golem-pool', (539, 600, 990, 920), 300), ('golem-core', (1052, 600, 1489, 920), 90)):
     save(fit(crop(im.crop(box)), w=w)[0], name)
+
+# ---- the Seething Seraph's obsidian shards (returned/crucible/seething-seraph/shards.png): three whole, cracked,
+# breaking, burst. One scale for all (a shard about 40 world px tall).
+im = key(load('seething-seraph/shards.png'))
+for name, box in (('shard-1', (150, 0, 370, 512)), ('shard-2', (630, 0, 900, 512)), ('shard-3', (1160, 0, 1400, 512)),
+                  ('shard-crack', (140, 512, 380, 1024)), ('shard-break', (640, 512, 900, 1024)), ('shard-burst', (1120, 512, 1420, 1024))):
+    save(fit(crop(im.crop(box)), k=0.2)[0], name)

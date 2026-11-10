@@ -2,7 +2,7 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.256";
+const VERSION = "0.15.257";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
@@ -136,6 +136,8 @@ const FILES = [
     "mines-bosses/golem/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "mines-bosses/wyrm/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "mines-bosses/wyrm/side/": ["death", "dive", "fly1", "fly2", "fly3", "fly4", "hurt", "land", "walk1", "walk2", "walk3", "walk4"],
+    "mines-bosses/seraph/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
+    "mines-bosses/seraph/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "mines-bosses/hydra/": ["breath", "cut1", "cut2", "cut3", "dead", "hurt", "idle1", "idle2", "idle3", "idle4", "lob", "regrow", "roar", "spiral", "still"],
     "mines-foes/acolyte/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "mines-foes/acolyte/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
@@ -162,7 +164,7 @@ const FILES = [
     "rift-throne/": ["attackA", "attackB", "attackC", "back", "front", "right", "seated", "waking", "rising", "p2front", "p2sweep", "p2enraged", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "rift-throne/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "spires/": ["arena", "throne", "well-dark", "well-lit", "floor-2", "floor-3", "floor-4", "kerb", "face-1-band", "face-1-foot", "face-2-band", "face-2-foot", "stairs", "bridge", "bridge-post", "post", "spire", "arch", "ring", "exit-banner", "crystal-1", "crystal-2", "crystal-3", "column-1", "column-1b", "column-2", "column-3", "rune-circle", "rune-glow", "bullet-0", "bullet-1", "bullet-2", "bullet-3", "sentinel", "sentinel-orbit", "chest-shut", "chest-open", "aether-1", "aether-2", "aether-3", "seal-1", "seal-2", "seal-3", "seal-4", "icon-shard", "icon-aether", "icon-bag", "icon-well"],
-    "mines/": ["arch", "arena-1", "arena-2", "banner", "brazier", "bullet-0", "bullet-1", "bullet-2", "bullet-3", "bullet-4", "bullet-5", "cage-broken", "cage-down", "cage-hang", "cart-broken", "cart-front", "cart-side", "crane", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "face-1-band", "face-1-foot", "face-1-head", "face-2-band", "face-2-foot", "face-2-head", "fall-1", "fall-2", "fall-3", "fall-4", "floor-1", "floor-2", "floor-3", "geyser-1", "geyser-2", "geyser-3", "geyser-4", "golem-core", "golem-fist", "golem-pool", "grate-1", "grate-2", "grate-3", "grate-flame-1", "grate-flame-2", "grate-flame-3", "grate-flame-4", "jet-1", "jet-2", "jet-3", "jet-4", "jet-head", "rail", "rune-circle", "seal-1", "seal-2", "seal-3", "shrine-dark", "shrine-lit", "stairs", "throne"],
+    "mines/": ["arch", "arena-1", "arena-2", "banner", "brazier", "bullet-0", "bullet-1", "bullet-2", "bullet-3", "bullet-4", "bullet-5", "cage-broken", "cage-down", "cage-hang", "cart-broken", "cart-front", "cart-side", "crane", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "face-1-band", "face-1-foot", "face-1-head", "face-2-band", "face-2-foot", "face-2-head", "fall-1", "fall-2", "fall-3", "fall-4", "floor-1", "floor-2", "floor-3", "geyser-1", "geyser-2", "geyser-3", "geyser-4", "golem-core", "golem-fist", "golem-pool", "grate-1", "grate-2", "grate-3", "grate-flame-1", "grate-flame-2", "grate-flame-3", "grate-flame-4", "jet-1", "jet-2", "jet-3", "jet-4", "jet-head", "rail", "rune-circle", "seal-1", "seal-2", "seal-3", "shard-1", "shard-2", "shard-3", "shard-break", "shard-burst", "shard-crack", "shrine-dark", "shrine-lit", "stairs", "throne"],
     "rift/": ["turret-1", "turret-2", "turret-3", "bolt", "flash-1", "flash-2", "hit", "lantern-1", "lantern-2", "lantern-3", "portal-off", "portal-on"],
     "pyramid/": ["step-south", "step-north", "step-east", "step-west", "stair-south", "stair-north", "stair-east", "stair-west", "stairway-lane"],
     "ground/": ["campEarth", "campFlags", "campPaving", "grass", "dirt", "shore", "shallow", "deep", "boardwalk", "caveFloor", "rimDeep", "rimShore"],

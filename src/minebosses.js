@@ -14,7 +14,11 @@
      D. The Crucible Wyrm (the Deepfire Roost), drawn by Robert: on the ground it stalks you for claw and tail combos
         and beats its wings to throw you back. Then it takes off and strafes the room: each run is marked on the floor
         first and leaves a lane of burning pools. It ends in a dive at you (a marked circle, a slam, a ring of rocks)
-        and lands panting: blows deal more then. Out of reach while it flies. */
+        and lands panting: blows deal more then. Out of reach while it flies.
+     E. The Seething Seraph (the Molten Choir), drawn by Robert: floats round the room's middle inside a ring of eight
+        obsidian shards (real targets, DL.ENEMIES.seraphShard); while any stands it takes no harm, and broken ones grow
+        back after a while. Ember spirals, rings of orbs, and Judgement: lines marked on the floor, then a molten
+        column runs out along each. The most bullet hell of the five. */
 "use strict";
 (function (DL) {
   const G = DL.Game, TAU = Math.PI * 2, { rand, dist } = DL;
@@ -25,11 +29,12 @@
   const sfx = (n) => DL.Sound && DL.Sound.play(n);
   const sideOn = (a) => (Math.cos(a) >= 0 ? 0 : Math.PI);
   // which boss waits in which room
-  MB.ROOMS = { forge: "golem", pit: "hydra", roost: "wyrm" };
+  MB.ROOMS = { forge: "golem", pit: "hydra", roost: "wyrm", choir: "seraph" };
   const WAKE = {
     golem: "Fire curtains roar up. In the forge's heart the stone stirs: the Magma Golem wakes!",
     hydra: "Fire curtains roar up. The pit's mound splits and three heads rise: the Furnace Hydra!",
     wyrm: "Fire curtains roar up. Wings beat in the smoke above: the Crucible Wyrm comes down!",
+    seraph: "Fire curtains roar up. A choir hums in the heat: the Seething Seraph rises, ringed in obsidian!",
   };
 
   let fists = [], pools = [];
@@ -83,6 +88,8 @@
     if (e.def.mine === "golem") golem(e, dt, p, dp);
     else if (e.def.mine === "hydra") hydra(e, dt, p, dp);
     else if (e.def.mine === "wyrm") wyrm(e, dt, p, dp);
+    else if (e.def.mine === "seraph") seraph(e, dt, p);
+    else if (e.def.mine === "shard") shard(e);
     return true;
   };
   function golem(e, dt, p, dp) {
@@ -412,10 +419,122 @@
   function wAfter(e) { if (e.t <= 0) { e.act = null; e.anim = null; e.next = N().wyrm.every; } }
   const flying = (e) => e.def.mine === "wyrm" && (e.lift || 0) > 30;
 
+  /* ---------------- E. the Seething Seraph ---------------- */
+  const shardsOf = (e) => G.enemies.filter((o) => o.owner === e && !o.removed);
+  function grow(e, all) {
+    const n = N().seraph, have = new Set(shardsOf(e).map((o) => o.slot));
+    for (let i = 0; i < n.shards; i++) {
+      if (have.has(i)) continue;
+      const o = G.makeEnemy("seraphShard", e.x, e.y, N().zone, { room: e.room, owner: e, slot: i, shardN: 1 + (i % 3), cd: 99 });
+      G.enemies.push(o);
+      shard(o);
+      for (let j = 0; j < 4; j++) G.spark(o.x, o.y - 60, "255,170,80", 90);
+    }
+    if (!all) say("The obsidian shards grow back round the Seraph!", "danger");
+  }
+  function shard(o) { // it rides its slot in the ring
+    const e = o.owner;
+    if (!e || e.removed || e.hp <= 0) { o.removed = true; return; }
+    const n = N().seraph, a = e.orb + (o.slot / n.shards) * TAU, R = n.orbitR * e.def.size;
+    o.x = e.x + Math.cos(a) * R; o.y = e.y + Math.sin(a) * R * 0.55; o.kx = o.ky = 0;
+    o.moving = false; o.state = "move";
+  }
+  function seraph(e, dt, p) {
+    const n = N().seraph, half = e.hp / e.maxHp < 0.5;
+    e.orb = (e.orb || 0) + n.orbitSpin * dt;
+    e.lift = n.lift + Math.sin(G.t * 2) * 6;
+    // drifting round the room's middle
+    const tx = e.hx + Math.sin(G.t * 0.35) * 180, ty = e.hy + Math.sin(G.t * 0.23) * 90, d = Math.hypot(tx - e.x, ty - e.y);
+    if (d > 4) { e.x += ((tx - e.x) / d) * Math.min(d, e.speed * dt); e.y += ((ty - e.y) / d) * Math.min(d, e.speed * dt); }
+    e.kx = e.ky = 0;
+    // its broken shards grow back
+    const up = shardsOf(e).length;
+    if (e.act !== "wake") {
+      if (up === 0 && !e.bare) { e.bare = true; say("The obsidian ring is broken: strike the Seraph now!", "good"); sfx("shatter"); }
+      if (up < n.shards) { e.regrowT = (e.regrowT == null ? n.regrow : e.regrowT) - dt; if (e.regrowT <= 0) { e.regrowT = null; e.bare = false; e.act = "mend"; e.t = 1; } }
+      else e.regrowT = null;
+    }
+    const front = Math.PI / 2;
+    if (e.act) { e.t -= dt; return ({ wake: sWake, mend, spinW, spin, judgeW, judge, ring, after: sAfter })[e.act](e, dt, p); }
+    e.anim = ["walk", Math.floor(G.t * 6), front];
+    e.next -= dt;
+    if (e.next > 0) return;
+    const order = ["spiral", "judge", "ring", "judge"];
+    e.move = ((e.move == null ? -1 : e.move) + 1) % order.length;
+    const m = order[e.move];
+    if (m === "spiral") { e.act = "spinW"; e.t = n.spiral.wind; }
+    else if (m === "judge") { e.act = "judgeW"; e.t = n.judge.mark; e.beams = half ? 2 : 1; }
+    else { e.act = "ring"; e.t = 0.9; e.rings = 2; }
+  }
+  function sWake(e) {
+    e.anim = ["attackB", 0, Math.PI / 2];
+    if (Math.random() < 0.4) G.spark(e.x + rand(-60, 60), e.y - rand(40, 220), "255,180,90", 80);
+    if (e.t <= 0) { grow(e, true); e.act = null; e.next = 0.8; }
+  }
+  function mend(e) {
+    e.anim = ["attackC", 0, Math.PI / 2];
+    if (e.t <= 0) { grow(e, false); e.act = "after"; e.t = 0.3; }
+  }
+  function spinW(e) {
+    e.anim = ["attackA", 0, Math.PI / 2];
+    if (e.t > 0) return;
+    const s = N().seraph.spiral;
+    DL.Bullets.spiral(e.x, e.y - 20, s.arms, s.rate, (Math.random() < 0.5 ? -1 : 1) * s.spin, s.time,
+      { by: "the Seething Seraph's embers", dmg: N().seraph.bulletDmg, speed: s.speed, kind: 9 }, e);
+    e.act = "spin"; e.t = s.time;
+  }
+  function spin(e) { e.anim = ["attackA", 0, Math.PI / 2]; if (e.t <= 0) { e.act = "after"; e.t = 0.3; } }
+  // Judgement: the lines are marked (they follow you, then lock), then the columns run out along them
+  function judgeW(e, dt, p) {
+    const j = N().seraph.judge;
+    e.anim = ["attackB", 0, Math.PI / 2];
+    if (e.t > j.lock) e.jAim = Math.atan2(p.y - e.y, p.x - e.x);
+    if (e.t > 0) return;
+    e.act = "judge"; e.t = j.len / j.beamSpeed; e.jd = 0; e.jPool = 0;
+    sfx("torch");
+    G.camera.shake = Math.max(G.camera.shake || 0, 6);
+  }
+  const beamAngles = (e) => (e.beams > 1 ? [e.jAim - N().seraph.judge.split, e.jAim + N().seraph.judge.split] : [e.jAim]);
+  function judge(e, dt, p) {
+    const j = N().seraph.judge;
+    e.anim = ["attackB", 0, Math.PI / 2];
+    e.jd += j.beamSpeed * dt;
+    e.jPool += j.beamSpeed * dt;
+    const drop = e.jPool >= j.poolStep;
+    if (drop) e.jPool -= j.poolStep;
+    for (const a of beamAngles(e)) {
+      const x = e.x + Math.cos(a) * e.jd, y = e.y + Math.sin(a) * e.jd;
+      if (Math.hypot(p.x - x, (p.y - y) * 1.3) < j.beamR && !(p.dashT > 0)) G.hurtPlayer(e.dmg * j.beamDmg, a, "the Seething Seraph's Judgement");
+      if (drop) pools.push({ x, y, r: j.poolR, t: 0, life: j.poolLife, dmg: j.poolDmg });
+      if (Math.random() < 0.6) G.puff(x + rand(-14, 14), y - rand(0, 60), "rgba(255,150,50,0.8)", 90, 0.5, -60);
+    }
+    if (e.t <= 0) { e.act = "after"; e.t = 0.3; }
+  }
+  function ring(e) {
+    e.anim = ["walk", Math.floor(G.t * 6), Math.PI / 2];
+    if (e.t > 0) return;
+    const n = N().seraph;
+    DL.Bullets.ring(e.x, e.y - 20, n.ringN, e.rings * Math.PI / n.ringN, { by: "the Seething Seraph's orbs", dmg: n.bulletDmg, speed: n.ringSpeed, kind: 4 });
+    sfx("whisper");
+    if (--e.rings > 0) { e.t = 0.5; return; }
+    e.act = "after"; e.t = 0.3;
+  }
+  function sAfter(e) { if (e.t <= 0) { e.act = null; e.next = N().seraph.every; } }
+  // a shard in the ring, lifted to the Seraph's waist; it cracks as it's hurt
+  MB.drawShard = function (c, e) {
+    const k = e.hp / e.maxHp, im = IMG(k < 0.4 ? "shard-break" : k < 0.75 ? "shard-crack" : "shard-" + (e.shardN || 1)), y = e.y - 80;
+    c.fillStyle = "rgba(0,0,0,0.25)"; c.beginPath(); c.ellipse(e.x, e.y, 12, 5, 0, 0, TAU); c.fill();
+    if (e.flash > 0) c.filter = "brightness(1.8)";
+    if (im) { const h = 72, w = (h * im.width) / im.height; c.drawImage(im, e.x - w / 2, y - h / 2 + Math.sin(G.t * 3 + e.slot) * 3, w, h); }
+    else { c.fillStyle = "#3a2630"; c.beginPath(); c.moveTo(e.x, y - 22); c.lineTo(e.x + 9, y); c.lineTo(e.x, y + 22); c.lineTo(e.x - 9, y); c.fill(); }
+    c.filter = "none";
+  };
+
   // what a blow does to it: double while the golem's core is open, more while the wyrm pants; nothing while a boss
   // wakes or the wyrm is in the air
-  MB.soak = (e, d) => (e.act === "wake" || flying(e) ? 0 : e.act === "core" ? d * N().golem.coreDmg : e.act === "pant" ? d * N().wyrm.pantDmg : d);
+  MB.soak = (e, d) => (e.act === "wake" || flying(e) || (e.def.mine === "seraph" && shardsOf(e).length) ? 0 : e.act === "core" ? d * N().golem.coreDmg : e.act === "pant" ? d * N().wyrm.pantDmg : d);
   MB.slain = function (e) {
+    for (const o of shardsOf(e)) o.removed = true;
     DL.Bullets.clear();
     fists = [];
     G.camera.shake = 14;
@@ -470,6 +589,22 @@
         c.strokeStyle = `rgba(255,150,50,${0.4 + 0.5 * k})`; c.lineWidth = 3;
         c.beginPath(); c.ellipse(e.tx, e.ty, R, R / 1.4, 0, 0, TAU); c.stroke();
         c.fillStyle = `rgba(255,110,30,${0.08 + 0.2 * k})`; c.fill();
+      }
+    }
+    // the Seething Seraph: its shadow, and Judgement's lines
+    for (const e of G.enemies) {
+      if (e.def.mine !== "seraph" || e.removed || !vis(view, e.x, e.y, 1100)) continue;
+      const s = e.def.size, j = N().seraph.judge;
+      c.fillStyle = "rgba(0,0,0,0.3)"; c.beginPath(); c.ellipse(e.x, e.y, 46 * s, 16 * s, 0, 0, TAU); c.fill();
+      if ((e.act === "judgeW" || e.act === "judge") && e.jAim != null) {
+        const k = e.act === "judgeW" ? 1 - Math.max(0, e.t) / j.mark : 1;
+        for (const a of beamAngles(e)) {
+          c.save(); c.translate(e.x, e.y); c.rotate(a);
+          c.fillStyle = `rgba(255,120,30,${e.act === "judgeW" ? 0.18 + 0.32 * k : 0.15})`;
+          c.fillRect(0, -j.beamR * 0.8, j.len, j.beamR * 1.6);
+          if (e.act === "judge") { c.fillStyle = "rgba(255,220,140,0.85)"; c.beginPath(); c.ellipse(e.jd, 0, j.beamR, j.beamR * 0.6, 0, 0, TAU); c.fill(); }
+          c.restore();
+        }
       }
     }
     // the Furnace Hydra's breath, about to come: a cone on the floor where it will sweep

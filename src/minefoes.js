@@ -90,7 +90,7 @@
 
   // its own move, in place of the Drowned's walk (game.js); true while it's busy
   F.busy = function (e, dt, p, dp) {
-    if (e.def.boss) return DL.MineBosses.busy(e, dt, p, dp); // a mini boss (src/minebosses.js)
+    if (e.def.boss || e.def.mine === "shard") return DL.MineBosses.busy(e, dt, p, dp); // a mini boss or its shard (src/minebosses.js)
     if (e.def.mine !== "halberd") return false;
     const n = N().halberd;
     if (e.throwT > 0) { // winding up the throw: it stands and flares
