@@ -205,7 +205,16 @@
     return false;
   };
 
-  /* ---------------- drawing (coded until Robert's art) ---------------- */
+  /* ---------------- drawing (Robert's art from DL.Mines.IMG; coded until it loads) ---------------- */
+  const art = (n) => DL.Mines.IMG && DL.Mines.IMG[n];
+  // a drawn piece w px wide (height kept), its foot at (x, y); flip mirrors it
+  function put(c, im, x, y, w, flip) {
+    const h = (w * im.height) / im.width;
+    if (!flip) { c.drawImage(im, x - w / 2, y - h, w, h); return; }
+    c.save(); c.translate(x, 0); c.scale(-1, 1); c.drawImage(im, -w / 2, y - h, w, h); c.restore();
+  }
+  // where a geyser is drawn standing (its burst y-sorted) rather than on the floor
+  const geyserUp = (k, n) => k > n.warn - 0.3 && k < n.warn + n.burn + 0.5;
   const vis = (view, x, y, m) => x > view.left - m && x < view.right + m && y > view.top - m && y < view.bottom + m;
   function tongue(c, x, y, w, h, t, seed) { // one flickering flame tongue, base at (x, y)
     const cols = ["#ff5a10", "#ff9a2a", "#ffe08a"];
@@ -224,6 +233,8 @@
       const x = ox + g.x, y = oy + g.y;
       if (!vis(view, x, y, 40)) continue;
       const k = now - g.at, warm = k >= 0 && k < n.grate.warn ? k / n.grate.warn : k >= n.grate.warn && k < n.grate.warn + n.grate.burn ? 1 : 0;
+      const gi = art("grate-" + (warm === 0 ? 1 : k < n.grate.warn ? 2 : 3));
+      if (gi) { c.drawImage(gi, x - 28, y - 23, 56, 46); continue; }
       c.fillStyle = "#140c0c"; c.fillRect(x - 26, y - 18, 52, 36);
       if (warm) { c.fillStyle = `rgba(255,${120 + 80 * warm},40,${0.35 + 0.6 * warm})`; c.fillRect(x - 24, y - 16, 48, 32); }
       c.fillStyle = "#3a302e";
@@ -234,6 +245,8 @@
       const x = ox + g.x, y = oy + g.y;
       if (!vis(view, x, y, 60)) continue;
       const k = (now + g.off) % n.geyser.every, bub = k < n.geyser.warn ? Math.max(0, (k - (n.geyser.warn - 1.2)) / 1.2) : 0;
+      const gi = art("geyser-1");
+      if (gi) { if (!geyserUp(k, n.geyser)) put(c, gi, x, y + 16, 64); continue; }
       c.fillStyle = "#1a0e0a"; c.beginPath(); c.ellipse(x, y, 30, 18, 0, 0, TAU); c.fill();
       c.strokeStyle = `rgba(255,${110 + 90 * bub},30,${0.5 + 0.5 * bub})`; c.lineWidth = 3 + 3 * bub;
       c.beginPath(); c.ellipse(x, y, 30 + 6 * bub * Math.sin(t * 20), 18 + 3 * bub, 0, 0, TAU); c.stroke();
@@ -243,6 +256,14 @@
     for (const tl of TILES) {
       const q = tl.q, x = ox + q[0], y = oy + q[1], w = q[2] - q[0], h = q[3] - q[1];
       if (!vis(view, x + w / 2, y + h / 2, 60)) continue;
+      const ti = art("crumble-" + (tl.st === 0 ? 1 : tl.st === 2 ? 4 : tl.t < n.tile.crack * 0.5 ? 2 : 3));
+      if (ti) {
+        const j = tl.st === 1 ? Math.sin(t * 40) * 1.5 * (tl.t / n.tile.crack) : 0;
+        c.drawImage(ti, x + j, y, w, h);
+        const back = tl.st === 2 ? Math.max(0, (tl.t - (n.tile.gone - 0.6)) / 0.6) : 0; // the stone knits back
+        if (back) { c.globalAlpha = back; c.drawImage(art("crumble-1"), x, y, w, h); c.globalAlpha = 1; }
+        continue;
+      }
       if (tl.st === 2) {
         const back = Math.max(0, (tl.t - (n.tile.gone - 0.6)) / 0.6); // the stone knits back in the last moments
         c.fillStyle = "#2c2628"; c.fillRect(x, y, w, h);
@@ -265,6 +286,8 @@
       const x = ox + (j.side < 0 ? JET_X0 : JET_X1), y = oy + j.y;
       if (!vis(view, x, y, 60)) continue;
       const k = jk(j), warm = k < n.jet.warn ? k / n.jet.warn : k < n.jet.warn + n.jet.burn ? 1 : 0;
+      const hi = art("jet-head");
+      if (hi) { put(c, hi, x, y + 4, 42); continue; }
       c.fillStyle = "#2a2020"; c.fillRect(x - 12, y - 30, 24, 28);
       c.fillStyle = "#4a3c38"; c.fillRect(x - 12, y - 30, 24, 4);
       c.fillStyle = `rgba(255,${120 + 100 * warm},40,${0.4 + 0.6 * warm})`; c.fillRect(x - 5 - j.side * 6, y - 20, 10, 8);
@@ -282,7 +305,14 @@
       c.fillRect(ox + RAIL_X0 + 6, oy + RAIL_Y - 9, RAIL_X1 - RAIL_X0 - 12, 3); c.fillRect(ox + RAIL_X0 + 6, oy + RAIL_Y + 7, RAIL_X1 - RAIL_X0 - 12, 3);
     }
   };
-  function cageDraw(c, x, y, t, fall) {
+  function cageDraw(c, x, y, t, fall, cg) {
+    const im = art(!cg.down ? "cage-hang" : cg.open ? "cage-broken" : "cage-down");
+    if (im) {
+      const w = cg.down ? (im.width / 2) * 0.8 : 42;
+      if (!cg.down) { c.strokeStyle = "#1e1818"; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y - fall - 260); c.lineTo(x, y - fall - 70); c.stroke(); }
+      put(c, im, x, y + 4 - fall, w);
+      return;
+    }
     const W = 50, H = 72, top = y - H - fall;
     c.strokeStyle = "#1e1818"; c.lineWidth = 2; c.beginPath(); c.moveTo(x, top - 160); c.lineTo(x, top - 6); c.stroke(); // its chain
     c.fillStyle = "#5a4640"; c.beginPath(); c.ellipse(x, top + 4, W / 2, 10, 0, Math.PI, 0); c.fill();
@@ -303,17 +333,21 @@
       const x = ox + g.x, y = oy + g.y;
       if (!vis(view, x, y, 100)) continue;
       const s = Math.min(1, k * 8, (n.grate.burn - k) * 6);
+      const fi = art("grate-flame-" + (k < 0.12 ? 1 : k > n.grate.burn - 0.2 ? 4 : 2 + (Math.floor(t * 10 + g.x) & 1)));
+      if (fi) { list.push({ y: y + 10, f: () => put(c, fi, x, y + 24, 62) }); continue; }
       list.push({ y: y + 10, f: () => { tongue(c, x - 12, y + 8, 12, 70 * s, t, g.x + g.y); tongue(c, x + 12, y + 8, 12, 64 * s, t, g.y); tongue(c, x, y + 12, 15, 90 * s, t, g.x); } });
     }
     for (const cg of cages) {
       const x = ox + cg.x, y = oy + cg.y;
       if (!vis(view, x, y, 120)) continue;
       const fall = cg.down ? 0 : 420 * Math.pow(1 - Math.min(1, cg.t / n.cage.warn), 0.5) + (cg.t < n.cage.warn * 0.85 ? 200 : 0);
-      list.push({ y: y + (G.player && G.player.mCage === cg ? 30 : 2), f: () => cageDraw(c, x, y, t, fall) }); // over a knight locked in it
+      list.push({ y: y + (G.player && G.player.mCage === cg ? 30 : 2), f: () => cageDraw(c, x, y, t, fall, cg) }); // over a knight locked in it
     }
     if (cart && cart.t >= n.cart.warn) {
       const x = ox + cart.x, y = oy + RAIL_Y + 2;
-      if (vis(view, x, y, 80)) list.push({ y, f: () => {
+      const ci = art("cart-side");
+      if (ci && vis(view, x, y, 80)) list.push({ y, f: () => { put(c, ci, x, y + 4, 61, cart.dir < 0); for (let i = 0; i < 2; i++) G.spark(x - cart.dir * 24 + DL.rand(-4, 4), y - 2, "255,200,100", 50); } });
+      else if (vis(view, x, y, 80)) list.push({ y, f: () => {
         c.fillStyle = "#120a0a"; c.fillRect(x - 22, y - 6, 8, 8); c.fillRect(x + 14, y - 6, 8, 8);
         c.fillStyle = "#3a2618"; c.fillRect(x - 26, y - 30, 52, 26); c.fillStyle = "#3e3434"; c.fillRect(x - 26, y - 30, 52, 4); c.fillRect(x - 26, y - 8, 52, 3);
         c.fillStyle = "#ff7a1a"; c.beginPath(); c.ellipse(x, y - 30, 22, 7, 0, Math.PI, 0); c.fill();
@@ -326,6 +360,14 @@
       const y = oy + j.y, x0 = ox + JET_X0, x1 = ox + JET_X1;
       if (!vis(view, (x0 + x1) / 2, y, 200)) continue;
       const s = Math.min(1, k * 8, (n.jet.burn - k) * 6), from = j.side < 0 ? x0 : x1, len = (x1 - x0) * s;
+      const fi = art("jet-" + (k < 0.12 ? 1 : k > n.jet.burn - 0.2 ? 4 : 2 + (Math.floor(t * 12 + j.y) & 1)));
+      if (fi) { // Robert's flame, drawn pointing east: mirrored for the east wall's nozzles
+        list.push({ y: y + n.jet.half, f: () => {
+          const L = Math.max(30, (x1 - x0 + 20) * Math.min(1, k * 8)), H = 2.2 * n.jet.half;
+          c.save(); c.translate(from, y - 18); c.scale(-j.side, 1); c.drawImage(fi, 0, -H / 2, L, H); c.restore();
+        } });
+        continue;
+      }
       list.push({ y: y + n.jet.half, f: () => {
         const gr = c.createLinearGradient(from, 0, from - j.side * len, 0);
         gr.addColorStop(0, "rgba(255,240,180,0.95)"); gr.addColorStop(0.5, "rgba(255,150,40,0.9)"); gr.addColorStop(1, "rgba(255,80,10,0)");
@@ -335,8 +377,16 @@
       } });
     }
     for (const g of GEYSERS) {
-      const k = ((now + g.off) % n.geyser.every) - n.geyser.warn;
-      if (k < 0 || k > n.geyser.burn) continue;
+      const kk = (now + g.off) % n.geyser.every, gi = art("geyser-1");
+      if (gi && geyserUp(kk, n.geyser)) {
+        const x = ox + g.x, y = oy + g.y, d = kk - n.geyser.warn;
+        if (!vis(view, x, y, 160)) continue;
+        const im = art("geyser-" + (d < 0 ? 2 : d < n.geyser.burn ? 3 : 4));
+        list.push({ y: y + 4, f: () => put(c, im, x, y + 16, 64) });
+        continue;
+      }
+      const k = kk - n.geyser.warn;
+      if (gi || k < 0 || k > n.geyser.burn) continue;
       const x = ox + g.x, y = oy + g.y;
       if (!vis(view, x, y, 160)) continue;
       const s = Math.min(1, k * 10, (n.geyser.burn - k) * 5);

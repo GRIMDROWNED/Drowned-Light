@@ -98,7 +98,7 @@
       e.angle = Math.atan2(p.y - e.y, p.x - e.x);
       e.flash = Math.max(e.flash, 0.05);
       if (e.throwT <= 0) {
-        DL.Bullets.fan(e.x, e.y - 24, e.angle, 3, n.spread, { speed: n.speed, kind: 4, dmg: n.dmg, by: e.def.name, r: 9 });
+        DL.Bullets.fan(e.x, e.y - 24, e.angle, 3, n.spread, { speed: n.speed, kind: 5, dmg: n.dmg, by: e.def.name, r: 9 });
         sfx("flameHit");
         e.cd = 0.8;
       }

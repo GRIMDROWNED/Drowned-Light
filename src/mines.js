@@ -109,25 +109,25 @@
     ["banner", -120, -800], ["banner", 120, -800], ["banner", -160, 420], ["banner", 160, 420],
     ["throne", THRONE.x, THRONE.y],
     // the Slag Mine: carts on the track, a pit-head frame
-    ["cart", -1120, 606], ["cart", -820, 734], ["headframe", -1200, 590], // parked off the track (the runaway carts use it)
+    ["cart", -1120, 606], ["cart", -820, 734, 1], ["headframe", -1200, 590], // parked off the track (the runaway carts use it)
     // the Gibbet Gallery: a crane with a cage hanging over the way
-    ["crane", 720, 592], ["cage", 860, 640], ["crane", 1180, 592], ["cage", 1060, 660],
+    ["crane", 825, 600], ["cage", 860, 640], ["crane", 1095, 610, 1], ["cage", 1060, 660], // (1: arm reaching west)
     // the Crystal Stair: glowing magma crystals
     ["crystal", -560, -260, 1.2], ["crystal", -362, -40, 0.9], ["crystal", -560, 160, 1], ["crystal", -1500, -500, 1.3], ["crystal", -1100, -960, 1.1],
     // the Bone Wolf den, moved here from the Mire (Robert 2026-11-09)
     ["den", DEN.x, DEN.y],
     // the Storeroom and the Vault: crates
-    ["crates", -1100, 1060], ["crates", -860, 1210], ["crates", -1400, -820],
+    ["crates", -1100, 1060], ["crates", -860, 1210], ["crates", -1400, -820], ["cartBroken", -1010, 1236],
   ];
   // solid circles: x, y, r
   const SOLIDS = [
-    [EXIT.x - 46, EXIT.y, 15], [EXIT.x + 46, EXIT.y, 15], [THRONE.x, THRONE.y - 30, 110],
+    [EXIT.x - 44, EXIT.y, 18], [EXIT.x + 44, EXIT.y, 18], [THRONE.x, THRONE.y - 30, 110],
     ...SHRINES.map(([x, y]) => [x, y - 10, 34]),
     ...PROPS.filter((q) => q[0] === "brazier").map((q) => [q[1], q[2] - 4, 14]),
-    ...PROPS.filter((q) => q[0] === "crane" || q[0] === "headframe").map((q) => [q[1], q[2], 16]),
+    ...PROPS.filter((q) => q[0] === "crane" || q[0] === "headframe").map((q) => [q[1] + (q[3] ? 28 : -28), q[2], 16]), // the post
     ...PROPS.filter((q) => q[0] === "crystal").map((q) => [q[1], q[2] - 6, 14 * q[3]]),
     ...PROPS.filter((q) => q[0] === "crates").map((q) => [q[1], q[2] - 8, 26]),
-    [DEN.x, DEN.y - 4, 40],
+    [DEN.x, DEN.y - 4, 40], [-1010, 1230, 26],
     [-1120, 600, 18], [-820, 728, 18],
   ];
   // basalt columns standing up out of the lava (not walkable): x, y, width, level
@@ -276,6 +276,55 @@
   const CH = 1024;
   let chunks = new Map(), art = null;
 
+  // Robert's drawn pieces (tools/cut_mines.py, 2 file px per world px unless noted). They load when the Mines are first
+  // drawn; until then (and in the node tests) the coded stone shows, and when the last one lands the chunks repaint.
+  const ART_N = ["floor-1", "floor-2", "floor-3", "face-1-head", "face-1-band", "face-1-foot", "face-2-head", "face-2-band", "face-2-foot",
+    "fall-1", "fall-2", "fall-3", "fall-4", "stairs", "rune-circle", "arch", "throne", "arena-2", "brazier", "banner", "shrine-dark", "shrine-lit",
+    "seal-1", "seal-2", "seal-3", "crane", "cage-hang", "cart-side", "cart-front", "cart-broken", "rail",
+    // the traps' (src/minetraps.js)
+    "grate-1", "grate-2", "grate-3", "grate-flame-1", "grate-flame-2", "grate-flame-3", "grate-flame-4", "cage-down", "cage-broken",
+    "jet-head", "jet-1", "jet-2", "jet-3", "jet-4", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "geyser-1", "geyser-2", "geyser-3", "geyser-4"];
+  const IMG = {};
+  Mi.IMG = IMG; // src/minetraps.js draws from it too
+  let loading = false;
+  function loadArt() {
+    if (loading || typeof Image === "undefined") return;
+    loading = true;
+    let left = ART_N.length;
+    const got = {};
+    // all at once, so no piece is drawn half-dressed (a missing file keeps that piece coded)
+    const done = () => { if (--left === 0) { Object.assign(IMG, got); chunks = new Map(); } };
+    for (const n of ART_N) {
+      const im = new Image();
+      im.onload = () => { got[n] = im; done(); };
+      im.onerror = done;
+      im.src = DL.asset("assets/sprites/mines/" + n + ".png");
+    }
+  }
+  // the wall rows at the top of each face's foot picture (world px), from the cutter
+  const FOOT_WALL = { 1: 21.5, 2: 18 };
+  // The drawn face: the column caps once, the mid-wall tiled down as far as it needs, then the foot (the rest of the wall
+  // and its hanging rock) once; shaded and sunk into the mist like the coded one.
+  function faceArt(g, x0, x1, y, h, r, v) {
+    const head = IMG["face-" + v + "-head"], band = IMG["face-" + v + "-band"], foot = IMG["face-" + v + "-foot"];
+    const hw = head.width / 2, hh = head.height / 2, bh = band.height / 2, fh = foot.height / 2, fwall = FOOT_WALL[v];
+    const fy = Math.max(0, h - fwall), w = Math.round(x1 - x0), H = Math.round(Math.max(fy, hh) + fh) + 1, t = mk(w, H), q = t.getContext("2d");
+    const off = r() * hw;
+    for (let yy = Math.min(hh, fy); yy < fy; yy += bh) for (let xx = -off; xx < w; xx += hw) q.drawImage(band, xx, yy, hw + 0.5, bh + 0.5);
+    for (let xx = -off; xx < w; xx += hw) q.drawImage(foot, xx, fy, hw + 0.5, fh);
+    for (let xx = -off; xx < w; xx += hw) q.drawImage(head, xx, 0, hw + 0.5, Math.min(hh, fy + 4));
+    q.globalCompositeOperation = "source-atop";
+    let gr = q.createLinearGradient(0, 0, w, 0);
+    gr.addColorStop(0, "rgba(255,200,160,0.12)"); gr.addColorStop(Math.min(0.2, 24 / w), "rgba(255,200,160,0)");
+    gr.addColorStop(Math.max(0.8, 1 - 24 / w), "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,0.45)");
+    q.fillStyle = gr; q.fillRect(0, 0, w, H);
+    gr = q.createLinearGradient(0, 0, 0, H);
+    gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(0.7, "rgba(10,0,0,0.25)"); gr.addColorStop(1, "rgba(60,48,50,0.6)");
+    q.fillStyle = gr; q.fillRect(0, 0, w, H);
+    q.fillStyle = "rgba(0,0,0,0.4)"; q.fillRect(0, 0, w, 3);
+    g.drawImage(t, x0, y);
+  }
+
   // the runs of an edge at y between x0 and x1 that no stair or causeway comes in through
   function runs(x0, x1, y, gaps) {
     const cut = gaps.filter((q) => Math.abs(q[1] - y) < 30 && q[0] > x0 - 60 && q[0] < x1 + 60).map((q) => [q[0] - 60, q[0] + 60]).sort((a, b) => a[0] - b[0]);
@@ -288,6 +337,7 @@
 
   // A basalt face hanging from a floor's south edge: tall columns, molten seams, the foot lost in the mist.
   function face(g, x0, x1, y, h, r) {
+    if (IMG["face-1-foot"] && IMG["face-2-foot"]) return faceArt(g, x0, x1, y, h, r, r() < 0.5 ? 1 : 2);
     const w = Math.round(x1 - x0), H = Math.round(h + 60), t = mk(w, H), q = t.getContext("2d");
     q.fillStyle = C.face;
     q.beginPath(); q.moveTo(0, 0); q.lineTo(w, 0);
@@ -337,8 +387,17 @@
     g.save();
     g.beginPath(); g.rect(x0, y0, x1 - x0, y1 - y0); g.clip();
     g.fillStyle = C.grout; g.fillRect(x0, y0, x1 - x0, y1 - y0);
+    const drawn = IMG["floor-1"];
+    if (drawn) { // Robert's tiles, on one grid for the whole Mines so neighbouring floors line up
+      const T = 192;
+      for (let ty = BY0 + Math.floor((y0 - BY0) / T) * T; ty < y1; ty += T)
+        for (let tx = BX0 + Math.floor((x0 - BX0) / T) * T; tx < x1; tx += T) {
+          const k = r(), im = (k < 0.12 && IMG["floor-3"]) || (k < 0.45 && IMG["floor-2"]) || IMG["floor-1"];
+          g.drawImage(im, tx, ty, T, T);
+        }
+    }
     const TW = 24, TH = 18;
-    for (let row = 0, y = y0; y < y1; row++, y += TH) {
+    for (let row = 0, y = drawn ? y1 : y0; y < y1; row++, y += TH) {
       for (let x = x0 - (row % 2) * (TW / 2); x < x1; x += TW) {
         const k = 0.2 + r() * 0.4;
         g.fillStyle = mix(C.topD, C.topL, k); g.fillRect(x + 1, y + 1, TW - 2, TH - 2);
@@ -381,7 +440,8 @@
 
   // The rune circle set into the Ash Hall: rings of wedge stones round a sun.
   function runeFloor(g, r, R0) {
-    const RU = R0 || RUNE;
+    const RU = R0 || RUNE, im = !R0 && IMG["rune-circle"];
+    if (im) { const w = RU.r * 2 + 14, h = (w * im.height) / im.width; g.drawImage(im, RU.x - w / 2, RU.y - h / 2, w, h); return; }
     g.save();
     g.translate(RU.x, RU.y); g.scale(1, RU.sq);
     g.fillStyle = C.grout; g.beginPath(); g.arc(0, 0, RU.r + 4, 0, Math.PI * 2); g.fill();
@@ -401,6 +461,7 @@
 
   // Stairs rising north: basalt treads and risers between low walls.
   function stairs(g, q, r) {
+    if (IMG.stairs) return stairsArt(g, q);
     const [x0, y0, x1, y1] = q, n = Math.max(5, Math.round((y1 - y0) / 16)), h = (y1 - y0) / n;
     for (let i = 0; i < n; i++) {
       const y = y0 + i * h, k = 0.3 + 0.25 * (1 - i / n);
@@ -415,6 +476,20 @@
       for (let y = y0; y < y1; y += 22) { g.fillStyle = "rgba(0,0,0,0.3)"; g.fillRect(x + 1, y, 8, 1); }
       g.fillStyle = C.faceL; g.fillRect(x, y1 - 12, 10, 12); g.fillStyle = C.rim; g.fillRect(x, y1 - 14, 10, 3);
     }
+  }
+
+  // The drawn flight (file px: treads 86..394 across, 156..514 down; the top piece ends at 228, the foot starts at 336).
+  // Scaled to the stair's width; a long stair repeats the middle treads, a short one is squeezed.
+  function stairsArt(g, q) {
+    const im = IMG.stairs, [x0, y0, x1, y1] = q, k = (x1 - x0) / (394 - 86), L = y1 - y0, X = x0 - 86 * k, W = im.width * k;
+    const TT = 156, TB = 514, M0 = 228, M1 = 336;
+    if (L < (TB - TT) * k) { const sy = L / (TB - TT); g.drawImage(im, X, y0 - TT * sy, W, im.height * sy); return; }
+    g.drawImage(im, 0, 0, im.width, M0, X, y0 - TT * k, W, M0 * k); // the top tread and its brazier posts
+    const fy = y1 - (TB - M1) * k; // where the foot piece starts
+    g.drawImage(im, 0, M1, im.width, im.height - M1, X, fy, W, (im.height - M1) * k);
+    g.save(); g.beginPath(); g.rect(X - 2, y0 + (M0 - TT) * k, W + 4, fy - (y0 + (M0 - TT) * k)); g.clip();
+    for (let y = y0 + (M0 - TT) * k; y < fy; y += (M1 - M0) * k) g.drawImage(im, 0, M0, im.width, M1 - M0, X, y, W, (M1 - M0) * k + 0.5);
+    g.restore();
   }
 
   // A stone causeway over the misty drop: a basalt deck on arches, parapets each side.
@@ -434,7 +509,11 @@
     g.fillStyle = gr; g.fillRect(-2, hw, len + 4, 70);
     // the deck
     g.fillStyle = C.grout; g.fillRect(-4, -hw, len + 8, hw * 2);
-    for (let s = -4; s < len + 4; s += 20) for (let w = -hw; w < hw; w += 16) {
+    if (IMG["floor-1"]) { // Robert's flagstones along the deck
+      g.save(); g.beginPath(); g.rect(-4, -hw, len + 8, hw * 2); g.clip();
+      for (let s = -4 - r() * 100; s < len + 4; s += 192) g.drawImage(IMG["floor-1"], s, -96, 192, 192);
+      g.restore();
+    } else for (let s = -4; s < len + 4; s += 20) for (let w = -hw; w < hw; w += 16) {
       g.fillStyle = mix(C.topD, C.topL, 0.25 + r() * 0.35); g.fillRect(s + 1, w + 1, 18, 14);
     }
     for (const sd of [-1, 1]) { // parapets
@@ -496,7 +575,8 @@
   }
   // the mine track along the Slag Mine
   function rails(g, q) {
-    const y = (q[1] + q[3]) / 2 + 6;
+    const y = (q[1] + q[3]) / 2 + 6, im = IMG.rail;
+    if (im) { const w = (im.width * 30) / im.height; for (let x = q[0] + 6; x < q[2] - 6; x += w) g.drawImage(im, x, y - 15, Math.min(w, q[2] - 6 - x) + 0.5, 30); return; }
     for (let x = q[0] + 10; x < q[2] - 10; x += 16) { g.fillStyle = C.wood; g.fillRect(x, y - 12, 8, 24); g.fillStyle = C.woodL; g.fillRect(x, y - 12, 8, 2); }
     for (const dy of [-8, 8]) { g.fillStyle = C.ironL; g.fillRect(q[0] + 6, y + dy - 1, q[2] - q[0] - 12, 3); g.fillStyle = "#1a1416"; g.fillRect(q[0] + 6, y + dy + 2, q[2] - q[0] - 12, 1); }
   }
@@ -506,6 +586,8 @@
     g.save(); g.beginPath();
     g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI); g.lineTo(cx - rx, cy + H + 80); g.lineTo(cx + rx, cy + H + 80); g.closePath();
     g.clip(); face(g, q[0], q[2], cy, ry + H, r); g.restore();
+    const im = IMG["arena-2"];
+    if (im) { const h = (2 * rx * im.height) / im.width; g.drawImage(im, q[0], cy - ry * 1.04, 2 * rx, h); return; }
     g.save(); g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.clip(); top(g, q[0], q[1], q[2], q[3] + 10, r, []); g.restore();
     g.strokeStyle = C.rim; g.lineWidth = 6; g.beginPath(); g.ellipse(cx, cy, rx - 4, ry - 4, 0, 0, Math.PI * 2); g.stroke();
     runeFloor(g, r, { x: cx, y: cy + 60, r: 300, sq: 0.62 });
@@ -576,6 +658,7 @@
     return c;
   }
   function build() {
+    loadArt();
     art = { glow: glowSprite(), arch: archSprite(), brazier: brazierSprite(), shrine: [shrineSprite(false), shrineSprite(true)], crystal: crystalSprite(), mist: mistTile() };
     const m = rng(4242);
     art.embers = Array.from({ length: 140 }, () => ({ x: (m() - 0.5) * 4800, y: (m() - 0.5) * 4000, p: m() * 10, v: 14 + m() * 22 }));
@@ -615,9 +698,17 @@
     DL.MineTraps.drawFloor(c, view, t); // grates, vents, crumbling tiles, cage shadows (src/minetraps.js)
     DL.MineFoes.drawFloor(c, view, t); // the Molten Wretches' puddles (src/minefoes.js)
     // lava falls pouring down the faces
-    for (const [fx, fw, id] of FALLS) {
+    FALLS.forEach(([fx, fw, id], n) => {
       const f = FLOORS[id], x = OX + fx - fw / 2, y = OY + f[3] + 4, len = S.hang + f[4] * LH + 90;
-      if (x > view.right || x + fw < view.left || y > view.bottom || y + len < view.top) continue;
+      if (x - fw > view.right || x + 2 * fw < view.left || y - 20 > view.bottom || y + len < view.top) return;
+      const im = IMG["fall-" + (1 + (Math.floor(t * 8 + n) % 4))];
+      if (im) { // Robert's fall: the spout and the splash as drawn, the stream stretched between them
+        const W = fw * 1.9, k = W / im.width, X = OX + fx - W / 2, CAP = 45, SPL = 30, top = y - 8, bot = y + len - 30;
+        c.drawImage(im, 0, 0, im.width, CAP, X, top, W, CAP * k);
+        c.drawImage(im, 0, CAP, im.width, im.height - CAP - SPL, X, top + CAP * k - 1, W, bot - top - CAP * k + 2);
+        c.drawImage(im, 0, im.height - SPL, im.width, SPL, X, bot, W, SPL * k);
+        return;
+      }
       const gr = c.createLinearGradient(0, y, 0, y + len);
       gr.addColorStop(0, "rgba(255,200,80,0.95)"); gr.addColorStop(0.65, "rgba(255,120,24,0.9)"); gr.addColorStop(1, "rgba(255,110,20,0)");
       c.fillStyle = gr; c.fillRect(x, y, fw, len);
@@ -625,7 +716,7 @@
       for (let i = 0; i < 6; i++) { const yy = y + ((t * (70 + i * 11) + i * 31) % len); c.fillRect(x + 3 + i * ((fw - 6) / 5), yy, 2, 14); }
       c.fillStyle = "rgba(60,20,10,0.6)";
       for (let i = 0; i < 3; i++) { const yy = y + ((t * (50 + i * 17) + i * 53) % len); c.fillRect(x + 4 + i * ((fw - 8) / 2), yy, 4, 5); }
-    }
+    });
   };
 
   // Shrines, braziers, the arch, carts and cranes stand among the knights.
@@ -643,9 +734,14 @@
       if (j[0] !== sp.seal && j[1] !== sp.seal) continue;
       const x = OX + j[2], y = OY + j[3];
       if (x < view.left - 100 || x > view.right + 100 || y < view.top - 100 || y > view.bottom + 100) continue;
-      list.push({ y: y + 6, f: () => { for (let i = -3; i <= 3; i++) curtain(c, x + i * 18, y + 6, t, i); } });
+      list.push({ y: y + 6, f: () => { if (IMG["seal-1"]) curtainArt(c, x, y + 6, t); else for (let i = -3; i <= 3; i++) curtain(c, x + i * 18, y + 6, t, i); } });
     }
   };
+  // a shut door's drawn fire curtain (Robert's 3 frames), 120 px across, its foot on the threshold
+  function curtainArt(c, x, y, t) {
+    const im = IMG["seal-" + (1 + (((Math.floor(t * 9 + x) % 3) + 3) % 3))], w = 124, h = (w * im.height) / im.width;
+    c.drawImage(im, x - w / 2, y - h + 6, w, h);
+  }
   function curtain(c, x, y, t, i) {
     const h = 64 + 12 * Math.sin(t * 9 + i * 1.7);
     c.fillStyle = "rgba(255,90,20,0.85)"; c.beginPath(); c.moveTo(x - 11, y); c.quadraticCurveTo(x - 8, y - h * 0.6, x + Math.sin(t * 7 + i) * 4, y - h); c.quadraticCurveTo(x + 8, y - h * 0.6, x + 11, y); c.closePath(); c.fill();
@@ -658,8 +754,38 @@
       c.beginPath(); c.moveTo(x - w, y); c.quadraticCurveTo(x - w * 0.6, y - h * 0.6, x + Math.sin(t * 7 + i) * 2, y - h); c.quadraticCurveTo(x + w * 0.6, y - h * 0.6, x + w, y); c.closePath(); c.fill();
     }
   }
+  // a drawn prop stood on its foot (file px are 2 per world px; s scales it on top of that; flip mirrors it)
+  function stand(c, im, x, y, s = 1, flip = false, dy = 4) {
+    const w = (im.width / 2) * s, h = (im.height / 2) * s;
+    if (!flip) { c.drawImage(im, x - w / 2, y - h + dy, w, h); return; }
+    c.save(); c.translate(x, 0); c.scale(-1, 1); c.drawImage(im, -w / 2, y - h + dy, w, h); c.restore();
+  }
+  // the arch's way out, in its file px (292 wide; the opening 88..214, springing at 170, crown at 120, foot at 286)
+  function archArt(c, x, y) {
+    const im = IMG.arch, k = 0.5, P = (px, py) => [x + (px - 146) * k, y + (py - 286) * k + 4];
+    c.fillStyle = "#0a0404"; c.beginPath();
+    let p = P(88, 286); c.moveTo(p[0], p[1]); p = P(88, 170); c.lineTo(p[0], p[1]);
+    const cp = P(151, 70); p = P(214, 170); c.quadraticCurveTo(cp[0], cp[1], p[0], p[1]); p = P(214, 286); c.lineTo(p[0], p[1]); c.closePath(); c.fill();
+    c.fillStyle = "rgba(255,170,90,0.12)"; c.fillRect(x - 31, y - 46, 62, 50);
+    stand(c, im, x, y);
+  }
   function drawProp(c, q, x, y, t) {
     const kind = q[0];
+    const lit = kind === "shrine" && !!(G.spires && G.spires.lit && G.spires.lit[q[3]]);
+    const im = IMG[{ brazier: "brazier", banner: "banner", throne: "throne", crane: "crane", headframe: "crane", cage: "cage-hang", cartBroken: "cart-broken",
+      shrine: lit ? "shrine-lit" : "shrine-dark", cart: q[3] ? "cart-front" : "cart-side" }[kind]];
+    if (kind === "arch" && IMG.arch) return archArt(c, x, y);
+    if (im) {
+      if (kind === "banner") return stand(c, im, x, y - 22, 1, false, 0);
+      if (kind === "cage") { // hanging from its crane's arm, swaying
+        const sw = Math.sin(t * 1.3 + x) * 3;
+        c.fillStyle = "rgba(0,0,0,0.3)"; c.beginPath(); c.ellipse(x, y, 22, 6, 0, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = "#2a2020"; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y - 96); c.lineTo(x + sw, y - 84); c.stroke();
+        return stand(c, im, x + sw, y - 8, 0.8);
+      }
+      return stand(c, im, x, y, kind === "headframe" ? 0.85 : 1, (kind === "crane" || kind === "headframe") && !!q[3]);
+    }
+    if (kind === "cartBroken") return;
     if (kind === "arch") {
       const a = art.arch;
       c.fillStyle = "#0a0404"; c.fillRect(x - a.W / 2 + a.pw, y - a.H + 30, a.W - 2 * a.pw, a.H - 30); // the dark way out
