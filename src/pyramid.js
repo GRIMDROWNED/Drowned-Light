@@ -688,7 +688,6 @@
       h.x += dx / d * step; h.y += dy / d * step; h.moving = true;
       DL.World.collide(h, C.radius);
       if (G.collideCamp) G.collideCamp(h, C.radius); else if (Py.collide) Py.collide(h, C.radius);
-      DL.Finale.collide(h);
     }
   };
   // Enemies may fight a nearby defending champion just as they fight a Bone Hound.

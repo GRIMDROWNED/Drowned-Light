@@ -19,6 +19,8 @@
   const MOUND = [[-62, -50, 40], [60, -50, 38], [0, -82, 40], [-72, -2, 22], [68, -2, 22]];
   const DOOR = { x: 0, y: -14, r: 26 }; // standing here, in the doorway at the top of the steps, takes you in
   const Cave = (DL.Cave = {});
+  // G.cave is set while the party is in an event room off the map: Derek's Hollow, or the Portal Hall (`hall: true`,
+  // src/finale.js), which runs itself; the world's clock, its spawns and its bosses leave either alone.
   G.cave = null;
 
   /* ---------------- where things are ---------------- */
@@ -81,7 +83,7 @@
       say("A cave mouth in the Mire, sealed with heaped stones. Something hums deep inside.", "warn");
     }
     if (G.isGuest()) return;
-    if (G.cave) return trial(dt);
+    if (G.cave) return G.cave.hall ? undefined : trial(dt); // (G.cave.hall: the Portal Hall, src/finale.js, runs itself)
     const dr = door();
     for (const k of [G.player, ...G.allies]) {
       const d = dist(k.x, k.y, dr.x, dr.y);
@@ -239,6 +241,7 @@
   // A knight falls in the Hollow: not drowned, just down until the wave is cleared. Returns true when it handled the fall.
   Cave.fall = function () {
     if (!G.cave) return false;
+    if (G.cave.hall) return DL.Finale.fall();
     const p = G.player;
     if (p.downT > 0) return true;
     p.downT = DOWN;
@@ -251,7 +254,7 @@
 
   /* ---------------- co-op ---------------- */
   // Host: what guests need to know, in each snapshot.
-  Cave.snap = () => (G.cave ? [G.cave.wave, G.cave.phase === "fight" ? 1 : 0, Math.round(G.cave.t * 10) / 10, G.cave.queue.length, DL.Colossus.snap()] : 0);
+  Cave.snap = () => (G.cave && !G.cave.hall ? [G.cave.wave, G.cave.phase === "fight" ? 1 : 0, Math.round(G.cave.t * 10) / 10, G.cave.queue.length, DL.Colossus.snap()] : 0);
   // Guest: the trial's state from a snapshot (the moves themselves come as messages).
   Cave.applySnap = function (s) {
     G.cave = s ? { wave: s[0], phase: s[1] ? "fight" : s[0] ? "rest" : "intro", t: s[2], queue: { length: s[3] } } : null;
@@ -288,6 +291,7 @@
   Cave.objective = function () {
     const cv = G.cave, n = C.waves.length;
     if (!cv) return "";
+    if (cv.hall) return DL.Finale.hallObjective();
     if (G.player.downT > 0) return `You're down · you rise when wave ${cv.wave} is cleared`;
     if (cv.phase === "intro") return `Derek's Hollow · the Drowned stir in the tunnels`;
     if (cv.phase === "rest") return `Wave ${cv.wave} of ${n} cleared · wave ${cv.wave + 1} in ${Math.ceil(cv.t)}`;

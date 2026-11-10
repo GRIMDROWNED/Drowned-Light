@@ -185,7 +185,7 @@
   R.cycleZoom = () => { R.zoomStep = (R.zoomStep + 1) % R.ZOOMS.length; return R.ZOOMS[R.zoomStep][1]; };
 
   R.draw = function (G) {
-    // facing the Sunken King, the camera pulls back far enough to show him (src/finale.js)
+    // in the Portal Hall's defense the camera pulls back to show the whole hall (src/finale.js)
     const fv = G.player && G.state !== "title" ? DL.Finale.view(G.player) || G.bossView(G.player) : null; // or a great boss (src/game.js)
     R.zoomMul = (R.zoomMul || 1) + ((fv ? Math.min(1, R.H / (R.zoom * fv.need), R.W / (R.zoom * fv.needW)) : 1) - (R.zoomMul || 1)) * 0.03;
     const c = R.ctx, z = R.zoom * R.zoomMul * R.userZoom(), cam = G.camera, dpr = R.dpr;

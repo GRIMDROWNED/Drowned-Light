@@ -100,6 +100,8 @@
       UI.resume();
       if (DL.Mines.active()) DL.Mines.leave(); else DL.Mines.enter();
     });
+    // Sandbox only: raise the Spark Bearer now, or put the Portal Hall back to sleep (src/finale.js)
+    $("btnBearer").addEventListener("click", () => { UI.resume(); DL.Finale.sandbox(); });
     $("btnCombat").addEventListener("click", () => {
       G.save.attackMode = G.save.attackMode === "manual" ? "auto" : "manual";
       G.persist();
@@ -247,8 +249,6 @@
       else if (act === "wyvRepick") DL.Summons.repick("wyvern");
       else if (act === "travel") { if (DL.Outposts.travel(arg)) { UI.closeCamp(); return; } }
       else if (act === "torch") G.craftTorch();
-      else if (act === "rift") { UI.closeCamp(); UI.openGate("portal"); return; }
-      else if (act === "march") { if (DL.Finale.begin()) { UI.closeCamp(); return; } }
       else if (act === "rest") { G.restUntilDusk(); UI.closeCamp(); UI.toast("You rest by the fire until dusk.", "warn"); return; }
       UI.renderCamp();
     });
@@ -326,6 +326,8 @@
     $("btnSpires").classList.toggle("hidden", !DL.SANDBOX || !!DL.Net.role || !!G.cave || DL.Mines.active());
     $("btnMines").classList.toggle("hidden", !DL.SANDBOX || DL.Net.role === "guest" || !!G.cave || DL.Spires.active()); // the host takes a party in (step 9)
     $("btnMines").textContent = DL.Mines.active() ? "Leave the Molten Mines" : "Sandbox: the Molten Mines";
+    $("btnBearer").classList.toggle("hidden", !DL.SANDBOX || DL.Net.role === "guest" || !!G.cave || DL.Dungeon.active());
+    $("btnBearer").textContent = DL.Finale.sandboxLabel();
     UI.renderCoopPlayers();
     $("pauseNote").textContent = G.isGuest()
       ? "The world keeps running while you're paused. Only the host can pause it for both of you."
@@ -727,8 +729,7 @@
       ` · ${DL.Siege.on ? "GREAT SIEGE" : siegeIn === 0 ? "Great Siege tonight" : `Great Siege in ${siegeIn} night${siegeIn > 1 ? "s" : ""}`}`;
     let html = "";
     if (UI.campTab === "build") {
-      html += DL.Finale.card(); // the Fire Bearer, once it has risen (src/finale.js)
-      html += DL.Rift.card(); // the Rift Portal, once every Mist Well is lit (src/rift.js)
+      html += DL.Finale.card(); // the Spark Bearer and the Portal Hall, once he has risen (src/finale.js)
       const trades = DL.Works.trades(); // the Salvage Yard's converter (src/works.js)
       if (trades.length) html += `<article class="card"><header><h3>Salvage Yard</h3></header>
         <p>Break down what you have too much of into what you need. Trades come from your stash.</p>
@@ -1113,14 +1114,14 @@
     set($("phaseIcon"), "class", G.night ? "moon" : "sun");
     set($("clock"), "--prog", String(G.time / DL.CYCLE.total));
 
-    set($("zoneText"), "text", G.cave ? "Derek's Hollow" : G.spires ? DL.Dungeon.name() : DL.ZONES[p.zi].name);
+    set($("zoneText"), "text", G.cave ? (G.cave.hall ? "The Portal Hall" : "Derek's Hollow") : G.spires ? DL.Dungeon.name() : DL.ZONES[p.zi].name);
     const N = DL.Net;
     const coopText = !N.role ? "" : N.role === "guest" ? "Co-op · your friend's world" : G.allies.length ? `Co-op · ${G.allies.length + 1} players · room ${N.code}` : `Room ${N.code} · waiting for friends`;
     set($("coopChip"), "text", coopText);
     set($("coopChip"), "hidden", !coopText);
     const d = Math.hypot(p.x, p.y);
     set($("homeArrow"), "transform", `rotate(${(Math.atan2(-p.y, -p.x) * 180) / Math.PI}deg)`);
-    set($("homeDist"), "text", (DL.SANDBOX ? "SANDBOX · " : "") + (G.cave ? "Camp: far above" : G.spires ? (G.spires.lv === "mines" ? "Camp: beyond the heat" : "Camp: beyond the mist") : (DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`) + (DL.Finale.stage() >= 1 ? "" : DL.Refuge.on() ? ` · Refuge ${DL.Refuge.level()} of ${DL.FLAME.max}` : ` · Pyramid ${Math.floor(DL.Pyramid.coverage() * 100)}% of ${Math.round(DL.PYRAMID.win * 100)}%`)));
+    set($("homeDist"), "text", (DL.SANDBOX ? "SANDBOX · " : "") + (G.cave ? (G.cave.hall ? "Camp: up the stair" : "Camp: far above") : G.spires ? (G.spires.lv === "mines" ? "Camp: beyond the heat" : "Camp: beyond the mist") : (DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`) + (DL.Finale.stage() >= 1 ? "" : DL.Refuge.on() ? ` · Refuge ${DL.Refuge.level()} of ${DL.FLAME.max}` : ` · Pyramid ${Math.floor(DL.Pyramid.coverage() * 100)}% of ${Math.round(DL.PYRAMID.win * 100)}%`)));
     // the way to Derek's Hollow, once found, until you've won him
     const cn = DL.Cave.showNav();
     set($("caveNav"), "hidden", !cn);
@@ -1145,7 +1146,7 @@
       set($("roseArrow"), "transform", `rotate(${(Math.atan2(m.y - p.y, m.x - p.x) * 180) / Math.PI}deg)`);
       set($("roseDist"), "text", `Rose ${Math.round(Math.hypot(m.x - p.x, m.y - p.y) / 10)}m`);
     }
-    // the Fire Bearer and the Drowned Gate, on the march (src/finale.js)
+    // the way back to the Portal Hall's stair while the Spark Bearer waits there (src/finale.js)
     const fn = DL.Finale.nav(p);
     set($("gateNav"), "hidden", !fn);
     if (fn) {

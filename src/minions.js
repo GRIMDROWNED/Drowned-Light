@@ -20,7 +20,7 @@
     const c = M[KIND(b)][type];
     let have = mine(b, type).length;
     for (let i = 0; i < n && have < cap(c); i++, have++) {
-      const o = at ? at(i) : b.def.king ? DL.Finale.callSpot() : b.def.riftlord ? DL.RiftThrone.callSpot(b) : (() => { const a = rand(0, TAU), r = b.def.radius + rand(40, 110); return { x: b.x + Math.cos(a) * r, y: b.y + Math.sin(a) * r * 0.8 }; })();
+      const o = at ? at(i) : b.def.riftlord ? DL.RiftThrone.callSpot(b) : (() => { const a = rand(0, TAU), r = b.def.radius + rand(40, 110); return { x: b.x + Math.cos(a) * r, y: b.y + Math.sin(a) * r * 0.8 }; })();
       if (b.def.colossus && DL.Colossus.inArena) Object.assign(o, DL.Colossus.inArena(o.x, o.y));
       const e = G.makeEnemy(type, o.x, o.y, b.zi || 4, { lord: b.id, rise: 0.9, fromColossus: b.def.colossus || undefined, fromKing: b.def.king || undefined, room: b.room, heat: b.room ? 1 : undefined });
       G.enemies.push(e);
@@ -113,8 +113,6 @@
     if (e.def.burrow) burrow(e, dt);
     return !!e.dive; // under the causeway: nothing else to do
   };
-  // how fast the Fire Bearer gathers its flame (a Sunken Wisp alive slows it)
-  Minions.bearerRate = () => (G.enemies.some((e) => e.type === "wisp" && e.lord && !e.removed && e.rise <= 0) ? DL.MINIONS.king.wisp.slow : 1);
   function crumble(e) {
     e.hp = 0;
     G.kill(e);

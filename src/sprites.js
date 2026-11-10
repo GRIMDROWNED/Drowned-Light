@@ -512,9 +512,8 @@
     "wallFire1", "wallFire2", "wallFire3", "wallFire4",
     // the Ashen Arbalist's bolts and the burst where a flare lands (src/render.js)
     "arbBolt", "arbFlareBolt", "arbFlare1", "arbFlare2", "arbFlare3", "arbFlare4",
-    // the finale (src/finale.js): the Sunken King's body (still, heart open, roaring, dying), his hand, the Drowned Gate
-    "fnKingStill", "fnKingOpen", "fnKingRoar", "fnKingDying", "fnHandRest", "fnHandRaised", "fnHandSlam", "fnHandSweep", "fnGate1", "fnGate2", "fnGate3", "fnWall", "fnPost",
-    "fnRuinA1", "fnRuinA2", "fnRuinA3", "fnRuinA4", "fnRuinB1", "fnRuinB2", "fnRuinB3", "fnRuinB4",
+    // the Spark Bearer (src/finale.js): Robert's Fire Bearer stands in until the Spark Bearer is drawn (the Sunken King, his
+    // hands, the Drowned Gate and its causeway were cut on 2026-11-10; their pictures stay in assets/sprites/props as fn*)
     "fbFront", "fbBack", "fbSide", "fbCamp", "fbHurl", "fbDown"];
   const PROPS = {
     path: "assets/sprites/",

@@ -144,8 +144,8 @@
     // The mother wyvern: she hunts whoever stole one of her eggs, until one of them is dead (src/wyvern.js). Her moves: DL.WYVERN.
     wyvern: { name: "The Mother Wyvern", hp: 820, speed: 74, dmg: 20, range: 62, windup: 0.55, cd: 1.6, scale: 1,
       radius: 22, mass: 9, armor: 0.1, boss: true, wyvern: true, fly: true, shadow: 34, barY: 120, barW: 60, drop: { iron: 2, pearl: 2, resin: 2 } },
-    // The Sunken King: the last foe, risen at the Drowned Gate when the Fire Bearer reaches it (src/finale.js). Blades can't
-    // hurt him until the Bearer's flame burns his heart open. His moves: DL.FINALE.king.
+    // The Sunken King: cut on 2026-11-10 (Robert) with the Drowned Gate; he never rises now. Kept so old worlds' archives and
+    // the order of the kinds (co-op sends kinds by their place in this list) stay as they were.
     king: { name: "The Sunken King", hp: 900, speed: 0, dmg: 20, range: 0, windup: 1, cd: 99, scale: 1,
       radius: 46, mass: 1e6, boss: true, king: true, drop: {} },
     self: { name: "Your Drowned Self", hp: 200, speed: 70, dmg: 15, range: 44, windup: 0.5, cd: 1.3, scale: 1.05,
@@ -714,8 +714,8 @@
       raptor: { max: 4, start: 2, phase2: 2 },
       screecher: { max: 2, start: 1, phase2: 1, call: 2, callEvery: 8, wildMax: 4 },
     },
-    // the Sunken King's: his own "call" move (DL.FINALE.king.call) now brings Tide Stalkers; while a Wisp lives the
-    // Fire Bearer gathers its flame only `slow` as fast
+    // the Sunken King's (cut 2026-11-10; he never rises now, but his minions pour out of the Portal Hall's dark portals
+    // in the Spark Bearer's defense, src/finale.js, and roam wild once he was slain in an old world)
     king: {
       tidestalker: { max: 14 },
       wisp: { max: 3, start: 2, phase2: 1, slow: 0.6 },
@@ -742,42 +742,45 @@
   /* Last stand (src/game.js hurtPlayer): a blow that would kill you while your health is above `above` of its maximum
      leaves you at 1 health instead, safe from harm for `inv` s. A blow taken at or below that line kills as usual. */
   DL.LAST_STAND = { above: 0.25, inv: 1 };
-  /* The finale (src/finale.js): Kindle becomes the Fire Bearer and carries the last light of the marsh to the Drowned Gate.
-     Nothing of it shows until it's earned: Central Flame 5, the Starved Bell and the Deadly Rose slain, Derek won from the
-     Colossus, and your Kindle lit. At the next dawn Kindle drinks from the Central Flame and rises as the Bearer.
-       gate      the Drowned Gate stands `dist` px out (±250) in the north half of the Abyss, on dry land, kept `clear` px clear
-                 of rocks and trees; within `foundR` px a knight has found it. The arena is a ring of `arenaR` px whose
-                 heart lies `arenaY` px south of the gate; the Bearer stops `plantY` px south of the gate. In the arena the
-                 camera pulls back to show at least `view` px top to bottom (and `viewW` across), and leans toward the King.
-                 The gate stands in a lake of black water (`lake`: a rounded box centred `cy` px off the gate, `rx` by `ry`
-                 px); a stone causeway `causeway` px either side of the middle runs out of it to the gate. Nobody wades it.
-       bearer    sent from the camp by day, it strides straight to the hearth (the escort march was cut for the pyramid).
-                 It has `hp` health (× the party), firelight `light` px round it, and every `pulseEvery` s burns the
-                 Drowned within `pulseR` px for `pulseDmg`. At dawn it heals `dawnHeal` of its health. The march numbers
-                 below (speed, leash, band*, braziers, wave*, campR, restLight) are no longer used.
-       falling   at 0 health it gutters and falls back to its last camp (or the Central Flame), and rekindles at dawn.
-       king      the Sunken King rises `rise` s after the Bearer plants at the gate. While the Bearer stands it fills its
-                 charge over `charge` s (each blow it takes knocks off `hitCharge`), then hurls its flame: the King's heart
-                 burns open for `open` s, the only time he can be hurt. At `phases` of his health the burning ends and he
-                 grows angrier (his moves come `rate` × as often per phase). He sinks back, whole, if every knight
-                 goes `forget` px off. His moves, each on its own timer:
-                   slam   a great hand falls on a knight (or the Bearer): `r` px, after `windup` s, `dmg` × his damage, and
-                          `bearer` damage to the Bearer if it's under it;
-                   sweep  his arm sweeps a lane across the arena at a knight's height: `n` spots `step` px apart;
-                   call   `n` (+1 per phase) Drowned climb out of the black water and go for the Bearer;
-                   rain   from phase 2: black water rains on `n` spots round the knights, adding `corrupt` corruption. */
+  /* The Spark Bearer and the Portal Hall (src/finale.js; Robert, 2026-11-10). Nothing of it shows until it's earned:
+     Central Flame `flame`, the Starved Bell and the Deadly Rose slain, Derek won from the Colossus, and your Kindle lit.
+     At the next dawn Kindle drinks the Central Flame and rises as the Spark Bearer, and stone steps open beside the Flame:
+     the way down to the Portal Hall (`door`, world px from the camp's heart). Walk down with the Bearer waiting there and
+     the defense begins.
+       hall      a round, eight-sided hall far off the map at (x, y), `r` px from its heart to each corner. The eight
+                 portals stand on its eight walls (the first at the north-north-west, then on round clockwise), and the
+                 stair up to the camp at its south corner. The Bearer stands on the dais at its heart.
+       defense   the Bearer fills his spark over `charge` s (× `wispSlow` while a Sunken Wisp lives); each blow he takes
+                 knocks off `hitCharge`. He has `hp` health (× the party), and every `pulseEvery` s burns the Drowned
+                 within `pulseR` px for `pulseDmg`. At 0 health he falls: he loses `fallLoss` of his spark, and gets up
+                 after `downFor` s with `riseHp` of his health. The Drowned pour out of the dark portals, `n` at a time
+                 every `burst` s (the low number at the start, the high one at the end), never more than `cap` alive, picked
+                 from `pool` (the Sunken King's three minions among them) with zone `zone`'s strength. At each `surges`
+                 mark a crowd comes all at once. A knight who falls gets up after `knightRise` s with `riseHp` health;
+                 if every knight is down together the hall casts you out, the spark goes back to nothing, and the stair
+                 stays shut until the next dawn (you come out with `failHp` health).
+     Once the spark is full the hall is lit: Kindle comes back out small, and the first portal opens. Each later one opens
+     when the dungeon behind the one before it is cleared (G.save.dungeons). */
   DL.FINALE = {
-    gate: { dist: 3950, clear: 560, foundR: 650, arenaR: 420, arenaY: 250, plantY: 380, view: 1450, viewW: 1000,
-      lake: { cy: -150, rx: 820, ry: 580 }, causeway: 170 },
-    speed: 24, wade: 0.6, leash: 340, hp: 1500, light: 260, restLight: 330, pulseEvery: 3, pulseR: 95, pulseDmg: 18,
-    bandEvery: 15, bandN: 3, bandR: 440, braziers: 4, brazierR: 160, waveEvery: 11, waveN: 4, campR: 750, dawnHeal: 0.4,
-    king: {
-      rise: 3.5, charge: 16, hitCharge: 0.012, open: 9, phases: [0.66, 0.33], rate: 1.25, forget: 1500, spawn: 1000,
-      slam: { first: 3, every: 4.2, windup: 1.4, r: 92, dmg: 1.3, bearer: 70 },
-      sweep: { first: 8, every: 11, windup: 1.7, n: 9, step: 58, r: 40, dmg: 1, bearer: 90 },
-      call: { first: 6, every: 15, n: 4 },
-      rain: { first: 4, every: 9, windup: 1.3, n: 6, r: 48, dmg: 0.5, corrupt: 10 },
-    },
+    flame: 5,
+    door: { x: 0, y: -200 },
+    hall: { x: 0, y: -40000, r: 480, dais: 80 },
+    portals: [
+      { id: "spires", name: "The Abyssal Spires", col: "190,130,255" },
+      { id: "mines", name: "The Molten Mines", col: "255,120,40" },
+      null, null, null, null, null, null,
+    ],
+    charge: 150, hitCharge: 0.003, wispSlow: 0.6,
+    hp: 1500, light: 280, pulseEvery: 3, pulseR: 100, pulseDmg: 18,
+    fallLoss: 0.25, downFor: 8, riseHp: 0.5,
+    burst: 3.4, n: [2, 4], cap: 16, zone: 4,
+    pool: { footman: 3, revenant: 2, defiler: 1.5, archer: 1, hexbearer: 0.8, blackguard: 0.6, tidestalker: 2.5, tideleech: 0.5, wisp: 0.35 },
+    surges: [
+      { at: 0.33, name: "Tide Stalkers swarm out of every portal", kinds: { tidestalker: 8, wisp: 1 } },
+      { at: 0.66, name: "Bone Bulwarks and Tide Leeches come through", kinds: { blackguard: 3, tideleech: 2, wisp: 1 } },
+      { at: 0.9, name: "A Drowned Sovereign steps out of the dark", kinds: { champion: 1, tidestalker: 6, wisp: 2 } },
+    ],
+    knightRise: 12, failHp: 0.35,
   };
   /* Derek, the stone golem familiar (src/golem.js): won in Derek's Hollow (DL.CAVE), one per knight.
      He can't be hurt. Every `buildCd` seconds, when a Drowned comes within `trigger` px of his knight,
