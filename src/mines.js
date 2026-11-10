@@ -449,9 +449,18 @@
     "seal-1", "seal-2", "seal-3", "crane", "cage-hang", "cart-side", "cart-front", "cart-broken", "rail",
     // the traps' (src/minetraps.js)
     "grate-1", "grate-2", "grate-3", "grate-flame-1", "grate-flame-2", "grate-flame-3", "grate-flame-4", "cage-down", "cage-broken",
-    "golem-fist", "golem-pool", "golem-core", "shard-1", "shard-2", "shard-3", "shard-crack", "shard-break", "shard-burst", "colossus-mortar", "colossus-chain", "colossus-fist", "chest-shut", "chest-open", "jet-head", "jet-head-side", "jet-1", "jet-2", "jet-3", "jet-4", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "geyser-1", "geyser-2", "geyser-3", "geyser-4"];
+    "golem-fist", "golem-pool", "golem-core", "shard-1", "shard-2", "shard-3", "shard-crack", "shard-break", "shard-burst", "colossus-mortar", "colossus-chain", "colossus-fist", "chest-shut", "chest-open", "jet-head", "jet-head-side", "puddle-1", "puddle-2", "puddle-3", "warn-1", "warn-2", "warn-3", "decree-1", "decree-2", "decree-3", "decree-4", "decree-safe", "obsidian-1", "obsidian-2", "jet-1", "jet-2", "jet-3", "jet-4", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "geyser-1", "geyser-2", "geyser-3", "geyser-4"];
   const IMG = {};
   Mi.IMG = IMG; // src/minetraps.js draws from it too
+  // Robert's warning ring (warn-1..3, faint to white-hot as k goes 0..1) laid on an oval rx by ry round (x, y); false
+  // while it hasn't loaded (the caller draws its coded ring). Its band spans 187 x 102 of the 200 x 120 file, centred 64 down.
+  Mi.ring = function (c, x, y, rx, ry, k, im0) {
+    const im = im0 || IMG["warn-" + (k < 0.45 ? 1 : k < 0.85 ? 2 : 3)];
+    if (!im) return false;
+    const sx = (2 * rx) / 187, sy = (2 * ry) / 102;
+    c.drawImage(im, x - 100 * sx, y - 64 * sy, 200 * sx, 120 * sy);
+    return true;
+  };
   let loading = false;
   function loadArt() {
     if (loading || typeof Image === "undefined") return;
@@ -1015,7 +1024,9 @@
       c.fillStyle = C.iron; c.fillRect(x + sw - 18, y - 72, 36, 5); c.fillRect(x + sw - 20, y - 32, 40, 5);
     } else if (kind === "crystal") {
       const s = q[3];
-      c.drawImage(art.crystal, x - 28 * s, y - 70 * s, 56 * s, 72 * s);
+      const ob = IMG[s >= 1.15 ? "obsidian-1" : "obsidian-2"]; // Robert's Obsidian deposit: the big ones whole, the rest mined
+      if (ob) { const w = 64 * s, h = (w * ob.height) / ob.width; c.drawImage(ob, x - w / 2, y + 4 - h, w, h); }
+      else c.drawImage(art.crystal, x - 28 * s, y - 70 * s, 56 * s, 72 * s);
     } else if (kind === "crates") {
       for (const [dx, dy] of [[-18, 0], [14, 4], [-2, -22]]) {
         c.fillStyle = C.wood; c.fillRect(x + dx - 14, y + dy - 24, 28, 24); c.fillStyle = C.woodL; c.fillRect(x + dx - 14, y + dy - 24, 28, 3);

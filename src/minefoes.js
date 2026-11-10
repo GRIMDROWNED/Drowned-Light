@@ -156,10 +156,15 @@
   const vis = (view, x, y, m) => x > view.left - m && x < view.right + m && y > view.top - m && y < view.bottom + m;
   // on the floor: the Wretches' puddles
   F.drawFloor = function (c, view, t) {
-    const life = N().wretch.burns;
+    const life = N().wretch.burns, IMG = DL.Mines.IMG || {};
     for (const u of puddles) {
       if (!vis(view, u.x, u.y, 40)) continue;
-      const a = Math.min(1, (life - u.t) / 0.6);
+      const a = Math.min(1, (life - u.t) / 0.6), pi = IMG["puddle-" + (u.t < life * 0.35 ? 1 : u.t < life * 0.7 ? 2 : 3)];
+      if (pi) { // Robert's puddle, cooling as it ages
+        const w = u.r * 2.15, h = (w * pi.height) / pi.width;
+        c.globalAlpha = Math.max(0, a); c.drawImage(pi, u.x - w / 2, u.y - h / 2, w, h); c.globalAlpha = 1;
+        continue;
+      }
       c.fillStyle = `rgba(60,20,8,${0.6 * a})`; c.beginPath(); c.ellipse(u.x, u.y, u.r, u.r * 0.55, 0, 0, TAU); c.fill();
       c.fillStyle = `rgba(255,${110 + 40 * Math.sin(t * 6 + u.x)},30,${0.75 * a})`; c.beginPath(); c.ellipse(u.x, u.y, u.r * 0.7, u.r * 0.38, 0, 0, TAU); c.fill();
     }
@@ -174,8 +179,10 @@
     for (const tg of G.telegraphs) {
       if (!tg.fire || !vis(view, tg.x, tg.y, 80)) continue;
       const k = Math.min(1, tg.t / tg.delay);
-      c.strokeStyle = `rgba(255,${150 - 60 * k},40,${0.4 + 0.5 * k})`; c.lineWidth = 2 + 3 * k;
-      c.beginPath(); c.ellipse(tg.x, tg.y, tg.r, tg.r * 0.5, 0, 0, TAU); c.stroke();
+      if (!DL.Mines.ring(c, tg.x, tg.y, tg.r, tg.r * 0.5, k)) {
+        c.strokeStyle = `rgba(255,${150 - 60 * k},40,${0.4 + 0.5 * k})`; c.lineWidth = 2 + 3 * k;
+        c.beginPath(); c.ellipse(tg.x, tg.y, tg.r, tg.r * 0.5, 0, 0, TAU); c.stroke();
+      }
       c.fillStyle = `rgba(255,120,30,${0.15 + 0.3 * k})`;
       c.beginPath(); c.ellipse(tg.x, tg.y, tg.r * k, tg.r * 0.5 * k, 0, 0, TAU); c.fill();
     }

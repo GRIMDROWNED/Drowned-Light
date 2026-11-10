@@ -172,6 +172,22 @@ for name, box in (('chest-shut', (40, 200, 840, 887)), ('chest-open', (940, 30, 
 # Into assets/sprites/mines-camp at 2 file px per world px (src/lavacamp.js draws them at half size): the Magma Forge
 # 112 world px wide (the Refuge forge's width), the Brazier Tower 64 (a watchtower's), the Forge Gate dormant and
 # active 124 (a little wider than the Rift Portal).
+# ---- Part 9 (2026-11-10): coded effects redrawn by Robert ----
+def thirds(name, y0, y1, n=3):
+    im = key(load(name)); w = im.width / n
+    return [im.crop((round(i * w), y0, round((i + 1) * w), y1)) for i in range(n)]
+for i, c in enumerate(thirds('../molten-wretch/puddle.png', 200, 530)):  # a Wretch's puddle, fresh to cooled
+    save(c.resize((96, round(96 * c.height / c.width)), Image.LANCZOS), f'puddle-{i + 1}')
+for i, c in enumerate(thirds('warn-ring.png', 130, 566)):  # the shared warning ring, faint to white-hot (whole cells: same box)
+    save(c.resize((200, round(200 * c.height / c.width)), Image.LANCZOS), f'warn-{i + 1}')
+im = key(load('../ashen-sovereign/decree.png'))  # the Decree: a tile cracking, bursting, smoking; then the safe stone
+for i, a in enumerate((33, 459, 886, 1318, 1743)):
+    c = im.crop((a - 2, 111, a + 398, 567))
+    save(c.resize((120, round(120 * c.height / c.width)), Image.LANCZOS), 'decree-safe' if i == 4 else f'decree-{i + 1}')
+# Robert's Obsidian deposit (full and mined) for the magma crystals
+for i, c in enumerate(cells('obsidian.png', [(85, 667), (800, 1379)])):
+    save(fit(c, w=120)[0], f'obsidian-{i + 1}')
+
 OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites', 'mines-camp')
 os.makedirs(OUT, exist_ok=True)
 save(fit(crop(key(load('magma-forge.png'))), w=224)[0], 'magma-forge', 128)
