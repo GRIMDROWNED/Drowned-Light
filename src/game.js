@@ -1099,6 +1099,8 @@
         e.state = "move"; e.moving = false; // a crystal turret: it only shoots
       } else if (e.def.spire && DL.SpireFoes.busy(e, dt, p, dp)) {
         // a foe of the Abyssal Spires: its own leaps and volleys (src/spirefoes.js)
+      } else if (e.def.mine && DL.MineFoes.busy(e, dt, p, dp)) {
+        // an Ember Halberdier winding up its throw (src/minefoes.js)
       } else if (e.def.king && DL.Finale.busy()) {
         // the Sunken King: his hands do everything (src/finale.js)
       } else if (e.def.bell && DL.Bell.busy(e, dt, p, dp)) {
@@ -1305,6 +1307,7 @@
   function strike(e) {
     if (e.def.colossus) return DL.Colossus.strike(e);
     if (e.def.rose) return DL.Rose.strike(e);
+    if (e.def.mine && DL.MineFoes.strike(e)) return; // a Cinder Acolyte's fire circle; an Ash Guard's slam adds its ring (src/minefoes.js)
     const p = e.tgt || G.player;
     const dmg = e.dmg * (e.rallied > 0 ? 1.2 : 1);
     if (p.def) {
@@ -1436,6 +1439,7 @@
     const crit = !remote && Math.random() < 0.12;
     let d = dmg * (crit ? 1.6 : 1);
     if (!remote && !e.struck && G.spires && DL.Spires.misty(G.player.x, G.player.y)) d *= DL.SPIRES.mist.strike; // first strike from the mist
+    if (e.def.mine) d = DL.MineFoes.soak(e, d); // warded by a Cinder Acolyte (src/minefoes.js)
     if (e.def.spire) d = DL.SpireFoes.soak(e, d, ang); // a faded Mist Shade, the Prism Knight's shield (src/spirefoes.js)
     e.struck = true;
     if (G.isGuest()) {
@@ -1666,8 +1670,9 @@
         for (const a of G.allies) if (!a.down && dist(t.x, t.y, a.x, a.y) < t.r + 6) DL.Net.hurtAlly(a, t.dmg, Math.atan2(a.y - t.y, a.x - t.x));
         for (const h of G.hounds.slice()) if (dist(t.x, t.y, h.x, h.y) < t.r + 4) DL.Hounds.hurt(h, t.dmg, Math.atan2(h.y - t.y, h.x - t.x));
         for (const h of G.champions.slice()) if (dist(t.x, t.y, h.x, h.y) < t.r + DL.PYRAMID.champion.radius) DL.Pyramid.hurtChampion(h, t.dmg);
-        for (let i = 0; i < 10; i++) spark(t.x + rand(-t.r, t.r) * 0.6, t.y + rand(-t.r, t.r) * 0.3, t.rose ? "220,40,60" : t.wyv ? "170,210,255" : "90,235,245", 120);
+        for (let i = 0; i < 10; i++) spark(t.x + rand(-t.r, t.r) * 0.6, t.y + rand(-t.r, t.r) * 0.3, t.rose ? "220,40,60" : t.wyv ? "170,210,255" : t.fire ? "255,150,50" : "90,235,245", 120);
         if (t.bolt) { G.effects.push({ type: "wyvStrike", x: t.x, y: t.y, t: 0, max: 0.35 }); G.camera.shake = Math.max(G.camera.shake, 4); } // the mother wyvern's lightning
+        else if (t.fire) for (let i = 0; i < 14; i++) puff(t.x + rand(-t.r, t.r) * 0.7, t.y + rand(-t.r, t.r) * 0.35, "rgba(255,140,40,0.85)", 60, 0.7, -60); // a Cinder Acolyte's circle flares
         else if (!t.rose) G.effects.push({ type: "spikes", x: t.x, y: t.y, r: t.r, t: 0, max: 0.5 }); // the Deadly Rose's thorns draw themselves
       }
     }

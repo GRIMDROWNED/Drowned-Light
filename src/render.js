@@ -114,6 +114,8 @@
     c.globalAlpha = a0;
   }
 
+  R.sprite = (c, name, x, y, flip, alpha) => sprite(c, name, x, y, flip, alpha); // for the dungeons' props (src/mines.js)
+
   function shadow(c, x, y, rx, ry, a = 0.38) {
     c.fillStyle = `rgba(0,0,0,${a})`;
     c.beginPath();
@@ -234,6 +236,7 @@
 
     /* telegraphs on the ground */
     for (const tg of G.telegraphs) {
+      if (tg.fire) continue; // a Cinder Acolyte's fire circle: drawn bright, over the dark (src/minefoes.js)
       const k = Math.min(1, tg.t / tg.delay);
       // the Deadly Rose's are red, the mother wyvern's a pale storm-white
       c.fillStyle = tg.rose ? `rgba(200,30,50,${0.12 + 0.25 * k})` : tg.wyv ? `rgba(200,220,255,${0.1 + 0.22 * k})` : `rgba(60,220,230,${0.12 + 0.25 * k})`;
@@ -1307,7 +1310,7 @@
         c.lineWidth = 1.5;
         c.beginPath(); c.moveTo(e.x, e.y - 30); c.lineTo(e.x + Math.cos(e.aim) * 240, e.y - 30 + Math.sin(e.aim) * 240); c.stroke();
       } else {
-        c.fillStyle = `rgba(60,220,230,${0.08 + 0.22 * k})`;
+        c.fillStyle = d.mine ? `rgba(255,120,40,${0.1 + 0.25 * k})` : `rgba(60,220,230,${0.08 + 0.22 * k})`; // the Sovereign's minions wind up in ember
         c.beginPath();
         c.moveTo(e.x, e.y);
         c.ellipse(e.x, e.y, d.range + 14, (d.range + 14) * 0.7, 0, e.aim - 0.95, e.aim + 0.95);
@@ -1318,7 +1321,7 @@
     // Bone Wolves wear the hound's bones with a drowned, cyan cast
     const frozen = DL.Kits.frozen(e), icy = frozen && e.flash <= 0 && e.state !== "windup"; // frozen by the Frostweaver: frosted over
     let flash = e.flash > 0 ? 0.9 : e.state === "windup" ? 0.2 + 0.2 * Math.sin(t * 30) : icy ? 0.45 : d.beast ? WOLF_TINT : 0;
-    let flashColor = e.flash > 0 ? "#ffffff" : icy ? "#bfe6ff" : d.beast && e.state !== "windup" ? WOLF_CAST : d.rose ? "#ff7a8a" : "#7ff6ff";
+    let flashColor = e.flash > 0 ? "#ffffff" : icy ? "#bfe6ff" : d.beast && e.state !== "windup" ? wolfCast() : d.rose ? "#ff7a8a" : d.mine ? "#ffa060" : "#7ff6ff";
     if (lk && lk.tint && !flash) { flash = lk.tintK; flashColor = lk.tint; } // a stand-in minion, washed in its own colour
     if (d.spire) DL.SpireFoes.drawMark(c, e, t); // where a Chain Leaper lands, a Bowman's lanes
     const [anim, fr, ang] = enemyAnim(e, t);
@@ -1381,16 +1384,19 @@
     const lk = DL.Summons.look("hound"), s = lk.scale;
     shadow(c, h.x, h.y, 18 * s, 5 * s);
     const [anim, fr] = houndAnim(h, t);
-    Art.drawUnit(c, lk.key, anim, fr, h.angle, h.x, h.y, s, h.flash > 0 ? { flash: 0.8, flashColor: "#ffb0a0" } : lk);
+    // the plain Bone Hound, risen from the Molten Mines' den, keeps a light ember cast (Robert 2026-11-09)
+    const ember = DL.Summons.form("hound") === 0 && !lk.flash && DL.Den.inMines() ? { flash: 0.14, flashColor: "#ff7a30" } : lk;
+    Art.drawUnit(c, lk.key, anim, fr, h.angle, h.x, h.y, s, h.flash > 0 ? { flash: 0.8, flashColor: "#ffb0a0" } : ember);
     // knocked out: the bar fills as it pulls itself back together
     if (h.down > 0) bar(c, h.x, h.y - 34, 22, 1 - h.down / (h.downMax || DL.HOUND.downTime), "#8f846b");
     else if (h.hp < h.maxHp) bar(c, h.x, h.y - 70 * s, 22, Math.max(0, h.hp) / h.maxHp, "#d9cdae");
   }
-  const WOLF_TINT = 0.22, WOLF_CAST = "#4fb8bf";
+  // the Bone Wolves: a drowned cyan cast in the Mire, an ember one in the Molten Mines (Robert: a light lava recolour)
+  const WOLF_TINT = 0.22, wolfCast = () => (DL.Den.inMines() ? "#ff6a24" : "#4fb8bf");
   // A Bone Wolf's carcass at the den (one being hauled shows under Carrying in the HUD, not on the knight).
   function drawCarcass(c, b) {
     shadow(c, b[0], b[1], 16, 4, 0.3);
-    Art.drawUnit(c, "boneHound", "death", 2, b[2], b[0], b[1], 1, { flash: WOLF_TINT, flashColor: WOLF_CAST });
+    Art.drawUnit(c, "boneHound", "death", 2, b[2], b[0], b[1], 1, { flash: WOLF_TINT, flashColor: wolfCast() });
   }
   // Derek: casting plays his attack (fists up, then slammed down), otherwise he plods or stands.
   function golemAnim(m, t) {
@@ -1602,7 +1608,7 @@
 
   // A soft cyan halo around the visor so the Drowned read in the dark.
   function drawEyes(c, e, t) {
-    if (e.def.beast) { const [anim, fr, ang] = enemyAnim(e, t); beastEyes(c, e.x, e.y, ang, anim, fr, e.id, "80,235,245", t); return; }
+    if (e.def.beast) { const [anim, fr, ang] = enemyAnim(e, t); beastEyes(c, e.x, e.y, ang, anim, fr, e.id, DL.Den.inMines() ? "255,170,60" : "80,235,245", t); return; }
     const s = e.def.scale;
     const ang = e.state === "move" ? e.angle : e.aim;
     const { dir, flip } = Art.unitDir(ang);

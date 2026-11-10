@@ -193,6 +193,17 @@
       spire: "swisp", minion: true, shadow: 12, barY: 90, drop: {} },
     warden: { name: "Throne Warden", hp: 120, speed: 62, dmg: 15, range: 0, windup: 1, cd: 99, scale: 1, radius: 16, mass: 3,
       spire: "warden", minion: true, shadow: 20, barY: 132, barW: 34, drop: {} },
+    /* The Ashen Sovereign's minions (Robert's sheet, 2026-11-09): the Molten Mines' only small foes (src/minefoes.js,
+       numbers in DL.MINE_FOES). They walk and strike like the Drowned, with their own extras (`mine` names them). Until
+       Robert's drawings are in they wear another unit's (`look`), washed with ember colours. */
+    wretch: { name: "Molten Wretch", hp: 26, speed: 118, dmg: 7, range: 28, windup: 0.32, cd: 1.1, scale: 1, radius: 10, mass: 0.6,
+      lunge: 340, zigzag: true, mine: "wretch", minion: true, look: "rosewretch", lookScale: 0.9, tint: "#ff6a1a", tintK: 0.4, drop: {} },
+    ashguard: { name: "Ash Guard", hp: 150, speed: 40, dmg: 18, range: 44, windup: 0.8, cd: 2.2, scale: 1, radius: 16, mass: 4,
+      shield: 0.75, mine: "guard", minion: true, look: "blackguard", lookScale: 1, tint: "#4a3a34", tintK: 0.35, barY: 100, drop: {} },
+    halberdier: { name: "Ember Halberdier", hp: 95, speed: 60, dmg: 16, range: 66, windup: 0.7, cd: 1.8, scale: 1, radius: 14, mass: 2,
+      lunge: 280, mine: "halberd", minion: true, look: "warden", lookScale: 0.9, tint: "#e8501a", tintK: 0.6, barY: 120, drop: {} },
+    acolyte: { name: "Cinder Acolyte", hp: 55, speed: 62, dmg: 12, range: 250, windup: 0.6, cd: 2.6, scale: 1, radius: 12, mass: 0.9,
+      hang: 250, mine: "acolyte", minion: true, look: "hexbearer", lookScale: 1, tint: "#d04010", tintK: 0.4, drop: {} },
   };
 
   // Base kits. A kit = weapon + dash behaviour + signature ability.
@@ -827,6 +838,19 @@
   // The Molten Mines (Level 3, src/mines.js): off the map at x -40000. lh/hang as in the Spires; dark is the run's
   // darkness (the lava lights it); home is how long you stand at a lit Ember Shrine to go home.
   DL.MINES = { x: -40000, y: 0, halfW: 2500, halfH: 2200, lh: 48, hang: 50, dark: 0.3, home: 1.5 };
+  /* the Ashen Sovereign's minions in the Molten Mines (src/minefoes.js; their bodies are in DL.ENEMIES).
+     wretch: drips burning puddles (`puddle` px, `burns` s, `dmg` a touch) every `drip` s while it moves, and heals
+       `feast` of its health when a minion falls within `feastR` px. guard: its slam throws a ring of `ring` fire globs.
+     halberd: every `throwEvery` s, from `near`..`far` px, it winds up `throwWind` s and throws a 3-way fire crescent.
+     acolyte: lights a fire circle (`circle` px, `fuse` s) under a knight instead of striking, and every `wardEvery` s
+       wards the nearest other minion within `wardR` px: half damage for `wardFor` s. */
+  DL.MINE_FOES = {
+    zone: 4, // they grow like the Abyss's Drowned
+    wretch: { drip: 1.1, puddle: 22, burns: 3, dmg: 4, feast: 0.35, feastR: 220 },
+    guard: { ring: 10, speed: 140, dmg: 8, life: 1.4 },
+    halberd: { throwEvery: 4.5, near: 120, far: 320, throwWind: 0.55, speed: 230, dmg: 10, spread: 0.55 },
+    acolyte: { circle: 46, fuse: 1.1, wardEvery: 5, wardR: 260, wardFor: 4 },
+  };
   // the Molten Mines' traps (src/minetraps.js): seconds, px, damage. Every one warns first; a dash gets through.
   DL.MINE_TRAPS = {
     grate: { every: 3.4, warn: 0.8, burn: 1, wave: 0.35, dmg: 14 }, // the Grate Run: a new pattern every 3.4 s

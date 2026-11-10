@@ -44,7 +44,7 @@
   /* The unique places he can lead you to. A new one only needs an entry here: where it is, and
      whether the host has found it yet (places not found yet come first). */
   Kindle.sites = function () {
-    const list = [{ id: "den", name: "the Bone Wolf den", at: DL.Den.spot, found: () => !!G.save.den.found }];
+    const list = DL.Den.inMines() ? [] : [{ id: "den", name: "the Bone Wolf den", at: DL.Den.spot, found: () => !!G.save.den.found }]; // not into the Mines
     if (DL.Cave && DL.Cave.mouth) list.push({ id: "cave", name: "the mouth of Derek's cave", at: DL.Cave.mouth, found: () => !!G.save.caveFound });
     if (DL.Abigail) list.push({ id: "graves", name: "the old graves in the Abyss", at: DL.Abigail.graveSpot, found: () => !!G.save.souls.found });
     if (DL.Rose) list.push({ id: "rose", name: "the Deadly Rose's garden", at: DL.Rose.lair, found: () => !!G.save.rose.found });

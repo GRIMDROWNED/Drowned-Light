@@ -819,7 +819,7 @@
           <li>Your <b>lantern oil</b> halves corruption in the dark until it runs dry.</li>
           <li><b>Amethyst</b> deposits glow blue in the Drowned Reaches and the Abyss, farther out than iron. They stay day and night and regrow at dawn.</li>
           <li>Defend a <b>Mother Root</b> until dawn for a rich reward.</li>
-          <li>${owns("hound") ? `Your <b>Bone Hound</b> rose from the pack that denned in the Mire, to the ${DL.Den.direction()}.` : `Bone Wolves den in the Mire, to the ${DL.Den.direction()}. Break the pack and carry a carcass home, and see what rises.`}</li>
+          <li>${owns("hound") ? `Your <b>Bone Hound</b> rose from the pack that denned ${DL.Den.where()}.` : `Bone Wolves den ${DL.Den.where()}. Break the pack and carry a carcass home, and see what rises.`}</li>
           <li>${DL.Kindle.guideLine()}</li>
           <li>${DL.Abigail.guideLine()}</li>
           <li>${DL.Fred.guideLine()}</li>
@@ -918,9 +918,9 @@
     if (mine && mine.down > 0) action = `<span class="req">Knocked out · gets up in ${Math.ceil(mine.down)} s</span>`;
     else if (mine) action = `<span class="maxed">At your side · ${Math.ceil(mine.hp)} / ${mine.maxHp}</span>`;
     else if (DL.Den.carrying()) action = `<span class="req">You carry a carcass: bring it into the camp</span>`;
-    else if (den.cleared && den.bodies.length) action = `<span class="req">The pack is broken: ${den.bodies.length} carcass${den.bodies.length > 1 ? "es lie" : " lies"} at the den, to the ${DL.Den.direction()}</span>`;
-    else action = `<span class="req">Hunt the pack: the den lies in the Mire, to the ${DL.Den.direction()} of the camp</span>`;
-    if (!owns("hound")) return lockedCard(`data-hound="1"`, "Five things sleep at a den of bones out in the Mire, by day and by night. Break the pack, then carry what's left of one back into the camp. In co-op every knight carries their own.", action);
+    else if (den.cleared && den.bodies.length) action = `<span class="req">The pack is broken: ${den.bodies.length} carcass${den.bodies.length > 1 ? "es lie" : " lies"} at the den ${DL.Den.where()}</span>`;
+    else action = `<span class="req">Hunt the pack: the den lies ${DL.Den.where()}</span>`;
+    if (!owns("hound")) return lockedCard(`data-hound="1"`, `Five things sleep at a den of bones ${DL.Den.inMines() ? "deep in the Molten Mines" : "out in the Mire"}, by day and by night. Break the pack, then carry what's left of one back into the camp. In co-op every knight carries their own.`, action);
     return `<article class="card hound-card">
       <header><canvas class="portrait" data-hound="1" width="66" height="52"></canvas>
         <div><span class="tag">Ally · Melee</span><h3>${H.name}</h3><span class="motto">It hunts what runs.</span></div></header>

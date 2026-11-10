@@ -83,6 +83,11 @@
   const EXIT = { x: -200, y: 1512 }; // the arch in the Gate Hall: home
   const THRONE = { x: 0, y: -1700 };
   const SPAWN = { x: 0, y: 1680 };
+  const DEN = { x: 980, y: 1072 }; // the Bone Wolf den's mouth, in its room (src/den.js lays the pack in front of it)
+  Mi.DEN = DEN;
+  // The Mines can be entered (and so the den lies here, not in the Mire): for now in Sandbox only; Level 3's unlock
+  // after the Rift Throne comes in step 7.
+  Mi.open = () => !!DL.SANDBOX;
   // Ember Shrines: [x, y, name] (a knight-statue alcove; lit, it's the run's checkpoint)
   const SHRINES = [
     [200, 1520, "the Gate Hall"], [-300, 440, "the Ash Hall"], [-1960, 330, "the Fused Forge"], [1960, 330, "the Furnace Pit"],
@@ -109,6 +114,8 @@
     ["crane", 720, 592], ["cage", 860, 640], ["crane", 1180, 592], ["cage", 1060, 660],
     // the Crystal Stair: glowing magma crystals
     ["crystal", -560, -260, 1.2], ["crystal", -362, -40, 0.9], ["crystal", -560, 160, 1], ["crystal", -1500, -500, 1.3], ["crystal", -1100, -960, 1.1],
+    // the Bone Wolf den, moved here from the Mire (Robert 2026-11-09)
+    ["den", DEN.x, DEN.y],
     // the Storeroom and the Vault: crates
     ["crates", -1100, 1060], ["crates", -860, 1210], ["crates", -1400, -820],
   ];
@@ -120,6 +127,7 @@
     ...PROPS.filter((q) => q[0] === "crane" || q[0] === "headframe").map((q) => [q[1], q[2], 16]),
     ...PROPS.filter((q) => q[0] === "crystal").map((q) => [q[1], q[2] - 6, 14 * q[3]]),
     ...PROPS.filter((q) => q[0] === "crates").map((q) => [q[1], q[2] - 8, 26]),
+    [DEN.x, DEN.y - 4, 40],
     [-1120, 600, 18], [-820, 728, 18],
   ];
   // basalt columns standing up out of the lava (not walkable): x, y, width, level
@@ -138,10 +146,12 @@
   Mi.active = () => !!G.spires && G.spires.lv === "mines";
   const geo = DL.DungeonGeo({ FLOORS, STAIRS, BRIDGES, JOINS, SOLIDS, ox: OX, oy: OY, inRegion: Mi.inRegion });
   Mi.walkable = geo.walkable;
+  Mi.pieceAt = (x, y, m = 0) => geo.pieceAt(x - OX, y - OY, m);
   Mi.collide = function (ent, r) {
     if (!Mi.inRegion(ent.x, ent.y)) return;
     DL.MineTraps.collide(ent, r); // a fallen cage is a wall (src/minetraps.js)
-    geo.collide(ent, r, null, ent === G.player ? { x: OX + SPAWN.x, y: OY + SPAWN.y } : null);
+    const sp = G.spires, hold = sp && sp.lv === "mines" && sp.seal && (ent === G.player || ent.room === sp.seal) ? FLOORS[sp.seal] : null; // a shut room keeps you (and its guards) in
+    geo.collide(ent, r, hold, ent === G.player ? { x: OX + SPAWN.x, y: OY + SPAWN.y } : null);
   };
   Mi.route = (x, y, tx, ty) => (Mi.active() && Mi.inRegion(x, y) ? geo.route(x, y, tx, ty) : null);
 
@@ -158,9 +168,12 @@
     if (!p || G.spires || G.cave) return;
     if (G.allies.length) { say("The Molten Mines can't take a party in yet. Co-op comes in a later step.", "warn"); return; }
     const saved = shrinesSave();
+    for (const e of G.enemies) if (Mi.inRegion(e.x, e.y) && !e.def.den) e.removed = true; // a run starts fresh (the den's pack keeps its own count)
+    G.enemies = G.enemies.filter((e) => !e.removed);
     G.spires = { lv: "mines", bx: p.x, by: p.y, flare: 0, seal: null, held: false, cleared: {}, lit: {}, litT: {}, away: {}, shard: 0, aether: 0 };
     for (const i in saved) if (i !== "at" && saved[i]) { G.spires.lit[i] = true; G.spires.litT[i] = -99; }
     DL.MineTraps.reset();
+    DL.MineFoes.reset();
     const cp = checkpoint();
     p.x = cp.x; p.y = cp.y; p.spx = p.x; p.spy = p.y;
     p.kx = p.ky = 0; p.dashT = 0; p.angle = -Math.PI / 2;
@@ -170,7 +183,16 @@
   };
   Mi.join = () => {};
   Mi.bag = () => null; // Obsidian and Magma Hearts come with the rooms (step 3 on)
-  Mi.onKill = () => {};
+  // a room's foe fell: Wretches feed; the last of a shut room's group opens it
+  Mi.onKill = function (e) {
+    DL.MineFoes.slain(e);
+    const sp = G.spires;
+    if (sp && sp.seal === e.room && !DL.MineFoes.left(e.room)) {
+      sp.cleared[e.room] = true; sp.seal = null;
+      DL.Sound.play("chime");
+      say("The fire curtains die down. The way is open.", "good");
+    }
+  };
   Mi.lost = () => {};
   Mi.leave = function () {
     const sp = G.spires, p = G.player;
@@ -178,7 +200,8 @@
     G.spires = null;
     DL.Bullets.clear();
     DL.MineTraps.reset();
-    for (const e of G.enemies) if (Mi.inRegion(e.x, e.y)) e.removed = true;
+    DL.MineFoes.reset();
+    for (const e of G.enemies) if (Mi.inRegion(e.x, e.y) && !e.def.den) e.removed = true;
     G.enemies = G.enemies.filter((e) => !e.removed);
     if (p) {
       p.x = sp.bx; p.y = sp.by; p.kx = p.ky = 0; p.dashT = 0;
@@ -198,6 +221,16 @@
     const lx = p.x - OX, ly = p.y - OY;
     if (Math.abs(lx - EXIT.x) < 30 && ly < EXIT.y - 4 && ly > EXIT.y - 40) { Mi.leave(); return; }
     DL.MineTraps.update(dt); // the corridors' traps (src/minetraps.js)
+    DL.MineFoes.update(dt); // the Sovereign's minions at their posts (src/minefoes.js)
+    // a side room with its guards still standing shuts behind you (fire curtains over its doors) until they fall
+    if (!sp.seal) {
+      const room = geo.pieceAt(lx, ly, 30);
+      if (room && DL.MineFoes.SEAL.includes(room) && !sp.cleared[room] && DL.MineFoes.left(room)) {
+        sp.seal = room;
+        DL.Sound.play("torch");
+        say("Fire curtains roar up across the doors. Break the guards to open them.", "warn");
+      }
+    }
     SHRINES.forEach(([x, y, name], i) => {
       const d = Math.hypot(lx - x, ly - y - 50);
       if (!sp.lit[i]) {
@@ -580,6 +613,7 @@
       if (i < i0 - 1 || i > i1 + 1 || j < j0 - 1 || j > j1 + 1) chunks.delete(key);
     }
     DL.MineTraps.drawFloor(c, view, t); // grates, vents, crumbling tiles, cage shadows (src/minetraps.js)
+    DL.MineFoes.drawFloor(c, view, t); // the Molten Wretches' puddles (src/minefoes.js)
     // lava falls pouring down the faces
     for (const [fx, fw, id] of FALLS) {
       const f = FLOORS[id], x = OX + fx - fw / 2, y = OY + f[3] + 4, len = S.hang + f[4] * LH + 90;
@@ -603,7 +637,20 @@
       list.push({ y, f: () => drawProp(c, q, x, y, t) });
     }
     DL.MineTraps.push(list, c, t, view);
+    // a shut room's fire curtains, across each of its doors
+    const sp = G.spires;
+    if (sp && sp.lv === "mines" && sp.seal) for (const j of JOINS) {
+      if (j[0] !== sp.seal && j[1] !== sp.seal) continue;
+      const x = OX + j[2], y = OY + j[3];
+      if (x < view.left - 100 || x > view.right + 100 || y < view.top - 100 || y > view.bottom + 100) continue;
+      list.push({ y: y + 6, f: () => { for (let i = -3; i <= 3; i++) curtain(c, x + i * 18, y + 6, t, i); } });
+    }
   };
+  function curtain(c, x, y, t, i) {
+    const h = 64 + 12 * Math.sin(t * 9 + i * 1.7);
+    c.fillStyle = "rgba(255,90,20,0.85)"; c.beginPath(); c.moveTo(x - 11, y); c.quadraticCurveTo(x - 8, y - h * 0.6, x + Math.sin(t * 7 + i) * 4, y - h); c.quadraticCurveTo(x + 8, y - h * 0.6, x + 11, y); c.closePath(); c.fill();
+    c.fillStyle = "rgba(255,200,90,0.9)"; c.beginPath(); c.moveTo(x - 5, y); c.quadraticCurveTo(x - 4, y - h * 0.4, x, y - h * 0.65); c.quadraticCurveTo(x + 4, y - h * 0.4, x + 5, y); c.closePath(); c.fill();
+  }
   function flame(c, x, y, s, t) {
     for (let i = 0; i < 3; i++) {
       const k = 1 - i * 0.28, w = 9 * s * k, h = (18 + 5 * Math.sin(t * 9 + x + i)) * s * k;
@@ -618,6 +665,10 @@
       c.fillStyle = "#0a0404"; c.fillRect(x - a.W / 2 + a.pw, y - a.H + 30, a.W - 2 * a.pw, a.H - 30); // the dark way out
       c.fillStyle = "rgba(255,170,90,0.12)"; c.fillRect(x - a.W / 2 + a.pw, y - 50, a.W - 2 * a.pw, 50);
       c.drawImage(a.c, x - a.W / 2, y - a.H);
+    } else if (kind === "den") {
+      // the den's own drawing (the Mire's, as Robert asked), under a light ember cast from the lava light
+      const name = DL.Art.sprites.denGuarded ? (DL.Den.state().cleared ? "denCleared" : "denGuarded") : "boneDen";
+      DL.Render.sprite(c, name, x, y + 20);
     } else if (kind === "brazier") {
       c.drawImage(art.brazier, x - 17, y - 52);
       flame(c, x, y - 44, 1, t);
@@ -686,6 +737,9 @@
     glow(OX + RUNE.x, OY + RUNE.y, 180, 0.12 + 0.06 * Math.sin(t * 1.4));
     c.globalAlpha = 1;
     DL.MineTraps.drawGlow(c, t, view);
+    DL.MineFoes.drawGlow(c, t, view);
+    if (G.spires && G.spires.lv === "mines" && G.spires.seal) for (const j of JOINS) if (j[0] === G.spires.seal || j[1] === G.spires.seal) { c.globalAlpha = 0.6; c.drawImage(art.glow, OX + j[2] - 90, OY + j[3] - 120, 180, 180); }
+    c.globalAlpha = 1;
     for (const m of art.embers) {
       const life = ((t + m.p) % 5) / 5, x = OX + m.x + Math.sin(t * 1.5 + m.p) * 12, y = OY + m.y - life * m.v * 5;
       if (x < view.left || x > view.right || y < view.top || y > view.bottom) continue;
