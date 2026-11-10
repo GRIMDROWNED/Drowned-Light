@@ -1336,10 +1336,14 @@ FINALE_CELLS = {
     'finale/fire-bearer.png': [('fbFront', (0, 0, 437, 582)), ('fbBack', (437, 0, 875, 582)), ('fbSide', (875, 0, 1312, 582)),
                                ('fbCamp', (0, 582, 437, 1199)), ('fbHurl', (437, 582, 1060, 1199), [(450, 300, 623, 617)]),
                                ('fbDown', (875, 760, 1312, 1199), [(0, 0, 200, 90)])],
+    # the Spark Bearer (Robert, 2026-11-10; 5 in a row): front, back, three-quarter side (facing right), pouring his spark
+    # into the dais (the dais is in the picture), collapsed
+    'finale/spark-bearer.png': [('sbFront', (0, 60, 320, 760)), ('sbBack', (320, 60, 620, 760)), ('sbSide', (620, 60, 905, 760)),
+                                ('sbPour', (905, 60, 1400, 780)), ('sbDown', (1400, 360, 1774, 780))],
     'finale/lake-ruins-2.png': [('fnRuinB1', (0, 0, 720, 724)), ('fnRuinB2', (720, 0, 1382, 724)), ('fnRuinB3', (1382, 0, 1704, 724)), ('fnRuinB4', (1704, 0, 2172, 724))],
 }
-FINALE_COLORS = {'finale/drowned-gate.png': 160, 'finale/causeway-walls.png': 96, 'finale/lake-ruins.png': 96, 'finale/lake-ruins-2.png': 96, 'finale/fire-bearer.png': 96}  # its small red and green hollows and the flames need the room
-FINALE_K = {'finale/king-body.png': 0.6, 'finale/king-hands.png': 0.48, 'finale/drowned-gate.png': 0.51, 'finale/causeway-walls.png': 0.17, 'finale/lake-ruins.png': 0.33, 'finale/lake-ruins-2.png': 0.33, 'finale/fire-bearer.png': 0.32}
+FINALE_COLORS = {'finale/spark-bearer.png': 96, 'finale/drowned-gate.png': 160, 'finale/causeway-walls.png': 96, 'finale/lake-ruins.png': 96, 'finale/lake-ruins-2.png': 96, 'finale/fire-bearer.png': 96}  # its small red and green hollows and the flames need the room
+FINALE_K = {'finale/spark-bearer.png': 0.27, 'finale/king-body.png': 0.6, 'finale/king-hands.png': 0.48, 'finale/drowned-gate.png': 0.51, 'finale/causeway-walls.png': 0.17, 'finale/lake-ruins.png': 0.33, 'finale/lake-ruins-2.png': 0.33, 'finale/fire-bearer.png': 0.32}
 
 if not only or 'finale' in only:
     done = []

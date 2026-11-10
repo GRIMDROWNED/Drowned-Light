@@ -512,9 +512,11 @@
     "wallFire1", "wallFire2", "wallFire3", "wallFire4",
     // the Ashen Arbalist's bolts and the burst where a flare lands (src/render.js)
     "arbBolt", "arbFlareBolt", "arbFlare1", "arbFlare2", "arbFlare3", "arbFlare4",
-    // the Spark Bearer (src/finale.js): Robert's Fire Bearer stands in until the Spark Bearer is drawn (the Sunken King, his
+    // the old Fire Bearer, the Spark Bearer's fallback (src/finale.js) (the Sunken King, his
     // hands, the Drowned Gate and its causeway were cut on 2026-11-10; their pictures stay in assets/sprites/props as fn*)
-    "fbFront", "fbBack", "fbSide", "fbCamp", "fbHurl", "fbDown"];
+    "fbFront", "fbBack", "fbSide", "fbCamp", "fbHurl", "fbDown",
+    // the Spark Bearer, drawn by Robert (2026-11-10): front, back, side, pouring his spark into the dais, collapsed
+    "sbFront", "sbBack", "sbSide", "sbPour", "sbDown"];
   const PROPS = {
     path: "assets/sprites/",
     // cut at 2 file px per art pixel, like the units

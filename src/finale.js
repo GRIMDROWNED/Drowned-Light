@@ -18,7 +18,7 @@
                   (DL.Rift.go); a dark one shows "???" until it wakes.
    The host runs it all; guests follow its snapshots (Finale.snap) and "hall" messages. The hall, its portals and the
    stair are stand-ins drawn in code (and Robert's Rift Portal picture) until his concept art is drawn; the Bearer is his
-   drawn Fire Bearer for now. Numbers: DL.FINALE (src/data.js). */
+   drawn Spark Bearer (props/sb*). Numbers: DL.FINALE (src/data.js). */
 "use strict";
 (function (DL) {
   const { dist, rand, TAU, clamp } = DL;
@@ -698,7 +698,7 @@
       }
     }
     if (b && !b.down) {
-      const s = bearerScale(b), x = b.x, y = b.y - (DL.Art.sprites.fbFront ? 24 : 15) * s, r = (16 + Math.sin(t * 7) * 2) * s;
+      const s = bearerScale(b), x = b.x, y = b.y - (DL.Art.sprites.sbFront || DL.Art.sprites.fbFront ? 24 : 15) * s, r = (16 + Math.sin(t * 7) * 2) * s;
       glow(c, x, y, r, SPARK, 0.8);
       const ch = G.isGuest() ? net.charge : b.charge;
       if (defending() && ch > 0) {
@@ -714,15 +714,17 @@
     const grow = b.grow != null ? b.grow : 1, leave = b.leave != null ? b.leave : 0;
     return (1 + 3.4 * grow) * (1 - 0.75 * Math.min(1, leave * 1.5));
   }
-  // Robert's drawn Fire Bearer (props/fb*) stands in: planted on the dais and by the stair, guttered out when down.
+  // Robert's drawn Spark Bearer (props/sb*, 2026-11-10): standing by the stair, pouring his spark into the dais in the
+  // defense, collapsed when down. (His old Fire Bearer, props/fb*, stands in if those haven't loaded.)
   function drawnBearer(c, b, t, k) {
-    const ca = Math.cos(b.angle), sa = Math.sin(b.angle);
-    let n = "fbCamp", flip = false;
-    if (b.down) n = "fbDown";
-    else if (b.moving && Math.abs(ca) > Math.abs(sa) * 1.2) { n = "fbSide"; flip = ca < 0; }
-    else if (b.moving && sa < 0) n = "fbBack";
-    else if (b.moving) n = "fbFront";
-    spr(c, n, b.x, b.y, k, flip);
+    const ca = Math.cos(b.angle), sa = Math.sin(b.angle), sb = !!DL.Art.sprites.sbFront;
+    let n = sb ? "sbFront" : "fbCamp", flip = false;
+    if (b.down) n = sb ? "sbDown" : "fbDown";
+    else if (sb && defending() && b.leave == null && Finale.inHall(b.x, b.y)) n = "sbPour";
+    else if (b.moving && Math.abs(ca) > Math.abs(sa) * 1.2) { n = sb ? "sbSide" : "fbSide"; flip = ca < 0; }
+    else if (b.moving && sa < 0) n = sb ? "sbBack" : "fbBack";
+    else if (b.moving && !sb) n = "fbFront";
+    spr(c, n, b.x, b.y + (n === "sbPour" ? 34 * k : 0), k, flip); // the pouring picture stands on its own dais
   }
   function drawBearer(c, b, t) {
     const s = bearerScale(b);
@@ -730,7 +732,7 @@
     c.fillStyle = "rgba(0,0,0,0.4)";
     c.beginPath(); c.ellipse(b.x, b.y, 12 * s, 4.4 * s, 0, 0, TAU); c.fill();
     if (b.hitT > 0) c.filter = "brightness(1.8)";
-    if (DL.Art.sprites.fbFront) drawnBearer(c, b, t, s / 4.4);
+    if (DL.Art.sprites.sbFront || DL.Art.sprites.fbFront) drawnBearer(c, b, t, s / 4.4);
     else DL.Render.kindleUnit(c, { x: b.x, y: b.y, angle: b.angle, moving: b.moving, animT: b.animT }, t, s, b.down);
     c.restore();
     if (b.hp < b.max && !b.down && b.max) { // his health, while he's hurt
