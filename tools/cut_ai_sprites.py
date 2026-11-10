@@ -194,6 +194,8 @@ GRIDS = {
     'molten-wretch/poses-b.png': (3, 2, POSES_B),
     'ash-guard/poses-a.png': (3, 2, POSES_A),
     'ash-guard/poses-b.png': (3, 2, POSES_B),
+    'cinder-acolyte/poses-a.png': (3, 2, POSES_A),
+    'cinder-acolyte/poses-b.png': (3, 2, POSES_B),
     'colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '11_hurt']),
     'colossus/poses-b.png': (3, 2, ['04_walk', '05_walk', '06_walk', '13_stompUp', '14_stompDown', '12_death']),
 }
@@ -222,7 +224,7 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
-KEY_OPTS = {'molten-wretch': {'key': (0, 255, 0)}, 'ash-guard': {'key': (0, 255, 0)}, 'crimson-greatsword': {'key': (0, 255, 0)}, 'cinderbrand': {'key': (0, 255, 0)}, 'rift-throne-boss': {'key': (0, 255, 0)}, 'rift-mite': {'key': (0, 255, 0)}, 'shard-wisp': {'key': (0, 255, 0)}, 'throne-warden': {'key': (0, 255, 0)}, 'mist-shade': {'key': (0, 255, 0)}, 'rift-caller': {'key': (0, 255, 0)}, 'prism-knight': {'key': (0, 255, 0)}, 'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+KEY_OPTS = {'molten-wretch': {'key': (0, 255, 0)}, 'ash-guard': {'key': (0, 255, 0)}, 'cinder-acolyte': {'key': (0, 255, 0)}, 'crimson-greatsword': {'key': (0, 255, 0)}, 'cinderbrand': {'key': (0, 255, 0)}, 'rift-throne-boss': {'key': (0, 255, 0)}, 'rift-mite': {'key': (0, 255, 0)}, 'shard-wisp': {'key': (0, 255, 0)}, 'throne-warden': {'key': (0, 255, 0)}, 'mist-shade': {'key': (0, 255, 0)}, 'rift-caller': {'key': (0, 255, 0)}, 'prism-knight': {'key': (0, 255, 0)}, 'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
 # Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
 def jade_match(x):
     """The Jade Breaker's sheets each came out a little different in colour: match them all to his front view."""
@@ -293,6 +295,7 @@ SETS = {
     'rift-throne-boss': ('rift-throne', 'rift-throne-boss/01_front.png', THRONE_H, 1, {**twelve('rift-throne-boss', TWELVE_FILES),
         'rift-throne-boss/13_seated.png': 'seated', 'rift-throne-boss/14_waking.png': 'waking', 'rift-throne-boss/15_rising.png': 'rising',
         'rift-throne-boss/16_p2front.png': 'p2front', 'rift-throne-boss/17_sweep.png': 'p2sweep', 'rift-throne-boss/18_enraged.png': 'p2enraged'}),
+    'cinder-acolyte': ('mines-foes/acolyte', 'cinder-acolyte/01_front.png', 160, 1, twelve('cinder-acolyte', TWELVE_FILES)),
     'ash-guard': ('mines-foes/ashguard', 'ash-guard/01_front.png', 176, 1, twelve('ash-guard', TWELVE_FILES)),
     'molten-wretch': ('mines-foes/wretch', 'molten-wretch/01_front.png', 120, 1, twelve('molten-wretch', TWELVE_FILES)),
     'rift-mite': ('spires-foes/mite', 'rift-mite/01_front.png', MITE_H, 1, twelve('rift-mite', TWELVE_FILES)),
@@ -502,6 +505,11 @@ SHEETS = {
         ('rift-throne-boss/walk-side-4.png', 4, 1, 400, 'side/walk'),
         ('rift-throne-boss/walk-front.png', 4, 1, 400, 'walkF'),
         ('rift-throne-boss/walk-back.png', 4, 1, 400, 'walkB'),
+    ],
+    'cinder-acolyte': [
+        ('cinder-acolyte/walk-side-4.png', 4, 1, 160, 'side/walk'),
+        ('cinder-acolyte/walk-front.png', 4, 1, 160, 'walkF'),
+        ('cinder-acolyte/walk-back.png', 4, 1, 160, 'walkB'),
     ],
     'ash-guard': [
         ('ash-guard/walk-side-4.png', 4, 1, 176, 'side/walk'),
