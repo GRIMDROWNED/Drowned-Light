@@ -1136,7 +1136,7 @@
         const spd = e.speed * (humanLightAt(e.x, e.y) ? 0.72 : 1) * (e.slow > 0 ? 0.6 : 1) * (e.spore > 0 ? e.sporeK : 1) * (e.rallied > 0 ? 1.2 : 1);
         // Walls in the way: head for the nearest gate first.
         const campWp = want === 1 && !e.def.fly ? DL.Camp.route(e.x, e.y, tx, ty, G.save.up) : null;
-        const wp = want === 1 && !e.def.fly ? DL.Dungeon.route(e.x, e.y, tx, ty) || (DL.Pyramid.route(e.x, e.y, campWp ? campWp.x : tx, campWp ? campWp.y : ty) || campWp) : null; // what flies goes over the walls
+        const wp = want === 1 && !e.def.fly ? DL.Finale.route(e.x, e.y, tx, ty) || DL.Dungeon.route(e.x, e.y, tx, ty) || (DL.Pyramid.route(e.x, e.y, campWp ? campWp.x : tx, campWp ? campWp.y : ty) || campWp) : null; // what flies goes over the walls
         let mx = wp ? wp.x - e.x : dx, my = wp ? wp.y - e.y : dy;
         if (e.def.zigzag && want === 1 && !wp && d > 80) { // weave from side to side on the way in
           const w = Math.sin(e.animT * 5 + e.id) * 0.9, ox = mx;

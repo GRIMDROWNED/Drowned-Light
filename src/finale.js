@@ -4,8 +4,8 @@
    Deadly Rose slain, Derek won, and your Kindle lit (Finale.ready). At the next dawn Kindle climbs into the Central Flame
    and drinks it in, and a spark catches in him: he stands up as the Spark Bearer, and beside the Flame stone steps open
    in the ground, the stair down to the Portal Hall.
-     the hall     eight-sided, far off the map (DL.FINALE.hall), with a portal on each of its eight walls and the stair up
-                  to the camp at its south corner. G.cave is set while the party is down there (`hall: true`), so the
+     the hall     Robert's picture, far off the map (DL.FINALE.hall): stone walkways over black water from the dais at
+                  its heart out to eight portals, and a road off its foot back up to the camp. G.cave is set while the party is down there (`hall: true`), so the
                   world's clock, its spawns and its bosses leave it alone, just as in Derek's Hollow (src/cave.js).
      the defense  walk down with the Bearer waiting and he climbs onto the dais at the hall's heart to fill it with his
                   spark. The Drowned pour out of the eight dark portals at him (the Sunken King's Tide Stalkers, Sunken
@@ -16,9 +16,8 @@
                   opens and the victory screen shows. Each later portal opens when the dungeon behind the one before it
                   is cleared (Finale.cleared, G.save.dungeons). Walk into a lit portal and the party goes in
                   (DL.Rift.go); a dark one shows "???" until it wakes.
-   The host runs it all; guests follow its snapshots (Finale.snap) and "hall" messages. The hall, its portals and the
-   stair are stand-ins drawn in code (and Robert's Rift Portal picture) until his concept art is drawn; the Bearer is his
-   drawn Spark Bearer (props/sb*). Numbers: DL.FINALE (src/data.js). */
+   The host runs it all; guests follow its snapshots (Finale.snap) and "hall" messages. The hall is Robert's picture
+   (assets/sprites/hall, tools/cut_hall.py); the Bearer is his drawn Spark Bearer (props/sb*). Numbers: DL.FINALE (src/data.js). */
 "use strict";
 (function (DL) {
   const { dist, rand, TAU, clamp } = DL;
@@ -69,15 +68,15 @@
   const litCount = () => F.portals.reduce((n, q, i) => n + (Finale.portalLit(i) ? 1 : 0), 0);
 
   /* ---------------- where things are ---------------- */
-  const HX = HL.x, HY = HL.y, R = HL.r, AP = R * Math.cos(Math.PI / 8); // AP: from the heart to the middle of each wall
-  const ANG = Array.from({ length: 8 }, (_, i) => -Math.PI / 2 - Math.PI / 8 + (i * Math.PI) / 4); // the walls, from the NNW round
-  const NRM = ANG.map((a) => [Math.cos(a), Math.sin(a)]);
-  const VTX = Array.from({ length: 8 }, (_, k) => { const a = -Math.PI / 2 + (k * Math.PI) / 4; return [Math.cos(a) * R, Math.sin(a) * R]; }); // the corners, N first
-  const STAIR = { hw: 46, y0: R - 90, y1: R + 70 }; // the stair up, out of the south corner (hall-local px)
-  Finale.inHall = (x, y) => Math.abs(x - HX) < 1500 && Math.abs(y - HY) < 1500;
-  const portalAt = (i, inset) => ({ x: HX + NRM[i][0] * (AP - inset), y: HY + NRM[i][1] * (AP - inset) });
-  const onStair = (dx, dy, m) => Math.abs(dx) < STAIR.hw - m && dy > STAIR.y0 && dy < STAIR.y1;
-  const onFloor = (dx, dy, m) => NRM.every(([nx, ny]) => dx * nx + dy * ny <= AP - m);
+  // Robert's picture of the hall (2026-11-10): winding stone walkways over black water, from the dais at its heart out to
+  // the eight portals' platforms, and a road off its foot back up to the camp. Where one may stand is its walk mask
+  // (assets/sprites/hall/walk.png, half the picture's size, from tools/cut_hall.py).
+  const HX = HL.x, HY = HL.y, SC = HL.s, X0 = HX - (HL.w * SC) / 2, Y0 = HY - (HL.h * SC) / 2;
+  const at = (q) => ({ x: X0 + q[0] * SC, y: Y0 + q[1] * SC }); // a picture px in the world
+  const DAIS = at(HL.dais), EXIT = at(HL.exit);
+  Finale.inHall = (x, y) => Math.abs(x - HX) < (HL.w * SC) / 2 + 200 && Math.abs(y - HY) < (HL.h * SC) / 2 + 200;
+  // a portal's mouth foot, `out` world px down from it (out onto its platform)
+  const portalAt = (i, out) => { const o = at(HL.portals[i]); return { x: o.x, y: o.y + out }; };
   // the stair down, by the Central Flame, and where the Bearer waits beside it
   // (the base's own Portal Hall building, DL.Camp.layout().hall, from the base redesign, when it stands; else DL.FINALE.door
   // and a stand-in stairwell drawn here)
@@ -85,22 +84,127 @@
   const door = () => { const h = built(); return h ? { x: h.x, y: h.y + 20, hw: h.hw } : { x: F.door.x, y: F.door.y, hw: 44 }; };
   const waitSpot = () => { const d = door(); return { x: d.x + d.hw + 40, y: d.y + 10 }; };
   const backSpot = (n) => { const d = door(); return { x: d.x + (n ? 34 * n * (n % 2 ? 1 : -1) / 2 : 0), y: d.y + 70 }; }; // coming back up
-  const topOfStair = (n) => ({ x: HX + (n ? 30 * n * (n % 2 ? 1 : -1) / 2 : 0), y: HY + R - 110 });
+  const topOfStair = (n) => { const e = at(HL.enter); return { x: e.x + (n ? 26 * n * (n % 2 ? 1 : -1) / 2 : 0), y: e.y }; };
 
-  // Nobody walks through the hall's walls; the stair is the only way out.
+  // the picture and its walk mask
+  let PIC = null, WALK = null, MW = 0, MH = 0;
+  function loadHall() {
+    if (PIC) return;
+    PIC = new Image();
+    PIC.src = DL.asset("assets/sprites/hall/hall.jpg");
+    const m = new Image();
+    m.onload = () => {
+      const cv = document.createElement("canvas"), g = cv.getContext("2d");
+      cv.width = MW = m.width; cv.height = MH = m.height;
+      g.drawImage(m, 0, 0);
+      const d = g.getImageData(0, 0, MW, MH).data, w = new Uint8Array(MW * MH);
+      for (let i = 0; i < w.length; i++) w[i] = d[i * 4] > 127 ? 1 : 0;
+      WALK = w; fields.clear(); cells = null;
+    };
+    m.src = DL.asset("assets/sprites/hall/walk.png");
+  }
+  const MK = 2 * SC; // world px per mask px
+  function walkable(x, y) {
+    if (!WALK) return Finale.inHall(x, y); // (not loaded yet: anywhere)
+    const mx = Math.floor((x - X0) / MK), my = Math.floor((y - Y0) / MK);
+    return mx >= 0 && my >= 0 && mx < MW && my < MH && WALK[my * MW + mx] === 1;
+  }
+  const walkR = (x, y, m) => walkable(x, y) && walkable(x - m, y) && walkable(x + m, y) && walkable(x, y - m) && walkable(x, y + m);
+  Finale.walkable = walkable;
+
+  // Keep a walker on the stone: back to where it last stood (sliding along the edge if it can), as in the Spires.
   Finale.collideHall = function (ent, r) {
     if (!Finale.inHall(ent.x, ent.y)) return;
-    let dx = ent.x - HX, dy = ent.y - HY;
-    if (onStair(dx, dy, -r) && (Math.abs(dx) < STAIR.hw - r || !onFloor(dx, dy, r))) {
-      ent.x = HX + clamp(dx, -STAIR.hw + r, STAIR.hw - r);
-      ent.y = HY + Math.min(dy, STAIR.y1 - r);
-      return;
+    loadHall();
+    const m = Math.min(8, r * 0.6);
+    if (!walkR(ent.x, ent.y, m)) {
+      const lx = ent.hwx, ly = ent.hwy;
+      if (lx == null || !Finale.inHall(lx, ly)) { /* nowhere to go back to: leave it be */ }
+      else if (walkR(ent.x, ly, m)) ent.y = ly;
+      else if (walkR(lx, ent.y, m)) ent.x = lx;
+      else { ent.x = lx; ent.y = ly; }
     }
-    for (let pass = 0; pass < 2; pass++) for (const [nx, ny] of NRM) {
-      const over = dx * nx + dy * ny - (AP - r);
-      if (over > 0) { dx -= nx * over; dy -= ny * over; }
+    ent.hwx = ent.x; ent.hwy = ent.y;
+  };
+
+  // The Drowned find their way along the walkways: a flow field over a coarse grid of the mask, one per target cell
+  // (cached), followed as far ahead as there's a clear line. From the enemy walk in src/game.js.
+  const CELL = 4, CW = CELL * MK; // mask px per cell; world px per cell
+  let cells = null, GW = 0, GH = 0;
+  const fields = new Map();
+  function grid() { // a cell is open when a walker could stand at its middle (an edge's width in from the water)
+    if (cells || !WALK) return cells;
+    GW = Math.ceil(MW / CELL); GH = Math.ceil(MH / CELL);
+    cells = new Uint8Array(GW * GH);
+    for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++)
+      cells[gy * GW + gx] = walkR(X0 + (gx + 0.5) * CW, Y0 + (gy + 0.5) * CW, 12) ? 1 : 0;
+    return cells;
+  }
+  const cellOf = (x, y) => { const gx = Math.floor((x - X0) / CW), gy = Math.floor((y - Y0) / CW); return gx < 0 || gy < 0 || gx >= GW || gy >= GH ? -1 : gy * GW + gx; };
+  function nearCell(k) { // the nearest open cell to cell k (a walker brushing the edge)
+    if (k < 0) return -1;
+    if (cells[k]) return k;
+    const gx = k % GW, gy = (k / GW) | 0;
+    for (let r = 1; r <= 4; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      const x = gx + dx, y = gy + dy;
+      if (x >= 0 && y >= 0 && x < GW && y < GH && cells[y * GW + x]) return y * GW + x;
     }
-    ent.x = HX + dx; ent.y = HY + dy;
+    return -1;
+  }
+  const NB = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+  function field(goal) { // steps from every cell to the goal (a breadth-first flood)
+    let f = fields.get(goal);
+    if (f) return f;
+    f = new Int32Array(GW * GH).fill(1e9);
+    const q = new Int32Array(GW * GH);
+    let h = 0, n = 0;
+    f[goal] = 0; q[n++] = goal;
+    while (h < n) {
+      const k = q[h++], gx = k % GW, gy = (k / GW) | 0;
+      for (let d = 0; d < 4; d++) {
+        const x = gx + NB[d][0], y = gy + NB[d][1];
+        if (x < 0 || y < 0 || x >= GW || y >= GH) continue;
+        const j = y * GW + x;
+        if (cells[j] && f[j] > f[k] + 1) { f[j] = f[k] + 1; q[n++] = j; }
+      }
+    }
+    if (fields.size > 48) fields.delete(fields.keys().next().value);
+    fields.set(goal, f);
+    return f;
+  }
+  function clear(x0, y0, x1, y1) {
+    const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 14);
+    for (let i = 1; i <= n; i++) if (!walkR(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n, 7)) return false;
+    return true;
+  }
+  Finale.route = function (x, y, tx, ty) {
+    if (!G.cave || !G.cave.hall || !Finale.inHall(x, y) || !grid()) return null;
+    if (clear(x, y, tx, ty)) return null; // in sight: straight at it
+    const goal = nearCell(cellOf(tx, ty)), from = nearCell(cellOf(x, y));
+    if (goal < 0 || from < 0 || goal === from) return null;
+    const f = field(goal);
+    if (f[from] >= 1e9) return null;
+    // downhill, as far along as stays in a clear line
+    let k = from, best = null;
+    for (let step = 0; step < 24; step++) {
+      const gx = k % GW, gy = (k / GW) | 0;
+      let nk = -1, nv = f[k];
+      for (const [dx, dy] of NB) {
+        const xx = gx + dx, yy = gy + dy;
+        if (xx < 0 || yy < 0 || xx >= GW || yy >= GH) continue;
+        if (dx && dy && (!cells[gy * GW + xx] || !cells[yy * GW + gx])) continue; // no cutting corners
+        const j = yy * GW + xx;
+        if (f[j] < nv) { nv = f[j]; nk = j; }
+      }
+      if (nk < 0) break;
+      k = nk;
+      if (step % 2 === 0 && k !== goal) continue; // (every other cell is looked at)
+      const c = { x: X0 + ((k % GW) + 0.5) * CW, y: Y0 + (((k / GW) | 0) + 0.5) * CW };
+      if (best && !clear(x, y, c.x, c.y)) break;
+      best = c;
+      if (k === goal) break;
+    }
+    return best || { x: X0 + ((k % GW) + 0.5) * CW, y: Y0 + (((k / GW) | 0) + 0.5) * CW };
   };
 
   /* ---------------- the Bearer ---------------- */
@@ -199,8 +303,8 @@
     for (const a of G.allies) pull(a);
     for (const f of followers()) { f.x = p.x + rand(-30, 30); f.y = p.y + rand(-10, 20); }
     if (mode === "defend") {
-      const b = Finale.b || (Finale.b = makeBearer(HX, HY));
-      Object.assign(b, { x: HX, y: HY + 6, hp: maxHp(), max: maxHp(), down: false, lit: true, charge: 0, angle: Math.PI / 2, grow: 1, moving: false });
+      const b = Finale.b || (Finale.b = makeBearer(DAIS.x, DAIS.y));
+      Object.assign(b, { x: DAIS.x, y: DAIS.y, hp: maxHp(), max: maxHp(), down: false, lit: true, charge: 0, angle: Math.PI / 2, grow: 1, moving: false });
       sfx("rise");
       G.camera.shake = 8;
       say("Down the stair lies a hall of eight dark portals. The Spark Bearer climbs onto the dais at its heart and begins to burn. Something stirs in the portals: guard him until his spark fills the hall!", "warn");
@@ -329,8 +433,8 @@
     b.leave += dt / 4;
     if (b.leave < 1) return;
     Finale.b = null;
-    for (let i = 0; i < 30; i++) G.spark(HX + rand(-40, 40), HY - rand(0, 200), SPARK, 120);
-    DL.Kindle.back(HX, HY + 30);
+    for (let i = 0; i < 30; i++) G.spark(DAIS.x + rand(-40, 40), DAIS.y - rand(0, 200), SPARK, 120);
+    DL.Kindle.back(DAIS.x, DAIS.y + 40);
     say("Off the dais scuttles Kindle, small again, his fire still burning. He runs to your side.", "good");
   }
 
@@ -380,7 +484,7 @@
     return "footman";
   }
   function spawn(type, i) {
-    const o = portalAt(i, 70), b = Finale.b;
+    const o = [70, 100, 130, 40].map((d) => portalAt(i, d)).find((q) => walkable(q.x, q.y)) || portalAt(i, 70), b = Finale.b;
     G.enemies.push(G.makeEnemy(type, o.x + rand(-24, 24), o.y + rand(-14, 14), F.zone, { rise: 0.6, goal: b && b.lit ? b : null }));
     for (let k = 0; k < 6; k++) G.puff(o.x + rand(-20, 20), o.y + rand(-8, 8), "rgba(150,90,220,0.6)", 60, 0.7, -30);
   }
@@ -390,11 +494,10 @@
     for (const k of everyone()) {
       if (!k || k.down || k.downT > 0) continue;
       k.hallT = Math.max(0, (k.hallT || 0) - dt);
-      const dx = k.x - HX, dy = k.y - HY;
-      if (Math.abs(dx) < STAIR.hw && dy > R + 22) return leave(false);
+      if (k.y > EXIT.y && Math.abs(k.x - EXIT.x) < 160) return leave(false); // up the road off the hall's foot
       for (let i = 0; i < 8; i++) {
-        const o = portalAt(i, 34);
-        if (dist(k.x, k.y, o.x, o.y) > 34) continue;
+        const o = portalAt(i, 30);
+        if (dist(k.x, k.y, o.x, o.y) > 50) continue;
         if (portalLit(i)) return go(i);
         if (k.hallT > 0) continue;
         k.hallT = 5;
@@ -453,10 +556,10 @@
     return dist(p.x, p.y, door().x, door().y) > 700 ? { x: door().x, y: door().y, label: "Portal Hall" } : null;
   };
   // In the defense the camera pulls back to show the whole hall (src/render.js, src/game.js).
-  Finale.view = (p) => (defending() && p && Finale.inHall(p.x, p.y) ? { need: 1250, needW: 1300, x: HX, y: HY - 60, lean: 0.55 } : null);
+  Finale.view = (p) => (defending() && p && Finale.inHall(p.x, p.y) ? { need: 1150, needW: 1500, x: DAIS.x, y: DAIS.y - 60, lean: 0.5 } : null);
 
   /* ---------------- light ---------------- */
-  // The braziers at the hall's corners (their light halts corruption, like the bloomlight), the burning portals, the Bearer.
+  // The hall's glow (it halts corruption, like the bloomlight), its platforms' lanterns, the burning portals, the Bearer.
   Finale.lights = function (L) {
     const b = Finale.b, p = G.player, diff = G.diff().light;
     if (b && !b.down) {
@@ -464,16 +567,16 @@
       L.push({ x: b.x, y: b.y - 60, r: F.light * diff * (0.3 + 0.7 * grow) * fade, s: 1, col: SPARK, a: 0.95 * fade, flick: 1, kind: "human" });
     } else if (b && b.down) L.push({ x: b.x, y: b.y - 20, r: 70, s: 0.4, col: "255,120,40", a: 0.45, flick: 1 });
     if (p && Finale.inHall(p.x, p.y)) {
-      // a dim glow over the whole floor, from the spark in the stone: no corruption builds down here
-      L.push({ x: HX, y: HY, r: R * 1.3, s: 0.25, col: "200,170,140", a: 0.35, kind: "bloom" });
-      L.push({ x: HX, y: HY + R, r: 160, s: 0.4, col: "255,180,110", a: 0.6 }); // the stair up
-      VTX.forEach((v, k) => { if (k !== 4) L.push({ x: HX + v[0] * 0.86, y: HY + v[1] * 0.86 - 30, r: 230 * diff, s: 0.8, col: "255,170,90", a: 0.8, flick: 1, kind: "bloom" }); });
+      // a dim glow over the whole hall, from the spark in the stone: no corruption builds down here
+      L.push({ x: HX, y: HY, r: HL.w * SC * 0.6, s: 0.25, col: "200,170,140", a: 0.35, kind: "bloom" });
+      L.push({ x: DAIS.x, y: DAIS.y, r: 420, s: 0.5, col: "255,180,110", a: 0.5, kind: "bloom" });
+      L.push({ x: EXIT.x, y: EXIT.y, r: 200, s: 0.4, col: "255,180,110", a: 0.6 }); // the road up
       for (let i = 0; i < 8; i++) {
-        const o = portalAt(i, 20), q = F.portals[i];
-        if (Finale.portalLit(i)) L.push({ x: o.x, y: o.y - 50, r: 210, s: 0.75, col: q.col, a: 0.9 });
-        else L.push({ x: o.x, y: o.y - 50, r: 80, s: 0.4, col: "120,80,180", a: 0.4 });
+        const o = portalAt(i, 0), q = F.portals[i];
+        L.push({ x: o.x, y: o.y + 70, r: 230 * diff, s: 0.7, col: "255,170,90", a: 0.7, flick: 1, kind: "bloom" }); // its platform's lanterns
+        if (Finale.portalLit(i)) L.push({ x: o.x, y: o.y - 60, r: 240, s: 0.75, col: q.col, a: 0.9 });
       }
-      if (Finale.stage() === 4 && !b) L.push({ x: HX, y: HY - 20, r: 260 * diff, s: 0.8, col: SPARK, a: 0.85, flick: 1, kind: "human" });
+      if (Finale.stage() === 4 && !b) L.push({ x: DAIS.x, y: DAIS.y - 20, r: 260 * diff, s: 0.8, col: SPARK, a: 0.85, flick: 1, kind: "human" });
       return;
     }
     if (Finale.stage() >= 1 && p && Math.abs(p.x - door().x) < 1200 && Math.abs(p.y - door().y) < 1200)
@@ -564,68 +667,48 @@
   }
   const visible = (view, x0, y0, x1, y1) => x1 > view.left && x0 < view.right && y1 > view.top && y0 < view.bottom;
 
-  // The hall's floor (src/world.js ground chunks): flagstones inside the eight walls, black beyond them.
-  Finale.groundColor = function (x, y) {
-    const dx = x - HX, dy = y - HY;
-    if (!onFloor(dx, dy, 0) && !onStair(dx, dy, 0)) { const v = 5 + DL.fbm(x / 70, y / 70, 31) * 5; return [v, v, v + 2]; }
-    const tx = DL.World.texel("campFlags", x, y, 0.5);
-    let [r, g, b] = tx || [52, 50, 56];
-    const edge = Math.min(...NRM.map(([nx, ny]) => AP - (dx * nx + dy * ny))); // how far in from the nearest wall
-    const k = clamp(1 - edge / 120, 0, 1) * (onStair(dx, dy, 0) && dy > R - 60 ? 0.3 : 1);
-    return [r * (1 - 0.55 * k), g * (1 - 0.55 * k), b * (1 - 0.45 * k)];
-  };
+  // Under the picture (src/world.js ground chunks): black.
+  Finale.groundColor = function (x, y) { const v = 5 + DL.fbm(x / 70, y / 70, 31) * 5; return [v, v + 1, v + 3]; };
 
   Finale.drawGround = function (c, view, t) {
     if (Finale.stage() >= 1 && !built() && visible(view, door().x - 80, door().y - 80, door().x + 80, door().y + 40)) drawStairwell(c, t);
-    if (!visible(view, HX - R - 40, HY - R - 160, HX + R + 40, HY + R + 120)) return;
-    c.save();
-    // the back walls: the faces of the walls north of the hall's middle stand up out of the floor
-    const WH = 110;
-    for (let k = 0; k < 8; k++) {
-      const a = VTX[k], b2 = VTX[(k + 1) % 8], ny = NRM[(k + 1) % 8][1]; // face k+1 (ANG order) runs from corner k to k+1
-      if (ny > 0.5) continue;
-      c.fillStyle = "#1c1a20";
-      c.beginPath(); c.moveTo(HX + a[0], HY + a[1]); c.lineTo(HX + b2[0], HY + b2[1]); c.lineTo(HX + b2[0], HY + b2[1] - WH); c.lineTo(HX + a[0], HY + a[1] - WH); c.closePath(); c.fill();
-      c.strokeStyle = "#2c2932"; c.lineWidth = 2;
-      for (let row = 1; row < 4; row++) { const h = (WH * row) / 4; c.beginPath(); c.moveTo(HX + a[0], HY + a[1] - h); c.lineTo(HX + b2[0], HY + b2[1] - h); c.stroke(); }
-      c.fillStyle = "#3a3640";
-      c.beginPath(); c.moveTo(HX + a[0], HY + a[1] - WH); c.lineTo(HX + b2[0], HY + b2[1] - WH); c.lineTo(HX + b2[0], HY + b2[1] - WH - 8); c.lineTo(HX + a[0], HY + a[1] - WH - 8); c.closePath(); c.fill();
-    }
-    // the low lip of the walls in front
-    c.strokeStyle = "#141217"; c.lineWidth = 10;
-    c.beginPath();
-    for (let k = 2; k <= 6; k++) { const v = VTX[k]; if (k === 2) c.moveTo(HX + v[0], HY + v[1]); else c.lineTo(HX + v[0], HY + v[1]); }
-    c.stroke();
-    // the stair up, out of the south corner
-    for (let i = 0; i < 6; i++) {
-      const y = HY + R - 40 + i * 18;
-      c.fillStyle = i % 2 ? "#2a2830" : "#34313b";
-      c.fillRect(HX - STAIR.hw, y, STAIR.hw * 2, 14);
-    }
-    // channels in the floor from the dais to every portal: they burn as the spark fills, and stay lit to the open portals
-    const b = Finale.b, ch = b && defending() ? (G.isGuest() ? net.charge : b.charge) : 0;
-    for (let i = 0; i < 8; i++) {
-      const o = portalAt(i, 50), lit = Finale.portalLit(i), q = F.portals[i];
-      c.strokeStyle = "#0e0d11"; c.lineWidth = 9;
-      c.beginPath(); c.moveTo(HX + NRM[i][0] * HL.dais, HY + NRM[i][1] * HL.dais); c.lineTo(o.x, o.y); c.stroke();
-      const u = lit ? 1 : ch;
-      if (u > 0) {
-        c.strokeStyle = lit ? `rgba(${q.col},${0.55 + 0.2 * Math.sin(t * 2 + i)})` : `rgba(${SPARK},0.7)`; c.lineWidth = 4;
-        c.beginPath(); c.moveTo(HX + NRM[i][0] * HL.dais, HY + NRM[i][1] * HL.dais);
-        c.lineTo(HX + NRM[i][0] * (HL.dais + (AP - 50 - HL.dais) * u), HY + NRM[i][1] * (HL.dais + (AP - 50 - HL.dais) * u)); c.stroke();
+    if (!visible(view, X0, Y0, X0 + HL.w * SC, Y0 + HL.h * SC)) return;
+    loadHall();
+    if (PIC.complete && PIC.naturalWidth) { // only the part on screen
+      const sx0 = clamp(Math.floor((view.left - X0) / SC), 0, HL.w), sy0 = clamp(Math.floor((view.top - Y0) / SC), 0, HL.h);
+      const sx1 = clamp(Math.ceil((view.right - X0) / SC) + 1, 0, HL.w), sy1 = clamp(Math.ceil((view.bottom - Y0) / SC) + 1, 0, HL.h);
+      if (sx1 > sx0 && sy1 > sy0) {
+        const sm = c.imageSmoothingEnabled;
+        c.imageSmoothingEnabled = false;
+        c.drawImage(PIC, sx0, sy0, sx1 - sx0, sy1 - sy0, X0 + sx0 * SC, Y0 + sy0 * SC, (sx1 - sx0) * SC, (sy1 - sy0) * SC);
+        c.imageSmoothingEnabled = sm;
       }
     }
-    // the dais: a round step of stone with a rune ring that fills with the spark
-    c.fillStyle = "#25232b"; c.beginPath(); c.ellipse(HX, HY + 6, HL.dais + 8, (HL.dais + 8) * 0.62, 0, 0, TAU); c.fill();
-    c.fillStyle = "#3b3843"; c.beginPath(); c.ellipse(HX, HY, HL.dais, HL.dais * 0.62, 0, 0, TAU); c.fill();
-    c.strokeStyle = "rgba(20,18,24,0.9)"; c.lineWidth = 6;
-    c.beginPath(); c.ellipse(HX, HY, HL.dais * 0.72, HL.dais * 0.45, 0, 0, TAU); c.stroke();
-    const full = Finale.won() ? 1 : ch;
-    if (full > 0) {
-      c.strokeStyle = `rgba(${SPARK},${0.5 + 0.4 * full})`; c.lineWidth = 4;
-      c.beginPath(); c.ellipse(HX, HY, HL.dais * 0.72, HL.dais * 0.45, 0, -Math.PI / 2, -Math.PI / 2 + TAU * full); c.stroke();
+    // a burning portal's mouth swirls in its dungeon's colour (the picture's mouths are all dark)
+    for (let i = 0; i < 8; i++) {
+      if (!Finale.portalLit(i)) continue;
+      const o = portalAt(i, 0), q = F.portals[i], mx = o.x, my = o.y - 30 * SC;
+      c.save();
+      c.translate(mx, my);
+      c.scale(1, 1.5);
+      const gr = c.createRadialGradient(0, 0, 0, 0, 0, 19 * SC);
+      gr.addColorStop(0, `rgba(255,245,255,0.75)`); gr.addColorStop(0.35, `rgba(${q.col},0.7)`); gr.addColorStop(1, `rgba(${q.col},0.15)`);
+      c.fillStyle = gr;
+      c.beginPath(); c.ellipse(0, 0, 17 * SC, 19 * SC, 0, 0, TAU); c.fill();
+      c.lineWidth = 3;
+      for (let k = 0; k < 4; k++) {
+        const a0 = t * (1.6 + k * 0.3) + (k * TAU) / 4, rr = (5 + k * 3.5) * SC;
+        c.strokeStyle = `rgba(255,255,255,${0.15 + 0.1 * k})`;
+        c.beginPath(); c.arc(0, 0, rr, a0, a0 + 2.2); c.stroke();
+      }
+      c.restore();
     }
-    c.restore();
+    // the ring round the dais fills with the spark
+    const b = Finale.b, ch = b && defending() ? (G.isGuest() ? net.charge : b.charge) : 0, full = Finale.won() ? 1 : ch;
+    if (full > 0) {
+      c.strokeStyle = `rgba(${SPARK},${0.5 + 0.4 * full})`; c.lineWidth = 5;
+      c.beginPath(); c.ellipse(DAIS.x, DAIS.y + 20, 120, 52, 0, -Math.PI / 2, -Math.PI / 2 + TAU * full); c.stroke();
+    }
   };
   // In the camp: the stair down beside the Flame (a dark well with steps going down north).
   function drawStairwell(c, t) {
@@ -640,16 +723,13 @@
     c.restore();
   }
 
-  // Into the y-sorted scene: the stair's two posts in camp, the portals and braziers in the hall, and the Bearer.
+  // Into the y-sorted scene: the stair's two posts in camp, the spark left on the dais, and the Bearer.
   Finale.push = function (list, c, t, view) {
     const b = Finale.b, d = door();
     if (Finale.stage() >= 1 && !built() && visible(view, d.x - 80, d.y - 200, d.x + 80, d.y + 40))
       for (const sx of [-1, 1]) list.push({ y: d.y - 2, f: () => post(c, d.x + sx * 46, d.y - 2, t) });
-    if (visible(view, HX - R - 100, HY - R - 260, HX + R + 100, HY + R + 120)) {
-      for (let i = 0; i < 8; i++) { const o = portalAt(i, 12); list.push({ y: o.y, f: () => drawPortal(c, i, o, t) }); }
-      VTX.forEach((v, k) => { if (k === 4) return; const x = HX + v[0] * 0.86, y = HY + v[1] * 0.86; list.push({ y, f: () => brazier(c, x, y, t) }); });
-      if (!b && Finale.won()) list.push({ y: HY, f: () => DL.Art.drawFire(c, HX, HY - 4, 1.6, t) }); // the spark he left on the dais
-    }
+    if (!b && Finale.won() && visible(view, DAIS.x - 100, DAIS.y - 200, DAIS.x + 100, DAIS.y + 40))
+      list.push({ y: DAIS.y, f: () => DL.Art.drawFire(c, DAIS.x, DAIS.y - 4, 1.6, t) }); // the spark he left on the dais
     if (b && visible(view, b.x - 300, b.y - 600, b.x + 300, b.y + 60)) list.push({ y: b.y, f: () => drawBearer(c, b, t) });
   };
   function post(c, x, y, t) {
@@ -659,42 +739,23 @@
     c.fillStyle = "#2a2724"; c.fillRect(x - 12, y - 78, 24, 10);
     DL.Art.drawFire(c, x, y - 80, 0.6, t + x);
   }
-  function brazier(c, x, y, t) {
-    c.fillStyle = "rgba(0,0,0,0.4)"; c.beginPath(); c.ellipse(x, y, 18, 6, 0, 0, TAU); c.fill();
-    c.fillStyle = "#3a3640"; c.fillRect(x - 6, y - 34, 12, 34);
-    c.fillStyle = "#4c4754"; c.beginPath(); c.ellipse(x, y - 36, 18, 7, 0, 0, TAU); c.fill();
-    DL.Art.drawFire(c, x, y - 38, 0.9, t + x * 0.01);
-  }
-  // A portal: Robert's Rift Portal picture (open or dormant), a glow in its dungeon's colour while it burns.
-  function drawPortal(c, i, o, t) {
-    const lit = Finale.portalLit(i), q = F.portals[i], im = DL.Rift.art(lit ? "portal-on" : "portal-off"), k = 0.3;
-    if (im) {
-      const w = im.width * k, h = im.height * k;
-      c.fillStyle = "rgba(0,0,0,0.35)"; c.beginPath(); c.ellipse(o.x, o.y - 2, w * 0.42, 8, 0, 0, TAU); c.fill();
-      if (!lit) c.filter = "grayscale(0.7) brightness(0.55)";
-      c.drawImage(im, o.x - w / 2, o.y + 4 - h, w, h);
-      c.filter = "none";
-    } else {
-      c.fillStyle = "#2a2730"; c.fillRect(o.x - 40, o.y - 120, 80, 120);
-      c.fillStyle = lit ? `rgba(${q.col},0.85)` : "#050407";
-      c.beginPath(); c.ellipse(o.x, o.y - 60, 28, 50, 0, 0, TAU); c.fill();
-    }
-    const p = G.player;
-    if (p && dist(p.x, p.y, o.x, o.y) < 170) {
-      c.font = "bold 13px serif"; c.textAlign = "center";
-      c.fillStyle = "rgba(0,0,0,0.6)"; c.fillText(lit ? q.name : "???", o.x + 1, o.y - 133);
-      c.fillStyle = lit ? `rgb(${q.col})` : "#8a8394"; c.fillText(lit ? q.name : "???", o.x, o.y - 134);
-    }
+  // A portal's name over its mouth, close by ("???" while it's dark)
+  function portalName(c, i) {
+    const o = portalAt(i, 0), p = G.player, lit = Finale.portalLit(i), q = F.portals[i];
+    if (!p || dist(p.x, p.y, o.x, o.y + 40) > 260) return;
+    const y = o.y - 80 * SC;
+    c.font = "bold 15px serif"; c.textAlign = "center";
+    c.fillStyle = "rgba(0,0,0,0.7)"; c.fillText(lit ? q.name : "???", o.x + 1, y + 1);
+    c.fillStyle = lit ? `rgb(${q.col})` : "#a49cb0"; c.fillText(lit ? q.name : "???", o.x, y);
   }
 
   // Over the dark: the portals' swirl, the Bearer's spark and the ring of his charge.
   Finale.glow = function (c, t, view) {
     const b = Finale.b;
-    if (visible(view, HX - R - 100, HY - R - 260, HX + R + 100, HY + R + 120)) {
+    if (visible(view, X0, Y0, X0 + HL.w * SC, Y0 + HL.h * SC)) {
       for (let i = 0; i < 8; i++) {
-        if (!Finale.portalLit(i)) continue;
-        const o = portalAt(i, 12);
-        glow(c, o.x, o.y - 62, 52 + Math.sin(t * 2.4 + i) * 5, F.portals[i].col, 0.45);
+        if (Finale.portalLit(i)) { const o = portalAt(i, 0); glow(c, o.x, o.y - 30 * SC, 70 + Math.sin(t * 2.4 + i) * 6, F.portals[i].col, 0.45); }
+        portalName(c, i);
       }
     }
     if (b && !b.down) {

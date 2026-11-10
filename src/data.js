@@ -764,7 +764,12 @@
   DL.FINALE = {
     flame: 5,
     door: { x: 0, y: -200 },
-    hall: { x: 0, y: -40000, r: 480, dais: 80 },
+    // Robert's picture (assets/sprites/hall, cut by tools/cut_hall.py): w x h picture px, s world px each, centred on (x, y);
+    // the dais, the way out (the road off the picture's foot) and each portal's mouth foot, in picture px, clockwise
+    // from the top-left (portal 0, the first to wake)
+    hall: { x: 0, y: -40000, w: 1448, h: 1086, s: 2,
+      dais: [615, 492], exit: [545, 1062], enter: [548, 1000],
+      portals: [[345, 168], [1040, 125], [1250, 312], [1312, 510], [1275, 830], [775, 812], [210, 800], [195, 420]] },
     portals: [
       { id: "spires", name: "The Abyssal Spires", col: "190,130,255" },
       { id: "mines", name: "The Molten Mines", col: "255,120,40" },

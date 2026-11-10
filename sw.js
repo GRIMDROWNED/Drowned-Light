@@ -171,9 +171,11 @@ const FILES = [
     "mines/": ["arch", "arena-1", "arena-2", "banner", "brazier", "bullet-0", "bullet-1", "bullet-2", "bullet-3", "bullet-4", "bullet-5", "cage-broken", "cage-down", "cage-hang", "cart-broken", "cart-front", "cart-side", "chest-open", "chest-shut", "colossus-chain", "colossus-fist", "colossus-mortar", "crane", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "decree-1", "decree-2", "decree-3", "decree-4", "decree-safe", "face-1-band", "face-1-foot", "face-1-head", "face-2-band", "face-2-foot", "face-2-head", "fall-1", "fall-2", "fall-3", "fall-4", "floor-1", "floor-2", "floor-3", "geyser-1", "geyser-2", "geyser-3", "geyser-4", "golem-core", "golem-fist", "golem-pool", "grate-1", "grate-2", "grate-3", "grate-flame-1", "grate-flame-2", "grate-flame-3", "grate-flame-4", "jet-1", "jet-2", "jet-3", "jet-4", "jet-head", "jet-head-side", "obsidian-1", "obsidian-2", "puddle-1", "puddle-2", "puddle-3", "rail", "rune-circle", "seal-1", "seal-2", "seal-3", "shard-1", "shard-2", "shard-3", "shard-break", "shard-burst", "shard-crack", "shrine-dark", "shrine-lit", "stairs", "throne", "warn-1", "warn-2", "warn-3", "edge-south", "edge-north", "edge-side", "edge-corner", "bridge-arches", "pillar-1", "pillar-2", "pillar-3"],
     "mines-camp/": ["magma-forge", "brazier-tower", "forge-gate-off", "forge-gate-on"],
     "rift/": ["turret-1", "turret-2", "turret-3", "bolt", "flash-1", "flash-2", "hit", "lantern-1", "lantern-2", "lantern-3", "portal-off", "portal-on"],
+    "hall/": ["walk"],
     "pyramid/": ["step-south", "step-north", "step-east", "step-west", "stair-south", "stair-north", "stair-east", "stair-west", "stairway-lane"],
     "ground/": ["campEarth", "campFlags", "campPaving", "grass", "dirt", "shore", "shallow", "deep", "boardwalk", "caveFloor", "rimDeep", "rimShore"],
   }).flatMap(([dir, names]) => names.map((n) => "assets/sprites/" + dir + n + ".png")),
+  "assets/sprites/hall/hall.jpg",
 ].map((f) => (/\.(js|css|jpg)$/.test(f) || f.startsWith("assets/sprites/") ? f + "?v=" + VERSION : f));
 
 self.addEventListener("install", (e) => {
