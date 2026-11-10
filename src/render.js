@@ -1288,6 +1288,7 @@
     if (d.wyvern) return DL.Wyvern.drawMother(c, e, t); // the mother wyvern, drawn in code until her drawings are in (src/wyvern.js)
     if (d.king) return; // the Sunken King is drawn behind the gate, with his hands (src/finale.js)
     if (d.mine === "shard") return DL.MineBosses.drawShard(c, e, t); // the Seething Seraph's orbiting shards (src/minebosses.js)
+    if (d.mine === "tower") return DL.MineBosses.drawTower(c, e, t); // the Cinder Colossus's shoulder towers (src/minebosses.js)
     if (e.rise > 0) {
       // clawing up out of the water
       const k = 1 - e.rise / 0.9;

@@ -199,6 +199,9 @@ GRIDS = {
     # tools/cut_mines.py)
     'magma-golem/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '13_core']),
     'magma-golem/poses-b.png': (3, 2, POSES_B),
+    'cinder-colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '10_attackC']),
+    'cinder-colossus/poses-b.png': (3, 2, POSES_B),
+    'cinder-colossus/extras.png': (3, 2, ['13_oneTower', '14_noTowers', '15_unchained', '16_mortar', '17_chain', '18_rocket']),
     'seething-seraph/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '10_attackC']),
     'crucible-wyrm/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '10_attackC']),
     'crucible-wyrm/poses-b.png': (3, 2, POSES_B),
@@ -234,7 +237,7 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
-KEY_OPTS = {'molten-wretch': {'key': (0, 255, 0)}, 'ash-guard': {'key': (0, 255, 0)}, 'cinder-acolyte': {'key': (0, 255, 0)}, 'magma-golem': {'key': (0, 255, 0)}, 'crucible-wyrm': {'key': (0, 255, 0)}, 'seething-seraph': {'key': (0, 255, 0)}, 'crimson-greatsword': {'key': (0, 255, 0)}, 'cinderbrand': {'key': (0, 255, 0)}, 'rift-throne-boss': {'key': (0, 255, 0)}, 'rift-mite': {'key': (0, 255, 0)}, 'shard-wisp': {'key': (0, 255, 0)}, 'throne-warden': {'key': (0, 255, 0)}, 'mist-shade': {'key': (0, 255, 0)}, 'rift-caller': {'key': (0, 255, 0)}, 'prism-knight': {'key': (0, 255, 0)}, 'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+KEY_OPTS = {'molten-wretch': {'key': (0, 255, 0)}, 'ash-guard': {'key': (0, 255, 0)}, 'cinder-acolyte': {'key': (0, 255, 0)}, 'magma-golem': {'key': (0, 255, 0)}, 'crucible-wyrm': {'key': (0, 255, 0)}, 'seething-seraph': {'key': (0, 255, 0)}, 'cinder-colossus': {'key': (0, 255, 0)}, 'crimson-greatsword': {'key': (0, 255, 0)}, 'cinderbrand': {'key': (0, 255, 0)}, 'rift-throne-boss': {'key': (0, 255, 0)}, 'rift-mite': {'key': (0, 255, 0)}, 'shard-wisp': {'key': (0, 255, 0)}, 'throne-warden': {'key': (0, 255, 0)}, 'mist-shade': {'key': (0, 255, 0)}, 'rift-caller': {'key': (0, 255, 0)}, 'prism-knight': {'key': (0, 255, 0)}, 'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
 # Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
 def jade_match(x):
     """The Jade Breaker's sheets each came out a little different in colour: match them all to his front view."""
@@ -308,6 +311,12 @@ SETS = {
     # the Crucible Wyrm (Molten Mines boss D), res 4: 170 world px head on with its wings spread (x1.35 in game)
     # the Seething Seraph (Molten Mines boss E), res 4: 165 world px from its halo to its fire tail (x1.3 in game);
     # poses-b is split by tools/prep_seraph.py first. attackA = the ember spiral, attackB = Judgement, attackC = arms crossed
+    # the Cinder Colossus (Molten Mines boss F), res 4: 190 world px tower tops to feet (x1.4 in game), the biggest of the
+    # five; attackA = fist drawn back, attackB = the chained sweep, attackC = towers erupting (mortars); oneTower/noTowers
+    # = its towers broken (the chest furnace open), unchained = tearing its chains free. Its props: tools/cut_mines.py
+    'cinder-colossus': ('mines-bosses/colossus', 'cinder-colossus/01_front.png', 380, 1, {**twelve('cinder-colossus', TWELVE_FILES),
+        'cinder-colossus/13_oneTower.png': ('oneTower', {'height': 387}), 'cinder-colossus/14_noTowers.png': ('noTowers', {'height': 332}),
+        'cinder-colossus/15_unchained.png': ('unchained', {'height': 390})}),
     'seething-seraph': ('mines-bosses/seraph', 'seething-seraph/01_front.png', 330, 1, twelve('seething-seraph', TWELVE_FILES)),
     'crucible-wyrm': ('mines-bosses/wyrm', 'crucible-wyrm/01_front.png', 340, 1, {**twelve('crucible-wyrm', TWELVE_FILES),
         'crucible-wyrm/17_dive.png': 'side/dive', 'crucible-wyrm/18_land.png': 'side/land'}),
@@ -523,6 +532,11 @@ SHEETS = {
         ('rift-throne-boss/walk-side-4.png', 4, 1, 400, 'side/walk'),
         ('rift-throne-boss/walk-front.png', 4, 1, 400, 'walkF'),
         ('rift-throne-boss/walk-back.png', 4, 1, 400, 'walkB'),
+    ],
+    'cinder-colossus': [
+        ('cinder-colossus/walk-side-4.png', 4, 1, 372, 'side/walk'),
+        ('cinder-colossus/walk-front.png', 4, 1, 400, 'walkF'),
+        ('cinder-colossus/walk-back.png', 4, 1, 384, 'walkB'),
     ],
     'seething-seraph': [
         ('seething-seraph/walk-side-4.png', 4, 1, 330, 'side/walk'),

@@ -1187,10 +1187,10 @@
     const es = G.enemies;
     for (let i = 0; i < es.length; i++) {
       const a = es[i];
-      if (a.rise > 0 || a.hidden) continue;
+      if (a.rise > 0 || a.hidden || a.def.ghost) continue; // ghost: a boss's part that rides it (src/minebosses.js)
       for (let j = i + 1; j < es.length; j++) {
         const b = es[j];
-        if (b.rise > 0 || b.hidden) continue;
+        if (b.rise > 0 || b.hidden || b.def.ghost) continue;
         const dx = b.x - a.x, dy = b.y - a.y, min = a.def.radius + b.def.radius;
         if (Math.abs(dx) > min || Math.abs(dy) > min) continue;
         const d = Math.hypot(dx, dy) || 0.01;

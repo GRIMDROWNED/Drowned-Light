@@ -18,7 +18,12 @@
      E. The Seething Seraph (the Molten Choir), drawn by Robert: floats round the room's middle inside a ring of eight
         obsidian shards (real targets, DL.ENEMIES.seraphShard); while any stands it takes no harm, and broken ones grow
         back after a while. Ember spirals, rings of orbs, and Judgement: lines marked on the floor, then a molten
-        column runs out along each. The most bullet hell of the five. */
+        column runs out along each. The most bullet hell of the five.
+     F. The Cinder Colossus (the Bound Bastion), drawn by Robert: a chained fortress, tethered near its post until half
+        health, when it tears its chains free and walks faster. Its two shoulder towers (real targets,
+        DL.ENEMIES.cinderTower) lob mortars at marked circles; while either stands, blows barely scratch it. Break both
+        and the furnace in its chest blazes open for a while (blows deal double), then the towers rise again. Its
+        chained fists sweep wide; free, it fires a fist on a jet of flame along a marked line. */
 "use strict";
 (function (DL) {
   const G = DL.Game, TAU = Math.PI * 2, { rand, dist } = DL;
@@ -29,16 +34,17 @@
   const sfx = (n) => DL.Sound && DL.Sound.play(n);
   const sideOn = (a) => (Math.cos(a) >= 0 ? 0 : Math.PI);
   // which boss waits in which room
-  MB.ROOMS = { forge: "golem", pit: "hydra", roost: "wyrm", choir: "seraph" };
+  MB.ROOMS = { forge: "golem", pit: "hydra", roost: "wyrm", choir: "seraph", bastion: "cinder" };
   const WAKE = {
     golem: "Fire curtains roar up. In the forge's heart the stone stirs: the Magma Golem wakes!",
     hydra: "Fire curtains roar up. The pit's mound splits and three heads rise: the Furnace Hydra!",
     wyrm: "Fire curtains roar up. Wings beat in the smoke above: the Crucible Wyrm comes down!",
     seraph: "Fire curtains roar up. A choir hums in the heat: the Seething Seraph rises, ringed in obsidian!",
+    cinder: "Fire curtains roar up. Chains groan and the bastion stands up: the Cinder Colossus!",
   };
 
   let fists = [], pools = [];
-  MB.reset = function () { fists = []; pools = []; };
+  MB.reset = function () { fists = []; pools = []; rockets = []; };
   MB.boss = (room) => G.enemies.find((e) => e.room === room && e.def.boss && e.def.mine && !e.removed);
 
   /* ---------------- waking ---------------- */
@@ -70,16 +76,18 @@
       land(f);
     }
     fists = fists.filter((f) => !f.done);
+    MB.updateRockets(dt);
   };
   // a thrown fist or a lava glob comes down: a blow where it lands, a burst of shards, a molten pool
   function land(f) {
     const p = G.player;
+    if (!f.r) { for (let i = 0; i < 5; i++) G.puff(f.tx + rand(-14, 14), f.ty - rand(0, 14), "rgba(110,90,80,0.7)", 60, 0.5, -10); return; } // flung debris
     G.camera.shake = Math.max(G.camera.shake || 0, f.glob ? 4 : 9);
     sfx("hit");
     for (let i = 0; i < (f.glob ? 8 : 16); i++) G.puff(f.tx + rand(-30, 30), f.ty - rand(0, 30), "rgba(255,120,40,0.75)", 110, 0.7, -20);
     if (p && Math.hypot(p.x - f.tx, (p.y - f.ty) * 1.3) < f.r && !(p.dashT > 0) && !(p.inv > 0)) G.hurtPlayer(f.dmg, Math.atan2(p.y - f.ty, p.x - f.tx), f.by);
     if (f.shards) DL.Bullets.ring(f.tx, f.ty - 10, f.shards, rand(0, TAU), { by: f.glob ? "a lava spatter" : "a slag shard", dmg: f.bulletDmg, speed: f.speed, kind: f.glob ? 9 : 7 });
-    pools.push({ x: f.tx, y: f.ty, r: f.poolR, t: 0, life: f.poolLife, dmg: f.poolDmg });
+    if (f.poolR) pools.push({ x: f.tx, y: f.ty, r: f.poolR, t: 0, life: f.poolLife, dmg: f.poolDmg });
   }
 
   /* ---------------- each frame (MineFoes.busy) ---------------- */
@@ -90,6 +98,8 @@
     else if (e.def.mine === "wyrm") wyrm(e, dt, p, dp);
     else if (e.def.mine === "seraph") seraph(e, dt, p);
     else if (e.def.mine === "shard") shard(e);
+    else if (e.def.mine === "cinder") cinder(e, dt, p, dp);
+    else if (e.def.mine === "tower") tower(e);
     return true;
   };
   function golem(e, dt, p, dp) {
@@ -256,7 +266,8 @@
     const l = N().hydra.lob, n = N().hydra, m = mouth(e, "R"), count = l.n + (e.heads < 3 ? 1 : 0);
     for (let i = 0; i < count; i++) {
       const a = rand(0, TAU), r = i === 0 ? 0 : rand(l.spread * 0.4, l.spread);
-      fists.push({ x0: m.x, y0: m.y, gy: e.y, tx: p.x + Math.cos(a) * r, ty: p.y + Math.sin(a) * r * 0.7, t: -i * 0.15, fly: l.fly, glob: true,
+      const [gx, gy2] = inRoom(e.room, p.x + Math.cos(a) * r, p.y + Math.sin(a) * r * 0.7);
+      fists.push({ x0: m.x, y0: m.y, gy: e.y, tx: gx, ty: gy2, t: -i * 0.15, fly: l.fly, glob: true,
         dmg: e.dmg * l.dmg, by: "a lava glob", r: l.r, shards: l.shards, bulletDmg: n.bulletDmg, speed: l.speed, poolR: n.poolR, poolLife: n.poolLife, poolDmg: n.poolDmg, arc: 160 });
     }
     sfx("whisper");
@@ -278,6 +289,8 @@
     const dx = Math.cos(a), dy = Math.sin(a), tf = reach(dx, dy), tb = reach(-dx, -dy);
     return [x - dx * tb, y - dy * tb, x + dx * tf, y + dy * tf];
   }
+  // a spot pulled inside a boss's room (so lobbed things land on the floor, not in the mist)
+  const inRoom = (room, x, y) => { const f = DL.Mines.FLOORS[room]; return [DL.clamp(x, OX() + f[0] + 40, OX() + f[2] - 40), DL.clamp(y, OY() + f[1] + 40, OY() + f[3] - 40)]; };
   const inRoost = (x, y) => { const [x0, y0, x1, y1] = roostBox(110); return [DL.clamp(x, x0, x1), DL.clamp(y, y0, y1)]; };
   function wyrm(e, dt, p, dp) {
     const n = N().wyrm, s = e.def.size, a = Math.atan2(p.y - e.y, p.x - e.x), half = e.hp / e.maxHp < 0.5;
@@ -520,6 +533,13 @@
     e.act = "after"; e.t = 0.3;
   }
   function sAfter(e) { if (e.t <= 0) { e.act = null; e.next = N().seraph.every; } }
+  // a tower's target at the colossus's feet: a ring of embers (the tower itself is drawn on the colossus)
+  MB.drawTower = function (c, e) {
+    const k = e.hp / e.maxHp;
+    c.strokeStyle = `rgba(255,${120 + 80 * k},60,${0.45 + 0.3 * Math.sin(G.t * 5)})`; c.lineWidth = 2;
+    c.beginPath(); c.ellipse(e.x, e.y, 24, 10, 0, 0, TAU); c.stroke();
+    if (e.flash > 0) for (let i = 0; i < 2; i++) G.spark(e.x + rand(-20, 20), e.y - 200 * (e.body ? e.body.def.size : 1) * 0.8, "255,170,80", 60);
+  };
   // a shard in the ring, lifted to the Seraph's waist; it cracks as it's hurt
   MB.drawShard = function (c, e) {
     const k = e.hp / e.maxHp, im = IMG(k < 0.4 ? "shard-break" : k < 0.75 ? "shard-crack" : "shard-" + (e.shardN || 1)), y = e.y - 80;
@@ -530,11 +550,135 @@
     c.filter = "none";
   };
 
+  /* ---------------- F. the Cinder Colossus ---------------- */
+  const towersOf = (e) => G.enemies.filter((o) => o.body === e && !o.removed);
+  let rockets = [];
+  function raiseTowers(e, first) {
+    const have = new Set(towersOf(e).map((o) => o.side));
+    for (const side of [-1, 1]) {
+      if (have.has(side)) continue;
+      const o = G.makeEnemy("cinderTower", e.x, e.y, N().zone, { room: e.room, body: e, side, cd: 99 });
+      G.enemies.push(o);
+      tower(o);
+    }
+    if (!first) { say("Its towers rise again from the slag!", "danger"); sfx("torch"); }
+  }
+  function tower(o) { // rides its shoulder: hit it at the colossus's feet on that side
+    const e = o.body;
+    if (!e || e.removed || e.hp <= 0) { o.removed = true; return; }
+    const n = N().cinder;
+    o.x = e.x + o.side * n.towerOff * e.def.size; o.y = e.y + 6; o.kx = o.ky = 0;
+    o.moving = false; o.state = "move";
+  }
+  // the knight's side of the line from the colossus: aim, lines
+  function cinder(e, dt, p, dp) {
+    const n = N().cinder, s = e.def.size, a = Math.atan2(p.y - e.y, p.x - e.x), up = towersOf(e).length;
+    e.kx = e.ky = 0;
+    // chained: it can't stray far from its post
+    if (!e.free) { const hx = e.x - e.hx, hy = e.y - e.hy, d = Math.hypot(hx, hy); if (d > n.chainR) { e.x = e.hx + (hx / d) * n.chainR; e.y = e.hy + (hy / d) * n.chainR; } }
+    // both towers down: the chest furnace opens, then they rise again
+    if (e.act !== "wake" && !e.openT && up === 0 && e.towersUp) {
+      e.towersUp = false; e.openT = n.open;
+      say("Both towers fall: the furnace in its chest blazes open!", "good"); sfx("shatter"); G.camera.shake = 10;
+    }
+    if (e.openT > 0) { e.openT -= dt; if (e.openT <= 0) { e.openT = 0; raiseTowers(e, false); e.towersUp = true; } }
+    if (!e.free && e.hp < e.maxHp * 0.5 && !e.act) { e.act = "tear"; e.t = n.tear; e.anim = ["unchained", 0, Math.PI / 2]; sfx("shatter"); }
+    if (e.act) { e.t -= dt; return ({ wake: cWake, tear, mortarW, sweepW, sweep, rocketW, rocketGo, after: cAfter })[e.act](e, dt, p, a); }
+    const still = e.openT > 0 ? "noTowers" : up === 1 ? "oneTower" : "idle";
+    const sp = e.speed * (e.free ? n.free : 1);
+    if (dp > n.keep * s) {
+      e.x += Math.cos(a) * sp * dt; e.y += Math.sin(a) * sp * dt;
+      e.angle = a; e.moving = true; e.anim = up < 2 || e.openT > 0 ? [still, 0, Math.PI / 2] : null;
+      if (Math.random() < dt * 2) G.camera.shake = Math.max(G.camera.shake || 0, 2);
+    } else { e.angle = a; e.anim = [still, 0, Math.PI / 2]; }
+    e.next -= dt;
+    if (e.next > 0) return;
+    e.aim = a;
+    if (e.free && dp > n.sweep.r * s && Math.random() < 0.6) { e.act = "rocketW"; e.t = n.rocket.wind; }
+    else if (up > 0 && (dp > n.sweep.r * s || Math.random() < 0.4)) { e.act = "mortarW"; e.t = n.mortar.wind; }
+    else { e.act = "sweepW"; e.t = n.sweep.wind; }
+  }
+  function cWake(e) {
+    e.anim = ["attackC", 0, Math.PI / 2];
+    if (Math.random() < 0.4) G.puff(e.x + rand(-90, 90), e.y - rand(100, 260), "rgba(255,140,50,0.7)", 70, 0.7, -30);
+    if (e.t <= 0) { raiseTowers(e, true); e.towersUp = true; e.act = null; e.next = 0.8; }
+  }
+  // half health: it tears its chains free and flings the links
+  function tear(e) {
+    e.anim = ["unchained", 0, Math.PI / 2];
+    if (e.t > 0) return;
+    e.free = true;
+    G.camera.shake = 12;
+    say("It tears its chains free! The Colossus walks.", "danger");
+    for (let i = 0; i < 4; i++) {
+      const a = rand(0, TAU), r = rand(150, 260);
+      fists.push({ x0: e.x, y0: e.y - 120, gy: e.y, tx: e.x + Math.cos(a) * r, ty: e.y + Math.sin(a) * r * 0.6, t: -i * 0.1, fly: 0.8, r: 0, arc: 140, im: "colossus-chain", w: 70 });
+    }
+    e.act = "after"; e.t = 0.4;
+  }
+  // its towers erupt: mortars at marked circles round you
+  function mortarW(e, dt, p) {
+    e.anim = ["attackC", 0, Math.PI / 2];
+    if (e.t > 0) return;
+    const m = N().cinder.mortar, n = N().cinder, s = e.def.size;
+    for (const o of towersOf(e)) {
+      const tx0 = e.x + o.side * n.towerOff * s, ty0 = e.y - 200 * s;
+      for (let i = 0; i < m.n; i++) {
+        const a = rand(0, TAU), r = i === 0 ? 0 : rand(m.spread * 0.4, m.spread);
+        const [mx, my] = inRoom(e.room, p.x + Math.cos(a) * r, p.y + Math.sin(a) * r * 0.7);
+        fists.push({ x0: tx0, y0: ty0, gy: e.y, tx: mx, ty: my, t: -i * 0.2 - (o.side > 0 ? 0.1 : 0), fly: m.fly,
+          dmg: e.dmg * m.dmg, by: "a mortar shell", r: m.r, shards: m.shards, bulletDmg: n.bulletDmg, speed: m.speed, poolR: n.poolR, poolLife: n.poolLife,
+          poolDmg: n.poolDmg, arc: 260, im: "colossus-mortar", w: 46 });
+      }
+    }
+    G.camera.shake = Math.max(G.camera.shake || 0, 5);
+    sfx("torch");
+    e.act = "after"; e.t = 0.6;
+  }
+  // the chained sweep: a wide arc marked on the floor, then the fist comes round
+  function sweepW(e, dt, p, a) {
+    e.anim = ["attackA", 0, sideOn(e.aim)];
+    if (e.t > N().cinder.sweep.wind * 0.4) e.aim = a;
+    if (e.t > 0) return;
+    const w = N().cinder.sweep, s = e.def.size;
+    e.act = "sweep"; e.t = 0.5;
+    strike(e, w.r * s, w.arc, e.dmg * w.dmg, "the Cinder Colossus's chained fist");
+    DL.Bullets.fan(e.x, e.y - 20, e.aim, w.rocks, w.arc, { by: "a flung rock", dmg: N().cinder.bulletDmg, speed: w.speed, kind: 7 });
+    G.camera.shake = Math.max(G.camera.shake || 0, 9);
+    sfx("hit");
+  }
+  function sweep(e) { e.anim = ["attackB", 0, sideOn(e.aim)]; if (e.t <= 0) { e.act = "after"; e.t = 0.4; } }
+  // free: it fires a fist on a jet of flame along a marked line
+  function rocketW(e, dt, p, a) {
+    e.anim = ["attackA", 0, sideOn(e.aim)];
+    if (e.t > N().cinder.rocket.wind * 0.35) e.aim = a;
+    if (e.t > 0) return;
+    const r = N().cinder.rocket;
+    rockets.push({ x: e.x, y: e.y - 10, a: e.aim, d: 0, len: r.len, hit: false, dmg: e.dmg * r.dmg });
+    sfx("torch");
+    e.act = "rocketGo"; e.t = r.len / r.speed;
+  }
+  function rocketGo(e) { e.anim = ["attackB", 0, sideOn(e.aim)]; if (e.t <= 0) { e.act = "after"; e.t = 0.5; } }
+  function cAfter(e) { if (e.t <= 0) { e.act = null; e.next = N().cinder.every * (e.free ? 0.8 : 1); } }
+  MB.updateRockets = function (dt) {
+    const r = N().cinder.rocket, p = G.player;
+    for (const k of rockets) {
+      k.d += r.speed * dt;
+      const x = k.x + Math.cos(k.a) * k.d, y = k.y + Math.sin(k.a) * k.d;
+      if (!k.hit && p && Math.hypot(p.x - x, (p.y - y) * 1.3) < r.r && !(p.dashT > 0)) { k.hit = true; G.hurtPlayer(k.dmg, k.a, "the Cinder Colossus's flaming fist"); }
+      if (Math.random() < 0.7) G.puff(x - Math.cos(k.a) * 30, y - 40, "rgba(255,140,50,0.75)", 50, 0.5, -20);
+    }
+    rockets = rockets.filter((k) => k.d < k.len);
+  };
+
   // what a blow does to it: double while the golem's core is open, more while the wyrm pants; nothing while a boss
   // wakes or the wyrm is in the air
-  MB.soak = (e, d) => (e.act === "wake" || flying(e) || (e.def.mine === "seraph" && shardsOf(e).length) ? 0 : e.act === "core" ? d * N().golem.coreDmg : e.act === "pant" ? d * N().wyrm.pantDmg : d);
+  MB.soak = (e, d) => (e.def.mine === "cinder" ? (e.act === "wake" ? 0 : e.openT > 0 ? d * N().cinder.openDmg : towersOf(e).length ? d * N().cinder.guard : d) :
+    e.act === "wake" || flying(e) || (e.def.mine === "seraph" && shardsOf(e).length) ? 0 : e.act === "core" ? d * N().golem.coreDmg : e.act === "pant" ? d * N().wyrm.pantDmg : d);
   MB.slain = function (e) {
     for (const o of shardsOf(e)) o.removed = true;
+    for (const o of towersOf(e)) o.removed = true;
+    rockets = [];
     DL.Bullets.clear();
     fists = [];
     G.camera.shake = 14;
@@ -558,6 +702,7 @@
     }
     for (const f of fists) {
       const k = Math.max(0, Math.min(1, f.t / f.fly));
+      if (!f.r) continue;
       c.fillStyle = `rgba(0,0,0,${0.2 + 0.4 * k})`; c.beginPath(); c.ellipse(f.tx, f.ty, 20 + 40 * k, (20 + 40 * k) * 0.5, 0, 0, TAU); c.fill();
       c.strokeStyle = `rgba(255,140,40,${0.4 + 0.5 * k})`; c.lineWidth = 2; c.beginPath(); c.ellipse(f.tx, f.ty, f.r, f.r * 0.55, 0, 0, TAU); c.stroke();
     }
@@ -591,6 +736,22 @@
         c.fillStyle = `rgba(255,110,30,${0.08 + 0.2 * k})`; c.fill();
       }
     }
+    // the Cinder Colossus: its chains to the bastion walls, the sweep's arc, the fist's line
+    for (const e of G.enemies) {
+      if (e.def.mine !== "cinder" || e.removed || !vis(view, e.x, e.y, 1000)) continue;
+      const n = N().cinder, s = e.def.size;
+      if (!e.free) { const ch = IMG("colossus-chain"); for (const side of [-1, 1]) chainLine(c, ch, e.x + side * 60 * s, e.y - 90 * s, e.hx + side * n.anchorX, e.hy + n.anchorY); }
+      if (e.act === "sweepW") {
+        const w = n.sweep, k = 1 - Math.max(0, e.t) / w.wind, R = w.r * s;
+        c.fillStyle = `rgba(255,120,30,${0.1 + 0.25 * k})`;
+        c.beginPath(); c.moveTo(e.x, e.y); c.ellipse(e.x, e.y, R, R / 1.4, 0, e.aim - w.arc / 2, e.aim + w.arc / 2); c.closePath(); c.fill();
+      }
+      if (e.act === "rocketW") {
+        const r = n.rocket, k = 1 - Math.max(0, e.t) / r.wind;
+        c.save(); c.translate(e.x, e.y - 10); c.rotate(e.aim);
+        c.fillStyle = `rgba(255,120,30,${0.15 + 0.3 * k})`; c.fillRect(0, -r.r * 0.7, r.len, r.r * 1.4); c.restore();
+      }
+    }
     // the Seething Seraph: its shadow, and Judgement's lines
     for (const e of G.enemies) {
       if (e.def.mine !== "seraph" || e.removed || !vis(view, e.x, e.y, 1100)) continue;
@@ -617,17 +778,38 @@
       c.arc(m.x, gy, L, Math.min(a0, a1), Math.max(a0, a1)); c.closePath(); c.fill();
     }
   };
+  // a chain from the colossus's wrist to a ring in the wall, link pictures laid end to end
+  function chainLine(c, im, x0, y0, x1, y1) {
+    const d = Math.hypot(x1 - x0, y1 - y0), a = Math.atan2(y1 - y0, x1 - x0);
+    if (!im) { c.strokeStyle = "#4a3a34"; c.lineWidth = 5; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); return; }
+    const w = 46, h = (w * im.height) / im.width;
+    c.save(); c.translate(x0, y0); c.rotate(a);
+    for (let x = 0; x < d; x += w * 0.85) c.drawImage(im, x, -h / 2 + Math.sin(x * 0.02) * 3, w, h);
+    c.restore();
+  }
   // standing: fists flying in an arc (y-sorted by where they'll land)
   MB.push = function (list, c, t, view) {
+    for (const k of rockets) {
+      const x = k.x + Math.cos(k.a) * k.d, y = k.y + Math.sin(k.a) * k.d;
+      if (!vis(view, x, y, 150)) continue;
+      list.push({ y, f: () => {
+        const im = IMG("colossus-fist");
+        if (!im) { c.fillStyle = "#ff8a2a"; c.beginPath(); c.arc(x, y - 40, 20, 0, TAU); c.fill(); return; }
+        const w = 130, h = (w * im.height) / im.width;
+        // drawn flying left: turned to its heading
+        c.save(); c.translate(x, y - 40); c.rotate(k.a + Math.PI); if (Math.cos(k.a) < 0) { c.scale(1, 1); } else c.scale(1, -1);
+        c.drawImage(im, -w * 0.25, -h / 2, w, h); c.restore();
+      } });
+    }
     for (const f of fists) {
       if (f.t < 0) continue;
       const k = Math.min(1, f.t / f.fly), x = f.x0 + (f.tx - f.x0) * k, gy = f.gy + (f.ty - f.gy) * k;
       const y = f.y0 + (f.ty - f.y0) * k - Math.sin(Math.PI * k) * f.arc;
       if (!vis(view, x, y, 120)) continue;
       list.push({ y: gy, f: () => {
-        const im = IMG(f.glob ? "bullet-0" : "golem-fist");
+        const im = IMG(f.im || (f.glob ? "bullet-0" : "golem-fist"));
         if (!im) { c.fillStyle = f.glob ? "#ff8a2a" : "#4a3028"; c.beginPath(); c.arc(x, y, f.glob ? 12 : 18, 0, TAU); c.fill(); return; }
-        const w = f.glob ? 34 : 66, h = (w * im.height) / im.width, flip = f.tx < f.x0;
+        const w = f.w || (f.glob ? 34 : 66), h = (w * im.height) / im.width, flip = f.tx < f.x0;
         c.save(); c.translate(x, y); if (flip) c.scale(-1, 1); c.rotate(Math.sin(t * 9) * 0.15); c.drawImage(im, -w / 2, -h / 2, w, h); c.restore();
       } });
     }

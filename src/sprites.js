@@ -167,6 +167,7 @@
     magmaGolem(),
     furnaceHydra(),
     crucibleWyrm(),
+    cinderColossus(),
     // the Seething Seraph (src/minebosses.js), res 4: floats, so its walks are drifts; attackA = the ember spiral,
     // attackB = Judgement (arms up, halo blazing), attackC = arms crossed (regrowing its shards)
     Object.assign(walking("seraph", [123, 332], [129, 332], [128, 332], 4), { path: "assets/sprites/mines-bosses/seraph/", keys: { seraph: [0, false] }, own: true }),
@@ -395,6 +396,14 @@
     const fly = [1, 1, 2, 2, 3, 3, 4, 4].map((i) => "side/fly" + i + "@-");
     for (const dir of ["down", "up", "side"])
       Object.assign(set.views[dir], { fly, dive: ["side/dive"], land: ["side/land"], attackA: ["attackA"], attackB: ["attackB"], attackC: ["attackC"] });
+    return set;
+  }
+  // The Cinder Colossus (src/minebosses.js), res 4: oneTower/noTowers are its front still with towers broken (the
+  // furnace open), unchained tearing its chains free; attackA fist drawn back, attackB the sweep, attackC towers erupting.
+  function cinderColossus() {
+    const set = Object.assign(walking("cinder", [187, 394], [166, 402], [153, 388], 4), { path: "assets/sprites/mines-bosses/colossus/", keys: { cinder: [0, false] }, own: true });
+    const extra = { oneTower: ["oneTower"], noTowers: ["noTowers"], unchained: ["unchained"], attackA: ["attackA"], attackB: ["attackB"], attackC: ["attackC"] };
+    for (const dir of ["down", "up", "side"]) Object.assign(set.views[dir], extra);
     return set;
   }
   function magmaGolem() {

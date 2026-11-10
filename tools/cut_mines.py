@@ -149,3 +149,10 @@ im = key(load('seething-seraph/shards.png'))
 for name, box in (('shard-1', (150, 0, 370, 512)), ('shard-2', (630, 0, 900, 512)), ('shard-3', (1160, 0, 1400, 512)),
                   ('shard-crack', (140, 512, 380, 1024)), ('shard-break', (640, 512, 900, 1024)), ('shard-burst', (1120, 512, 1420, 1024))):
     save(fit(crop(im.crop(box)), k=0.2)[0], name)
+
+# ---- the Cinder Colossus's props (bottom row of returned/crucible/cinder-colossus/extras.png): a mortar shell, a
+# broken chain (flung when it tears free), a fist rocketing on a jet of flame (its thrown fist)
+im = key(load('cinder-colossus/extras.png'))
+for name, box, w in (('colossus-mortar', (100, 600, 450, 930), 70), ('colossus-chain', (530, 640, 980, 880), 90),
+                     ('colossus-fist', (1020, 600, 1520, 940), 170)):
+    save(fit(crop(im.crop(box)), w=w)[0], name)

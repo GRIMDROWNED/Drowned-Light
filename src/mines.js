@@ -152,7 +152,20 @@
     DL.MineTraps.collide(ent, r); // a fallen cage is a wall (src/minetraps.js)
     const sp = G.spires, hold = sp && sp.lv === "mines" && sp.seal && (ent === G.player || ent.room === sp.seal) ? FLOORS[sp.seal] : null; // a shut room keeps you (and its guards) in
     geo.collide(ent, r, hold, ent === G.player ? { x: OX + SPAWN.x, y: OY + SPAWN.y } : null);
+    if (sp && sp.lv === "mines") barGreat(ent);
   };
+  /* The great stair up to the Bound Bastion stays barred by fire until the four wing lords (the Golem, the Hydra, the
+     Wyrm and the Seraph) have fallen this run. */
+  const WINGS = ["forge", "pit", "roost", "choir"], GREAT = [0, 408];
+  Mi.wingsLeft = () => { const sp = G.spires; return sp ? WINGS.filter((r) => !sp.cleared[r]).length : WINGS.length; };
+  let barredT = 0;
+  function barGreat(ent) {
+    if (ent !== G.player || !Mi.wingsLeft()) return;
+    const lx = ent.x - OX, ly = ent.y - OY;
+    if (Math.abs(lx) > 90 || ly > GREAT[1] - 4 || ly < -280) return;
+    ent.y = OY + GREAT[1] - 4 + 0.01;
+    if (G.t > barredT) { barredT = G.t + 4; const n = Mi.wingsLeft(); say(`Fire bars the great stair: ${n} wing lord${n > 1 ? "s" : ""} still stand${n > 1 ? "" : "s"}.`, "warn"); }
+  }
   Mi.route = (x, y, tx, ty) => (Mi.active() && Mi.inRegion(x, y) ? geo.route(x, y, tx, ty) : null);
 
   /* ---------------- going in and out ---------------- */
@@ -287,7 +300,7 @@
     "seal-1", "seal-2", "seal-3", "crane", "cage-hang", "cart-side", "cart-front", "cart-broken", "rail",
     // the traps' (src/minetraps.js)
     "grate-1", "grate-2", "grate-3", "grate-flame-1", "grate-flame-2", "grate-flame-3", "grate-flame-4", "cage-down", "cage-broken",
-    "golem-fist", "golem-pool", "golem-core", "shard-1", "shard-2", "shard-3", "shard-crack", "shard-break", "shard-burst", "jet-head", "jet-1", "jet-2", "jet-3", "jet-4", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "geyser-1", "geyser-2", "geyser-3", "geyser-4"];
+    "golem-fist", "golem-pool", "golem-core", "shard-1", "shard-2", "shard-3", "shard-crack", "shard-break", "shard-burst", "colossus-mortar", "colossus-chain", "colossus-fist", "jet-head", "jet-1", "jet-2", "jet-3", "jet-4", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "geyser-1", "geyser-2", "geyser-3", "geyser-4"];
   const IMG = {};
   Mi.IMG = IMG; // src/minetraps.js draws from it too
   let loading = false;
@@ -734,8 +747,13 @@
     }
     DL.MineTraps.push(list, c, t, view);
     DL.MineBosses.push(list, c, t, view);
-    // a shut room's fire curtains, across each of its doors
+    // a shut room's fire curtains, across each of its doors (and the great stair's, until the wings are cleared)
     const sp = G.spires;
+    if (sp && sp.lv === "mines" && Mi.wingsLeft()) {
+      const x = OX + GREAT[0], y = OY + GREAT[1] - 8;
+      if (x > view.left - 100 && x < view.right + 100 && y > view.top - 100 && y < view.bottom + 200)
+        list.push({ y: y + 6, f: () => { if (IMG["seal-1"]) curtainArt(c, x, y + 6, t); else for (let i = -3; i <= 3; i++) curtain(c, x + i * 18, y + 6, t, i); } });
+    }
     if (sp && sp.lv === "mines" && sp.seal) for (const j of JOINS) {
       if (j[0] !== sp.seal && j[1] !== sp.seal) continue;
       const x = OX + j[2], y = OY + j[3];

@@ -211,9 +211,14 @@
       mine: "wyrm", boss: true, shadow: 70, barY: 200, barW: 90, drop: {} },
     seraph: { name: "The Seething Seraph", hp: 1500, speed: 40, dmg: 22, range: 0, windup: 1, cd: 99, scale: 1, radius: 30, mass: 999,
       mine: "seraph", boss: true, shadow: 0, barY: 200, barW: 80, drop: {} },
+    cinder: { name: "The Cinder Colossus", hp: 1800, speed: 30, dmg: 26, range: 0, windup: 1, cd: 99, scale: 1, radius: 50, mass: 999,
+      mine: "cinder", boss: true, shadow: 80, barY: 210, barW: 100, drop: {} },
+    // one of the Cinder Colossus's two shoulder towers (src/minebosses.js): struck at its feet on that side
+    cinderTower: { name: "Shoulder Tower", hp: 90, speed: 0, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1, radius: 26, mass: 999,
+      mine: "tower", ghost: true, shadow: 0, barY: 40, barW: 30, drop: {} },
     // one of the eight obsidian shards orbiting the Seething Seraph (src/minebosses.js): break them all to hurt it
     seraphShard: { name: "Obsidian Shard", hp: 40, speed: 0, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1, radius: 18, mass: 999,
-      mine: "shard", shadow: 0, barY: 70, barW: 24, drop: {} },
+      mine: "shard", ghost: true, shadow: 0, barY: 70, barW: 24, drop: {} },
     acolyte: { name: "Cinder Acolyte", hp: 55, speed: 62, dmg: 12, range: 250, windup: 0.6, cd: 2.6, scale: 1, radius: 12, mass: 0.9,
       hang: 250, mine: "acolyte", minion: true, look: "hexbearer", lookScale: 1, tint: "#d04010", tintK: 0.4, drop: {} },
   };
@@ -670,9 +675,9 @@
      height (`barY`) in DL.ENEMIES are multiplied by `size[type]` below, so each stands about three knights tall. The
      Sunken King is a scene of his own and keeps his size. */
   DL.BOSS = {
-    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6, riftlord: 1.5, golem: 1.25, hydra: 1.6, wyrm: 1.35, seraph: 1.3 },
+    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6, riftlord: 1.5, golem: 1.25, hydra: 1.6, wyrm: 1.35, seraph: 1.3, cinder: 1.4 },
     view: 820, viewR: 650, // within `viewR` px of an awake boss the camera pulls back to show at least `view` px top to bottom
-    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600, riftlord: 1800, golem: 1500, hydra: 1500, wyrm: 1500, seraph: 1500 },
+    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600, riftlord: 1800, golem: 1500, hydra: 1500, wyrm: 1500, seraph: 1500, cinder: 1800 },
     perNight: 0.04, dmgNight: 0.05, perAlly: 0.6,
     stun: 0.3, immune: 3,
   };
@@ -886,7 +891,13 @@
        orbiting `orbitR` px out; while any stands it takes no harm; broken ones grow back after `regrow` s. Moves in
        turn every `every` s: spiral (`arms` sparks every `rate` s for `time` s), Judgement (lines marked `mark` s, then a
        molten column runs out along each at `beamSpeed`, `beamDmg` within `beamR`, leaving pools; two lines below
-       half), ring (`ringN` orbs, twice). */
+       half), ring (`ringN` orbs, twice).
+     cinder (F, the Bound Bastion): chained within `chainR` of `at` (chains to rings `anchorX`/`anchorY` off it) until
+       half health, then tears free (`tear` s) and walks x`free` faster. Two towers (DL.ENEMIES.cinderTower) `towerOff`
+       px either side: while one stands blows deal x`guard`; both down opens the furnace for `open` s (x`openDmg`), then
+       they rise again. mortar (towers up): `n` shells per tower round you within `spread`, `fly` s, `dmg` within `r`,
+       `shards`, a pool. sweep: `wind` s arc marked, `dmg` within `r` across `arc`, `rocks` bullets. rocket (free): a
+       line marked `wind` s, a fist at `speed` along `len`, `dmg` within `r`. */
   DL.MINE_BOSSES = {
     zone: 4,
     golem: { at: [-1860, 560], every: 1.7, every2: 1.2, half: 0.5, keep: 110, raise: 1.0, hit: 0.6, r: 120, dmg: 1, ring: 26, gap: 0.55,
@@ -904,6 +915,11 @@
       spiral: { wind: 0.6, arms: 4, rate: 0.17, spin: 1.3, time: 3, speed: 120 },
       judge: { mark: 1.1, lock: 0.3, len: 1000, beamSpeed: 800, beamR: 48, beamDmg: 1.1, split: 0.45, poolStep: 70, poolR: 34, poolLife: 2.5, poolDmg: 8 },
       ringN: 20, ringSpeed: 140 },
+    cinder: { at: [0, -560], every: 1.3, keep: 140, chainR: 150, anchorX: 300, anchorY: -150, tear: 1.4, free: 1.8,
+      towerOff: 62, guard: 0.25, open: 9, openDmg: 2, bulletDmg: 10, poolR: 50, poolLife: 5, poolDmg: 10,
+      mortar: { wind: 0.8, n: 3, spread: 170, fly: 1.25, r: 66, dmg: 0.9, shards: 6, speed: 140 },
+      sweep: { wind: 0.75, r: 210, arc: 2.6, dmg: 1.1, rocks: 11, speed: 160 },
+      rocket: { wind: 0.8, speed: 760, r: 52, dmg: 1, len: 900 } },
   };
   DL.MINE_TRAPS = {
     grate: { every: 3.4, warn: 0.8, burn: 1, wave: 0.35, dmg: 14 }, // the Grate Run: a new pattern every 3.4 s
