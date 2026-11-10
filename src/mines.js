@@ -174,6 +174,7 @@
     for (const i in saved) if (i !== "at" && saved[i]) { G.spires.lit[i] = true; G.spires.litT[i] = -99; }
     DL.MineTraps.reset();
     DL.MineFoes.reset();
+    DL.MineBosses.reset();
     const cp = checkpoint();
     p.x = cp.x; p.y = cp.y; p.spx = p.x; p.spy = p.y;
     p.kx = p.ky = 0; p.dashT = 0; p.angle = -Math.PI / 2;
@@ -185,6 +186,7 @@
   Mi.bag = () => null; // Obsidian and Magma Hearts come with the rooms (step 3 on)
   // a room's foe fell: Wretches feed; the last of a shut room's group opens it
   Mi.onKill = function (e) {
+    if (e.def.boss) DL.MineBosses.slain(e);
     DL.MineFoes.slain(e);
     const sp = G.spires;
     if (sp && sp.seal === e.room && !DL.MineFoes.left(e.room)) {
@@ -201,6 +203,7 @@
     DL.Bullets.clear();
     DL.MineTraps.reset();
     DL.MineFoes.reset();
+    DL.MineBosses.reset();
     for (const e of G.enemies) if (Mi.inRegion(e.x, e.y) && !e.def.den) e.removed = true;
     G.enemies = G.enemies.filter((e) => !e.removed);
     if (p) {
@@ -222,6 +225,7 @@
     if (Math.abs(lx - EXIT.x) < 30 && ly < EXIT.y - 4 && ly > EXIT.y - 40) { Mi.leave(); return; }
     DL.MineTraps.update(dt); // the corridors' traps (src/minetraps.js)
     DL.MineFoes.update(dt); // the Sovereign's minions at their posts (src/minefoes.js)
+    DL.MineBosses.update(dt, geo.pieceAt(lx, ly, 30)); // a mini boss wakes when you step into its room (src/minebosses.js)
     // a side room with its guards still standing shuts behind you (fire curtains over its doors) until they fall
     if (!sp.seal) {
       const room = geo.pieceAt(lx, ly, 30);
@@ -283,7 +287,7 @@
     "seal-1", "seal-2", "seal-3", "crane", "cage-hang", "cart-side", "cart-front", "cart-broken", "rail",
     // the traps' (src/minetraps.js)
     "grate-1", "grate-2", "grate-3", "grate-flame-1", "grate-flame-2", "grate-flame-3", "grate-flame-4", "cage-down", "cage-broken",
-    "jet-head", "jet-1", "jet-2", "jet-3", "jet-4", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "geyser-1", "geyser-2", "geyser-3", "geyser-4"];
+    "golem-fist", "golem-pool", "golem-core", "jet-head", "jet-1", "jet-2", "jet-3", "jet-4", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "geyser-1", "geyser-2", "geyser-3", "geyser-4"];
   const IMG = {};
   Mi.IMG = IMG; // src/minetraps.js draws from it too
   let loading = false;
@@ -697,6 +701,7 @@
     }
     DL.MineTraps.drawFloor(c, view, t); // grates, vents, crumbling tiles, cage shadows (src/minetraps.js)
     DL.MineFoes.drawFloor(c, view, t); // the Molten Wretches' puddles (src/minefoes.js)
+    DL.MineBosses.drawFloor(c, view, t); // the mini bosses' pools and marks (src/minebosses.js)
     // lava falls pouring down the faces
     FALLS.forEach(([fx, fw, id], n) => {
       const f = FLOORS[id], x = OX + fx - fw / 2, y = OY + f[3] + 4, len = S.hang + f[4] * LH + 90;
@@ -728,6 +733,7 @@
       list.push({ y, f: () => drawProp(c, q, x, y, t) });
     }
     DL.MineTraps.push(list, c, t, view);
+    DL.MineBosses.push(list, c, t, view);
     // a shut room's fire curtains, across each of its doors
     const sp = G.spires;
     if (sp && sp.lv === "mines" && sp.seal) for (const j of JOINS) {
@@ -864,6 +870,7 @@
     c.globalAlpha = 1;
     DL.MineTraps.drawGlow(c, t, view);
     DL.MineFoes.drawGlow(c, t, view);
+    DL.MineBosses.drawGlow(c, t, view);
     if (G.spires && G.spires.lv === "mines" && G.spires.seal) for (const j of JOINS) if (j[0] === G.spires.seal || j[1] === G.spires.seal) { c.globalAlpha = 0.6; c.drawImage(art.glow, OX + j[2] - 90, OY + j[3] - 120, 180, 180); }
     c.globalAlpha = 1;
     for (const m of art.embers) {

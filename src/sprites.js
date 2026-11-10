@@ -164,6 +164,7 @@
     Object.assign(walking("swisp", [60, 124], [76, 134], [71, 132], 4), { path: "assets/sprites/spires-foes/swisp/", keys: { swisp: [0, false] }, own: true }),
     Object.assign(walking("warden", [87, 252], [64, 252], [68, 256], 4), { path: "assets/sprites/spires-foes/warden/", keys: { warden: [0, false] }, own: true }),
     riftLord(),
+    magmaGolem(),
     // the Molten Mines' minions (src/minefoes.js), cut at res 4 on green
     Object.assign(walking("wretch", [108, 122], [65, 133], [70, 139], 4), { path: "assets/sprites/mines-foes/wretch/", keys: { wretch: [0, false] }, own: true }),
     Object.assign(walking("ashguard", [114, 186], [82, 178], [78, 178], 4), { path: "assets/sprites/mines-foes/ashguard/", keys: { ashguard: [0, false] }, own: true }),
@@ -364,6 +365,16 @@
   function riftLord() {
     const set = Object.assign(walking("riftlord", [319, 405], [135, 402], [138, 402], 4), { path: "assets/sprites/rift-throne/", keys: { riftlord: [0, false] }, own: true });
     const extra = { seated: ["seated"], waking: ["waking"], rising: ["rising"], p2: ["p2front"], sweep: ["p2sweep"], enraged: ["p2enraged"] };
+    for (const dir of ["down", "up", "side"]) Object.assign(set.views[dir], extra);
+    return set;
+  }
+
+  // The Magma Golem, the Molten Mines' mini boss A (src/minebosses.js), cut at res 4 (200 px, x1.25 in game). Beside the
+  // twelve poses: fists raised, the slam, the core split open, and the hurl (wound back, the fist gone, fusing back);
+  // they're drawn side on and used in every view (src/minebosses.js sets e.anim to one of them).
+  function magmaGolem() {
+    const set = Object.assign(walking("golem", [148, 361], [159, 362], [166, 362], 4), { path: "assets/sprites/mines-bosses/golem/", keys: { golem: [0, false] }, own: true });
+    const extra = { attack: ["attackA", "attackB", "attackB"], raise: ["attackA"], slam: ["attackB"], core: ["core"], windup: ["windup"], hurl: ["hurl"], regrow: ["regrow"] };
     for (const dir of ["down", "up", "side"]) Object.assign(set.views[dir], extra);
     return set;
   }

@@ -137,3 +137,8 @@ for i, c in enumerate(cells('geyser.png', [(33, 411), (476, 855), (919, 1297), (
 # bullets: orb, comet, crescent, rock, shard, spark (each fitted into 40 file px)
 for i, c in enumerate(cells('bullets.png', [(99, 252), (347, 653), (747, 1000), (1107, 1385), (1475, 1791), (1884, 2106)])):
     save(fit(c, k=40 / max(c.size))[0], f'bullet-{i}')
+
+# ---- the Magma Golem's props (bottom row of returned/crucible/magma-golem/attacks.png) ----
+im = key(load('magma-golem/attacks.png'))
+for name, box, w in (('golem-fist', (29, 600, 474, 900), 130), ('golem-pool', (539, 600, 990, 920), 300), ('golem-core', (1052, 600, 1489, 920), 90)):
+    save(fit(crop(im.crop(box)), w=w)[0], name)

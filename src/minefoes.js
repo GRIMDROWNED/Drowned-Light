@@ -90,6 +90,7 @@
 
   // its own move, in place of the Drowned's walk (game.js); true while it's busy
   F.busy = function (e, dt, p, dp) {
+    if (e.def.boss) return DL.MineBosses.busy(e, dt, p, dp); // a mini boss (src/minebosses.js)
     if (e.def.mine !== "halberd") return false;
     const n = N().halberd;
     if (e.throwT > 0) { // winding up the throw: it stands and flares
@@ -130,7 +131,7 @@
   };
 
   // what a blow does to it: half while an Acolyte wards it
-  F.soak = (e, d) => (e.wardT > 0 ? d * 0.5 : d);
+  F.soak = (e, d) => (e.def.boss ? DL.MineBosses.soak(e, d) : e.wardT > 0 ? d * 0.5 : d);
 
   // a minion fell: Wretches near it feed on it
   F.slain = function (e) {

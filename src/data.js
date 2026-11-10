@@ -202,6 +202,9 @@
       shield: 0.75, mine: "guard", minion: true, look: "blackguard", lookScale: 1, tint: "#4a3a34", tintK: 0.35, barY: 110, drop: {} },
     halberdier: { name: "Ember Halberdier", hp: 95, speed: 60, dmg: 16, range: 66, windup: 0.7, cd: 1.8, scale: 1, radius: 14, mass: 2,
       lunge: 280, mine: "halberd", minion: true, look: "warden", lookScale: 0.9, tint: "#e8501a", tintK: 0.6, barY: 120, drop: {} },
+    // The Molten Mines' mini bosses (src/minebosses.js, numbers in DL.MINE_BOSSES; health in DL.BOSS.hp, size DL.BOSS.size)
+    golem: { name: "The Magma Golem", hp: 1500, speed: 34, dmg: 24, range: 0, windup: 1, cd: 99, scale: 1, radius: 34, mass: 30,
+      mine: "golem", boss: true, shadow: 60, barY: 200, barW: 70, drop: {} },
     acolyte: { name: "Cinder Acolyte", hp: 55, speed: 62, dmg: 12, range: 250, windup: 0.6, cd: 2.6, scale: 1, radius: 12, mass: 0.9,
       hang: 250, mine: "acolyte", minion: true, look: "hexbearer", lookScale: 1, tint: "#d04010", tintK: 0.4, drop: {} },
   };
@@ -658,9 +661,9 @@
      height (`barY`) in DL.ENEMIES are multiplied by `size[type]` below, so each stands about three knights tall. The
      Sunken King is a scene of his own and keeps his size. */
   DL.BOSS = {
-    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6, riftlord: 1.5 },
+    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6, riftlord: 1.5, golem: 1.25 },
     view: 820, viewR: 650, // within `viewR` px of an awake boss the camera pulls back to show at least `view` px top to bottom
-    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600, riftlord: 1800 },
+    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600, riftlord: 1800, golem: 1500 },
     perNight: 0.04, dmgNight: 0.05, perAlly: 0.6,
     stun: 0.3, immune: 3,
   };
@@ -852,6 +855,19 @@
     acolyte: { circle: 46, fuse: 1.1, wardEvery: 5, wardR: 260, wardFor: 4 },
   };
   // the Molten Mines' traps (src/minetraps.js): seconds, px, damage. Every one warns first; a dash gets through.
+  /* The Molten Mines' mini bosses (src/minebosses.js). Each wakes when a knight steps into its room, which then shuts
+     (fire curtains) until it falls. Between moves it waits `every` s (`every2` below `half` health).
+     golem (A, the Fused Forge): walks at you to `keep` px. Slam: fists up for `raise` s (the floor marks `r` px round
+       him), down: `dmg` in the mark and a ring of `ring` slag bullets with one `gap` (radians) to slip through. Every
+       `cores` slams its chest splits open for `core` s: blows deal x`coreDmg`. Hurl: winds up `wind` s, throws its fist
+       (`fly` s, a shadow where it lands, aimed `lead` s ahead of you): `fistDmg` within `fistR`, a molten pool (`poolR`
+       px, `poolLife` s, `poolDmg` a touch) and `shards` bullets; the fist regrows in `regrow` s. Below half: two fists. */
+  DL.MINE_BOSSES = {
+    zone: 4,
+    golem: { at: [-1860, 560], every: 1.7, every2: 1.2, half: 0.5, keep: 110, raise: 1.0, hit: 0.6, r: 120, dmg: 1, ring: 26, gap: 0.55,
+      speed: 125, bulletDmg: 9, cores: 3, core: 3, coreDmg: 2, wind: 0.8, fly: 1.0, lead: 0.4, fistDmg: 1, fistR: 70,
+      poolR: 62, poolLife: 6, poolDmg: 10, shards: 8, regrow: 1.0 },
+  };
   DL.MINE_TRAPS = {
     grate: { every: 3.4, warn: 0.8, burn: 1, wave: 0.35, dmg: 14 }, // the Grate Run: a new pattern every 3.4 s
     cage: { every: 1.7, warn: 0.9, max: 3, lead: 0.5, r: 30, dmg: 6, lock: 3, shake: 0.5, stand: 3.5, after: 1.5 }, // the Gibbet Gallery
