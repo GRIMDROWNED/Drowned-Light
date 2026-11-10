@@ -747,6 +747,7 @@
     }
     DL.MineTraps.push(list, c, t, view);
     DL.MineBosses.push(list, c, t, view);
+    DL.MineBosses.pushSeated(list, c);
     // a shut room's fire curtains, across each of its doors (and the great stair's, until the wings are cleared)
     const sp = G.spires;
     if (sp && sp.lv === "mines" && Mi.wingsLeft()) {

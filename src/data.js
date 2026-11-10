@@ -213,6 +213,8 @@
       mine: "seraph", boss: true, shadow: 0, barY: 200, barW: 80, drop: {} },
     cinder: { name: "The Cinder Colossus", hp: 1800, speed: 30, dmg: 26, range: 0, windup: 1, cd: 99, scale: 1, radius: 50, mass: 999,
       mine: "cinder", boss: true, shadow: 80, barY: 210, barW: 100, drop: {} },
+    sovereign: { name: "The Ashen Sovereign", hp: 2400, speed: 58, dmg: 26, range: 0, windup: 1, cd: 99, scale: 1, radius: 30, mass: 999,
+      mine: "sovereign", boss: true, shadow: 50, barY: 210, barW: 110, drop: {} },
     // one of the Cinder Colossus's two shoulder towers (src/minebosses.js): struck at its feet on that side
     cinderTower: { name: "Shoulder Tower", hp: 90, speed: 0, dmg: 0, range: 0, windup: 1, cd: 99, scale: 1, radius: 26, mass: 999,
       mine: "tower", ghost: true, shadow: 0, barY: 40, barW: 30, drop: {} },
@@ -675,9 +677,9 @@
      height (`barY`) in DL.ENEMIES are multiplied by `size[type]` below, so each stands about three knights tall. The
      Sunken King is a scene of his own and keeps his size. */
   DL.BOSS = {
-    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6, riftlord: 1.5, golem: 1.25, hydra: 1.6, wyrm: 1.35, seraph: 1.3, cinder: 1.4 },
+    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6, riftlord: 1.5, golem: 1.25, hydra: 1.6, wyrm: 1.35, seraph: 1.3, cinder: 1.4, sovereign: 1.5 },
     view: 820, viewR: 650, // within `viewR` px of an awake boss the camera pulls back to show at least `view` px top to bottom
-    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600, riftlord: 1800, golem: 1500, hydra: 1500, wyrm: 1500, seraph: 1500, cinder: 1800 },
+    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600, riftlord: 1800, golem: 1500, hydra: 1500, wyrm: 1500, seraph: 1500, cinder: 1800, sovereign: 2400 },
     perNight: 0.04, dmgNight: 0.05, perAlly: 0.6,
     stun: 0.3, immune: 3,
   };
@@ -897,7 +899,15 @@
        px either side: while one stands blows deal x`guard`; both down opens the furnace for `open` s (x`openDmg`), then
        they rise again. mortar (towers up): `n` shells per tower round you within `spread`, `fly` s, `dmg` within `r`,
        `shards`, a pool. sweep: `wind` s arc marked, `dmg` within `r` across `arc`, `rocks` bullets. rocket (free): a
-       line marked `wind` s, a fist at `speed` along `len`, `dmg` within `r`. */
+       line marked `wind` s, a fist at `speed` along `len`, `dmg` within `r`.
+     sovereign (C, the Ashen Throne): seated at `at`, rising `wake` s. Kneels `kneel` s (no harm) at 66% and 33%,
+       calling `calls[phase-1]` (the first on waking). Walks to `keep`; moves every `every` s (quicker later). sweep:
+       `wind` s arc marked, `dmg` within `r` across `arc`, `n` (+2 a phase) crescents. thrust: 3 (5 later) lanes of `n`
+       fire cracks `step` apart, `split` rad apart. Phase 2+: `braziers` spin spirals every `every` s; the `flood` fills
+       the rim outside `safe` of the arena's size every `every` s (`warn` s marked, `time` s, `dmg` a touch). Phase 3:
+       every third move a blink (`sink` s pillar, out `min`..`max` px from you, `rise` s, a `ring`), a `spiral`, and
+       the `decree` every `every` s: the floor marked (`grid` px cells) `warn` s, then x`dmg` bullet damage unless you
+       stand on one of `safe` stones (`r` px). */
   DL.MINE_BOSSES = {
     zone: 4,
     golem: { at: [-1860, 560], every: 1.7, every2: 1.2, half: 0.5, keep: 110, raise: 1.0, hit: 0.6, r: 120, dmg: 1, ring: 26, gap: 0.55,
@@ -920,6 +930,15 @@
       mortar: { wind: 0.8, n: 3, spread: 170, fly: 1.25, r: 66, dmg: 0.9, shards: 6, speed: 140 },
       sweep: { wind: 0.75, r: 210, arc: 2.6, dmg: 1.1, rocks: 11, speed: 160 },
       rocket: { wind: 0.8, speed: 760, r: 52, dmg: 1, len: 900 } },
+    sovereign: { at: [0, -1615], wake: 2.2, kneel: 3, keep: 130, every: 1.2, bulletDmg: 10,
+      calls: [["ashguard", "wretch", "wretch", "wretch"], ["acolyte", "halberdier", "halberdier"], ["ashguard", "acolyte", "wretch", "wretch"]],
+      sweep: { wind: 0.8, r: 200, arc: 2.4, dmg: 1, n: 7, speed: 170 },
+      thrust: { wind: 0.7, n: 7, step: 46, split: 0.32, speed: 260 },
+      braziers: { at: [[-560, -1380], [560, -1380]], every: 7, arms: 3, rate: 0.22, spin: 1.2, time: 2.6, speed: 120 },
+      flood: { every: 15, warn: 1.6, time: 5, safe: 0.62, dmg: 10 },
+      blink: { sink: 0.8, rise: 0.6, min: 220, max: 380, ring: 18, speed: 150 },
+      spiral: { arms: 5, rate: 0.16, spin: 1.4, time: 2.6, speed: 130 },
+      decree: { every: 13, warn: 2.2, grid: 90, safe: 3, r: 70, dmg: 2.5 } },
   };
   DL.MINE_TRAPS = {
     grate: { every: 3.4, warn: 0.8, burn: 1, wave: 0.35, dmg: 14 }, // the Grate Run: a new pattern every 3.4 s

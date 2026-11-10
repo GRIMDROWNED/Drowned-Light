@@ -2,7 +2,7 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.258";
+const VERSION = "0.15.259";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
@@ -136,6 +136,8 @@ const FILES = [
     "mines-bosses/golem/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "mines-bosses/wyrm/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "mines-bosses/wyrm/side/": ["death", "dive", "fly1", "fly2", "fly3", "fly4", "hurt", "land", "walk1", "walk2", "walk3", "walk4"],
+    "mines-bosses/sovereign/": ["attackA", "attackB", "attackC", "back", "cloak", "crown", "front", "pillar", "right", "rising", "seated", "stepOut", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
+    "mines-bosses/sovereign/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "mines-bosses/colossus/": ["attackA", "attackB", "attackC", "back", "front", "noTowers", "oneTower", "right", "unchained", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
     "mines-bosses/colossus/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "mines-bosses/seraph/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],

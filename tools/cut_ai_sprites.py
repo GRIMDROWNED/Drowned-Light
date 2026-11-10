@@ -199,6 +199,9 @@ GRIDS = {
     # tools/cut_mines.py)
     'magma-golem/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '13_core']),
     'magma-golem/poses-b.png': (3, 2, POSES_B),
+    'ashen-sovereign/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '10_attackC']),
+    'ashen-sovereign/poses-b.png': (3, 2, POSES_B),
+    'ashen-sovereign/phases.png': (3, 2, ['13_seated', '14_rising', '15_cloak', '16_crown', '17_pillar', '18_stepOut']),
     'cinder-colossus/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '10_attackC']),
     'cinder-colossus/poses-b.png': (3, 2, POSES_B),
     'cinder-colossus/extras.png': (3, 2, ['13_oneTower', '14_noTowers', '15_unchained', '16_mortar', '17_chain', '18_rocket']),
@@ -237,7 +240,7 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
-KEY_OPTS = {'molten-wretch': {'key': (0, 255, 0)}, 'ash-guard': {'key': (0, 255, 0)}, 'cinder-acolyte': {'key': (0, 255, 0)}, 'magma-golem': {'key': (0, 255, 0)}, 'crucible-wyrm': {'key': (0, 255, 0)}, 'seething-seraph': {'key': (0, 255, 0)}, 'cinder-colossus': {'key': (0, 255, 0)}, 'crimson-greatsword': {'key': (0, 255, 0)}, 'cinderbrand': {'key': (0, 255, 0)}, 'rift-throne-boss': {'key': (0, 255, 0)}, 'rift-mite': {'key': (0, 255, 0)}, 'shard-wisp': {'key': (0, 255, 0)}, 'throne-warden': {'key': (0, 255, 0)}, 'mist-shade': {'key': (0, 255, 0)}, 'rift-caller': {'key': (0, 255, 0)}, 'prism-knight': {'key': (0, 255, 0)}, 'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+KEY_OPTS = {'molten-wretch': {'key': (0, 255, 0)}, 'ash-guard': {'key': (0, 255, 0)}, 'cinder-acolyte': {'key': (0, 255, 0)}, 'magma-golem': {'key': (0, 255, 0)}, 'crucible-wyrm': {'key': (0, 255, 0)}, 'seething-seraph': {'key': (0, 255, 0)}, 'cinder-colossus': {'key': (0, 255, 0)}, 'ashen-sovereign': {'key': (0, 255, 0)}, 'crimson-greatsword': {'key': (0, 255, 0)}, 'cinderbrand': {'key': (0, 255, 0)}, 'rift-throne-boss': {'key': (0, 255, 0)}, 'rift-mite': {'key': (0, 255, 0)}, 'shard-wisp': {'key': (0, 255, 0)}, 'throne-warden': {'key': (0, 255, 0)}, 'mist-shade': {'key': (0, 255, 0)}, 'rift-caller': {'key': (0, 255, 0)}, 'prism-knight': {'key': (0, 255, 0)}, 'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
 # Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
 def jade_match(x):
     """The Jade Breaker's sheets each came out a little different in colour: match them all to his front view."""
@@ -314,6 +317,13 @@ SETS = {
     # the Cinder Colossus (Molten Mines boss F), res 4: 190 world px tower tops to feet (x1.4 in game), the biggest of the
     # five; attackA = fist drawn back, attackB = the chained sweep, attackC = towers erupting (mortars); oneTower/noTowers
     # = its towers broken (the chest furnace open), unchained = tearing its chains free. Its props: tools/cut_mines.py
+    # the Ashen Sovereign (Molten Mines main boss C), res 4: 200 world px crown to boots (x1.5 in game, like the Rift lord);
+    # attackA = the halberd sweep, attackB = thrust into the floor, attackC = kneeling, calling his minions;
+    # phases.png (Robert's first version; phases-v2 kept): seated, rising, cloak (phase 2), crown (phase 3), pillar, stepOut
+    'ashen-sovereign': ('mines-bosses/sovereign', 'ashen-sovereign/01_front.png', 400, 1, {**twelve('ashen-sovereign', TWELVE_FILES),
+        'ashen-sovereign/13_seated.png': ('seated', {'height': 300}), 'ashen-sovereign/14_rising.png': ('rising', {'height': 380}),
+        'ashen-sovereign/15_cloak.png': ('cloak', {'height': 420}), 'ashen-sovereign/16_crown.png': ('crown', {'height': 420}),
+        'ashen-sovereign/17_pillar.png': ('pillar', {'height': 440}), 'ashen-sovereign/18_stepOut.png': ('stepOut', {'height': 420})}),
     'cinder-colossus': ('mines-bosses/colossus', 'cinder-colossus/01_front.png', 380, 1, {**twelve('cinder-colossus', TWELVE_FILES),
         'cinder-colossus/13_oneTower.png': ('oneTower', {'height': 387}), 'cinder-colossus/14_noTowers.png': ('noTowers', {'height': 332}),
         'cinder-colossus/15_unchained.png': ('unchained', {'height': 390})}),
@@ -532,6 +542,11 @@ SHEETS = {
         ('rift-throne-boss/walk-side-4.png', 4, 1, 400, 'side/walk'),
         ('rift-throne-boss/walk-front.png', 4, 1, 400, 'walkF'),
         ('rift-throne-boss/walk-back.png', 4, 1, 400, 'walkB'),
+    ],
+    'ashen-sovereign': [
+        ('ashen-sovereign/walk-side-4.png', 4, 1, 390, 'side/walk'),
+        ('ashen-sovereign/walk-front.png', 4, 1, 400, 'walkF'),
+        ('ashen-sovereign/walk-back.png', 4, 1, 400, 'walkB'),
     ],
     'cinder-colossus': [
         ('cinder-colossus/walk-side-4.png', 4, 1, 372, 'side/walk'),

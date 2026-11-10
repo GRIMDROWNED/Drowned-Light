@@ -23,7 +23,15 @@
         health, when it tears its chains free and walks faster. Its two shoulder towers (real targets,
         DL.ENEMIES.cinderTower) lob mortars at marked circles; while either stands, blows barely scratch it. Break both
         and the furnace in its chest blazes open for a while (blows deal double), then the towers rise again. Its
-        chained fists sweep wide; free, it fires a fist on a jet of flame along a marked line. */
+        chained fists sweep wide; free, it fires a fist on a jet of flame along a marked line.
+     C. The Ashen Sovereign (the Ashen Throne), drawn by Robert: the main boss. He sits on his throne until a knight
+        steps into the arena; then he rises and calls Ash Guards and Wretches. Three phases, kneeling (no blow lands)
+        at 66% and 33% to call more of his minions (all must fall before the arena opens):
+          1  the Halberd: wide marked sweeps (a fan of crescents), and a thrust that cracks the floor into lanes of fire
+          2  the Burning Cloak: the arena's braziers spin rings of embers, and lava floods the arena's outer ring for a
+             while (marked first), squeezing the fight into the middle
+          3  the Molten Crown: he vanishes into pillars of flame and steps out elsewhere in a burst, dense spirals, and
+             the Ashen Decree: the whole floor is marked to erupt but for a few safe stones. */
 "use strict";
 (function (DL) {
   const G = DL.Game, TAU = Math.PI * 2, { rand, dist } = DL;
@@ -34,17 +42,18 @@
   const sfx = (n) => DL.Sound && DL.Sound.play(n);
   const sideOn = (a) => (Math.cos(a) >= 0 ? 0 : Math.PI);
   // which boss waits in which room
-  MB.ROOMS = { forge: "golem", pit: "hydra", roost: "wyrm", choir: "seraph", bastion: "cinder" };
+  MB.ROOMS = { forge: "golem", pit: "hydra", roost: "wyrm", choir: "seraph", bastion: "cinder", throne: "sovereign" };
   const WAKE = {
     golem: "Fire curtains roar up. In the forge's heart the stone stirs: the Magma Golem wakes!",
     hydra: "Fire curtains roar up. The pit's mound splits and three heads rise: the Furnace Hydra!",
     wyrm: "Fire curtains roar up. Wings beat in the smoke above: the Crucible Wyrm comes down!",
     seraph: "Fire curtains roar up. A choir hums in the heat: the Seething Seraph rises, ringed in obsidian!",
     cinder: "Fire curtains roar up. Chains groan and the bastion stands up: the Cinder Colossus!",
+    sovereign: "Fire curtains roar up. On the throne the Ashen Sovereign lifts his head, and rises. \"Kneel.\"",
   };
 
   let fists = [], pools = [];
-  MB.reset = function () { fists = []; pools = []; rockets = []; };
+  MB.reset = function () { fists = []; pools = []; rockets = []; flood = null; decree = null; };
   MB.boss = (room) => G.enemies.find((e) => e.room === room && e.def.boss && e.def.mine && !e.removed);
 
   /* ---------------- waking ---------------- */
@@ -100,6 +109,7 @@
     else if (e.def.mine === "shard") shard(e);
     else if (e.def.mine === "cinder") cinder(e, dt, p, dp);
     else if (e.def.mine === "tower") tower(e);
+    else if (e.def.mine === "sovereign") sovereign(e, dt, p, dp);
     return true;
   };
   function golem(e, dt, p, dp) {
@@ -671,14 +681,190 @@
     rockets = rockets.filter((k) => k.d < k.len);
   };
 
+  /* ---------------- C. the Ashen Sovereign ---------------- */
+  // beaten: his minions crumble, and (once per device) Cinderbrand answers
+  function sovSlain(e) {
+    for (const o of G.enemies) if (o.room === e.room && o !== e && o.def.mine && !o.removed) { o.hp = 0; o.removed = true; for (let i = 0; i < 6; i++) G.puff(o.x, o.y - rand(0, 40), "rgba(120,100,90,0.7)", 50, 0.8, -20); }
+    G.save.sovereign = (G.save.sovereign || 0) + 1;
+    G.persist();
+    const fell = "The Ashen Sovereign falls to one knee, and his crown gutters out. The Molten Mines are yours.";
+    say(fell, "good");
+    if (DL.KITS.cinderbrand.secret && !G.kitOpen("cinderbrand")) {
+      G.unlockKit("cinderbrand", true);
+      setTimeout(() => say("From the throne's ash a knight lifts a glowing greatsword. Cinderbrand answers you now: choose him when you begin a new game.", "good"), 3500);
+    }
+  }
+  const ARENA = () => { const f = DL.Mines.FLOORS.throne; return { x: OX() + (f[0] + f[2]) / 2, y: OY() + (f[1] + f[3]) / 2, rx: (f[2] - f[0]) / 2, ry: (f[3] - f[1]) / 2 }; };
+  const inArena = (x, y, k = 1) => { const A = ARENA(); return ((x - A.x) / (A.rx * k)) ** 2 + ((y - A.y) / (A.ry * k)) ** 2 < 1; };
+  let flood = null, decree = null;
+  function call(e, types) {
+    for (const type of types) {
+      let x = e.x, y = e.y + 80;
+      for (let i = 0; i < 12; i++) {
+        const a = rand(0, TAU), r = rand(120, 260), tx = e.x + Math.cos(a) * r, ty = e.y + Math.sin(a) * r * 0.7;
+        if (inArena(tx, ty, 0.85)) { x = tx; y = ty; break; }
+      }
+      G.enemies.push(G.makeEnemy(type, x, y, N().zone, { room: e.room, mine: true, cd: rand(0.8, 1.6) }));
+      for (let j = 0; j < 10; j++) G.puff(x + rand(-14, 14), y - rand(0, 40), "rgba(255,140,50,0.75)", 70, 0.7, -30);
+    }
+  }
+  const phaseOf = (e) => (e.hp > e.maxHp * 0.66 ? 1 : e.hp > e.maxHp * 0.33 ? 2 : 3);
+  const stillPose = (e) => (e.phase === 3 ? "crown" : e.phase === 2 ? "cloak" : "idle");
+  function sovereign(e, dt, p, dp) {
+    const n = N().sovereign, s = e.def.size, a = Math.atan2(p.y - e.y, p.x - e.x);
+    e.kx = e.ky = 0;
+    if (e.phase == null) e.phase = 1;
+    // a new phase: he kneels and calls
+    const ph = phaseOf(e);
+    if (e.act !== "wake" && e.act !== "kneel" && ph > e.phase) {
+      e.phase = ph; e.act = "kneel"; e.t = n.kneel; e.anim = ["attackC", 0, Math.PI / 2];
+      DL.Bullets.clear(); decree = null;
+      sfx("whisper"); G.camera.shake = 8;
+      say(ph === 2 ? "The Sovereign kneels and calls his guard. His cloak catches fire!" : "He kneels once more, and his crown runs molten!", "danger");
+      call(e, n.calls[ph - 1]);
+    }
+    if (e.phase >= 2) sovPhase2(e, dt, p);
+    if (e.phase === 3) sovDecree(e, dt, p);
+    if (e.act) { e.t -= dt; return ({ wake: sovWake, kneel: sovKneel, sweepW: sovSweepW, sweep: sovSweep, thrustW: sovThrustW, pillar: sovPillar, stepOut: sovStepOut, spiral: sovSpiral, after: sovAfter })[e.act](e, dt, p, a); }
+    if (dp > n.keep * s) {
+      e.x += Math.cos(a) * e.speed * dt; e.y += Math.sin(a) * e.speed * dt;
+      e.angle = a; e.moving = true; e.anim = null;
+    } else { e.angle = a; e.anim = [stillPose(e), 0, Math.PI / 2]; }
+    e.next -= dt;
+    if (e.next > 0) return;
+    e.aim = a;
+    e.moves = (e.moves || 0) + 1;
+    if (e.phase === 3 && e.moves % 3 === 0) { e.act = "pillar"; e.t = n.blink.sink; sfx("torch"); return; }
+    if (e.phase === 3 && e.moves % 3 === 1) {
+      e.act = "spiral"; e.t = n.spiral.time;
+      DL.Bullets.spiral(e.x, e.y - 30, n.spiral.arms, n.spiral.rate, (Math.random() < 0.5 ? -1 : 1) * n.spiral.spin, n.spiral.time,
+        { by: "the Sovereign's embers", dmg: n.bulletDmg, speed: n.spiral.speed, kind: 9 }, e);
+      return;
+    }
+    if (dp < n.sweep.r * s * 1.1 || Math.random() < 0.35) { e.act = "sweepW"; e.t = n.sweep.wind; }
+    else { e.act = "thrustW"; e.t = n.thrust.wind; }
+  }
+  function sovWake(e) {
+    e.anim = [e.t > N().sovereign.wake * 0.5 ? "seated" : "rising", 0, Math.PI / 2];
+    if (Math.random() < 0.3) G.puff(e.x + rand(-60, 60), e.y - rand(40, 200), "rgba(255,140,50,0.7)", 70, 0.7, -30);
+    if (e.t <= 0) { e.act = null; e.next = 1; call(e, N().sovereign.calls[0]); }
+  }
+  function sovKneel(e) {
+    e.anim = ["attackC", 0, Math.PI / 2];
+    if (Math.random() < 0.3) G.puff(e.x + rand(-50, 50), e.y - rand(40, 220), "rgba(255,140,50,0.7)", 70, 0.7, -30);
+    if (e.t <= 0) { e.act = "after"; e.t = 0.3; }
+  }
+  function sovSweepW(e, dt, p, a) {
+    e.anim = [stillPose(e), 0, Math.PI / 2];
+    if (e.t > N().sovereign.sweep.wind * 0.4) e.aim = a;
+    if (e.t > 0) return;
+    const w = N().sovereign.sweep, s = e.def.size;
+    strike(e, w.r * s, w.arc, e.dmg * w.dmg, "the Ashen Sovereign's halberd");
+    DL.Bullets.fan(e.x, e.y - 20, e.aim, w.n + (e.phase - 1) * 2, w.arc, { by: "a fire crescent", dmg: N().sovereign.bulletDmg, speed: w.speed, kind: 5 });
+    G.camera.shake = Math.max(G.camera.shake || 0, 7);
+    sfx("hit");
+    e.act = "sweep"; e.t = 0.45;
+  }
+  function sovSweep(e) { e.anim = ["attackA", 0, sideOn(e.aim)]; if (e.t <= 0) { e.act = "after"; e.t = 0.35; } }
+  // the thrust: the floor cracks into lanes of fire along his aim
+  function sovThrustW(e, dt, p, a) {
+    const th = N().sovereign.thrust;
+    e.anim = ["attackB", 0, Math.PI / 2];
+    if (e.t > th.wind * 0.4) e.aim = a;
+    if (e.t > 0) return;
+    for (const off of e.phase === 1 ? [-th.split, 0, th.split] : [-2 * th.split, -th.split, 0, th.split, 2 * th.split]) {
+      DL.Bullets.lane(e.x, e.y, e.aim + off, th.n, th.step, { by: "a crack of fire", dmg: N().sovereign.bulletDmg, speed: th.speed, kind: 6 });
+    }
+    G.camera.shake = Math.max(G.camera.shake || 0, 9);
+    sfx("hit");
+    e.act = "after"; e.t = 0.5;
+  }
+  // phase 3: he sinks into a pillar of flame and steps out somewhere else in a burst
+  function sovPillar(e, dt, p) {
+    const n = N().sovereign;
+    e.anim = ["pillar", 0, Math.PI / 2];
+    if (e.t > 0) return;
+    for (let i = 0; i < 16; i++) {
+      const a = rand(0, TAU), r = rand(n.blink.min, n.blink.max), A = ARENA(), x = p.x + Math.cos(a) * r, y = p.y + Math.sin(a) * r * 0.7;
+      if (inArena(x, y, 0.8)) { e.x = x; e.y = y; break; }
+      if (i === 15) { e.x = A.x; e.y = A.y; }
+    }
+    sfx("torch");
+    e.act = "stepOut"; e.t = n.blink.rise;
+  }
+  function sovStepOut(e) {
+    e.anim = [e.t > N().sovereign.blink.rise * 0.5 ? "pillar" : "stepOut", 0, Math.PI / 2];
+    if (e.t > 0) return;
+    const n = N().sovereign;
+    DL.Bullets.ring(e.x, e.y - 30, n.blink.ring, rand(0, TAU), { by: "the Sovereign's flame burst", dmg: n.bulletDmg, speed: n.blink.speed, kind: 4 });
+    G.camera.shake = Math.max(G.camera.shake || 0, 6);
+    e.act = "after"; e.t = 0.4;
+  }
+  function sovSpiral(e) { e.anim = ["crown", 0, Math.PI / 2]; if (e.t <= 0) { e.act = "after"; e.t = 0.3; } }
+  function sovAfter(e) { if (e.t <= 0) { e.act = null; e.anim = null; e.next = N().sovereign.every * (e.phase === 3 ? 0.75 : e.phase === 2 ? 0.9 : 1); } }
+  // phase 2 on: the arena's braziers spin rings of embers; lava floods its outer ring now and then
+  function sovPhase2(e, dt, p) {
+    const n = N().sovereign;
+    e.brazT = (e.brazT == null ? 2 : e.brazT) - dt;
+    if (e.brazT <= 0) {
+      e.brazT = n.braziers.every;
+      for (const b of n.braziers.at) DL.Bullets.spiral(OX() + b[0], OY() + b[1] - 30, n.braziers.arms, n.braziers.rate, n.braziers.spin * (b[0] < 0 ? 1 : -1), n.braziers.time,
+        { by: "a brazier's embers", dmg: n.bulletDmg, speed: n.braziers.speed, kind: 9 }, e);
+    }
+    e.floodT = (e.floodT == null ? 4 : e.floodT) - dt;
+    if (e.floodT <= 0 && !flood) { e.floodT = n.flood.every; flood = { t: 0, warn: n.flood.warn, life: n.flood.warn + n.flood.time }; say("Lava wells up round the arena's rim!", "danger"); }
+    if (flood) {
+      flood.t += dt;
+      if (flood.t > flood.life) flood = null;
+      else if (flood.t > flood.warn && p && !inArena(p.x, p.y, n.flood.safe) && !(p.dashT > 0)) G.hurtPlayer(n.flood.dmg, -Math.PI / 2, "the flooding lava");
+    }
+  }
+  // phase 3: the Ashen Decree, every so often: the whole floor marked to erupt but for a few safe stones
+  function sovDecree(e, dt, p) {
+    const n = N().sovereign.decree;
+    e.decT = (e.decT == null ? 3 : e.decT) - dt;
+    if (e.decT <= 0 && !decree) {
+      e.decT = n.every;
+      const A = ARENA(), safe = [];
+      for (let i = 0; i < 40 && safe.length < n.safe; i++) {
+        const x = A.x + rand(-A.rx, A.rx) * 0.7, y = A.y + rand(-A.ry, A.ry) * 0.7;
+        if (inArena(x, y, 0.75) && safe.every((q) => Math.hypot(q.x - x, q.y - y) > 220)) safe.push({ x, y });
+      }
+      decree = { t: 0, safe };
+      say("ASHEN DECREE: find a safe stone!", "danger");
+      sfx("whisper");
+    }
+    if (decree) {
+      decree.t += dt;
+      if (!decree.hit && decree.t > n.warn) {
+        decree.hit = true;
+        G.camera.shake = 12; sfx("hit");
+        const ok = decree.safe.some((q) => Math.hypot(p.x - q.x, (p.y - q.y) * 1.3) < n.r);
+        if (!ok && inArena(p.x, p.y) && !(p.dashT > 0) && !(p.inv > 0)) G.hurtPlayer(N().sovereign.bulletDmg * n.dmg, -Math.PI / 2, "the Ashen Decree");
+        const A = ARENA();
+        for (let i = 0; i < 40; i++) { const x = A.x + rand(-A.rx, A.rx) * 0.9, y = A.y + rand(-A.ry, A.ry) * 0.9; if (inArena(x, y) && !decree.safe.some((q) => Math.hypot(x - q.x, y - q.y) < n.r)) G.puff(x, y - rand(0, 40), "rgba(255,140,40,0.85)", 120, 0.7, -60); }
+      }
+      if (decree.t > n.warn + 0.6) decree = null;
+    }
+  }
+  // asleep on his throne until a knight steps into the arena (drawn among the standing things)
+  MB.pushSeated = function (list, c) {
+    const sp = G.spires, n = N().sovereign;
+    if (!sp || sp.cleared.throne || MB.boss("throne")) return;
+    const x = OX() + n.at[0], y = OY() + n.at[1];
+    list.push({ y, f: () => DL.Art.drawUnit(c, "sovereign", "seated", 0, Math.PI / 2, x, y + Math.sin(G.t * 1.3) * 0.5, DL.ENEMIES.sovereign.scale * DL.BOSS.size.sovereign, {}) });
+  };
+
   // what a blow does to it: double while the golem's core is open, more while the wyrm pants; nothing while a boss
   // wakes or the wyrm is in the air
-  MB.soak = (e, d) => (e.def.mine === "cinder" ? (e.act === "wake" ? 0 : e.openT > 0 ? d * N().cinder.openDmg : towersOf(e).length ? d * N().cinder.guard : d) :
+  MB.soak = (e, d) => (e.def.mine === "sovereign" ? (e.act === "wake" || e.act === "kneel" || e.act === "pillar" || e.act === "stepOut" ? 0 : d) :
+    e.def.mine === "cinder" ? (e.act === "wake" ? 0 : e.openT > 0 ? d * N().cinder.openDmg : towersOf(e).length ? d * N().cinder.guard : d) :
     e.act === "wake" || flying(e) || (e.def.mine === "seraph" && shardsOf(e).length) ? 0 : e.act === "core" ? d * N().golem.coreDmg : e.act === "pant" ? d * N().wyrm.pantDmg : d);
   MB.slain = function (e) {
     for (const o of shardsOf(e)) o.removed = true;
     for (const o of towersOf(e)) o.removed = true;
-    rockets = [];
+    rockets = []; flood = null; decree = null;
+    if (e.def.mine === "sovereign") sovSlain(e);
     DL.Bullets.clear();
     fists = [];
     G.camera.shake = 14;
@@ -734,6 +920,42 @@
         c.strokeStyle = `rgba(255,150,50,${0.4 + 0.5 * k})`; c.lineWidth = 3;
         c.beginPath(); c.ellipse(e.tx, e.ty, R, R / 1.4, 0, 0, TAU); c.stroke();
         c.fillStyle = `rgba(255,110,30,${0.08 + 0.2 * k})`; c.fill();
+      }
+    }
+    // the Ashen Sovereign: the lava flood's rim, and the Decree's marked floor with its safe stones
+    if (flood || decree) {
+      const A = ARENA(), n = N().sovereign;
+      if (flood) {
+        const live = flood.t > flood.warn, k = live ? 1 : flood.t / flood.warn;
+        c.save(); c.beginPath(); c.ellipse(A.x, A.y, A.rx, A.ry, 0, 0, TAU); c.ellipse(A.x, A.y, A.rx * n.flood.safe, A.ry * n.flood.safe, 0, 0, TAU, true);
+        c.fillStyle = live ? `rgba(255,${90 + 30 * Math.sin(t * 6)},20,0.7)` : `rgba(255,120,30,${0.1 + 0.25 * k})`; c.fill("evenodd"); c.restore();
+      }
+      if (decree) {
+        const d = n.decree, k = Math.min(1, decree.t / d.warn);
+        for (let y = A.y - A.ry; y < A.y + A.ry; y += d.grid) for (let x = A.x - A.rx; x < A.x + A.rx; x += d.grid) {
+          if (!inArena(x, y, 0.97) || decree.safe.some((q) => Math.hypot(x - q.x, y - q.y) < d.r) || !vis(view, x, y, 60)) continue;
+          c.fillStyle = `rgba(255,120,30,${0.12 + 0.35 * k})`; c.beginPath(); c.ellipse(x, y, d.grid * 0.38, d.grid * 0.22, 0, 0, TAU); c.fill();
+        }
+        for (const q of decree.safe) {
+          c.fillStyle = "rgba(40,30,30,0.75)"; c.beginPath(); c.ellipse(q.x, q.y, d.r * 0.8, d.r * 0.45, 0, 0, TAU); c.fill();
+          c.strokeStyle = "rgba(160,220,255,0.8)"; c.lineWidth = 3; c.beginPath(); c.ellipse(q.x, q.y, d.r * 0.8, d.r * 0.45, 0, 0, TAU); c.stroke();
+        }
+      }
+    }
+    for (const e of G.enemies) {
+      if (e.def.mine !== "sovereign" || e.removed || !vis(view, e.x, e.y, 700)) continue;
+      const n = N().sovereign, s = e.def.size;
+      if (e.act === "sweepW") {
+        const w = n.sweep, k = 1 - Math.max(0, e.t) / w.wind, R = w.r * s;
+        c.fillStyle = `rgba(255,120,30,${0.1 + 0.25 * k})`;
+        c.beginPath(); c.moveTo(e.x, e.y); c.ellipse(e.x, e.y, R, R / 1.4, 0, e.aim - w.arc / 2, e.aim + w.arc / 2); c.closePath(); c.fill();
+      }
+      if (e.act === "thrustW") {
+        const th = n.thrust, k = 1 - Math.max(0, e.t) / th.wind;
+        for (const off of e.phase === 1 ? [-th.split, 0, th.split] : [-2 * th.split, -th.split, 0, th.split, 2 * th.split]) {
+          c.save(); c.translate(e.x, e.y); c.rotate(e.aim + off);
+          c.fillStyle = `rgba(255,120,30,${0.1 + 0.3 * k})`; c.fillRect(0, -10, th.n * th.step + 120, 20); c.restore();
+        }
       }
     }
     // the Cinder Colossus: its chains to the bastion walls, the sweep's arc, the fist's line

@@ -168,6 +168,7 @@
     furnaceHydra(),
     crucibleWyrm(),
     cinderColossus(),
+    ashenSovereign(),
     // the Seething Seraph (src/minebosses.js), res 4: floats, so its walks are drifts; attackA = the ember spiral,
     // attackB = Judgement (arms up, halo blazing), attackC = arms crossed (regrowing its shards)
     Object.assign(walking("seraph", [123, 332], [129, 332], [128, 332], 4), { path: "assets/sprites/mines-bosses/seraph/", keys: { seraph: [0, false] }, own: true }),
@@ -400,6 +401,14 @@
   }
   // The Cinder Colossus (src/minebosses.js), res 4: oneTower/noTowers are its front still with towers broken (the
   // furnace open), unchained tearing its chains free; attackA fist drawn back, attackB the sweep, attackC towers erupting.
+  // The Ashen Sovereign (src/minebosses.js), res 4: seated/rising on his throne, cloak and crown are his phase 2 and 3
+  // stills, pillar/stepOut his blink; attackA the halberd sweep, attackB the thrust, attackC kneeling to call his guard.
+  function ashenSovereign() {
+    const set = Object.assign(walking("sovereign", [222, 394], [156, 402], [162, 404], 4), { path: "assets/sprites/mines-bosses/sovereign/", keys: { sovereign: [0, false] }, own: true });
+    const extra = Object.fromEntries(["seated", "rising", "cloak", "crown", "pillar", "stepOut", "attackA", "attackB", "attackC"].map((k) => [k, [k]]));
+    for (const dir of ["down", "up", "side"]) Object.assign(set.views[dir], extra);
+    return set;
+  }
   function cinderColossus() {
     const set = Object.assign(walking("cinder", [187, 394], [166, 402], [153, 388], 4), { path: "assets/sprites/mines-bosses/colossus/", keys: { cinder: [0, false] }, own: true });
     const extra = { oneTower: ["oneTower"], noTowers: ["noTowers"], unchained: ["unchained"], attackA: ["attackA"], attackB: ["attackB"], attackC: ["attackC"] };
