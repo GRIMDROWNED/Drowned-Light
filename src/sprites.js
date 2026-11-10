@@ -288,18 +288,18 @@
     return Object.assign(walking("bloodswornC", [37, 92], [28, 96], [24, 96]), { path: "assets/sprites/bloodsworn-f3/", keys: stages("bloodswornC") });
   }
 
-  /* The Cinderbrand (kit 10, Robert's art 2026-11-06, on green): the 12 poses and walk sheets. His Forge Cleave is the
-     overhead wind-up and the sword driven down (every swing: the low-to-level frames read as a stab, Robert 2026-11-08); Brand Thrust is the low thrust and the level lunge (his dash too); his
+  /* The Cinderbrand (kit 10, Robert's art 2026-11-06, on green): the 12 poses and walk sheets. His Forge Cleave plays
+     the stances sheet as a sweep (Robert, 2026-11-10): blade held back, brought down in front, driven forward; Brand Thrust is the low thrust and the level lunge (his dash too); his
      planted guard kneels behind the sword from the side and stands behind it facing you. Feet of the single poses set
      by hand: the sword's point reaches lower than his boots. */
   function cinderbrand() {
     const set = Object.assign(walking("cinderbrand", [40, 97], [40, 98], [36, 98]), { path: "assets/sprites/cinderbrand/", keys: stages("cinderbrand") });
     for (const dir in set.views) {
-      Object.assign(set.views[dir], { attack: ["attackA", "side/chop", "side/chop"], cast: ["attackB", "side/lunge", "side/lunge"], dash: ["side/lunge"],
+      Object.assign(set.views[dir], { attack: ["side/lungeL", "guardF", "side/lunge"], cast: ["attackB", "side/lunge", "side/lunge"], dash: ["side/lunge"],
         guard: dir === "down" ? ["guardF", "guardF", "guardF"] : ["side/guard1", "side/guard2", "side/guard3"] }); // kneeling, cold / hot / white-hot (src/render.js)
     }
     Object.assign(set.feet, { front: [34, 97], back: [32, 94], right: [35, 95], attackA: [58, 84], attackB: [36, 73], attackC: [32, 77],
-      "side/lunge": [38, 67], "side/chop": [50, 100], "side/guard": [48, 77], "side/guard1": [41, 77], "side/guard2": [41, 77], "side/guard3": [41, 78], guardF: [36, 71] });
+      "side/lungeL": [80, 67], "side/lunge": [38, 67], "side/chop": [50, 100], "side/guard": [48, 77], "side/guard1": [41, 77], "side/guard2": [41, 77], "side/guard3": [41, 78], guardF: [36, 71] });
     return set;
   }
 
