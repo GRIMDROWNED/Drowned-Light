@@ -2,12 +2,12 @@
    Always asks the network for fresh files first (skipping the browser's HTTP cache),
    so a new version on GitHub Pages shows up on the next launch; the saved copy is
    used only when there's no connection. Bump VERSION together with index.html. */
-const VERSION = "0.15.260";
+const VERSION = "0.15.261";
 const CACHE = "drowned-light-" + VERSION;
 const FILES = [
   "./", "index.html", "style.css", "manifest.webmanifest",
   "src/core.js", "src/binds.js", "src/view.js", "src/data.js", "src/camp.js", "src/refuge.js", "src/works.js", "src/art.js", "src/units.js", "src/sprites.js",
-  "src/world.js", "src/game.js", "src/hounds.js", "src/den.js", "src/golem.js", "src/cave.js", "src/spires.js", "src/dungeon.js", "src/mines.js", "src/minetraps.js", "src/minefoes.js", "src/minebosses.js", "src/bullets.js", "src/spirefoes.js", "src/rift.js", "src/riftthrone.js", "src/colossus.js", "src/kindle.js", "src/abigail.js", "src/fred.js", "src/wyvern.js", "src/bell.js", "src/rose.js", "src/finale.js", "src/minions.js", "src/summons.js", "src/siege.js", "src/trophies.js", "src/pyramid.js", "src/outposts.js", "src/kits.js", "src/net.js", "src/render.js", "src/ui.js", "src/pad.js", "src/main.js",
+  "src/world.js", "src/game.js", "src/hounds.js", "src/den.js", "src/golem.js", "src/cave.js", "src/spires.js", "src/dungeon.js", "src/mines.js", "src/minetraps.js", "src/minefoes.js", "src/minebosses.js", "src/bullets.js", "src/spirefoes.js", "src/rift.js", "src/lavacamp.js", "src/riftthrone.js", "src/colossus.js", "src/kindle.js", "src/abigail.js", "src/fred.js", "src/wyvern.js", "src/bell.js", "src/rose.js", "src/finale.js", "src/minions.js", "src/summons.js", "src/siege.js", "src/trophies.js", "src/pyramid.js", "src/outposts.js", "src/kits.js", "src/net.js", "src/render.js", "src/ui.js", "src/pad.js", "src/main.js",
   "icons/icon-192.png", "icons/icon-512.png", "icons/favicon-32.png", "assets/drowned-games.jpg", "assets/title-portrait.jpg", "assets/title-landscape.jpg",
   ...Object.entries({
     "drowned/archer/": ["attackA", "attackB", "attackC", "back", "front", "right", "walkB1", "walkB2", "walkB3", "walkB4", "walkF1", "walkF2", "walkF3", "walkF4"],
@@ -169,6 +169,7 @@ const FILES = [
     "rift-throne/side/": ["death", "hurt", "walk1", "walk2", "walk3", "walk4"],
     "spires/": ["arena", "throne", "well-dark", "well-lit", "floor-2", "floor-3", "floor-4", "kerb", "face-1-band", "face-1-foot", "face-2-band", "face-2-foot", "stairs", "bridge", "bridge-post", "post", "spire", "arch", "ring", "exit-banner", "crystal-1", "crystal-2", "crystal-3", "column-1", "column-1b", "column-2", "column-3", "rune-circle", "rune-glow", "bullet-0", "bullet-1", "bullet-2", "bullet-3", "sentinel", "sentinel-orbit", "chest-shut", "chest-open", "aether-1", "aether-2", "aether-3", "seal-1", "seal-2", "seal-3", "seal-4", "icon-shard", "icon-aether", "icon-bag", "icon-well"],
     "mines/": ["arch", "arena-1", "arena-2", "banner", "brazier", "bullet-0", "bullet-1", "bullet-2", "bullet-3", "bullet-4", "bullet-5", "cage-broken", "cage-down", "cage-hang", "cart-broken", "cart-front", "cart-side", "chest-open", "chest-shut", "colossus-chain", "colossus-fist", "colossus-mortar", "crane", "crumble-1", "crumble-2", "crumble-3", "crumble-4", "face-1-band", "face-1-foot", "face-1-head", "face-2-band", "face-2-foot", "face-2-head", "fall-1", "fall-2", "fall-3", "fall-4", "floor-1", "floor-2", "floor-3", "geyser-1", "geyser-2", "geyser-3", "geyser-4", "golem-core", "golem-fist", "golem-pool", "grate-1", "grate-2", "grate-3", "grate-flame-1", "grate-flame-2", "grate-flame-3", "grate-flame-4", "jet-1", "jet-2", "jet-3", "jet-4", "jet-head", "rail", "rune-circle", "seal-1", "seal-2", "seal-3", "shard-1", "shard-2", "shard-3", "shard-break", "shard-burst", "shard-crack", "shrine-dark", "shrine-lit", "stairs", "throne"],
+    "mines-camp/": ["magma-forge", "brazier-tower", "forge-gate-off", "forge-gate-on"],
     "rift/": ["turret-1", "turret-2", "turret-3", "bolt", "flash-1", "flash-2", "hit", "lantern-1", "lantern-2", "lantern-3", "portal-off", "portal-on"],
     "pyramid/": ["step-south", "step-north", "step-east", "step-west", "stair-south", "stair-north", "stair-east", "stair-west", "stairway-lane"],
     "ground/": ["campEarth", "campFlags", "campPaving", "grass", "dirt", "shore", "shallow", "deep", "boardwalk", "caveFloor", "rimDeep", "rimShore"],

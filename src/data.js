@@ -483,7 +483,7 @@
   ];
   const scaleCost = (c) => {
     const out = {};
-    for (const k in c) out[k] = Math.max(1, Math.round(c[k] * DL.COST_SCALE));
+    for (const k in c) out[k] = k === "heart" ? c[k] : Math.max(1, Math.round(c[k] * DL.COST_SCALE)); // a world has only five Magma Hearts
     return out;
   };
 
@@ -961,6 +961,13 @@
     turret: { spots: [0, 2, 4, 4], every: [0, 2.4, 1.9, 1.5], n: [0, 6, 8, 10], dmg: [0, 9, 12, 16], range: 300, speed: 240, life: 1.4, along: 150 },
     lantern: { ring: [0, 150, 190, 230], corrupt: [1, 0.5, 0.4, 0.3] }, // by Mist Lantern level
   };
+  // what the Molten Mines pay for at the base (src/lavacamp.js): the Magma Forge, Brazier Towers, Fire Grate Gates, the Forge Gate
+  DL.LAVA_CAMP = {
+    forge: { dmg: 0.2, burn: 0.12 },   // Magma Forge: weapon damage +20%; each blow burns for 3 s at 12% of it a second
+    brazier: { every: 4.5, first: 2, range: 420, minHp: 60, warn: 1.1, r: 60, dmg: 45, burnDps: 8 }, // a mortar per tower at the biggest Drowned in reach (night)
+    grate: { out: 34, half: 30, warn: 0.35, burn: 1.2, cool: 2.2, dps: 40, burnFor: 2, burnDps: 6 }, // a grate outside each gate, set off by a Drowned on it
+    gate: { bosses: ["golem", "hydra", "wyrm", "seraph", "cinder"], fx: 0.56, fy: -0.12 }, // the Forge Gate: opens once all five have fallen; its spot
+  };
 
   DL.CAVE = {
     x: 0, y: 40000, radius: 360, dist: 1750, zone: 2,
@@ -1267,6 +1274,20 @@
       effect: (l) => { const M = DL.RIFT.lantern; return l ? `In the mist: lantern ring ${M.ring[l]} px · corruption x${M.corrupt[l]}` : "Your lantern only"; },
       costs: [{ shard: 30, aether: 6 }, { shard: 50, aether: 8, iron: 10 }, { shard: 80, aether: 12, pearl: 4 }],
       reqFlame: () => 0 },
+    // paid for with what the Molten Mines give (src/lavacamp.js): hidden until Obsidian first comes home. Each needs the
+    // building it rebuilds (`reqUp`). Five Magma Hearts in a world (one per mini boss): these take four.
+    { id: "magmaforge", name: "Magma Forge", max: 1, mines: true, reqUp: { forge: 4 },
+      info: "The Forge rebuilt in basalt round a crucible of molten metal. Blades come off its anvil hot enough to set the Drowned burning.",
+      effect: (l) => { const F = DL.LAVA_CAMP.forge; return l ? `Weapon damage +${F.dmg * 100}% more · every blow sets the Drowned burning` : "Your Forge as it is"; },
+      costs: [{ obsidian: 30, heart: 2, iron: 10 }], reqFlame: () => 0 },
+    { id: "brazier", name: "Brazier Towers", max: 1, mines: true, reqUp: { tower: 1 },
+      info: "The watchtowers' tops rebuilt in basalt, with a fire bowl and a small mortar. At night each one lobs molten slag at the biggest Drowned in reach.",
+      effect: (l) => { const B = DL.LAVA_CAMP.brazier; return l ? `A lava mortar every ${B.every} s per tower · ${B.dmg} damage round where it lands` : "Crossbows only"; },
+      costs: [{ obsidian: 25, heart: 1, stone: 15 }], reqFlame: () => 0 },
+    { id: "firegate", name: "Fire Grate Gates", max: 1, mines: true, reqUp: { stakes: 2 },
+      info: "Iron grates from the Mines set in the ground outside each gate. A Drowned stepping onto one sets it off: it glows, then flames up through the bars.",
+      effect: (l) => { const Q = DL.LAVA_CAMP.grate; return l ? `A grate at each gate · ${Q.dps} damage a second while it flames · cools for ${Q.cool} s` : "No grates"; },
+      costs: [{ obsidian: 20, heart: 1, iron: 8 }], reqFlame: () => 0 },
   ];
 
   // the bosses' size (DL.BOSS.size): `size` is kept on the def so drawing code can scale fixed offsets by it

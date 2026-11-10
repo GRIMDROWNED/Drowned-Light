@@ -120,6 +120,7 @@
   const tithe = () => G.save.kit === "bloodsworn" && G.kit().passive && G.kit().passive.tithe;
   function hit(e, dmg, ang, kb, burn) {
     const was = e.removed, hp = e.hp;
+    if (!burn && G.save.up.magmaforge) burn = dmg * DL.LAVA_CAMP.forge.burn; // the Magma Forge: every blow burns (src/lavacamp.js)
     G.hitEnemy(e, dmg, ang, kb, burn);
     if (!was) { K.blow(e, hp, dmg); if (forge()) K.heatAdd(forge().perHit * (K.has(5) ? forge().tempered : 1)); }
   }

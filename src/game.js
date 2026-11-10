@@ -26,7 +26,7 @@
   G.defaultSave = () => ({
     v: 1, day: 1, nights: 0, deepest: 0, muted: false,
     stash: emptyRes(),
-    up: { fortress: 1, flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, roost: 0, bell: 0, roseheart: 0, crystal: 0, mistlantern: 0 },
+    up: { fortress: 1, flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, roost: 0, bell: 0, roseheart: 0, crystal: 0, mistlantern: 0, magmaforge: 0, brazier: 0, firegate: 0 },
     kit: "lanternBlade",
     kitLevel: 1,
     difficulty: "dark",
@@ -66,6 +66,7 @@
     // the finale (src/finale.js): stage (0 nothing yet, 1 the Fire Bearer waits in camp, 2 on the march, 3 at the gate, 4 won),
     // where the Bearer stands, its health (-1: full), guttered, its last camp, the gate found yet, and the day it was won
     riftlord: 0, // how often the Lord of the Rift Throne has been beaten in this world (src/riftthrone.js)
+    minesHome: 0, // 1 once Obsidian was first carried home from the Molten Mines: their camp buildings show from then (src/lavacamp.js)
     riftHome: 0, // 1 once Rift Shards were first carried home from a dungeon: their buildings show from then (src/rift.js)
     finale: { stage: 0, x: 0, y: 0, hp: -1, down: false, rest: null, found: false, won: 0 },
     started: false,
@@ -146,7 +147,7 @@
       maxHp: Math.round((100 + 25 * u.armory) * (G.kit().hpMult || 1)), // the Chain Reaper is frailer
       maxOil: 60 + 25 * u.workbench,
       lanternR: (70 + 14 * u.workbench) * DL.Kits.lanternMult() * G.diff().light,
-      dmgMult: (1 + 0.2 * u.forge) * DL.Abigail.mult() * DL.Wyvern.dmgMult() * DL.Kits.titheDmg(), // Abigail's blessing, David's War Fury, the Bloodsworn's Blood Tithe
+      dmgMult: (1 + 0.2 * u.forge + DL.LAVA_CAMP.forge.dmg * (u.magmaforge || 0)) * DL.Abigail.mult() * DL.Wyvern.dmgMult() * DL.Kits.titheDmg(), // Abigail's blessing, David's War Fury, the Bloodsworn's Blood Tithe
       flameR: (180 + 40 * u.flame) * G.diff().light,
       flameHp: 150 + 100 * u.flame,
       torchMax: 3 + u.workbench,
@@ -353,6 +354,8 @@
     DL.Finale.local();
     DL.Rift.local(); // walking into the open Drowned Gate: the dungeons (src/rift.js)
     DL.Rift.update(dt); // the Crystal Turrets
+    DL.LavaCamp.local(); // the Forge Gate (src/lavacamp.js)
+    DL.LavaCamp.update(dt); // the Brazier Towers' mortars, the Fire Grate Gates
     updateDefenses(dt);
     DL.Trophies.update(dt);
     DL.Outposts.update(dt);
@@ -391,6 +394,7 @@
     DL.Dungeon.update(dt); // a run in the host's Spires: the portals and seals round this knight (src/spires.js)
     DL.Bullets.update(dt); // the host's bullets, flown on and dodged here (src/bullets.js)
     DL.Rift.local(); // the open Drowned Gate and the camp's Rift Portal
+    DL.LavaCamp.local(); // the Forge Gate
     DL.Rose.local();
     DL.Finale.update(dt);
     DL.Finale.local();
@@ -552,6 +556,7 @@
     if (p) DL.Cave.lights(L);
     DL.Dungeon.lights(L);
     DL.Rift.lights(L);
+    DL.LavaCamp.lights(L);
     G.lights = L;
   }
 
@@ -1851,6 +1856,7 @@
     if (G.save.up.flame === 0) return "This world has fallen; begin a new game";
     if (u.trophy && !G.save.trophies[u.trophy]) return u.trophy === "bell" ? "Slay the Starved Bell first" : "Slay the Deadly Rose first";
     if (u.needs && !DL.Summons.anyHas(u.needs)) return `Win ${DL.SUMMON[u.needs].name} first`;
+    for (const k in u.reqUp || {}) if ((G.save.up[k] || 0) < u.reqUp[k]) return `Needs ${DL.UPGRADES.find((x) => x.id === k).name} ${u.reqUp[k]}`;
     const needFlame = u.reqFlame(lvl + 1);
     if (G.save.up.flame < needFlame) return `Needs Central Flame ${needFlame}`;
     if (u.id === "flame") {

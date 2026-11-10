@@ -161,3 +161,16 @@ for name, box, w in (('colossus-mortar', (100, 600, 450, 930), 70), ('colossus-c
 im = key(load('chest.png'))
 for name, box in (('chest-shut', (40, 200, 840, 887)), ('chest-open', (940, 30, 1730, 887))):
     save(fit(crop(im.crop(box)), w=150)[0], name)
+
+# ---- step 8, the camp's lava buildings (returned/crucible/magma-forge.png, brazier-tower.png, forge-gate.png) ----
+# Into assets/sprites/mines-camp at 2 file px per world px (src/lavacamp.js draws them at half size): the Magma Forge
+# 112 world px wide (the Refuge forge's width), the Brazier Tower 64 (a watchtower's), the Forge Gate dormant and
+# active 124 (a little wider than the Rift Portal).
+OUT = os.path.join(os.path.dirname(__file__), '..', 'assets', 'sprites', 'mines-camp')
+os.makedirs(OUT, exist_ok=True)
+save(fit(crop(key(load('magma-forge.png'))), w=224)[0], 'magma-forge', 128)
+save(fit(crop(key(load('brazier-tower.png'))), w=128)[0], 'brazier-tower', 128)
+im = key(load('forge-gate.png'))
+half = im.width // 2
+for name, box in (('forge-gate-off', (0, 0, half, im.height)), ('forge-gate-on', (half, 0, im.width, im.height))):
+    save(fit(crop(im.crop(box)), w=248)[0], name, 128)
