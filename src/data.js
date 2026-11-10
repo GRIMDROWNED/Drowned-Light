@@ -205,6 +205,8 @@
     // The Molten Mines' mini bosses (src/minebosses.js, numbers in DL.MINE_BOSSES; health in DL.BOSS.hp, size DL.BOSS.size)
     golem: { name: "The Magma Golem", hp: 1500, speed: 34, dmg: 24, range: 0, windup: 1, cd: 99, scale: 1, radius: 34, mass: 30,
       mine: "golem", boss: true, shadow: 60, barY: 200, barW: 70, drop: {} },
+    hydra: { name: "The Furnace Hydra", hp: 1500, speed: 0, dmg: 22, range: 0, windup: 1, cd: 99, scale: 1, radius: 70, mass: 999,
+      mine: "hydra", boss: true, shadow: 0, barY: 220, barW: 90, drop: {} },
     acolyte: { name: "Cinder Acolyte", hp: 55, speed: 62, dmg: 12, range: 250, windup: 0.6, cd: 2.6, scale: 1, radius: 12, mass: 0.9,
       hang: 250, mine: "acolyte", minion: true, look: "hexbearer", lookScale: 1, tint: "#d04010", tintK: 0.4, drop: {} },
   };
@@ -661,9 +663,9 @@
      height (`barY`) in DL.ENEMIES are multiplied by `size[type]` below, so each stands about three knights tall. The
      Sunken King is a scene of his own and keeps his size. */
   DL.BOSS = {
-    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6, riftlord: 1.5, golem: 1.25 },
+    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6, riftlord: 1.5, golem: 1.25, hydra: 1.6 },
     view: 820, viewR: 650, // within `viewR` px of an awake boss the camera pulls back to show at least `view` px top to bottom
-    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600, riftlord: 1800, golem: 1500 },
+    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600, riftlord: 1800, golem: 1500, hydra: 1500 },
     perNight: 0.04, dmgNight: 0.05, perAlly: 0.6,
     stun: 0.3, immune: 3,
   };
@@ -861,12 +863,21 @@
        him), down: `dmg` in the mark and a ring of `ring` slag bullets with one `gap` (radians) to slip through. Every
        `cores` slams its chest splits open for `core` s: blows deal x`coreDmg`. Hurl: winds up `wind` s, throws its fist
        (`fly` s, a shadow where it lands, aimed `lead` s ahead of you): `fistDmg` within `fistR`, a molten pool (`poolR`
-       px, `poolLife` s, `poolDmg` a touch) and `shards` bullets; the fist regrows in `regrow` s. Below half: two fists. */
+       px, `poolLife` s, `poolDmg` a touch) and `shards` bullets; the fist regrows in `regrow` s. Below half: two fists.
+     hydra (B, the Furnace Pit): rooted at `at`. Its heads take turns every `every` s. breath (left): `wind` s of a cone
+       on the floor, then for `time` s a fan of `n` sparks across `spread` every `rate` s, sweeping `sweep` radians.
+       spiral (middle): `arms` (+1 per lost head) fireballs every `rate` s for `time` s. lob (right): `n` globs (+1 once a
+       head is lost) round you within `spread` px, landing in `fly` s: `dmg` within `r`, `shards` spatters, a pool.
+       A lost head grows back in `regrow` s unless the next is cut first. */
   DL.MINE_BOSSES = {
     zone: 4,
     golem: { at: [-1860, 560], every: 1.7, every2: 1.2, half: 0.5, keep: 110, raise: 1.0, hit: 0.6, r: 120, dmg: 1, ring: 26, gap: 0.55,
       speed: 125, bulletDmg: 9, cores: 3, core: 3, coreDmg: 2, wind: 0.8, fly: 1.0, lead: 0.4, fistDmg: 1, fistR: 70,
       poolR: 62, poolLife: 6, poolDmg: 10, shards: 8, regrow: 1.0 },
+    hydra: { at: [1830, 600], every: 1.4, regrow: 12, bulletDmg: 9, poolR: 52, poolLife: 5, poolDmg: 10,
+      breath: { wind: 0.7, time: 1.4, rate: 0.08, n: 3, spread: 0.35, sweep: 0.9, speed: 260, life: 1.6 },
+      spiral: { wind: 0.6, arms: 3, rate: 0.2, spin: 1.5, time: 2.4, speed: 125 },
+      lob: { wind: 0.6, n: 3, spread: 140, fly: 1.1, r: 56, dmg: 0.8, shards: 6, speed: 150 } },
   };
   DL.MINE_TRAPS = {
     grate: { every: 3.4, warn: 0.8, burn: 1, wave: 0.35, dmg: 14 }, // the Grate Run: a new pattern every 3.4 s

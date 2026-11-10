@@ -165,6 +165,7 @@
     Object.assign(walking("warden", [87, 252], [64, 252], [68, 256], 4), { path: "assets/sprites/spires-foes/warden/", keys: { warden: [0, false] }, own: true }),
     riftLord(),
     magmaGolem(),
+    furnaceHydra(),
     // the Molten Mines' minions (src/minefoes.js), cut at res 4 on green
     Object.assign(walking("wretch", [108, 122], [65, 133], [70, 139], 4), { path: "assets/sprites/mines-foes/wretch/", keys: { wretch: [0, false] }, own: true }),
     Object.assign(walking("ashguard", [114, 186], [82, 178], [78, 178], 4), { path: "assets/sprites/mines-foes/ashguard/", keys: { ashguard: [0, false] }, own: true }),
@@ -372,6 +373,16 @@
   // The Magma Golem, the Molten Mines' mini boss A (src/minebosses.js), cut at res 4 (200 px, x1.25 in game). Beside the
   // twelve poses: fists raised, the slam, the core split open, and the hurl (wound back, the fist gone, fusing back);
   // they're drawn side on and used in every view (src/minebosses.js sets e.anim to one of them).
+  /* The Furnace Hydra (src/minebosses.js): rooted, front on only, every frame on one canvas (tools/cut_hydra.py) with the
+     mound's foot at the same point. It picks its own pose (e.anim): idle1-4 with three heads, cut1-3 as heads fall. */
+  function furnaceHydra() {
+    const files = ["idle1", "idle2", "idle3", "idle4", "still", "breath", "spiral", "lob", "hurt", "roar", "cut1", "cut2", "cut3", "regrow", "dead"];
+    const view = { idle: ["idle1", "idle2", "idle3", "idle4"], walk: ["idle1", "idle2", "idle3", "idle4"], attack: ["breath"], dash: ["still"],
+      hurt: ["hurt"], death: ["cut3", "dead", "dead"] };
+    for (const f of files.slice(4)) if (!view[f]) view[f] = [f];
+    return { path: "assets/sprites/mines-bosses/hydra/", keys: { hydra: [0, false] }, own: true, res: 4,
+      views: { down: view, up: view, side: view }, feet: sheetFeet(files, [196, 400]) };
+  }
   function magmaGolem() {
     const set = Object.assign(walking("golem", [148, 361], [159, 362], [166, 362], 4), { path: "assets/sprites/mines-bosses/golem/", keys: { golem: [0, false] }, own: true });
     const extra = { attack: ["attackA", "attackB", "attackB"], raise: ["attackA"], slam: ["attackB"], core: ["core"], windup: ["windup"], hurl: ["hurl"], regrow: ["regrow"] };
