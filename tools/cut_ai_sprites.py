@@ -518,6 +518,7 @@ SETS = {
     'bloodsworn-f3': ('bloodsworn-f3', 'bloodsworn-f3/01_front.png', 94, 1, twelve('bloodsworn-f3', TWELVE_FILES)),
     # the Cinderbrand (kit 10): sturdy, the greatsword's hilt over his helm; the stance and guard sheets came at other scales
     'cinderbrand': ('cinderbrand', 'crimson-greatsword/01_front.png', 96, 1, dict(twelve('crimson-greatsword', TWELVE_FILES), **{
+        'crimson-greatsword/13_lungeL.png': ('side/lungeL', {'height': 66}),
         'crimson-greatsword/15_lunge.png': ('side/lunge', {'height': 66}),
         'crimson-greatsword/14_guardF.png': ('guardF', {'height': 70}),
         'crimson-greatsword/16_chop.png': ('side/chop', {'height': 102}),
