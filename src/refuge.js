@@ -22,13 +22,48 @@
 
   Refuge.on = (up) => { const u = up || (DL.Game.save && DL.Game.save.up); return !u || u.fortress !== 0; };
   Refuge.level = (up) => Math.max(1, Math.min(DL.FLAME.max, (up || DL.Game.save.up).flame || 1));
+  // The compact base (DL.BASE, 2026-11-10) unless the pause switch picked the old spreading fortress (fortress 2).
+  Refuge.compact = (up) => { const u = up || (DL.Game.save && DL.Game.save.up); return !u || u.fortress !== 2; };
+  // The base tier as the host last set it in save.up (so co-op guests build the same base); -1 = the old fortress.
+  Refuge.tier = (up) => { const u = up || DL.Game.save.up; return Refuge.compact(u) ? Math.max(0, Math.min(DL.BASE.tiers.length - 1, u.tier || 0)) : -1; };
+
+  /* ---------------- the base tier: dungeons cleared ---------------- */
+  const Base = (DL.Base = {});
+  // Ids of the dungeons whose boss has fallen in this world: save.dungeons (the portal room writes it), and the
+  // flags the first two dungeons kept before it (the Rift Throne's Lord, the Mines' Ashen Sovereign).
+  Base.cleared = function (save) {
+    const s = save || DL.Game.save, out = new Set(Object.keys(s.dungeons || {}).filter((k) => s.dungeons[k]));
+    if (s.riftlord) out.add("spires");
+    if (s.sovereign) out.add("mines");
+    return [...out];
+  };
+  // Sandbox can try any tier (save.sandboxTier); otherwise one per dungeon cleared.
+  Base.tier = (save) => {
+    const s = save || DL.Game.save;
+    if (DL.SANDBOX && s.sandboxTier != null) return Math.max(0, Math.min(DL.BASE.tiers.length - 1, s.sandboxTier));
+    return Math.min(DL.BASE.tiers.length - 1, Base.cleared(s).length);
+  };
+  Base.cap = (save) => DL.BASE.cap[Base.tier(save)];
+  // Host: keep save.up.tier in step with the dungeons cleared; the walls, ground and pylons follow a change.
+  Base.sync = function () {
+    const G = DL.Game, up = G.save && G.save.up;
+    if (!up || (G.isGuest && G.isGuest())) return false;
+    const t = Base.tier();
+    if ((up.tier || 0) === t) return false;
+    up.tier = t;
+    if (G.resetPylons) G.resetPylons(); else DL.Camp.sync(up);
+    if (DL.World.ground) DL.World.ground.clear();
+    return true;
+  };
   Refuge.barracks = (up) => (Refuge.on(up) ? at(RF.barracks, Refuge.level(up)) || 0 : 0);
   Refuge.info = (lv) => RF.levels[lv];
 
   /* ---------------- geometry ---------------- */
   // The terrace rings at a level, outermost first: { id, half, face (south drop, 0 for the low wall), thick, stairs }.
   const geoCache = new Map();
-  Refuge.geo = function (lv) {
+  Refuge.geo = function (lv, tier) {
+    if (tier === undefined) tier = DL.Game && DL.Game.save ? Refuge.tier() : -1;
+    if (tier >= 0) return compactGeo(lv, tier);
     if (geoCache.has(lv)) return geoCache.get(lv);
     const cw = at(RF.centralW, lv), rings = [];
     const stairs = (side) => {
@@ -53,16 +88,42 @@
     geoCache.set(lv, g);
     return g;
   };
+  /* The compact base's rings (DL.BASE): the sanctum round the flame as before (by Central Flame level), and ONE outer
+     wall at the tier's half-side, rebuilt in the tier's drawn look. Tier 0 has the first camp's low walls (from Flame 3);
+     from tier 1 the whole base stands on a raised terrace. The north wall's two stairs flank the Portal Hall. */
+  const compactCache = new Map();
+  function compactGeo(lv, tier) {
+    const k = lv + ":" + tier;
+    if (compactCache.has(k)) return compactCache.get(k);
+    const B = DL.BASE, T = B.tiers[tier], R = T.R, cw = at(RF.centralW, lv), rings = [];
+    const stairs = (half, sideW) => {
+      const out = [];
+      for (let s = 0; s < 4; s++) {
+        if (s === 0) for (const sg of [-1, 1]) out.push({ s, at: sg * B.hall.gap, w: cw, main: true }); // either side of the hall
+        else out.push({ s, at: 0, w: cw, main: true });
+        if (T.side && s !== 0) for (const sg of [-1, 1]) out.push({ s, at: sg * Math.round(half * T.side), w: sideW });
+      }
+      return out;
+    };
+    if (tier === 0) { if (lv >= RF.lowWall) rings.push({ id: "low", half: R, face: 0, thick: 12, stairs: stairs(R, 0).filter((q) => q.main) }); }
+    else rings.push({ id: "wall", kit: T.kit, half: R, face: FACE(), thick: 14, stairs: stairs(R, RF.sideW) });
+    const san = RF.terraces.find((t) => t.id === "sanctum");
+    if (lv >= san.from) rings.push({ id: "sanctum", half: at(san.half, lv), face: FACE(), thick: 14, stairs: [0, 1, 2, 3].map((s) => ({ s, at: 0, w: cw, main: true })) });
+    const g = { lv, tier, R, cw, rings, compact: true, outerRing: rings[0] && rings[0].half === R ? rings[0] : null };
+    compactCache.set(k, g);
+    return g;
+  }
+
   // The camp's half-side (DL.WALL_R) for these levels.
-  Refuge.wallR = (up) => Refuge.geo(Refuge.level(up)).R;
+  Refuge.wallR = (up) => Refuge.geo(Refuge.level(up), Refuge.tier(up)).R;
   // How far out the fortress (with its outermost face) reaches: world nodes inside are hidden, the ground is dry.
-  Refuge.clearR = (up) => { const g = Refuge.geo(Refuge.level(up)); return g.R + (g.rings[0] ? g.rings[0].face : 0) + 24; };
+  Refuge.clearR = (up) => { const g = Refuge.geo(Refuge.level(up), Refuge.tier(up)); return g.R + (g.rings[0] ? g.rings[0].face : 0) + 24; };
   // The outer wall stands (and blocks) once there are low walls or terraces, or the Barricade's palisade.
-  Refuge.walled = (up) => Refuge.geo(Refuge.level(up)).rings.some((r) => r.half === Refuge.geo(Refuge.level(up)).R) || up.stakes >= 2;
+  Refuge.walled = (up) => { const g = Refuge.geo(Refuge.level(up), Refuge.tier(up)); return g.rings.some((r) => r.half === g.R) || up.stakes >= 2; };
 
   // Rings that block at these levels: the terraces, and a palisade ring at the camp's edge when only the Barricade stands.
   function blockers(up) {
-    const g = Refuge.geo(Refuge.level(up));
+    const g = Refuge.geo(Refuge.level(up), Refuge.tier(up));
     if (g.rings.some((r) => r.half === g.R) || up.stakes < 2) return g.rings;
     return [{ id: "palisade", half: g.R, face: 0, thick: 7, stairs: [0, 1, 2, 3].map((s) => ({ s, at: 0, w: DL.Camp.GATE_HALF * 2 + 10, main: true })) }, ...g.rings];
   }
@@ -74,7 +135,7 @@
   let bedList = null;
   Refuge.beds = function () {
     if (bedList) return bedList;
-    const g = Refuge.geo(DL.FLAME.max), B = RF.bed, out = [];
+    const g = Refuge.geo(DL.FLAME.max, -1), B = RF.bed, out = []; // the old fortress's wards (the compact base has none)
     g.rings.forEach((ring, i) => {
       if (!ring.beds) return;
       const inner = g.rings[i + 1], lo = inner.half + inner.face, mid = Math.round((lo + ring.half) / 2);
@@ -92,8 +153,8 @@
     });
     return (bedList = out);
   };
-  Refuge.bedsAt = (lv) => { const ids = new Set(Refuge.geo(lv).rings.map((r) => r.id)); return Refuge.beds().filter((b) => ids.has(b.ring)); };
-  Refuge.inBed = (x, y, up) => Refuge.bedsAt(Refuge.level(up)).some((b) => Math.abs(x - b.x) < b.half && Math.abs(y - b.y) < b.half);
+  Refuge.bedsAt = (lv, tier) => { const ids = new Set(Refuge.geo(lv, tier).rings.map((r) => r.id)); return Refuge.beds().filter((b) => ids.has(b.ring)); };
+  Refuge.inBed = (x, y, up) => Refuge.bedsAt(Refuge.level(up), Refuge.tier(up)).some((b) => Math.abs(x - b.x) < b.half && Math.abs(y - b.y) < b.half);
 
   // A ring's wall as boxes [x0, y0, x1, y1] with the stair gaps cut out. The south wall is its whole hanging face.
   function wallBoxes(ring) {
@@ -181,20 +242,21 @@
     if (x0 < -R + 34 || x1 > R - 34 || y0 < -R + 34 || y1 > R - 34) return false;
     if (x1 > -lane && x0 < lane) return false; // the avenues
     if (y1 > -lane && y0 < lane) return false;
+    // the cheap tests first: other buildings and fixed pieces
+    for (const t of towers) if (x1 + 8 > t[0] && x0 - 8 < t[2] && y1 + 8 > t[1] && y0 - 8 < t[3]) return false;
+    for (const p of placed) if (x1 + 10 > p.box[0] && x0 - 10 < p.box[2] && y1 + 10 > p.box[1] && y0 - 10 < p.box[3]) return false;
     const cx = (x0 + x1) / 2, cy = y1 - 4;
     for (const ring of g.rings) {
       const m = ring.thick + 20; // the wall's own width and room to walk past it
       if (inside(ring, cx, cy)) { if (ring.id === "sanctum") return false; if (x0 < -ring.half + m || x1 > ring.half - m || y0 < -ring.half + m || y1 > ring.half - m) return false; }
       else if (x1 > -ring.half - m && x0 < ring.half + m && y1 > -ring.half - m && y0 < ring.half + ring.face + m) return false;
-      for (const q of ring.stairs) { // keep the stair's landing and foot clear
+      if (!ring._landings) ring._landings = ring.stairs.map((q) => { // keep each stair's landing and foot clear
         const e = stairEnds(ring, q, 0), [nx] = SIDES[q.s], half = q.w / 2 + 26;
-        const px0 = Math.min(e.inn.x, e.out.x) - (nx ? 70 : half), px1 = Math.max(e.inn.x, e.out.x) + (nx ? 70 : half);
-        const py0 = Math.min(e.inn.y, e.out.y) - (nx ? half : 70), py1 = Math.max(e.inn.y, e.out.y) + (nx ? half : 70);
-        if (x1 > px0 && x0 < px1 && y1 > py0 && y0 < py1) return false;
-      }
+        return [Math.min(e.inn.x, e.out.x) - (nx ? 70 : half), Math.min(e.inn.y, e.out.y) - (nx ? half : 70),
+          Math.max(e.inn.x, e.out.x) + (nx ? 70 : half), Math.max(e.inn.y, e.out.y) + (nx ? half : 70)];
+      });
+      for (const [px0, py0, px1, py1] of ring._landings) if (x1 > px0 && x0 < px1 && y1 > py0 && y0 < py1) return false;
     }
-    for (const t of towers) if (x1 + 8 > t[0] && x0 - 8 < t[2] && y1 + 8 > t[1] && y0 - 8 < t[3]) return false;
-    for (const p of placed) if (x1 + 10 > p.box[0] && x0 - 10 < p.box[2] && y1 + 10 > p.box[1] && y0 - 10 < p.box[3]) return false;
     return true;
   }
   const footprint = (x, y, hw) => [x - hw, y - Math.round(hw * 0.95), x + hw, y + 4];
@@ -204,30 +266,158 @@
   const PIC = { forge: [54, 132], armory: [56, 130], workbench: [54, 118], garden: [77, 134], alchemy: [46, 121], quarters: [43, 133],
     lodge: [53, 142], archive: [42, 133], circle: [45, 72], tent: [45, 99], barracks: [57, 98], roseheart: [55, 107], bell: [55, 152],
     roost: [52, 138], shrine: [56, 123], toadstool: [49, 118], workshop: [51, 144], kennel: [52, 100], pylon: [29, 91], tower: [30, 98],
-    storehouse: [49, 96], salvage: [43, 98], training: [45, 94], supplies: [39, 87] };
+    storehouse: [49, 96], salvage: [43, 98], training: [45, 94], supplies: [39, 87],
+    riftPortal: [58, 136], mistLantern: [38, 134], forgeGate: [64, 140] }; // the dungeons' camp pieces (src/rift.js, src/lavacamp.js)
   Refuge.PIC = PIC;
   const picBox = (k, x, y) => { const [w, h] = PIC[k]; return [x - w, y + 16 - h, x + w, y + 16]; };
   const itemBox = (id, x, y) => { const it = RF.items[id], k = it.sprite || id; return PIC[k] ? picBox(k, x, y) : footprint(x, y, it.hw); };
   Refuge.itemBox = itemBox;
+  /* Packing for the compact base: of every free spot on an 8 px grid in quadrant q (or anywhere), the one that sits
+     tightest against the walls and the pieces already placed (most of its sides touching), then nearest (px, py).
+     Fills the ground in neat rows instead of leaving gaps between scattered spots. */
+  function packSpot(g, px, py, boxAt, q, placed, obstacles) {
+    const R = g.R, st = 8;
+    let best = null, bs = Infinity;
+    const others = [...placed.map((p) => p.box), ...obstacles];
+    const xs = q ? (q[0] > 0 ? [st, R] : [-R, -st]) : [-R, R], ys = q ? (q[1] > 0 ? [st, R] : [-R, -st]) : [-R, R];
+    for (let x = xs[0]; x <= xs[1]; x += st) for (let y = ys[0]; y <= ys[1]; y += st) {
+      const b = boxAt(x, y);
+      if (!free(g, b, placed, obstacles)) continue;
+      // contact: how far each side is from the next thing (a wall, the avenue, another box), up to 40 px
+      const gapTo = (side) => {
+        let d = 40;
+        for (const o of others) {
+          if (side === 0 && o[1] < b[3] && o[3] > b[1] && o[2] <= b[0]) d = Math.min(d, b[0] - o[2]);
+          if (side === 1 && o[1] < b[3] && o[3] > b[1] && o[0] >= b[2]) d = Math.min(d, o[0] - b[2]);
+          if (side === 2 && o[0] < b[2] && o[2] > b[0] && o[3] <= b[1]) d = Math.min(d, b[1] - o[3]);
+          if (side === 3 && o[0] < b[2] && o[2] > b[0] && o[1] >= b[3]) d = Math.min(d, o[1] - b[3]);
+        }
+        return d;
+      };
+      const lane = g.cw / 2 + 12, wall = R - 34;
+      const gx = Math.min(gapTo(0), gapTo(1), Math.abs(b[0] + wall), Math.abs(wall - b[2]), Math.abs(b[0] - lane), Math.abs(-lane - b[2]));
+      const gy = Math.min(gapTo(2), gapTo(3), Math.abs(b[1] + wall), Math.abs(wall - b[3]), Math.abs(b[1] - lane), Math.abs(-lane - b[3]));
+      const sc = (gx + gy) * 4 + Math.hypot(x - px, y - py) * 0.1;
+      if (sc < bs) { bs = sc; best = { x, y }; }
+    }
+    return best;
+  }
+
   // The nearest free spot to (px, py) in quadrant q (a spiral of 6 px steps), or anywhere, or null.
-  function findSpot(g, px, py, id, q, placed, towers) {
+  function findSpot(g, px, py, id, q, placed, towers) { return findSpotBox(g, px, py, (x, y) => itemBox(id, x, y), q, placed, towers); }
+  function findSpotBox(g, px, py, boxAt, q, placed, towers) {
     for (let r = 0; r <= 420; r += 6) {
       const n = Math.max(1, Math.round((2 * Math.PI * r) / 6));
       for (let i = 0; i < n; i++) {
         const a = (i / n) * Math.PI * 2, x = Math.round(px + Math.cos(a) * r), y = Math.round(py + Math.sin(a) * r);
         if (q && (Math.sign(x) !== q[0] || Math.sign(y) !== q[1])) continue;
-        if (free(g, itemBox(id, x, y), placed, towers)) return { x, y };
+        if (free(g, boxAt(x, y), placed, towers)) return { x, y };
       }
     }
     return null;
   }
 
   let cacheKey = "", cache = null;
+
+  /* The compact base's layout (DL.BASE). Every plot is fixed for the tier: all the buildings and refuge pieces the
+     tier's flame cap can reach get their ground at once (built or not), so nothing moves as you build, only when a
+     dungeon is cleared and the whole base is rebuilt a size up. The Portal Hall's ground at the end of the north avenue
+     and the dungeons' camp pieces (Rift Portal, Mist Lantern, Forge Gate) are reserved the same way. */
+  const MONUMENTS = [["riftPortal", "se", [250, 330]], ["mistLantern", "sw", [-150, 250]], ["forgeGate", "ne", [300, -150]]];
+  const placeCache = new Map(); // tier -> the fixed plots (they depend on nothing else)
+  function compactLayout(up, key) {
+    const lv = Refuge.level(up), tier = Refuge.tier(up), B = DL.BASE, cap = B.cap[tier];
+    const g = Refuge.geo(lv, tier), R = g.R, k = Math.min(1, (R - 40) / RF.spotR);
+    const gp = Refuge.geo(DL.FLAME.max, tier); // plots are laid out round the biggest sanctum, so they never move with the flame
+    const L = { tier: DL.Camp.tier(up), baseTier: tier, R, lv, geo: g, fortress: true, compact: true, items: [], plots: [], missing: [], posts: [] };
+    const ti = R - RF.towerIn;
+    const tSpot = ([sx, sy]) => ({ x: sx * ti, y: sy * (sy < 0 ? ti - 50 : ti) });
+    L.towers = [[-1, -1], [1, -1], [-1, 1], [1, 1]].slice(0, DL.Camp.towerCount(up.tower)).map(tSpot);
+    const towerSpots = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(tSpot);
+    const s0r = g.rings.find((r) => r.id === "sanctum"), s = s0r ? s0r.half : 70;
+    const sP = gp.rings.find((r) => r.id === "sanctum").half; // the fires stand round the biggest sanctum (they are fixed ground too)
+    // the Portal Hall: its picture's foot near the north wall, on the avenue
+    const H = B.hall, hy = -R + 26 + H.h - 16;
+    L.hall = { x: 0, y: hy, hw: H.hw };
+    const hallBox = [-H.hw, hy + 16 - H.h, H.hw, hy + 16];
+    // lit pieces by tier: torches along the avenues, braziers off the sanctum's corners, lamps at the stairs, beacons
+    L.fires = [];
+    const dAv = (sP + R) / 2;
+    if (tier >= B.torches) for (const sg of [-1, 1]) for (const [nx, ny] of SIDES) {
+      const d = ny < 0 ? (sP + hallBox[3]) / 2 - 10 : dAv;
+      L.fires.push({ x: nx * d + (ny ? sg * (g.cw / 2 + 12) : 0), y: ny * d + (nx ? sg * (g.cw / 2 + 12) : 0), kind: "torch" });
+    }
+    if (tier >= B.braziers) for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) L.fires.push({ x: sx * (sP + 44), y: sy * (sP + 44), kind: "brazier" });
+    if (tier >= B.lamps && gp.outerRing) for (const q of gp.outerRing.stairs) {
+      const e = stairEnds(gp.outerRing, q, 12), [nx] = SIDES[q.s];
+      for (const sg of [-1, 1]) L.fires.push({ x: e.inn.x + (nx ? 0 : sg * (q.w / 2 + 8)), y: e.inn.y + (nx ? sg * (q.w / 2 + 8) : 0), kind: "torch" });
+    }
+    if (tier >= B.beacons || lv >= 20) for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) L.fires.push({ x: sx * (sP + 4), y: sy * (sP + 4), kind: "beacon" });
+    // pylons on open ground inside the gates (the north pair beside the hall's stairs)
+    const ux = (a) => Math.round(Math.cos(a)), uy = (a) => Math.round(Math.sin(a));
+    const pylonSpots = [[-Math.PI / 2, -1], [Math.PI / 2, -1], [0, -1], [Math.PI, -1], [-Math.PI / 2, 1], [Math.PI / 2, 1]]
+      .map(([a, o]) => { const north = a < -1, along = o * ((north ? H.gap : 0) + g.cw / 2 + 30), out = north ? -95 : -60; return { x: ux(a) * (R + out) - uy(a) * along, y: uy(a) * (R + out) + ux(a) * along }; });
+    const obstacles = [hallBox, ...towerSpots.map((t) => picBox("tower", t.x, t.y)), ...pylonSpots.map((t) => picBox("pylon", t.x, t.y)),
+      ...L.fires.map((f) => [f.x - 10, f.y - 34, f.x + 10, f.y + 6])];
+    // everything this tier can hold: the camp buildings, then the refuge pieces up to the flame cap, then the dungeons' pieces
+    let P = placeCache.get(tier);
+    if (!P) {
+      const ids = [...BUILDINGS, ...Object.keys(RF.items).filter((id) => !BUILDINGS.includes(id) && (RF.items[id].from || 1) <= cap)];
+      const placed = [], missing = [];
+      const put = (id, at, d, box) => {
+        const px = Math.round(at[0] * k), py = Math.round(at[1] * k), q = QUAD[d];
+        const spot = packSpot(gp, px, py, box, q, placed, obstacles) || packSpot(gp, px, py, box, null, placed, obstacles);
+        if (!spot) { missing.push(id); return null; }
+        const p = { id, x: spot.x, y: spot.y, box: box(spot.x, spot.y) };
+        placed.push(p);
+        return p;
+      };
+      for (const id of ids) { const it = RF.items[id]; const p = put(id, it.at, it.d, (x, y) => itemBox(id, x, y)); if (p) p.hw = it.hw; }
+      // the dungeons' camp pieces get their ground once the first dungeon falls (before that they keep their old spots)
+      if (tier >= 1) for (const [id, d, at0] of MONUMENTS) put(id, at0.map((v) => (v * R) / (580 * k)), d, (x, y) => picBox(id, x, y));
+      placeCache.set(tier, (P = { placed, missing }));
+    }
+    const placed = P.placed;
+    L.missing = P.missing.slice();
+    for (const [id] of MONUMENTS) { const p = placed.find((q) => q.id === id); if (p) L[id] = { x: p.x, y: p.y }; }
+    for (const p of placed) {
+      if (!RF.items[p.id]) continue;
+      const it = RF.items[p.id], isB = BUILDINGS.includes(p.id);
+      if (isB) {
+        if (up[p.id] > 0) { L[p.id] = { x: p.x, y: p.y }; L.plots.push({ x: p.x, y: p.y, hw: p.hw, id: p.id }); }
+        else if (lv >= RF.lowWall) L.plots.push({ x: p.x, y: p.y, hw: p.hw, reserved: true }); // nameless until built (the secrecy rule)
+        continue;
+      }
+      if (lv < (it.from || 1)) continue; // its ground waits for its flame level
+      if (p.id === "barracks") { if (Refuge.barracks(up)) L.posts.push({ x: p.x, y: p.y, s: 2, at: 0 }); continue; } // one barracks trains the camp's champions
+      L.items.push({ id: p.id, x: p.x, y: p.y, hw: p.hw, ph: it.ph, sprite: it.sprite, flip: it.flip });
+      L.plots.push({ x: p.x, y: p.y, hw: p.hw, id: p.id });
+    }
+    for (const id of BUILDINGS) if (!L[id]) L[id] = null;
+    L.barracks = L.posts[0] || null;
+    L.tents = L.items.filter((i) => i.sprite === "tent").map((i) => ({ x: i.x, y: i.y, flip: !!i.flip }));
+    L.banners = [[-1, -1], [1, -1]].map(([sx, sy]) => ({ x: sx * (s - 22), y: sy * (s - 18) }));
+    if (lv >= 10) L.banners.push(...[[-1, 1], [1, 1]].map(([sx, sy]) => ({ x: sx * (s - 22), y: sy * (s - 26) })));
+    L.pylons = pylonSpots.slice(0, up.pylon * 2);
+    L.boardwalks = false;
+    L.solids = [{ x: 0, y: 0, r: 16 }];
+    for (const t of L.towers) L.solids.push({ x: t.x, y: t.y, r: 14 });
+    for (const t of L.pylons) L.solids.push({ x: t.x, y: t.y, r: 6 });
+    for (const b of L.posts) L.solids.push({ x: b.x, y: b.y - 6, r: 30 });
+    for (const p of L.plots) if (!p.reserved) L.solids.push({ x: p.x, y: p.y - 6, r: Math.max(10, Math.round(p.hw * 0.55)) });
+    L.decor = [];
+    for (const f of L.fires) if (f.kind !== "torch") L.solids.push({ x: f.x, y: f.y, r: 8 });
+    cacheKey = key;
+    cache = L;
+    return L;
+  }
+
   Refuge.layout = function (up) {
     const lv = Refuge.level(up);
     const key = JSON.stringify(up);
     if (key === cacheKey) return cache;
-    const g = Refuge.geo(lv), R = g.R, k = Math.min(1, R / RF.spotR);
+    if (Refuge.tier(up) >= 0) return compactLayout(up, key);
+    const g = Refuge.geo(lv, -1), R = g.R, k = Math.min(1, R / RF.spotR);
     const L = { tier: DL.Camp.tier(up), R, lv, geo: g, fortress: true, items: [], plots: [], missing: [] };
     const ti = Math.min(R, RF.spotR) - RF.towerIn; // the outer wards have their own drawn corner towers
     // north towers sit further in, as their tall picture would otherwise stand up over the north wall
@@ -512,7 +702,7 @@
   };
   // The four faces of a ring: drawn rock courses on the south (stairs in the gaps), lips on the other three.
   function faces(c, ring, t) {
-    const kit = { low: "low", sanctum: "sanct", main: "court", outer: "mward", ward4: "ward", ward5: "lward", ward6: "curt", ward7: "great" }[ring.id] || "terrace";
+    const kit = ring.kit || { low: "low", sanctum: "sanct", main: "court", outer: "mward", ward4: "ward", ward5: "lward", ward6: "curt", ward7: "great" }[ring.id] || "terrace";
     if (kitRing(c, ring, kit) || (kit === "sanct" && kitRing(c, ring, "tier")) || ((kit === "court" || kit === "ward" || kit === "mward" || kit === "lward" || kit === "curt" || kit === "great") && kitRing(c, ring, "terrace")) || (kit !== "terrace" && kit !== "low" && kitRing(c, ring, "terrace"))) return;
     const h = ring.half, A = P(), F = ring.face;
     const gaps = (s) => ring.stairs.filter((q) => q.s === s);
@@ -610,7 +800,7 @@
     // terraces, outermost first, each with its faces; the sanctum gets the Beacon's paving
     terr.forEach((r, ri) => {
       const dark = r.id === "sanctum" ? 0.08 : r.id === "main" ? 0.2 : 0.3;
-      const fl = IMG[r.id === "sanctum" ? "floor-sanctum" : r.id === "main" || r.id === "outer" ? "floor-flags" : "floor-cobble"];
+      const fl = IMG[r.id === "sanctum" ? "floor-sanctum" : r.id === "main" || r.id === "outer" || r.id === "wall" ? "floor-flags" : "floor-cobble"];
       const rects = band(r.half, terr[ri + 1] ? terr[ri + 1].half : 0); // only what the next terrace in leaves showing
       if (fl) { // Robert's floors (S3): mosaic on the sanctum (centred on the flame), flagstones on the court and middle ward, cobbles on the outer wards
         const k = (r.id === "sanctum" ? 2 * r.half : 190) / fl.width;
@@ -682,5 +872,8 @@
   };
 
   /* ---------------- HUD / text ---------------- */
-  Refuge.line = (up) => { const lv = Refuge.level(up || DL.Game.save.up); return `Refuge level ${lv} of ${DL.FLAME.max}: ${RF.levels[lv].name}`; };
+  Refuge.line = (up) => {
+    const u = up || DL.Game.save.up, lv = Refuge.level(u);
+    if (Refuge.compact(u)) { const t = Refuge.tier(u), n = DL.BASE.tiers.length - 1; return `Base tier ${t} of ${n}: Central Flame up to ${DL.BASE.cap[t]}` + (t < n ? `; clear another dungeon to raise it` : ""); }
+    return `Refuge level ${lv} of ${DL.FLAME.max}: ${RF.levels[lv].name}`; };
 })(window.DL);
