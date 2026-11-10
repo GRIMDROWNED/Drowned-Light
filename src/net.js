@@ -338,14 +338,14 @@
         // Fred's marks: 1 befuddled, 2 turned, 4 asleep, 8 spored; the Frostweaver's: 16 frozen, 32 brittle
         (e.conf > 0 ? 1 : 0) | (e.mind > 0 ? 2 : 0) | (e.sleep && e.stun > 0 ? 4 : 0) | (e.spore > 0 ? 8 : 0) | (e.frost > 0 ? 16 : 0) | (e.brittle > 0 ? 32 : 0),
         // a Spires foe's move as drawn: its pose, telegraphs, fading and lift (src/spirefoes.js)
-        e.def.spire || e.def.sentinel ? DL.SpireFoes.vis(e) : 0]),
+        e.def.spire || e.def.sentinel ? DL.SpireFoes.vis(e) : e.def.mine ? DL.MineBosses.vis(e) : 0]), // a Mines foe's too (src/minebosses.js)
       pr: G.projectiles.filter((b) => near(b.x, b.y, 900)).map((b) => [r1(b.x), r1(b.y), Math.round(b.vx), Math.round(b.vy), b.kind, b.col, b.hostile ? 1 : 0]),
       to: G.torches.map((o) => [r1(o.x), r1(o.y), r1(o.t), o.max, Math.round(o.r), o.type, Math.round(o.hp)]),
       lz: G.lightZones.map((z) => [r1(z.x), r1(z.y), Math.round(z.r), r1(z.t), z.heal ? 1 : 0, z.fire ? 1 : 0]),
       wa: G.walls.map((w) => [r1(w.x1), r1(w.y1), r1(w.x2), r1(w.y2), r1(w.t), w.max]),
       py: G.pylons.map((q) => [Math.round(q.hp), q.lit ? 1 : 0]),
       pk: G.pickups.filter((k) => near(k.x, k.y, 800)).map((k) => [k.id, r1(k.x), r1(k.y), k.res]),
-      tg: G.telegraphs.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.delay, q.rose ? 1 : q.wyv ? 2 : 0]),
+      tg: G.telegraphs.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.delay, q.rose ? 1 : q.wyv ? 2 : q.fire ? 3 : 0]),
       hx: G.hexPools.filter((q) => near(q.x, q.y, 900)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.life]),
       // Bone Hounds: [id, owner, x, y, angle, moving, hp, maxHp, biting, bite time left, hit flash, knocked out for]
       hd: G.hounds.filter((h) => near(h.x, h.y, 1100)).map((h) => [h.id, h.owner, r1(h.x), r1(h.y), r1(h.angle), h.moving ? 1 : 0, Math.round(h.hp), h.maxHp,
@@ -527,6 +527,7 @@
       if (DL.UI.refreshCamp) DL.UI.refreshCamp();
     } else if (m.t === "cave" || m.t === "caveMend") DL.Cave.guestMsg(m);
     else if (m.t === "spires") DL.Spires.guestMsg(m);
+    else if (m.t === "mines") DL.Mines.guestMsg(m);
     else if (m.t === "snap") applySnap(m);
   }
 
@@ -541,7 +542,7 @@
     G.hostState = m.state;
     G.flame.hp = m.flame[0]; G.flame.max = m.flame[1]; G.flame.lit = !!m.flame[2];
     DL.Cave.applySnap(m.cv);
-    DL.Spires.applySnap(m.sp);
+    DL.Dungeon.applySnap(m.sp); // the Spires' run or the Mines'
     G.save.spiresWells = m.sw || {}; // (a guest's own save is never written)
     DL.SpireFoes.applyRifts(m.rf);
     DL.Rose.applySnap(m.rs);
@@ -593,7 +594,7 @@
     G.walls = m.wa.map((w) => ({ x1: w[0], y1: w[1], x2: w[2], y2: w[3], t: w[4], max: w[5], dps: 0, net: 1 }));
     m.py.forEach((q, i) => { if (G.pylons[i]) { G.pylons[i].hp = q[0]; G.pylons[i].lit = !!q[1]; } });
     G.pickups = m.pk.map((k) => ({ id: k[0], x: k[1], y: k[2], res: k[3], t: 1, vx: 0, vy: 0 }));
-    G.telegraphs = m.tg.map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], delay: q[4], rose: q[5] === 1, wyv: q[5] === 2, done: true }));
+    G.telegraphs = m.tg.map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], delay: q[4], rose: q[5] === 1, wyv: q[5] === 2, fire: q[5] === 3, done: true }));
     G.hexPools = (m.hx || []).map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], life: q[4] }));
     // Bone Hounds: puppets kept between snapshots so they glide and run
     const hounds = new Map(G.hounds.map((h) => [h.id, h]));

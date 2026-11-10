@@ -41,6 +41,17 @@
   const say = (m, k) => DL.UI && DL.UI.toast(m, k);
   const sfx = (n) => DL.Sound && DL.Sound.play(n);
   const sideOn = (a) => (Math.cos(a) >= 0 ? 0 : Math.PI);
+  /* Co-op (step 9): the host's device runs the bosses, so every blow is tested against each knight in the run (the
+     host's own and its friends'); a friend's goes to their device, at most twice a second (what burns underfoot would
+     send one every frame), and their device lets a dash or a moment's grace slip it as for any blow. */
+  const party = (MB.party = () => [G.player, ...G.allies.filter((a) => !a.down)].filter(Boolean));
+  MB.hurt = hurtK;
+  function hurtK(k, dmg, ang, by) {
+    if (k === G.player) return G.hurtPlayer(dmg, ang, by);
+    if (k.dashT > 0 || G.t < (k.mbT || 0)) return;
+    k.mbT = G.t + 0.5;
+    DL.Net.hurtAlly(k, dmg, ang, by);
+  }
   // which boss waits in which room
   MB.ROOMS = { forge: "golem", pit: "hydra", roost: "wyrm", choir: "seraph", bastion: "cinder", throne: "sovereign" };
   const WAKE = {
@@ -74,7 +85,7 @@
     // molten pools burn whoever walks in them
     for (const q of pools) {
       q.t += dt;
-      if (p && Math.hypot(p.x - q.x, (p.y - q.y) * 1.6) < q.r && !(p.dashT > 0)) G.hurtPlayer(q.dmg, -Math.PI / 2, "a molten pool");
+      for (const k of party()) if (Math.hypot(k.x - q.x, (k.y - q.y) * 1.6) < q.r && !(k.dashT > 0)) hurtK(k, q.dmg, -Math.PI / 2, "a molten pool");
     }
     pools = pools.filter((q) => q.t < q.life);
     // fists in the air
@@ -89,12 +100,11 @@
   };
   // a thrown fist or a lava glob comes down: a blow where it lands, a burst of shards, a molten pool
   function land(f) {
-    const p = G.player;
     if (!f.r) { for (let i = 0; i < 5; i++) G.puff(f.tx + rand(-14, 14), f.ty - rand(0, 14), "rgba(110,90,80,0.7)", 60, 0.5, -10); return; } // flung debris
     G.camera.shake = Math.max(G.camera.shake || 0, f.glob ? 4 : 9);
     sfx("hit");
     for (let i = 0; i < (f.glob ? 8 : 16); i++) G.puff(f.tx + rand(-30, 30), f.ty - rand(0, 30), "rgba(255,120,40,0.75)", 110, 0.7, -20);
-    if (p && Math.hypot(p.x - f.tx, (p.y - f.ty) * 1.3) < f.r && !(p.dashT > 0) && !(p.inv > 0)) G.hurtPlayer(f.dmg, Math.atan2(p.y - f.ty, p.x - f.tx), f.by);
+    for (const k of party()) if (Math.hypot(k.x - f.tx, (k.y - f.ty) * 1.3) < f.r && !(k.dashT > 0) && !(k.inv > 0)) hurtK(k, f.dmg, Math.atan2(k.y - f.ty, k.x - f.tx), f.by);
     if (f.shards) DL.Bullets.ring(f.tx, f.ty - 10, f.shards, rand(0, TAU), { by: f.glob ? "a lava spatter" : "a slag shard", dmg: f.bulletDmg, speed: f.speed, kind: f.glob ? 9 : 7 });
     if (f.poolR) pools.push({ x: f.tx, y: f.ty, r: f.poolR, t: 0, life: f.poolLife, dmg: f.poolDmg });
   }
@@ -135,12 +145,12 @@
   }
   function raise(e) {
     if (e.t > 0) return;
-    const n = N().golem, p = G.player, R = n.r * e.def.size;
+    const n = N().golem, R = n.r * e.def.size;
     e.act = "slam"; e.t = n.hit; e.anim = ["slam", 0, sideOn(e.aim)];
     G.camera.shake = 11;
     sfx("hit");
     for (let i = 0; i < 22; i++) G.puff(e.x + rand(-R, R) * 0.8, e.y + rand(-R, R) * 0.4, "rgba(255,130,40,0.8)", 120, 0.7, -20);
-    if (Math.hypot(p.x - e.x, (p.y - e.y) * 1.5) < R && !(p.dashT > 0) && !(p.inv > 0)) G.hurtPlayer(e.dmg * n.dmg, Math.atan2(p.y - e.y, p.x - e.x), e.def.name);
+    for (const k of party()) if (Math.hypot(k.x - e.x, (k.y - e.y) * 1.5) < R && !(k.dashT > 0) && !(k.inv > 0)) hurtK(k, e.dmg * n.dmg, Math.atan2(k.y - e.y, k.x - e.x), e.def.name);
     // a ring of slag with one gap, turned somewhere new each time
     const gapAt = rand(0, TAU);
     DL.Bullets.fan(e.x, e.y - 20, gapAt + Math.PI, n.ring, TAU - n.gap, { by: "the Magma Golem's slam", dmg: n.bulletDmg, speed: n.speed, kind: 7 });
@@ -328,9 +338,11 @@
     if (e.t <= 0) { e.lift = 0; G.camera.shake = 10; e.act = "after"; e.t = 0.6; e.next = 0.5; }
   }
   function strike(e, R, arc, dmg, by) {
-    const p = G.player, d = Math.hypot(p.x - e.x, (p.y - e.y) * 1.4), a = Math.atan2(p.y - e.y, p.x - e.x);
-    let off = Math.abs(a - e.aim); if (off > Math.PI) off = TAU - off;
-    if (d < R && (arc >= Math.PI || off < arc / 2)) G.hurtPlayer(dmg, a, by);
+    for (const k of party()) {
+      const d = Math.hypot(k.x - e.x, (k.y - e.y) * 1.4), a = Math.atan2(k.y - e.y, k.x - e.x);
+      let off = Math.abs(a - e.aim); if (off > Math.PI) off = TAU - off;
+      if (d < R && (arc >= Math.PI || off < arc / 2)) hurtK(k, dmg, a, by);
+    }
   }
   // claw: a swipe in front, then the tail sweeps all round
   function claw(e) {
@@ -372,7 +384,7 @@
     if (e.t <= 0) nextRun(e);
   }
   function nextRun(e) {
-    const p = G.player, n = N().wyrm;
+    const ks = party(), p = ks[Math.floor(Math.random() * ks.length)], n = N().wyrm; // each run crosses one of the knights
     if (e.runs-- <= 0) { e.act = "dive"; e.t = n.diveAim; return; }
     const [ax, ay, bx, by] = across(p.x, p.y, rand(0, TAU));
     // start from the nearer end
@@ -397,7 +409,7 @@
     sfx("torch");
   }
   function run(e, dt) {
-    const n = N().wyrm, d = Math.hypot(e.bx - e.x, e.by - e.y), a = Math.atan2(e.by - e.y, e.bx - e.x), st = n.dash * dt, p = G.player;
+    const n = N().wyrm, d = Math.hypot(e.bx - e.x, e.by - e.y), a = Math.atan2(e.by - e.y, e.bx - e.x), st = n.dash * dt;
     e.anim = ["fly", Math.floor(G.t * 14), face(e, a)];
     const mv = Math.min(d, st);
     e.x += Math.cos(a) * mv; e.y += Math.sin(a) * mv;
@@ -407,7 +419,7 @@
       pools.push({ x: e.x + rand(-6, 6), y: e.y + rand(-4, 4), r: n.laneR, t: 0, life: n.laneLife, dmg: n.laneDmg });
     }
     // it rakes whoever it passes over
-    if (Math.hypot(p.x - e.x, (p.y - e.y) * 1.4) < 60 * e.def.size && !(p.dashT > 0)) G.hurtPlayer(e.dmg * n.runDmg, a, "the Crucible Wyrm's strafing run");
+    for (const k of party()) if (Math.hypot(k.x - e.x, (k.y - e.y) * 1.4) < 60 * e.def.size && !(k.dashT > 0)) hurtK(k, e.dmg * n.runDmg, a, "the Crucible Wyrm's strafing run");
     if (d <= st || e.t <= 0) nextRun(e);
   }
   // the dive: a circle follows you, then it locks and it comes down there
@@ -415,15 +427,15 @@
     const n = N().wyrm;
     e.lift = n.alt;
     e.anim = ["fly", Math.floor(G.t * 10), face(e, Math.atan2(p.y - e.y, p.x - e.x))];
-    if (e.t > n.diveLock) { [e.tx, e.ty] = inRoost(p.x, p.y); }
+    if (e.t > n.diveLock) { [e.wx, e.wy] = inRoost(p.x, p.y); }
     if (e.t > 0) return;
     e.act = "slamDown"; e.t = n.diveFly; e.fx = e.x; e.fy = e.y;
     sfx("whisper");
   }
   function slamDown(e) {
     const n = N().wyrm, k = 1 - Math.max(0, e.t) / n.diveFly;
-    e.x = e.fx + (e.tx - e.fx) * k; e.y = e.fy + (e.ty - e.fy) * k; e.lift = n.alt * (1 - k);
-    e.anim = ["dive", 0, face(e, Math.atan2(e.ty - e.fy, e.tx - e.fx))];
+    e.x = e.fx + (e.wx - e.fx) * k; e.y = e.fy + (e.wy - e.fy) * k; e.lift = n.alt * (1 - k);
+    e.anim = ["dive", 0, face(e, Math.atan2(e.wy - e.fy, e.wx - e.fx))];
     if (e.t > 0) return;
     e.lift = 0; e.aim = e.angle;
     strike(e, n.slamR * e.def.size, TAU, e.dmg * n.slamDmg, "the Crucible Wyrm's dive");
@@ -527,7 +539,7 @@
     if (drop) e.jPool -= j.poolStep;
     for (const a of beamAngles(e)) {
       const x = e.x + Math.cos(a) * e.jd, y = e.y + Math.sin(a) * e.jd;
-      if (Math.hypot(p.x - x, (p.y - y) * 1.3) < j.beamR && !(p.dashT > 0)) G.hurtPlayer(e.dmg * j.beamDmg, a, "the Seething Seraph's Judgement");
+      for (const k of party()) if (Math.hypot(k.x - x, (k.y - y) * 1.3) < j.beamR && !(k.dashT > 0)) hurtK(k, e.dmg * j.beamDmg, a, "the Seething Seraph's Judgement");
       if (drop) pools.push({ x, y, r: j.poolR, t: 0, life: j.poolLife, dmg: j.poolDmg });
       if (Math.random() < 0.6) G.puff(x + rand(-14, 14), y - rand(0, 60), "rgba(255,150,50,0.8)", 90, 0.5, -60);
     }
@@ -664,18 +676,19 @@
     if (e.t > N().cinder.rocket.wind * 0.35) e.aim = a;
     if (e.t > 0) return;
     const r = N().cinder.rocket;
-    rockets.push({ x: e.x, y: e.y - 10, a: e.aim, d: 0, len: r.len, hit: false, dmg: e.dmg * r.dmg });
+    rockets.push({ x: e.x, y: e.y - 10, a: e.aim, d: 0, len: r.len, hit: null, dmg: e.dmg * r.dmg });
     sfx("torch");
     e.act = "rocketGo"; e.t = r.len / r.speed;
   }
   function rocketGo(e) { e.anim = ["attackB", 0, sideOn(e.aim)]; if (e.t <= 0) { e.act = "after"; e.t = 0.5; } }
   function cAfter(e) { if (e.t <= 0) { e.act = null; e.next = N().cinder.every * (e.free ? 0.8 : 1); } }
   MB.updateRockets = function (dt) {
-    const r = N().cinder.rocket, p = G.player;
+    const r = N().cinder.rocket;
     for (const k of rockets) {
       k.d += r.speed * dt;
       const x = k.x + Math.cos(k.a) * k.d, y = k.y + Math.sin(k.a) * k.d;
-      if (!k.hit && p && Math.hypot(p.x - x, (p.y - y) * 1.3) < r.r && !(p.dashT > 0)) { k.hit = true; G.hurtPlayer(k.dmg, k.a, "the Cinder Colossus's flaming fist"); }
+      k.hit = k.hit || [];
+      for (const q of party()) if (!k.hit.includes(q) && Math.hypot(q.x - x, (q.y - y) * 1.3) < r.r && !(q.dashT > 0)) { k.hit.push(q); hurtK(q, k.dmg, k.a, "the Cinder Colossus's flaming fist"); }
       if (Math.random() < 0.7) G.puff(x - Math.cos(k.a) * 30, y - 40, "rgba(255,140,50,0.75)", 50, 0.5, -20);
     }
     rockets = rockets.filter((k) => k.d < k.len);
@@ -816,7 +829,7 @@
     if (flood) {
       flood.t += dt;
       if (flood.t > flood.life) flood = null;
-      else if (flood.t > flood.warn && p && !inArena(p.x, p.y, n.flood.safe) && !(p.dashT > 0)) G.hurtPlayer(n.flood.dmg, -Math.PI / 2, "the flooding lava");
+      else if (flood.t > flood.warn) for (const k of party()) if (inArena(k.x, k.y) && !inArena(k.x, k.y, n.flood.safe) && !(k.dashT > 0)) hurtK(k, n.flood.dmg, -Math.PI / 2, "the flooding lava");
     }
   }
   // phase 3: the Ashen Decree, every so often: the whole floor marked to erupt but for a few safe stones
@@ -839,8 +852,10 @@
       if (!decree.hit && decree.t > n.warn) {
         decree.hit = true;
         G.camera.shake = 12; sfx("hit");
-        const ok = decree.safe.some((q) => Math.hypot(p.x - q.x, (p.y - q.y) * 1.3) < n.r);
-        if (!ok && inArena(p.x, p.y) && !(p.dashT > 0) && !(p.inv > 0)) G.hurtPlayer(N().sovereign.bulletDmg * n.dmg, -Math.PI / 2, "the Ashen Decree");
+        for (const k of party()) {
+          const ok = decree.safe.some((q) => Math.hypot(k.x - q.x, (k.y - q.y) * 1.3) < n.r);
+          if (!ok && inArena(k.x, k.y) && !(k.dashT > 0) && !(k.inv > 0)) hurtK(k, N().sovereign.bulletDmg * n.dmg, -Math.PI / 2, "the Ashen Decree");
+        }
         const A = ARENA();
         for (let i = 0; i < 40; i++) { const x = A.x + rand(-A.rx, A.rx) * 0.9, y = A.y + rand(-A.ry, A.ry) * 0.9; if (inArena(x, y) && !decree.safe.some((q) => Math.hypot(x - q.x, y - q.y) < n.r)) G.puff(x, y - rand(0, 40), "rgba(255,140,40,0.85)", 120, 0.7, -60); }
       }
@@ -870,6 +885,49 @@
     G.camera.shake = 14;
     for (let i = 0; i < 40; i++) G.puff(e.x + rand(-60, 60), e.y - rand(0, 220), "rgba(255,130,40,0.85)", 120, 1.4, -30);
     sfx("milestone");
+  };
+
+  /* ---------------- co-op: what a friend's device draws ---------------- */
+  const r1 = (v) => (v == null ? v : Math.round(v * 10) / 10);
+  const r2 = (v) => (v == null ? v : Math.round(v * 100) / 100);
+  // Host: a mine foe's move as drawn (merged into its copy on a friend's device): its pose, what it's doing and how
+  // long that has left, where it aims, how high it flies, its marks on the floor
+  MB.vis = function (e) {
+    if (e.def.minion) return { wardT: r1(e.wardT) || 0, room: e.room };
+    const o = { room: e.room, anim: e.anim || null, act: e.act || null, t: r2(e.t), aim: r2(e.aim), lift: r1(e.lift) || 0, wardT: r1(e.wardT) || 0 };
+    if (e.def.mine === "wyrm") Object.assign(o, { ax: r1(e.ax), ay: r1(e.ay), bx: r1(e.bx), by: r1(e.by), wx: r1(e.wx), wy: r1(e.wy) });
+    else if (e.def.mine === "seraph") Object.assign(o, { jAim: r2(e.jAim), jd: r1(e.jd), beams: e.beams });
+    else if (e.def.mine === "cinder") Object.assign(o, { free: !!e.free, hx: r1(e.hx), hy: r1(e.hy) });
+    else if (e.def.mine === "sovereign") o.phase = e.phase;
+    else if (e.def.mine === "shard") Object.assign(o, { shardN: e.shardN, slot: e.slot });
+    else if (e.def.mine === "hydra") o.heads = e.heads;
+    return o;
+  };
+  // Host: the fight's loose pieces for each snapshot: fists and globs in the air, molten pools, rockets, the flood, the Decree
+  MB.snap = (near) => [
+    fists.filter((f) => near(f.tx, f.ty, 1100)).map((f) => [r1(f.x0), r1(f.y0), r1(f.gy), r1(f.tx), r1(f.ty), r2(f.t), f.fly, f.arc, f.r || 0, f.glob ? 1 : 0, f.im || 0, f.w || 0]),
+    pools.filter((q) => near(q.x, q.y, 1100)).map((q) => [r1(q.x), r1(q.y), q.r, r1(q.t), q.life]),
+    rockets.map((k) => [r1(k.x), r1(k.y), r2(k.a), r1(k.d)]),
+    flood ? [r2(flood.t), flood.warn, flood.life] : 0,
+    decree ? [r2(decree.t), decree.safe.map((q) => [r1(q.x), r1(q.y)])] : 0,
+  ];
+  // Guest: the host's pieces, drawn here (the host tests every knight against them)
+  MB.apply = function (s) {
+    if (!s) { MB.reset(); return; }
+    fists = s[0].map((f) => ({ x0: f[0], y0: f[1], gy: f[2], tx: f[3], ty: f[4], t: f[5], fly: f[6], arc: f[7], r: f[8], glob: !!f[9], im: f[10] || null, w: f[11] || 0 }));
+    pools = s[1].map((q) => ({ x: q[0], y: q[1], r: q[2], t: q[3], life: q[4] }));
+    rockets = s[2].map((k) => ({ x: k[0], y: k[1], a: k[2], d: k[3] }));
+    flood = s[3] ? { t: s[3][0], warn: s[3][1], life: s[3][2] } : null;
+    decree = s[4] ? { t: s[4][0], safe: s[4][1].map((q) => ({ x: q[0], y: q[1] })) } : null;
+  };
+  // Guest: between snapshots, the pieces carry on moving
+  MB.tick = function (dt) {
+    for (const f of fists) f.t += dt;
+    for (const q of pools) q.t += dt;
+    const sp = N().cinder.rocket.speed;
+    for (const k of rockets) k.d += sp * dt;
+    if (flood) flood.t += dt;
+    if (decree) decree.t += dt;
   };
 
   /* ---------------- drawing ---------------- */
@@ -915,10 +973,10 @@
         c.fillRect(0, -w, Math.hypot(e.bx - e.ax, e.by - e.ay), w * 2);
         c.restore();
       }
-      if ((e.act === "dive" || e.act === "slamDown") && e.tx != null) {
+      if ((e.act === "dive" || e.act === "slamDown") && e.wx != null) {
         const k = e.act === "dive" ? 1 - Math.max(0, e.t) / n.diveAim : 1, R = n.slamR * s;
         c.strokeStyle = `rgba(255,150,50,${0.4 + 0.5 * k})`; c.lineWidth = 3;
-        c.beginPath(); c.ellipse(e.tx, e.ty, R, R / 1.4, 0, 0, TAU); c.stroke();
+        c.beginPath(); c.ellipse(e.wx, e.wy, R, R / 1.4, 0, 0, TAU); c.stroke();
         c.fillStyle = `rgba(255,110,30,${0.08 + 0.2 * k})`; c.fill();
       }
     }
