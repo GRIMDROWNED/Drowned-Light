@@ -199,6 +199,9 @@ GRIDS = {
     # tools/cut_mines.py)
     'magma-golem/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '13_core']),
     'magma-golem/poses-b.png': (3, 2, POSES_B),
+    'crucible-wyrm/poses-a.png': (3, 2, ['01_front', '02_back', '03_right', '08_attackA', '09_attackB', '10_attackC']),
+    'crucible-wyrm/poses-b.png': (3, 2, POSES_B),
+    'crucible-wyrm/flight.png': (3, 2, ['13_fly1', '14_fly2', '15_fly3', '16_fly4', '17_dive', '18_land']),
     'magma-golem/attacks.png': (3, 2, ['14_windup', '15_hurl', '16_regrow', '17_fist', '18_pool', '19_orb']),
     'cinder-acolyte/poses-a.png': (3, 2, POSES_A),
     'cinder-acolyte/poses-b.png': (3, 2, POSES_B),
@@ -230,7 +233,7 @@ CELL_REDRAW = {'starved-bell/07_walk': ('bell-walk4.png', '04_walk'), 'starved-b
 
 # Characters whose own colours come close to the magenta key (violet ghost-fire): keyed with a tighter
 # tolerance and without the purple-fringe filter, so their glow isn't eaten.
-KEY_OPTS = {'molten-wretch': {'key': (0, 255, 0)}, 'ash-guard': {'key': (0, 255, 0)}, 'cinder-acolyte': {'key': (0, 255, 0)}, 'magma-golem': {'key': (0, 255, 0)}, 'crimson-greatsword': {'key': (0, 255, 0)}, 'cinderbrand': {'key': (0, 255, 0)}, 'rift-throne-boss': {'key': (0, 255, 0)}, 'rift-mite': {'key': (0, 255, 0)}, 'shard-wisp': {'key': (0, 255, 0)}, 'throne-warden': {'key': (0, 255, 0)}, 'mist-shade': {'key': (0, 255, 0)}, 'rift-caller': {'key': (0, 255, 0)}, 'prism-knight': {'key': (0, 255, 0)}, 'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
+KEY_OPTS = {'molten-wretch': {'key': (0, 255, 0)}, 'ash-guard': {'key': (0, 255, 0)}, 'cinder-acolyte': {'key': (0, 255, 0)}, 'magma-golem': {'key': (0, 255, 0)}, 'crucible-wyrm': {'key': (0, 255, 0)}, 'crimson-greatsword': {'key': (0, 255, 0)}, 'cinderbrand': {'key': (0, 255, 0)}, 'rift-throne-boss': {'key': (0, 255, 0)}, 'rift-mite': {'key': (0, 255, 0)}, 'shard-wisp': {'key': (0, 255, 0)}, 'throne-warden': {'key': (0, 255, 0)}, 'mist-shade': {'key': (0, 255, 0)}, 'rift-caller': {'key': (0, 255, 0)}, 'prism-knight': {'key': (0, 255, 0)}, 'chain-leaper': {'key': (0, 255, 0)}, 'bridge-bowman': {'key': (0, 255, 0)}, 'chain-reaper': {'key': (0, 255, 0)}, 'bloodsworn': {'key': (0, 255, 0)}, 'bloodsworn-f2': {'key': (0, 255, 0)}, 'bloodsworn-f3': {'key': (0, 255, 0)}, 'pike-warden': {'tol': 60, 'tint': False}, 'bone-hound-f3': {'tol': 60, 'tint': False}, 'abigail-f2': {'tol': 60, 'tint': False}, 'abigail-f3': {'tol': 60, 'tint': False}}
 # Characters whose colours are reworked as they're cut (all their poses, walks and dash): name -> recolour function.
 def jade_match(x):
     """The Jade Breaker's sheets each came out a little different in colour: match them all to his front view."""
@@ -301,6 +304,9 @@ SETS = {
     'rift-throne-boss': ('rift-throne', 'rift-throne-boss/01_front.png', THRONE_H, 1, {**twelve('rift-throne-boss', TWELVE_FILES),
         'rift-throne-boss/13_seated.png': 'seated', 'rift-throne-boss/14_waking.png': 'waking', 'rift-throne-boss/15_rising.png': 'rising',
         'rift-throne-boss/16_p2front.png': 'p2front', 'rift-throne-boss/17_sweep.png': 'p2sweep', 'rift-throne-boss/18_enraged.png': 'p2enraged'}),
+    # the Crucible Wyrm (Molten Mines boss D), res 4: 170 world px head on with its wings spread (x1.35 in game)
+    'crucible-wyrm': ('mines-bosses/wyrm', 'crucible-wyrm/01_front.png', 340, 1, {**twelve('crucible-wyrm', TWELVE_FILES),
+        'crucible-wyrm/17_dive.png': 'side/dive', 'crucible-wyrm/18_land.png': 'side/land'}),
     'magma-golem': ('mines-bosses/golem', 'magma-golem/01_front.png', 360, 1, {**twelve('magma-golem', TWELVE_FILES),
         'magma-golem/13_core.png': 'core', 'magma-golem/14_windup.png': 'windup', 'magma-golem/15_hurl.png': 'hurl', 'magma-golem/16_regrow.png': 'regrow'}),
     'cinder-acolyte': ('mines-foes/acolyte', 'cinder-acolyte/01_front.png', 160, 1, twelve('cinder-acolyte', TWELVE_FILES)),
@@ -513,6 +519,12 @@ SHEETS = {
         ('rift-throne-boss/walk-side-4.png', 4, 1, 400, 'side/walk'),
         ('rift-throne-boss/walk-front.png', 4, 1, 400, 'walkF'),
         ('rift-throne-boss/walk-back.png', 4, 1, 400, 'walkB'),
+    ],
+    'crucible-wyrm': [
+        ('crucible-wyrm/walk-side-4.png', 4, 1, 332, 'side/walk'),
+        ('crucible-wyrm/fly-side-4.png', 4, 1, 387, 'side/fly'),
+        ('crucible-wyrm/walk-front.png', 4, 1, 350, 'walkF'),
+        ('crucible-wyrm/walk-back.png', 4, 1, 345, 'walkB'),
     ],
     'magma-golem': [
         ('magma-golem/walk-side-4.png', 4, 1, 353, 'side/walk'),

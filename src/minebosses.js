@@ -10,7 +10,11 @@
         turns: the left breathes a sweeping cone of fire, the middle spins a spiral, the right lobs lava globs that
         leave pools. Its health is the three heads end to end: each third lost cuts a head (and its attack) off. A cut
         head grows back after `regrow` s (a third of the bar back) unless the next is cut first; all three down and
-        the body falls. */
+        the body falls.
+     D. The Crucible Wyrm (the Deepfire Roost), drawn by Robert: on the ground it stalks you for claw and tail combos
+        and beats its wings to throw you back. Then it takes off and strafes the room: each run is marked on the floor
+        first and leaves a lane of burning pools. It ends in a dive at you (a marked circle, a slam, a ring of rocks)
+        and lands panting: blows deal more then. Out of reach while it flies. */
 "use strict";
 (function (DL) {
   const G = DL.Game, TAU = Math.PI * 2, { rand, dist } = DL;
@@ -21,10 +25,11 @@
   const sfx = (n) => DL.Sound && DL.Sound.play(n);
   const sideOn = (a) => (Math.cos(a) >= 0 ? 0 : Math.PI);
   // which boss waits in which room
-  MB.ROOMS = { forge: "golem", pit: "hydra" };
+  MB.ROOMS = { forge: "golem", pit: "hydra", roost: "wyrm" };
   const WAKE = {
     golem: "Fire curtains roar up. In the forge's heart the stone stirs: the Magma Golem wakes!",
     hydra: "Fire curtains roar up. The pit's mound splits and three heads rise: the Furnace Hydra!",
+    wyrm: "Fire curtains roar up. Wings beat in the smoke above: the Crucible Wyrm comes down!",
   };
 
   let fists = [], pools = [];
@@ -77,6 +82,7 @@
     e.moving = false; e.state = "move";
     if (e.def.mine === "golem") golem(e, dt, p, dp);
     else if (e.def.mine === "hydra") hydra(e, dt, p, dp);
+    else if (e.def.mine === "wyrm") wyrm(e, dt, p, dp);
     return true;
   };
   function golem(e, dt, p, dp) {
@@ -254,8 +260,161 @@
     if (e.t <= 0) { e.act = "after"; e.t = 0.3; }
   }
 
-  // what a blow does to it: double while the golem's core is open; nothing while a boss wakes
-  MB.soak = (e, d) => (e.act === "wake" ? 0 : e.act === "core" ? d * N().golem.coreDmg : d);
+  /* ---------------- D. the Crucible Wyrm ---------------- */
+  const face = (e, a) => { e.angle = a; return sideOn(a); };
+  const roostBox = (m) => { const f = DL.Mines.FLOORS.roost; return [OX() + f[0] + m, OY() + f[1] + m, OX() + f[2] - m, OY() + f[3] - m]; };
+  // where a line through (x, y) along angle a leaves the room, both ways
+  function across(x, y, a) {
+    const [x0, y0, x1, y1] = roostBox(110);
+    [x, y] = [DL.clamp(x, x0, x1), DL.clamp(y, y0, y1)];
+    const reach = (dx, dy) => Math.min(dx > 0 ? (x1 - x) / dx : dx < 0 ? (x0 - x) / dx : 1e9, dy > 0 ? (y1 - y) / dy : dy < 0 ? (y0 - y) / dy : 1e9);
+    const dx = Math.cos(a), dy = Math.sin(a), tf = reach(dx, dy), tb = reach(-dx, -dy);
+    return [x - dx * tb, y - dy * tb, x + dx * tf, y + dy * tf];
+  }
+  const inRoost = (x, y) => { const [x0, y0, x1, y1] = roostBox(110); return [DL.clamp(x, x0, x1), DL.clamp(y, y0, y1)]; };
+  function wyrm(e, dt, p, dp) {
+    const n = N().wyrm, s = e.def.size, a = Math.atan2(p.y - e.y, p.x - e.x), half = e.hp / e.maxHp < 0.5;
+    if (e.act) { e.t -= dt; return ({ wake: wDescend, claw, tail, beat, rise, toA, lane, run, dive, slamDown, pant, after: wAfter })[e.act](e, dt, p, a); }
+    e.lift = 0;
+    e.ground = (e.ground || 0) + dt;
+    if (e.ground > n.ground * (half ? 0.75 : 1)) { e.ground = 0; e.act = "rise"; e.t = n.rise; e.runs = half ? n.runs + 1 : n.runs; sfx("whisper"); return; }
+    if (dp > n.reach * s) { // stalking you
+      e.x += Math.cos(a) * e.speed * dt; e.y += Math.sin(a) * e.speed * dt;
+      e.angle = a; e.moving = true; e.anim = null;
+      e.close = 0;
+    } else {
+      e.angle = a; e.anim = ["idle", 0, sideOn(a)];
+      e.close = (e.close || 0) + dt;
+      e.next -= dt;
+      if (e.next > 0) return;
+      e.aim = a;
+      if (e.close > n.crowd) { e.act = "beat"; e.t = n.beat; e.close = 0; }
+      else { e.act = "claw"; e.t = n.claw; }
+    }
+  }
+  function wDescend(e) { // it comes down into the roost
+    e.lift = Math.max(0, 260 * (e.t / 1.4));
+    e.anim = [e.t > 0.3 ? "fly" : "land", Math.floor(G.t * 10), face(e, e.angle)];
+    if (e.t <= 0) { e.lift = 0; G.camera.shake = 10; e.act = "after"; e.t = 0.6; e.next = 0.5; }
+  }
+  function strike(e, R, arc, dmg, by) {
+    const p = G.player, d = Math.hypot(p.x - e.x, (p.y - e.y) * 1.4), a = Math.atan2(p.y - e.y, p.x - e.x);
+    let off = Math.abs(a - e.aim); if (off > Math.PI) off = TAU - off;
+    if (d < R && (arc >= Math.PI || off < arc / 2)) G.hurtPlayer(dmg, a, by);
+  }
+  // claw: a swipe in front, then the tail sweeps all round
+  function claw(e) {
+    const n = N().wyrm, s = e.def.size;
+    e.anim = ["attackA", 0, face(e, e.aim)];
+    if (e.t > 0) return;
+    strike(e, n.clawR * s, 2.0, e.dmg * n.clawDmg, "the Crucible Wyrm's claws");
+    sfx("hit");
+    for (let i = 0; i < 8; i++) G.spark(e.x + Math.cos(e.aim) * 80 * s, e.y + Math.sin(e.aim) * 40 * s - 30, "255,170,80", 160);
+    e.act = "tail"; e.t = n.tail;
+  }
+  function tail(e) {
+    const n = N().wyrm, s = e.def.size;
+    e.anim = ["attackB", 0, face(e, e.aim)];
+    if (e.t > 0) return;
+    strike(e, n.tailR * s, TAU, e.dmg * n.tailDmg, "the Crucible Wyrm's tail");
+    G.camera.shake = Math.max(G.camera.shake || 0, 6);
+    DL.Bullets.ring(e.x, e.y - 10, n.tailRocks, rand(0, TAU), { by: "a flung rock", dmg: n.bulletDmg, speed: n.rockSpeed, kind: 7 });
+    sfx("hit");
+    e.act = "after"; e.t = 0.6;
+  }
+  // wing beat: a gust that throws knights back
+  function beat(e) {
+    const n = N().wyrm, p = G.player;
+    e.anim = ["fly", e.t > n.beat / 2 ? 0 : 4, face(e, e.aim)];
+    if (e.t > 0) return;
+    const a = Math.atan2(p.y - e.y, p.x - e.x), d = Math.hypot(p.x - e.x, p.y - e.y);
+    if (d < n.gustR * e.def.size && !(p.dashT > 0)) { p.kx = Math.cos(a) * n.gust; p.ky = Math.sin(a) * n.gust; }
+    for (let i = 0; i < 20; i++) { const b = rand(0, TAU); G.puff(e.x + Math.cos(b) * 60, e.y + Math.sin(b) * 30, "rgba(200,170,150,0.6)", 160, 0.6, 0); }
+    G.camera.shake = Math.max(G.camera.shake || 0, 5);
+    sfx("whisper");
+    e.act = "after"; e.t = 0.4;
+  }
+  // into the air
+  function rise(e) {
+    const n = N().wyrm;
+    e.lift = n.alt * (1 - Math.max(0, e.t) / n.rise);
+    e.anim = ["fly", Math.floor(G.t * 10), face(e, e.angle)];
+    if (e.t <= 0) nextRun(e);
+  }
+  function nextRun(e) {
+    const p = G.player, n = N().wyrm;
+    if (e.runs-- <= 0) { e.act = "dive"; e.t = n.diveAim; return; }
+    const [ax, ay, bx, by] = across(p.x, p.y, rand(0, TAU));
+    // start from the nearer end
+    const near = Math.hypot(ax - e.x, ay - e.y) < Math.hypot(bx - e.x, by - e.y);
+    e.ax = near ? ax : bx; e.ay = near ? ay : by; e.bx = near ? bx : ax; e.by = near ? by : ay;
+    e.act = "toA"; e.t = 3;
+  }
+  // flying round to the start of a run
+  function toA(e, dt) {
+    const n = N().wyrm, d = Math.hypot(e.ax - e.x, e.ay - e.y), a = Math.atan2(e.ay - e.y, e.ax - e.x), st = n.fly * dt;
+    e.lift = n.alt;
+    e.anim = ["fly", Math.floor(G.t * 10), face(e, a)];
+    if (d > st && e.t > 0) { e.x += Math.cos(a) * st; e.y += Math.sin(a) * st; return; }
+    e.x = e.ax; e.y = e.ay;
+    e.act = "lane"; e.t = n.mark;
+  }
+  // the run is marked on the floor, then it goes
+  function lane(e) {
+    e.anim = ["fly", Math.floor(G.t * 10), face(e, Math.atan2(e.by - e.y, e.bx - e.x))];
+    if (e.t > 0) return;
+    e.act = "run"; e.t = 4; e.drop = 0;
+    sfx("torch");
+  }
+  function run(e, dt) {
+    const n = N().wyrm, d = Math.hypot(e.bx - e.x, e.by - e.y), a = Math.atan2(e.by - e.y, e.bx - e.x), st = n.dash * dt, p = G.player;
+    e.anim = ["fly", Math.floor(G.t * 14), face(e, a)];
+    const mv = Math.min(d, st);
+    e.x += Math.cos(a) * mv; e.y += Math.sin(a) * mv;
+    e.drop += mv;
+    while (e.drop >= n.laneStep) {
+      e.drop -= n.laneStep;
+      pools.push({ x: e.x + rand(-6, 6), y: e.y + rand(-4, 4), r: n.laneR, t: 0, life: n.laneLife, dmg: n.laneDmg });
+    }
+    // it rakes whoever it passes over
+    if (Math.hypot(p.x - e.x, (p.y - e.y) * 1.4) < 60 * e.def.size && !(p.dashT > 0)) G.hurtPlayer(e.dmg * n.runDmg, a, "the Crucible Wyrm's strafing run");
+    if (d <= st || e.t <= 0) nextRun(e);
+  }
+  // the dive: a circle follows you, then it locks and it comes down there
+  function dive(e, dt, p) {
+    const n = N().wyrm;
+    e.lift = n.alt;
+    e.anim = ["fly", Math.floor(G.t * 10), face(e, Math.atan2(p.y - e.y, p.x - e.x))];
+    if (e.t > n.diveLock) { [e.tx, e.ty] = inRoost(p.x, p.y); }
+    if (e.t > 0) return;
+    e.act = "slamDown"; e.t = n.diveFly; e.fx = e.x; e.fy = e.y;
+    sfx("whisper");
+  }
+  function slamDown(e) {
+    const n = N().wyrm, k = 1 - Math.max(0, e.t) / n.diveFly;
+    e.x = e.fx + (e.tx - e.fx) * k; e.y = e.fy + (e.ty - e.fy) * k; e.lift = n.alt * (1 - k);
+    e.anim = ["dive", 0, face(e, Math.atan2(e.ty - e.fy, e.tx - e.fx))];
+    if (e.t > 0) return;
+    e.lift = 0; e.aim = e.angle;
+    strike(e, n.slamR * e.def.size, TAU, e.dmg * n.slamDmg, "the Crucible Wyrm's dive");
+    DL.Bullets.ring(e.x, e.y - 10, n.slamRocks, rand(0, TAU), { by: "a flung rock", dmg: n.bulletDmg, speed: n.rockSpeed, kind: 7 });
+    G.camera.shake = 13;
+    sfx("hit");
+    for (let i = 0; i < 24; i++) G.puff(e.x + rand(-90, 90), e.y + rand(-30, 30), "rgba(255,130,40,0.8)", 120, 0.8, -20);
+    e.act = "pant"; e.t = n.pant;
+    say("The Wyrm lands panting: strike now!", "good");
+  }
+  function pant(e) {
+    e.anim = [e.t > N().wyrm.pant - 0.4 ? "land" : "attackC", 0, sideOn(e.angle)];
+    if (Math.random() < 0.15) G.puff(e.x + Math.cos(e.angle) * 80, e.y - 30, "rgba(90,80,80,0.6)", 40, 0.8, -20);
+    if (e.t <= 0) { e.act = "after"; e.t = 0.3; e.next = 0.6; }
+  }
+  function wAfter(e) { if (e.t <= 0) { e.act = null; e.anim = null; e.next = N().wyrm.every; } }
+  const flying = (e) => e.def.mine === "wyrm" && (e.lift || 0) > 30;
+
+  // what a blow does to it: double while the golem's core is open, more while the wyrm pants; nothing while a boss
+  // wakes or the wyrm is in the air
+  MB.soak = (e, d) => (e.act === "wake" || flying(e) ? 0 : e.act === "core" ? d * N().golem.coreDmg : e.act === "pant" ? d * N().wyrm.pantDmg : d);
   MB.slain = function (e) {
     DL.Bullets.clear();
     fists = [];
@@ -290,6 +449,28 @@
       c.beginPath(); c.ellipse(e.x, e.y, R, R / 1.5, 0, 0, TAU); c.stroke();
       c.fillStyle = `rgba(255,110,30,${0.1 + 0.25 * k})`;
       c.beginPath(); c.ellipse(e.x, e.y, R * k, (R / 1.5) * k, 0, 0, TAU); c.fill();
+    }
+    // the Crucible Wyrm: its shadow while it flies, the run about to come, the dive's circle
+    for (const e of G.enemies) {
+      if (e.def.mine !== "wyrm" || e.removed) continue;
+      const n = N().wyrm, s = e.def.size;
+      if (e.lift > 0 && vis(view, e.x, e.y, 200)) {
+        const k = 1 - Math.min(1, e.lift / n.alt) * 0.5;
+        c.fillStyle = `rgba(0,0,0,${0.35 * k})`; c.beginPath(); c.ellipse(e.x, e.y, 90 * s * k, 30 * s * k, 0, 0, TAU); c.fill();
+      }
+      if (e.act === "lane" || e.act === "run") {
+        const k = e.act === "lane" ? 1 - Math.max(0, e.t) / n.mark : 1, a = Math.atan2(e.by - e.ay, e.bx - e.ax), w = 34 * s;
+        c.save(); c.translate(e.ax, e.ay); c.rotate(a);
+        c.fillStyle = `rgba(255,110,30,${e.act === "lane" ? 0.12 + 0.2 * k : 0.08})`;
+        c.fillRect(0, -w, Math.hypot(e.bx - e.ax, e.by - e.ay), w * 2);
+        c.restore();
+      }
+      if ((e.act === "dive" || e.act === "slamDown") && e.tx != null) {
+        const k = e.act === "dive" ? 1 - Math.max(0, e.t) / n.diveAim : 1, R = n.slamR * s;
+        c.strokeStyle = `rgba(255,150,50,${0.4 + 0.5 * k})`; c.lineWidth = 3;
+        c.beginPath(); c.ellipse(e.tx, e.ty, R, R / 1.4, 0, 0, TAU); c.stroke();
+        c.fillStyle = `rgba(255,110,30,${0.08 + 0.2 * k})`; c.fill();
+      }
     }
     // the Furnace Hydra's breath, about to come: a cone on the floor where it will sweep
     for (const e of G.enemies) {

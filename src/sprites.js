@@ -166,6 +166,7 @@
     riftLord(),
     magmaGolem(),
     furnaceHydra(),
+    crucibleWyrm(),
     // the Molten Mines' minions (src/minefoes.js), cut at res 4 on green
     Object.assign(walking("wretch", [108, 122], [65, 133], [70, 139], 4), { path: "assets/sprites/mines-foes/wretch/", keys: { wretch: [0, false] }, own: true }),
     Object.assign(walking("ashguard", [114, 186], [82, 178], [78, 178], 4), { path: "assets/sprites/mines-foes/ashguard/", keys: { ashguard: [0, false] }, own: true }),
@@ -382,6 +383,16 @@
     for (const f of files.slice(4)) if (!view[f]) view[f] = [f];
     return { path: "assets/sprites/mines-bosses/hydra/", keys: { hydra: [0, false] }, own: true, res: 4,
       views: { down: view, up: view, side: view }, feet: sheetFeet(files, [196, 400]) };
+  }
+  // The Crucible Wyrm (src/minebosses.js), cut at res 4: walks in all three views; flies, dives, lands and attacks
+  // side on only (claw = attackA, tail = attackB, panting = attackC). The side wing beats share one foot point.
+  function crucibleWyrm() {
+    const set = Object.assign(walking("wyrm", [256, 365], [202, 366], [198, 374], 4), { path: "assets/sprites/mines-bosses/wyrm/", keys: { wyrm: [0, false] }, own: true });
+    Object.assign(set.feet, sheetFeet([1, 2, 3, 4].map((i) => "side/fly" + i), [262, 389]));
+    const fly = [1, 1, 2, 2, 3, 3, 4, 4].map((i) => "side/fly" + i + "@-");
+    for (const dir of ["down", "up", "side"])
+      Object.assign(set.views[dir], { fly, dive: ["side/dive"], land: ["side/land"], attackA: ["attackA"], attackB: ["attackB"], attackC: ["attackC"] });
+    return set;
   }
   function magmaGolem() {
     const set = Object.assign(walking("golem", [148, 361], [159, 362], [166, 362], 4), { path: "assets/sprites/mines-bosses/golem/", keys: { golem: [0, false] }, own: true });

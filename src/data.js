@@ -207,6 +207,8 @@
       mine: "golem", boss: true, shadow: 60, barY: 200, barW: 70, drop: {} },
     hydra: { name: "The Furnace Hydra", hp: 1500, speed: 0, dmg: 22, range: 0, windup: 1, cd: 99, scale: 1, radius: 70, mass: 999,
       mine: "hydra", boss: true, shadow: 0, barY: 220, barW: 90, drop: {} },
+    wyrm: { name: "The Crucible Wyrm", hp: 1500, speed: 70, dmg: 24, range: 0, windup: 1, cd: 99, scale: 1, radius: 40, mass: 40,
+      mine: "wyrm", boss: true, shadow: 70, barY: 200, barW: 90, drop: {} },
     acolyte: { name: "Cinder Acolyte", hp: 55, speed: 62, dmg: 12, range: 250, windup: 0.6, cd: 2.6, scale: 1, radius: 12, mass: 0.9,
       hang: 250, mine: "acolyte", minion: true, look: "hexbearer", lookScale: 1, tint: "#d04010", tintK: 0.4, drop: {} },
   };
@@ -663,9 +665,9 @@
      height (`barY`) in DL.ENEMIES are multiplied by `size[type]` below, so each stands about three knights tall. The
      Sunken King is a scene of his own and keeps his size. */
   DL.BOSS = {
-    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6, riftlord: 1.5, golem: 1.25, hydra: 1.6 },
+    size: { colossus: 2.2, bell: 2.0, rose: 1.75, wyvern: 1.6, riftlord: 1.5, golem: 1.25, hydra: 1.6, wyrm: 1.35 },
     view: 820, viewR: 650, // within `viewR` px of an awake boss the camera pulls back to show at least `view` px top to bottom
-    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600, riftlord: 1800, golem: 1500, hydra: 1500 },
+    hp: { colossus: 2000, wyvern: 1700, bell: 1500, rose: 1700, king: 1600, riftlord: 1800, golem: 1500, hydra: 1500, wyrm: 1500 },
     perNight: 0.04, dmgNight: 0.05, perAlly: 0.6,
     stun: 0.3, immune: 3,
   };
@@ -868,7 +870,13 @@
        on the floor, then for `time` s a fan of `n` sparks across `spread` every `rate` s, sweeping `sweep` radians.
        spiral (middle): `arms` (+1 per lost head) fireballs every `rate` s for `time` s. lob (right): `n` globs (+1 once a
        head is lost) round you within `spread` px, landing in `fly` s: `dmg` within `r`, `shards` spatters, a pool.
-       A lost head grows back in `regrow` s unless the next is cut first. */
+       A lost head grows back in `regrow` s unless the next is cut first.
+     wyrm (D, the Deepfire Roost): on foot it stalks to `reach` px, then claw (`claw` s wind, `clawDmg` within `clawR`)
+       and tail (`tail` s, `tailDmg` all round within `tailR`, `tailRocks` bullets); a knight close for `crowd` s gets a
+       wing beat (`gust` px/s push within `gustR`). After `ground` s it rises (`rise` s, to `alt` px) for `runs` strafing
+       runs (+1 below half): marked `mark` s, flown at `dash` px/s, a burning pool every `laneStep` px (`laneR`,
+       `laneLife`, `laneDmg`). Then the dive: a circle follows you `diveAim` s (locks `diveLock` s before), a `diveFly` s
+       swoop, `slamDmg` within `slamR` and `slamRocks` rocks. It pants `pant` s after: blows deal x`pantDmg`. */
   DL.MINE_BOSSES = {
     zone: 4,
     golem: { at: [-1860, 560], every: 1.7, every2: 1.2, half: 0.5, keep: 110, raise: 1.0, hit: 0.6, r: 120, dmg: 1, ring: 26, gap: 0.55,
@@ -878,6 +886,10 @@
       breath: { wind: 0.7, time: 1.4, rate: 0.08, n: 3, spread: 0.35, sweep: 0.9, speed: 260, life: 1.6 },
       spiral: { wind: 0.6, arms: 3, rate: 0.2, spin: 1.5, time: 2.4, speed: 125 },
       lob: { wind: 0.6, n: 3, spread: 140, fly: 1.1, r: 56, dmg: 0.8, shards: 6, speed: 150 } },
+    wyrm: { at: [1210, -200], every: 0.9, reach: 120, claw: 0.55, clawR: 150, clawDmg: 1, tail: 0.5, tailR: 150, tailDmg: 0.8, tailRocks: 10,
+      crowd: 2.5, beat: 0.5, gust: 700, gustR: 220, ground: 9, rise: 0.8, alt: 150, runs: 2, mark: 0.8, fly: 420, dash: 620,
+      laneStep: 46, laneR: 40, laneLife: 5, laneDmg: 8, runDmg: 0.8, diveAim: 1.4, diveLock: 0.4, diveFly: 0.45, slamR: 130, slamDmg: 1.2,
+      slamRocks: 16, pant: 3, pantDmg: 1.5, bulletDmg: 9, rockSpeed: 150 },
   };
   DL.MINE_TRAPS = {
     grate: { every: 3.4, warn: 0.8, burn: 1, wave: 0.35, dmg: 14 }, // the Grate Run: a new pattern every 3.4 s
