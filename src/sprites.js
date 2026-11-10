@@ -164,6 +164,8 @@
     Object.assign(walking("swisp", [60, 124], [76, 134], [71, 132], 4), { path: "assets/sprites/spires-foes/swisp/", keys: { swisp: [0, false] }, own: true }),
     Object.assign(walking("warden", [87, 252], [64, 252], [68, 256], 4), { path: "assets/sprites/spires-foes/warden/", keys: { warden: [0, false] }, own: true }),
     riftLord(),
+    // the Molten Mines' minions (src/minefoes.js), cut at res 4 on green
+    Object.assign(walking("wretch", [108, 122], [65, 133], [70, 139], 4), { path: "assets/sprites/mines-foes/wretch/", keys: { wretch: [0, false] }, own: true }),
     minion("thornling", "thornling", 4, [[45, 87], [43, 82], [46, 83]]), // the Deadly Rose's Thornling Swarm Stalker
     minion("tidestalker", "tidestalker", 4, [[109, 123], [87, 134], [92, 138]]), // the Sunken King's Tide Stalker
     minion("wisp", "wisp", 4, [[108, 182], [112, 197], null]), // the Sunken Wisp: its front shows going away too (Robert)

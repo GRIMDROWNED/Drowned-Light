@@ -196,7 +196,7 @@
     /* The Ashen Sovereign's minions (Robert's sheet, 2026-11-09): the Molten Mines' only small foes (src/minefoes.js,
        numbers in DL.MINE_FOES). They walk and strike like the Drowned, with their own extras (`mine` names them). Until
        Robert's drawings are in they wear another unit's (`look`), washed with ember colours. */
-    wretch: { name: "Molten Wretch", hp: 26, speed: 118, dmg: 7, range: 28, windup: 0.32, cd: 1.1, scale: 1, radius: 10, mass: 0.6,
+    wretch: { name: "Molten Wretch", hp: 26, speed: 118, dmg: 7, range: 28, windup: 0.32, cd: 1.1, scale: 0.85, radius: 10, mass: 0.6,
       lunge: 340, zigzag: true, mine: "wretch", minion: true, look: "rosewretch", lookScale: 0.9, tint: "#ff6a1a", tintK: 0.4, drop: {} },
     ashguard: { name: "Ash Guard", hp: 150, speed: 40, dmg: 18, range: 44, windup: 0.8, cd: 2.2, scale: 1, radius: 16, mass: 4,
       shield: 0.75, mine: "guard", minion: true, look: "blackguard", lookScale: 1, tint: "#4a3a34", tintK: 0.35, barY: 100, drop: {} },
