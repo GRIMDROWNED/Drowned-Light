@@ -26,7 +26,7 @@
   G.defaultSave = () => ({
     v: 1, day: 1, nights: 0, deepest: 0, muted: false,
     stash: emptyRes(),
-    up: { fortress: 1, flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, roost: 0, bell: 0, roseheart: 0, crystal: 0, mistlantern: 0, magmaforge: 0, brazier: 0, firegate: 0 },
+    up: { fortress: 1, tier: 0, flame: 1, forge: 0, armory: 0, workbench: 0, garden: 0, tower: 0, pylon: 0, stakes: 0, kennel: 0, workshop: 0, shrine: 0, toadstool: 0, roost: 0, bell: 0, roseheart: 0, crystal: 0, mistlantern: 0, magmaforge: 0, brazier: 0, firegate: 0 },
     kit: "lanternBlade",
     kitLevel: 1,
     difficulty: "dark",
@@ -308,6 +308,7 @@
     const live = G.state === "play" || (G.state === "camp" && DL.Net.role && (G.isGuest() || G.allies.length));
     if (!live) return;
     if (G.isGuest()) { guestUpdate(dt); return; }
+    DL.Base.sync(); // a dungeon cleared raises the base a tier (src/refuge.js)
 
     const wasNight = G.night;
     if (G.cave) {
@@ -1841,7 +1842,10 @@
   G.pay = pay;
 
   // Why the next level of a building can't be built yet (null when it can, cost aside).
-  G.flameCap = () => Math.min(DL.FLAME.max, Math.max(1, DL.FLAME.perBarricade * G.save.up.stakes));
+  G.barricadeCap = () => Math.min(DL.FLAME.max, Math.max(1, DL.FLAME.perBarricade * G.save.up.stakes));
+  // The compact base (src/refuge.js) also caps the flame by its tier: clear the next dungeon to raise it.
+  G.baseCap = () => (DL.Refuge && DL.Refuge.on() && DL.Refuge.compact() ? DL.BASE.cap[DL.Refuge.tier()] : DL.FLAME.max);
+  G.flameCap = () => Math.min(G.barricadeCap(), G.baseCap());
   G.upgradeLock = function (u, lvl) {
     if (G.save.up.flame === 0) return "This world has fallen; begin a new game";
     if (u.trophy && !G.save.trophies[u.trophy]) return u.trophy === "bell" ? "Slay the Starved Bell first" : "Slay the Deadly Rose first";
@@ -1850,7 +1854,8 @@
     const needFlame = u.reqFlame(lvl + 1);
     if (G.save.up.flame < needFlame) return `Needs Central Flame ${needFlame}`;
     if (u.id === "flame") {
-      if (lvl + 1 > G.flameCap()) return `Needs Barricade ${Math.ceil((lvl + 1) / DL.FLAME.perBarricade)} (Flame limit ${G.flameCap()})`;
+      if (lvl + 1 > G.baseCap()) return `Clear another dungeon to raise the base (Flame limit ${G.baseCap()})`;
+      if (lvl + 1 > G.barricadeCap()) return `Needs Barricade ${Math.ceil((lvl + 1) / DL.FLAME.perBarricade)} (Flame limit ${G.barricadeCap()})`;
       const nights = DL.FLAME_NIGHTS[lvl + 1] || 0;
       if (G.save.nights < nights && !DL.SANDBOX) return `Needs ${nights} night${nights > 1 ? "s" : ""} survived (${G.save.nights} so far)`;
     }

@@ -16,8 +16,11 @@ const collide = (e, r, u) => {
   for (const s of DL.Camp.layout(u).solids) { const dx = e.x - s.x, dy = e.y - s.y, d = Math.hypot(dx, dy), m = s.r + r; if (d < m && d > 0.01) { e.x = s.x + dx / d * m; e.y = s.y + dy / d * m; } }
 };
 let checked = 0;
-for (let lv = 1; lv <= 20; lv++) for (const full of [true, false]) {
-  const u = { fortress: 1, flame: lv, stakes: full ? 5 : 0, ...Object.fromEntries(Object.keys(ALL).map((k) => [k, full ? ALL[k] : 0])) };
+// the old spreading fortress (fortress 2) at every level, and the compact base (fortress 1) at every tier and level
+const MODES = [{ fortress: 2 }, ...DL.BASE.tiers.map((_, t) => ({ fortress: 1, tier: t }))];
+for (const mode of MODES) for (let lv = 1; lv <= 20; lv++) for (const full of [true, false]) {
+  if (mode.fortress === 1 && lv > DL.BASE.cap[mode.tier] && lv !== 20) continue; // a flame above its tier's cap only comes from old saves
+  const u = { ...mode, flame: lv, stakes: full ? 5 : 0, ...Object.fromEntries(Object.keys(ALL).map((k) => [k, full ? ALL[k] : 0])) };
   G.save = { up: u };
   const L = DL.Camp.layout(u), R = L.R, S = 8, N = Math.ceil((R + 140) / S), W = 2 * N + 1;
   const ok = (x, y) => { const e = { x, y }; collide(e, 10, u); return Math.abs(e.x - x) < 0.01 && Math.abs(e.y - y) < 0.01; };
@@ -32,7 +35,7 @@ for (let lv = 1; lv <= 20; lv++) for (const full of [true, false]) {
     }
   }
   const reach = (x, y) => { for (let di = -3; di <= 3; di++) for (let dj = -3; dj <= 3; dj++) { const i = Math.round(x / S) + di, j = Math.round(y / S) + dj; if (Math.abs(i) <= N && Math.abs(j) <= N && seen[id(i, j)] === 1) return true; } return false; };
-  const tag = `level ${lv}${full ? " (all built)" : ""}`;
+  const tag = `${mode.fortress === 2 ? "old fortress" : "tier " + mode.tier} level ${lv}${full ? " (all built)" : ""}`;
   assert.ok(reach(0, 40), `${tag}: the flame can be reached`);
   for (const ring of DL.Refuge.blockers(u)) for (const st of ring.stairs) {
     const e = DL.Refuge.stairEnds(ring, st, 20);
@@ -41,6 +44,12 @@ for (let lv = 1; lv <= 20; lv++) for (const full of [true, false]) {
   for (const k of DL.Refuge.BUILDINGS) if (L[k]) assert.ok(reach(L[k].x, L[k].y + 26), `${tag}: ${k} can be reached`);
   for (const it of L.items) assert.ok(reach(it.x, it.y + 24), `${tag}: ${it.id} can be reached`);
   // Robert, 2026-11-04: buildings' whole top-level pictures must have room (no crowding) once the Inner Court stands
+  if (mode.fortress === 1) { // the compact base: every plot fixed, every building and refuge piece has its ground
+    assert.equal(L.missing.length, 0, `${tag}: everything has its ground (${L.missing})`);
+    assert.ok(R <= 660, `${tag}: compact (half-side ${R})`);
+    const all = L.plots.map((p) => [p.x - p.hw, p.y - p.hw, p.x + p.hw, p.y]);
+    for (let a = 0; a < all.length; a++) for (let b = a + 1; b < all.length; b++) assert.ok(all[a][2] <= all[b][0] || all[b][2] <= all[a][0] || all[a][3] <= all[b][1] || all[b][3] <= all[a][1], `${tag}: plots ${a} and ${b} overlap`);
+  }
   if (lv >= 5) for (const k of DL.Refuge.BUILDINGS) assert.ok(!(L[k] && L.missing.includes(k)), `${tag}: ${k} has room for its biggest picture`);
   for (const k of DL.Refuge.BUILDINGS) if (L[k]) assert.ok(DL.Camp.sq(L[k].x, L[k].y) < R, `${tag}: ${k} inside the walls`);
   for (const b of DL.Refuge.bedsAt(lv)) assert.ok(reach(b.x, b.y) && ok(b.x, b.y) && !L.items.concat(L.plots).some((p) => Math.abs(p.x - b.x) < b.half + p.hw && Math.abs(p.y - b.y) < b.half + p.hw), `${tag}: marsh bed ${b.i} is open ground`);
@@ -57,13 +66,24 @@ for (let lv = 1; lv <= 20; lv++) for (const full of [true, false]) {
   }
   checked++;
 }
-const g20 = DL.Refuge.geo(20);
+// plots don't move while a tier stands: built or not, at any flame level
+for (let t = 0; t < DL.BASE.tiers.length; t++) {
+  const a = DL.Camp.layout({ fortress: 1, tier: t, flame: 3, stakes: 5, ...ALL }), b = DL.Camp.layout({ fortress: 1, tier: t, flame: DL.BASE.cap[t], stakes: 5, ...ALL });
+  for (const k of DL.Refuge.BUILDINGS) assert.equal(JSON.stringify(a[k]), JSON.stringify(b[k]), `tier ${t}: ${k} keeps its plot as the flame rises`);
+}
+G.save = { up: { fortress: 2, flame: 20 } };
+const g20 = DL.Refuge.geo(20, -1);
 assert.equal(g20.rings[0].stairs.length, 12, "12 stairs on the outside at level 20");
 for (let s = 0; s < 4; s++) assert.equal(g20.rings[0].stairs.filter((q) => q.s === s).length, 3, "3 stairs on each side");
 for (let lv = 2; lv <= 20; lv++) {
-  const a = DL.Refuge.geo(lv - 1), b = DL.Refuge.geo(lv), info = DL.REFUGE.levels[lv];
+  const info = DL.REFUGE.levels[lv];
   assert.ok(info && info.name && info.text, `level ${lv} has a name and description`);
 }
 assert.equal(DL.Refuge.on({ flame: 3 }), true, "an old save with no switch gets the Refuge");
 assert.equal(DL.Refuge.on({ fortress: 0 }), false, "fortress 0 is the old squares");
-console.log(`Refuge checks passed: ${checked} layouts (levels 1-20, all built and none): reachability, marsh beds, 12 outer stairs, routing in and out, the switch.`);
+assert.equal(DL.Refuge.compact({ fortress: 1 }), true, "fortress 1 (and old saves) is the compact base");
+assert.equal(DL.Refuge.tier({ fortress: 2, tier: 3 }), -1, "fortress 2 is the old spreading fortress");
+DL.SANDBOX = false;
+assert.equal(DL.Base.tier({ up: {}, riftlord: 1, sovereign: 2 }), 2, "the Rift Throne and the Sovereign count as two dungeons");
+assert.equal(DL.Base.tier({ up: {}, riftlord: 1, dungeons: { spires: 1, deep: 1 } }), 2, "save.dungeons and the old flags don't double count");
+console.log(`Refuge checks passed: ${checked} layouts (old fortress levels 1-20, compact base tiers 0-8, all built and none): reachability, fixed plots, marsh beds, 12 outer stairs, routing in and out, the switch.`);

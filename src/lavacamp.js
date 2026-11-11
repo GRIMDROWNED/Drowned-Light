@@ -36,7 +36,11 @@
 
   /* ---------------- the Forge Gate ---------------- */
   LC.gateOpen = () => { const h = G.save.minesHearts || {}; return N().gate.bosses.every((b) => h[b]); };
-  LC.gateSpot = () => (LC.gateOpen() ? { x: Math.round(N().gate.fx * DL.WALL_R), y: Math.round(N().gate.fy * DL.WALL_R) } : null);
+  LC.gateSpot = () => {
+    if (!LC.gateOpen()) return null;
+    const L = DL.Camp.layout(G.save.up); // the compact base (src/refuge.js) keeps fixed ground for it
+    return L && L.compact && L.forgeGate ? L.forgeGate : { x: Math.round(N().gate.fx * DL.WALL_R), y: Math.round(N().gate.fy * DL.WALL_R) };
+  };
   let atGate = false;
   LC.local = function () {
     const p = G.player, s = LC.gateSpot();

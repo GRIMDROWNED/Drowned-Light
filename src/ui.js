@@ -80,7 +80,9 @@
     // The Refuge switch (src/refuge.js): the new terraced fortress, or the old grid of squares. Saved squares are kept.
     $("btnRefuge").addEventListener("click", () => {
       if (G.isGuest()) return UI.toast("Only the host can switch the refuge.", "warn");
-      G.save.up.fortress = DL.Refuge.on() ? 0 : 1;
+      // compact base (1) -> the old spreading fortress (2) -> the squares (0) -> compact base
+      const f = G.save.up.fortress == null ? 1 : G.save.up.fortress;
+      G.save.up.fortress = f === 1 ? 2 : f === 2 ? 0 : 1;
       DL.Camp.sync(G.save.up);
       DL.Outposts.reset();
       G.resetPylons();
@@ -102,6 +104,14 @@
     });
     // Sandbox only: raise the Spark Bearer now, or put the Portal Hall back to sleep (src/finale.js)
     $("btnBearer").addEventListener("click", () => { UI.resume(); DL.Finale.sandbox(); });
+    // Sandbox only: try every tier of the compact base (src/refuge.js) without clearing the dungeons
+    $("btnTier").addEventListener("click", () => {
+      const n = DL.BASE.tiers.length;
+      G.save.sandboxTier = ((DL.Base.tier() || 0) + 1) % n;
+      DL.Base.sync();
+      G.persist();
+      $("btnTier").textContent = "Sandbox: base tier " + DL.Base.tier();
+    });
     $("btnCombat").addEventListener("click", () => {
       G.save.attackMode = G.save.attackMode === "manual" ? "auto" : "manual";
       G.persist();
@@ -325,6 +335,8 @@
     $("btnSpires").textContent = DL.Spires.active() ? "Leave the Spires (keep half)" : "Sandbox: the Abyssal Spires";
     $("btnSpires").classList.toggle("hidden", !DL.SANDBOX || !!DL.Net.role || !!G.cave || DL.Mines.active());
     $("btnMines").classList.toggle("hidden", !DL.SANDBOX || DL.Net.role === "guest" || !!G.cave || DL.Spires.active()); // the host takes a party in (step 9)
+    $("btnTier").classList.toggle("hidden", !DL.SANDBOX || DL.Net.role === "guest" || !DL.Refuge.on() || !DL.Refuge.compact());
+    $("btnTier").textContent = "Sandbox: base tier " + DL.Base.tier();
     $("btnMines").textContent = DL.Mines.active() ? "Leave the Molten Mines" : "Sandbox: the Molten Mines";
     $("btnBearer").classList.toggle("hidden", !DL.SANDBOX || DL.Net.role === "guest" || !!G.cave || DL.Dungeon.active());
     $("btnBearer").textContent = DL.Finale.sandboxLabel();
@@ -680,7 +692,7 @@
   };
 
   /* ---------------- camp menu ---------------- */
-  UI.updateRefugeLabel = () => { const b = $("btnRefuge"); if (b) b.textContent = "Refuge: " + (DL.Refuge.on() ? "Fortress" : "Squares"); };
+  UI.updateRefugeLabel = () => { const b = $("btnRefuge"); if (b) b.textContent = "Base: " + (!DL.Refuge.on() ? "Squares" : DL.Refuge.compact() ? "Compact" : "Old fortress"); };
 
   // The camp button (and the C key): enter the camp, open a square's paths, or claim the square you stand in (src/pyramid.js).
   UI.campLabel = function () {
@@ -829,7 +841,8 @@
           ${DL.Finale.guideLine() ? `<li>${DL.Finale.guideLine()}</li>` : ""}
           <li><b>Black Pearls</b> are found only in the Abyss: in clams half sunk in its mud, now and then on its Drowned, and on its great bosses. The last levels of the camp need them.</li>
           <li>${DL.Siege.line()}${s.trophies.bell ? " Your Bell Tower, hung with the Starved Bell's clapper, warns of every wave." : ""}</li>
-          ${DL.Refuge.on() ? `<li>Grow the <b>Refuge</b>: every Central Flame level builds the fortress round it, from a hearth to a terraced stronghold with stairs on every side. ${DL.Refuge.line()}. At level ${DL.FLAME.max} the refuge is complete.</li>` : ""}
+          ${DL.Refuge.on() && DL.Refuge.compact() ? `<li>Grow the <b>Refuge</b>: every dungeon you clear rebuilds the base a tier grander, and each tier lets the Central Flame climb higher. ${DL.Refuge.line()}.</li>` : ""}
+          ${DL.Refuge.on() && !DL.Refuge.compact() ? `<li>Grow the <b>Refuge</b>: every Central Flame level builds the fortress round it, from a hearth to a terraced stronghold with stairs on every side. ${DL.Refuge.line()}. At level ${DL.FLAME.max} the refuge is complete.</li>` : ""}
           ${DL.Refuge.on() ? "" : `<li>Grow the <b>Pyramid</b>: stand near the middle of a square next to your land and claim it. It rises out of the marsh with a fire at its heart, and every Central Flame level lets you hold ${DL.PYRAMID.perFlame} more. ${DL.Pyramid.line()}. Supplies brought to a square's fire go home${DL.Kindle.lit() ? ", and with your Kindle lit you can travel between your squares and the camp" : ". Something lost in the Mire still remembers the old paths between them"}.</li>`}
           <li>Fall, and your <b>drowned self</b> keeps your supplies. Slay it to get them back.</li>
         </ul></article>`;
@@ -1121,7 +1134,7 @@
     set($("coopChip"), "hidden", !coopText);
     const d = Math.hypot(p.x, p.y);
     set($("homeArrow"), "transform", `rotate(${(Math.atan2(-p.y, -p.x) * 180) / Math.PI}deg)`);
-    set($("homeDist"), "text", (DL.SANDBOX ? "SANDBOX · " : "") + (G.cave ? (G.cave.hall ? "Camp: up the stair" : "Camp: far above") : G.spires ? (G.spires.lv === "mines" ? "Camp: beyond the heat" : "Camp: beyond the mist") : (DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`) + (DL.Finale.stage() >= 1 ? "" : DL.Refuge.on() ? ` · Refuge ${DL.Refuge.level()} of ${DL.FLAME.max}` : ` · Pyramid ${Math.floor(DL.Pyramid.coverage() * 100)}% of ${Math.round(DL.PYRAMID.win * 100)}%`)));
+    set($("homeDist"), "text", (DL.SANDBOX ? "SANDBOX · " : "") + (G.cave ? (G.cave.hall ? "Camp: up the stair" : "Camp: far above") : G.spires ? (G.spires.lv === "mines" ? "Camp: beyond the heat" : "Camp: beyond the mist") : (DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`) + (DL.Finale.stage() >= 1 ? "" : DL.Refuge.on() ? (DL.Refuge.compact() ? ` · Base tier ${DL.Refuge.tier()} of ${DL.BASE.tiers.length - 1}` : ` · Refuge ${DL.Refuge.level()} of ${DL.FLAME.max}`) : ` · Pyramid ${Math.floor(DL.Pyramid.coverage() * 100)}% of ${Math.round(DL.PYRAMID.win * 100)}%`)));
     // the way to Derek's Hollow, once found, until you've won him
     const cn = DL.Cave.showNav();
     set($("caveNav"), "hidden", !cn);

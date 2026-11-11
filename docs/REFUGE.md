@@ -1,5 +1,13 @@
 # The Refuge: a 20-level fortress in place of the square grid
 
+> **2026-11-10: the compact base replaces this by default.** Robert found the fortress too big to walk. The base now stays
+> a small walled town (half-side 470 at tier 0 to 630 at tier 8) that is **rebuilt in place** each time a dungeon's boss
+> falls: base tier = dungeons cleared (`DL.Base`, `DL.BASE`). Each tier sets the outer wall's size and drawn look
+> (Robert's T2-T7 terrace pictures), adds side stairs from tier 3 and lit pieces, and raises the Central Flame's cap
+> (5, 7, 9 ... 20). All buildings get fixed plots per tier. The Portal Hall (the Spark Bearer's portal room door) has
+> reserved ground at the end of the north avenue, with a stair either side of it. The pause switch cycles
+> Compact / Old fortress / Squares; everything below describes the old fortress (`save.up.fortress` 2).
+
 Status: **built on a branch for Robert to try (v0.15.203)**. Robert asked for it 2026-11-03 and chose that the fortress
 **replaces the whole square grid** (he may switch to "replaces only the camp" later). Target look: Robert's concept
 (`/mnt/project-files/refuge/fortress-concept-L20.png`) and his 20-stage sheet (`build-stages-1-20.png`).

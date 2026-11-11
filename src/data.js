@@ -1174,6 +1174,32 @@
     },
   };
 
+  /* The compact base (Robert, 2026-11-10; plan "Compact base that grows with dungeons"): the Refuge stays a small walled
+     town that is REBUILT IN PLACE as dungeons are cleared, instead of spreading over the map with the Central Flame.
+     Base tier = dungeons whose boss has fallen (DL.Base.cleared(), src/refuge.js), 0..8. Each tier: the outer wall's
+     half-side `R` and the drawn terrace look it is rebuilt in (`kit`, Robert's T1-T7 pictures), side stairs (`side`,
+     a fraction of R either side of the middle on the east, south and west walls). `cap` = the Central Flame's highest
+     level at that tier: the only way to keep levelling the base is the next dungeon. The north wall has no central
+     stair: the Portal Hall (the Spark Bearer's portal room door) stands at the end of the north avenue, with a stair
+     either side of it (`hall`). save.up.fortress: 1/missing = this compact base, 2 = the old spreading fortress, 0 = squares. */
+  DL.BASE = {
+    tiers: [
+      { R: 470, kit: "low" },                  // 0: the first camp (low walls from Flame 3)
+      { R: 490, kit: "court" },                // 1: Abyssal Spires
+      { R: 510, kit: "mward" },                // 2: Molten Mines
+      { R: 530, kit: "ward", side: 0.62 },     // 3
+      { R: 550, kit: "lward", side: 0.62 },    // 4
+      { R: 570, kit: "curt", side: 0.62 },     // 5
+      { R: 590, kit: "great", side: 0.62 },    // 6
+      { R: 610, kit: "great", side: 0.62 },    // 7
+      { R: 630, kit: "great", side: 0.62 },    // 8: all eight dungeons
+    ],
+    cap: [5, 7, 9, 11, 13, 15, 17, 19, 20],
+    dungeons: ["spires", "mines"],            // the first two; the portal room's next six add theirs (save.dungeons[id] = 1)
+    hall: { hw: 84, h: 170, gap: 150 },       // the Portal Hall's reserved picture box; the north stairs stand `gap` px either side
+    torches: 3, braziers: 5, lamps: 6, beacons: 8, // the tier these lit pieces appear from
+  };
+
   // What the Refuge's upper works do (Robert's picks, 2026-11-04; src/works.js). Each works once its refuge level stands.
   DL.WORKS = {
     alchemy: { resin: 4, max: 3 },                       // each dawn brews a lantern-oil flask from 4 resin (holds 3); an empty lantern drinks one

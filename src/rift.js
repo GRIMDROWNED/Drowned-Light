@@ -75,9 +75,14 @@
     c.save(); c.translate(x, y); c.scale(-1, 1); c.drawImage(im, -w / 2, -h, w, h); c.restore();
   };
   // where the camp's Mist Lantern stands: fractions of the palisade's half-side, east of the Flame, south of the cross paths
-  const LANTERN = { fx: 0.55, fy: 0.24 };
+  const LANTERN = { fx: 0.55, fy: 0.24 }, PORTAL = { fx: -0.56, fy: 0.26, k: 0.36 };
   const at = (q) => ({ x: Math.round(q.fx * DL.WALL_R), y: Math.round(q.fy * DL.WALL_R) });
-  Rift.lanternSpot = () => (G.save.up.mistlantern ? at(LANTERN) : null);
+  // the compact base (src/refuge.js) keeps fixed ground for it, clear of its buildings
+  const fixed = (k) => { const L = DL.Camp.layout(G.save.up); return L && L.compact ? L[k] : null; };
+  Rift.lanternSpot = () => (G.save.up.mistlantern ? fixed("mistLantern") || at(LANTERN) : null);
+  // the Rift Portal stands in camp as the Spires' monument once every Mist Well burns (no longer a way through:
+  // the dungeons are reached from the Portal Hall, src/finale.js)
+  Rift.portalSpot = () => (Rift.portal() ? fixed("riftPortal") || at(PORTAL) : null);
 
   /* ---------------- the Crystal Turret ---------------- */
   const GATES = [-Math.PI / 2, Math.PI / 2, 0, Math.PI]; // north and south first, then east and west
@@ -122,6 +127,8 @@
     if (lv) Rift.spots().forEach((s, i) => list.push({ y: s.y, f: () => (IMG["turret-" + lv] ? turretArt(c, s, i, lv, t) : turret(c, s.x, s.y, t + i)) }));
     const ls = Rift.lanternSpot(), ll = Math.min(3, G.save.up.mistlantern || 0), li = IMG["lantern-" + ll];
     if (ls && li) list.push({ y: ls.y, f: () => draw(c, li, ls.x, ls.y + 4) });
+    const ps = Rift.portalSpot(), pi = IMG["portal-on"];
+    if (ps && pi) list.push({ y: ps.y, f: () => portalArt(c, pi, ps, t) });
     if (hits.length && IMG.hit) list.push({ y: 1e9, f: () => {
       for (const h of hits) { c.globalAlpha = 1 - h.t / 0.25; draw(c, IMG.hit, h.x, h.y + 11, 0.4 + h.t); }
       c.globalAlpha = 1;
@@ -140,6 +147,17 @@
     const gy = s.y - HEAD[lv], g = c.createRadialGradient(s.x, gy, 0, s.x, gy, 30);
     g.addColorStop(0, `rgba(200,150,255,${0.22 + 0.1 * Math.sin(t * 3 + i)})`); g.addColorStop(1, "rgba(200,150,255,0)");
     c.fillStyle = g; c.fillRect(s.x - 30, gy - 30, 60, 60);
+    c.restore();
+  }
+  // the Rift Portal: its swirl slowly turning (a soft pulse over the drawn disc)
+  function portalArt(c, im, ps, t) {
+    c.fillStyle = "rgba(0,0,0,0.3)"; c.beginPath(); c.ellipse(ps.x, ps.y - 2, im.width * PORTAL.k * 0.45, 9, 0, 0, Math.PI * 2); c.fill();
+    draw(c, im, ps.x, ps.y + 4, PORTAL.k);
+    const h = im.height * PORTAL.k, cy = ps.y + 4 - h * 0.56, r = im.width * PORTAL.k * 0.24;
+    c.save(); c.globalCompositeOperation = "lighter";
+    const g = c.createRadialGradient(ps.x, cy, 0, ps.x, cy, r);
+    g.addColorStop(0, `rgba(235,200,255,${0.25 + 0.15 * Math.sin(t * 2.4)})`); g.addColorStop(1, "rgba(180,110,255,0)");
+    c.fillStyle = g; c.beginPath(); c.arc(ps.x, cy, r, 0, Math.PI * 2); c.fill();
     c.restore();
   }
   // a turret's shot: Robert's crystal bolt turned the way it flies (false: not one of these, or no art yet)
@@ -176,5 +194,7 @@
     if (G.spires || G.cave) return;
     const ls = Rift.lanternSpot();
     if (ls) L.push({ x: ls.x, y: ls.y - 90, r: 70 + 20 * G.save.up.mistlantern, s: 0.5, col: "215,180,255", a: 0.8 });
+    const ps = Rift.portalSpot();
+    if (ps) L.push({ x: ps.x, y: ps.y - 60, r: 120, s: 0.6, col: "190,130,255", a: 0.85 });
   };
 })(window.DL);
