@@ -1188,7 +1188,10 @@
     ],
     cap: [5, 7, 9, 11, 13, 15, 17, 19, 20],
     dungeons: ["spires", "mines"],            // the first two; the portal room's next six add theirs (save.dungeons[id] = 1)
-    hall: { hw: 84, h: 170, gap: 150 },       // the Portal Hall's reserved picture box; the north stairs stand `gap` px either side
+    // the pit down to the Portal Hall (the Spark Bearer thread's props/hallPit): its foot `y` stands `h` px in from the
+    // north wall's top; ground kept clear `hw` px either side, `up` above and `down` below its foot, and east of it out to
+    // `wait` px where the Bearer waits; the north stairs stand `gap` px either side
+    hall: { hw: 90, h: 170, up: 60, down: 40, wait: 170, gap: 150 },
     torches: 3, braziers: 5, lamps: 6, beacons: 8, // the tier these lit pieces appear from
     /* The monument ring (step 2, 2026-11-11): eight plinths round the sanctum, one per Portal Hall portal, clockwise from
        the north-east. A plinth stays a dark stub until its dungeon is cleared, then its monument rises in the dungeon's

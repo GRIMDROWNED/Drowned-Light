@@ -38,8 +38,9 @@
   LC.gateOpen = () => { const h = G.save.minesHearts || {}; return N().gate.bosses.every((b) => h[b]); };
   LC.gateSpot = () => {
     if (!LC.gateOpen()) return null;
-    const L = DL.Camp.layout(G.save.up); // the compact base (src/refuge.js) keeps fixed ground for it
-    return L && L.compact && L.forgeGate ? L.forgeGate : { x: Math.round(N().gate.fx * DL.WALL_R), y: Math.round(N().gate.fy * DL.WALL_R) };
+    const L = DL.Camp.layout(G.save.up); // the compact base's monument ring stands for the Mines instead (src/refuge.js)
+    if (L && L.monuments) return null;
+    return { x: Math.round(N().gate.fx * DL.WALL_R), y: Math.round(N().gate.fy * DL.WALL_R) };
   };
   let atGate = false;
   LC.local = function () {
