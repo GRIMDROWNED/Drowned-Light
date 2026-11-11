@@ -1,6 +1,6 @@
 """The Portal Hall (src/finale.js) from Robert's picture (returned/hall/hall.png, 2026-11-10).
 
-Writes assets/sprites/hall/hall.jpg (the picture, drawn as the hall's floor) and assets/sprites/hall/walk.png (where
+Writes assets/sprites/hall/hall.jpg (the picture, drawn as the hall's floor; hall-clean.png if present) and assets/sprites/hall/walk.png (where
 knights and the Drowned may stand: white = the stone walkways and platforms, found from the lit cobbles' colour, minus
 each portal's frame, at half the picture's size). PORTALS, DAIS and EXIT here must match DL.FINALE.hall in src/data.js.
 Run: python3 tools/cut_hall.py [returned dir]"""
@@ -31,5 +31,8 @@ for x, y in PORTALS: keep[max(0, y - 150):y - 6, x - 45:x + 45] = False
 for x0, y0, x1, y1 in CLEAR: keep[y0:y1, x0:x1] = False
 os.makedirs(OUT, exist_ok=True)
 Image.fromarray((keep * 255).astype(np.uint8)).resize((img.width // 2, img.height // 2), Image.NEAREST).convert('1').save(os.path.join(OUT, 'walk.png'), optimize=True)
-img.save(os.path.join(OUT, 'hall.jpg'), quality=90)
+# the picture drawn: Robert's clean version (empty dais, dark mouths, 2026-11-11) when there is one; the mask comes
+# from the first (its lit red cobbles separate cleanly from the water), which lines up with it px for px
+clean = os.path.join(SRC, 'hall', 'hall-clean.png')
+(Image.open(clean).convert('RGB') if os.path.exists(clean) else img).save(os.path.join(OUT, 'hall.jpg'), quality=90)
 print('hall', img.size, 'walkable', round(keep.mean(), 3))
