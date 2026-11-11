@@ -323,7 +323,8 @@
      tier's flame cap can reach get their ground at once (built or not), so nothing moves as you build, only when a
      dungeon is cleared and the whole base is rebuilt a size up. The Portal Hall's ground at the end of the north avenue
      and the dungeons' camp pieces (Rift Portal, Mist Lantern, Forge Gate) are reserved the same way. */
-  const MONUMENTS = [["riftPortal", "se", [250, 330]], ["mistLantern", "sw", [-150, 250]], ["forgeGate", "ne", [300, -150]]];
+  // (the Rift Portal and Forge Gate no longer stand in camp: the monument ring replaces them, 2026-11-11)
+  const MONUMENTS = [["mistLantern", "sw", [-150, 250]]];
   const placeCache = new Map(); // tier -> the fixed plots (they depend on nothing else)
   function compactLayout(up, key) {
     const lv = Refuge.level(up), tier = Refuge.tier(up), B = DL.BASE, cap = B.cap[tier];
@@ -339,7 +340,7 @@
     // the Portal Hall: its picture's foot near the north wall, on the avenue
     const H = B.hall, hy = -R + 26 + H.h - 16;
     L.hall = { x: 0, y: hy, hw: H.hw };
-    const hallBox = [-H.hw, hy + 16 - H.h, H.hw, hy + 16];
+    const hallBox = [-H.hw, hy - H.up, H.hw, hy + H.down], waitBox = [H.hw, hy, H.wait, hy + 50]; // the pit, and where the Bearer waits
     // lit pieces by tier: torches along the avenues, braziers off the sanctum's corners, lamps at the stairs, beacons
     L.fires = [];
     const dAv = (sP + R) / 2;
@@ -357,7 +358,7 @@
     const ux = (a) => Math.round(Math.cos(a)), uy = (a) => Math.round(Math.sin(a));
     const pylonSpots = [[-Math.PI / 2, -1], [Math.PI / 2, -1], [0, -1], [Math.PI, -1], [-Math.PI / 2, 1], [Math.PI / 2, 1]]
       .map(([a, o]) => { const north = a < -1, along = o * ((north ? H.gap : 0) + g.cw / 2 + 30), out = north ? -95 : -60; return { x: ux(a) * (R + out) - uy(a) * along, y: uy(a) * (R + out) + ux(a) * along }; });
-    const obstacles = [hallBox, ...towerSpots.map((t) => picBox("tower", t.x, t.y)), ...pylonSpots.map((t) => picBox("pylon", t.x, t.y)),
+    const obstacles = [hallBox, waitBox, ...towerSpots.map((t) => picBox("tower", t.x, t.y)), ...pylonSpots.map((t) => picBox("pylon", t.x, t.y)),
       ...L.fires.map((f) => [f.x - 10, f.y - 34, f.x + 10, f.y + 6])];
     // everything this tier can hold: the camp buildings, then the refuge pieces up to the flame cap, then the dungeons' pieces
     let P = placeCache.get(tier);
@@ -372,14 +373,32 @@
         placed.push(p);
         return p;
       };
+      // the monument ring first: eight plinths round the sanctum, nearest their spot on an octagon (clockwise from the NE)
+      const M = B.monuments, mBox = (x, y) => [x - M.hw, y + 16 - M.h, x + M.hw, y + 16], mons = [];
+      for (let i = 0; i < 8; i++) {
+        const a = -Math.PI / 2 + Math.PI / 8 + (i * Math.PI) / 4, rr = (sP + M.r) / Math.max(Math.abs(Math.cos(a)), Math.abs(Math.sin(a)));
+        const tx = Math.round(Math.cos(a) * rr), ty = Math.round(Math.sin(a) * rr) + (Math.sin(a) > 0 ? FACE() + 40 : 0);
+        const q = [Math.sign(tx) || 1, Math.sign(ty) || 1];
+        const spot = findSpotBox(gp, tx, ty, mBox, q, placed, obstacles);
+        if (!spot) { missing.push("monument" + i); continue; }
+        const p = { id: "monument", i, x: spot.x, y: spot.y, box: mBox(spot.x, spot.y), hw: M.hw };
+        placed.push(p); mons.push(p);
+      }
       for (const id of ids) { const it = RF.items[id]; const p = put(id, it.at, it.d, (x, y) => itemBox(id, x, y)); if (p) p.hw = it.hw; }
       // the dungeons' camp pieces get their ground once the first dungeon falls (before that they keep their old spots)
       if (tier >= 1) for (const [id, d, at0] of MONUMENTS) put(id, at0.map((v) => (v * R) / (580 * k)), d, (x, y) => picBox(id, x, y));
-      placeCache.set(tier, (P = { placed, missing }));
+      placeCache.set(tier, (P = { placed, missing, mons }));
     }
+    // the monuments: dungeon i's lights once i + 1 dungeons are cleared (each portal opens only after the one before it)
+    const portals = (DL.FINALE && DL.FINALE.portals) || [];
+    L.monuments = P.mons.map((m) => {
+      const d = portals[m.i] || B.monuments.fallback[m.i] || null;
+      return { i: m.i, x: m.x, y: m.y, hw: m.hw, id: d ? d.id : null, col: d ? d.col : "235,200,130", lit: m.i < (up.tier || 0) };
+    });
     const placed = P.placed;
     L.missing = P.missing.slice();
     for (const [id] of MONUMENTS) { const p = placed.find((q) => q.id === id); if (p) L[id] = { x: p.x, y: p.y }; }
+    for (const m of L.monuments) L.plots.push({ x: m.x, y: m.y, hw: m.hw, id: "monument" });
     for (const p of placed) {
       if (!RF.items[p.id]) continue;
       const it = RF.items[p.id], isB = BUILDINGS.includes(p.id);
@@ -404,7 +423,8 @@
     for (const t of L.towers) L.solids.push({ x: t.x, y: t.y, r: 14 });
     for (const t of L.pylons) L.solids.push({ x: t.x, y: t.y, r: 6 });
     for (const b of L.posts) L.solids.push({ x: b.x, y: b.y - 6, r: 30 });
-    for (const p of L.plots) if (!p.reserved) L.solids.push({ x: p.x, y: p.y - 6, r: Math.max(10, Math.round(p.hw * 0.55)) });
+    for (const m of L.monuments) L.solids.push({ x: m.x, y: m.y - 4, r: 12 });
+    for (const p of L.plots) if (!p.reserved && p.id !== "monument") L.solids.push({ x: p.x, y: p.y - 6, r: Math.max(10, Math.round(p.hw * 0.55)) });
     L.decor = [];
     for (const f of L.fires) if (f.kind !== "torch") L.solids.push({ x: f.x, y: f.y, r: 8 });
     cacheKey = key;
@@ -869,6 +889,30 @@
       c.stroke();
     }
     for (const p of L.plots) if (!(p.id && IMG["b-" + p.id + "1"] && !p.reserved)) plot(c, p, flags);
+  };
+
+  /* A dungeon's monument on its plinth (stand-in until Robert's pictures): a dark broken stub while its dungeon
+     stands, then a crystal obelisk in the dungeon's colour that breathes light. */
+  Refuge.drawMonument = function (c, m, t) {
+    const x = m.x, y = m.y + 2;
+    if (!m.lit) {
+      c.fillStyle = "#1f1b17"; c.beginPath(); c.moveTo(x - 9, y); c.lineTo(x - 7, y - 20); c.lineTo(x - 1, y - 26); c.lineTo(x + 3, y - 19); c.lineTo(x + 8, y - 23); c.lineTo(x + 9, y); c.closePath(); c.fill();
+      c.fillStyle = "rgba(200,185,150,0.18)"; c.fillRect(x - 7, y - 20, 2, 19);
+      return;
+    }
+    const col = m.col, pulse = 0.65 + 0.35 * Math.sin(t * 2 + m.i);
+    c.save();
+    c.globalCompositeOperation = "lighter";
+    const g = c.createRadialGradient(x, y - 50, 4, x, y - 50, 70);
+    g.addColorStop(0, `rgba(${col},${0.35 * pulse})`); g.addColorStop(1, `rgba(${col},0)`);
+    c.fillStyle = g; c.fillRect(x - 70, y - 120, 140, 140);
+    c.restore();
+    const H = 92, W = 13;
+    const body = c.createLinearGradient(x - W, 0, x + W, 0);
+    body.addColorStop(0, `rgba(${col},0.55)`); body.addColorStop(0.45, `rgba(${col},0.95)`); body.addColorStop(1, `rgba(${col},0.4)`);
+    c.fillStyle = "#15121a"; c.beginPath(); c.moveTo(x - W - 2, y); c.lineTo(x - W + 1, y - H + 14); c.lineTo(x, y - H - 2); c.lineTo(x + W - 1, y - H + 14); c.lineTo(x + W + 2, y); c.closePath(); c.fill();
+    c.fillStyle = body; c.beginPath(); c.moveTo(x - W, y - 2); c.lineTo(x - W + 3, y - H + 14); c.lineTo(x, y - H); c.lineTo(x + W - 3, y - H + 14); c.lineTo(x + W, y - 2); c.closePath(); c.fill();
+    c.fillStyle = `rgba(255,255,255,${0.35 + 0.3 * pulse})`; c.beginPath(); c.moveTo(x - 2, y - H + 6); c.lineTo(x + 1, y - H + 6); c.lineTo(x - 3, y - 10); c.lineTo(x - 6, y - 10); c.closePath(); c.fill();
   };
 
   /* ---------------- HUD / text ---------------- */

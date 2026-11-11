@@ -80,7 +80,8 @@
   // the compact base (src/refuge.js) keeps fixed ground for them, clear of its buildings
   const fixed = (k) => { const L = DL.Camp.layout(G.save.up); return L && L.compact ? L[k] : null; };
   Rift.lanternSpot = () => (G.save.up.mistlantern ? fixed("mistLantern") || at(LANTERN) : null);
-  Rift.portalSpot = () => (Rift.portal() ? fixed("riftPortal") || at(PORTAL) : null);
+  // the compact base's monument ring stands for the Spires instead of the camp Rift Portal (src/refuge.js)
+  Rift.portalSpot = () => { const L = DL.Camp.layout(G.save.up); return Rift.portal() && !(L && L.monuments) ? at(PORTAL) : null; };
 
   // Walking into the open Drowned Gate: the choice of dungeons (once each time you come up to it).
   let atGate = false, atPortal = false;
