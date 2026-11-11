@@ -769,7 +769,10 @@
     // from the top-left (portal 0, the first to wake)
     hall: { x: 0, y: -40000, w: 1448, h: 1086, s: 2,
       dais: [615, 492], exit: [545, 1062], enter: [548, 1000],
-      portals: [[345, 168], [1040, 125], [1250, 312], [1312, 510], [1275, 830], [775, 812], [210, 800], [195, 420]] },
+      portals: [[345, 168], [1040, 125], [1250, 312], [1312, 510], [1275, 830], [775, 812], [210, 800], [195, 420]],
+      // each portal's dark mouth (x0, y0, x1, y1), where its energy is drawn (measured by tools/cut_hall.py's dark test)
+      mouths: [[326, 89, 369, 167], [1017, 53, 1060, 124], [1227, 232, 1274, 310], [1299, 467, 1340, 536], [1252, 784, 1297, 856],
+        [756, 749, 797, 812], [188, 752, 229, 826], [174, 353, 215, 423]] },
     portals: [
       { id: "spires", name: "The Abyssal Spires", col: "190,130,255" },
       { id: "mines", name: "The Molten Mines", col: "255,120,40" },

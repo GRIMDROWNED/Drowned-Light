@@ -1134,7 +1134,7 @@
     set($("coopChip"), "hidden", !coopText);
     const d = Math.hypot(p.x, p.y);
     set($("homeArrow"), "transform", `rotate(${(Math.atan2(-p.y, -p.x) * 180) / Math.PI}deg)`);
-    set($("homeDist"), "text", (DL.SANDBOX ? "SANDBOX · " : "") + (G.cave ? (G.cave.hall ? "Camp: up the stair" : "Camp: far above") : G.spires ? (G.spires.lv === "mines" ? "Camp: beyond the heat" : "Camp: beyond the mist") : (DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`) + (DL.Finale.stage() >= 1 ? "" : DL.Refuge.on() ? (DL.Refuge.compact() ? ` · Base tier ${DL.Refuge.tier()} of ${DL.BASE.tiers.length - 1}` : ` · Refuge ${DL.Refuge.level()} of ${DL.FLAME.max}`) : ` · Pyramid ${Math.floor(DL.Pyramid.coverage() * 100)}% of ${Math.round(DL.PYRAMID.win * 100)}%`)));
+    set($("homeDist"), "text", (DL.SANDBOX ? "SANDBOX · " : "") + (G.cave ? (G.cave.hall ? "Camp: back up the pit" : "Camp: far above") : G.spires ? (G.spires.lv === "mines" ? "Camp: beyond the heat" : "Camp: beyond the mist") : (DL.Camp.sq(p.x, p.y) < DL.CAMP_RADIUS ? "At camp" : `Camp ${Math.round(d / 10)}m`) + (DL.Finale.stage() >= 1 ? "" : DL.Refuge.on() ? (DL.Refuge.compact() ? ` · Base tier ${DL.Refuge.tier()} of ${DL.BASE.tiers.length - 1}` : ` · Refuge ${DL.Refuge.level()} of ${DL.FLAME.max}`) : ` · Pyramid ${Math.floor(DL.Pyramid.coverage() * 100)}% of ${Math.round(DL.PYRAMID.win * 100)}%`)));
     // the way to Derek's Hollow, once found, until you've won him
     const cn = DL.Cave.showNav();
     set($("caveNav"), "hidden", !cn);

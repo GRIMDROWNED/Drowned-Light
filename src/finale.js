@@ -737,25 +737,8 @@
         c.imageSmoothingEnabled = sm;
       }
     }
-    // a burning portal's mouth swirls in its dungeon's colour (the picture's mouths are all dark)
-    for (let i = 0; i < 8; i++) {
-      if (!Finale.portalLit(i)) continue;
-      const o = portalAt(i, 0), q = F.portals[i], mx = o.x, my = o.y - 30 * SC;
-      c.save();
-      c.translate(mx, my);
-      c.scale(1, 1.5);
-      const gr = c.createRadialGradient(0, 0, 0, 0, 0, 19 * SC);
-      gr.addColorStop(0, `rgba(255,245,255,0.75)`); gr.addColorStop(0.35, `rgba(${q.col},0.7)`); gr.addColorStop(1, `rgba(${q.col},0.15)`);
-      c.fillStyle = gr;
-      c.beginPath(); c.ellipse(0, 0, 17 * SC, 19 * SC, 0, 0, TAU); c.fill();
-      c.lineWidth = 3;
-      for (let k = 0; k < 4; k++) {
-        const a0 = t * (1.6 + k * 0.3) + (k * TAU) / 4, rr = (5 + k * 3.5) * SC;
-        c.strokeStyle = `rgba(255,255,255,${0.15 + 0.1 * k})`;
-        c.beginPath(); c.arc(0, 0, rr, a0, a0 + 2.2); c.stroke();
-      }
-      c.restore();
-    }
+    // the energy in every portal's mouth: dark while it sleeps, its dungeon's colour once it burns
+    for (let i = 0; i < 8; i++) drawEnergy(c, i, t);
     // the ring round the dais fills with the spark
     const b = Finale.b, ch = b && defending() ? (G.isGuest() ? net.charge : b.charge) : 0, full = Finale.won() ? 1 : ch;
     if (full > 0) {
@@ -763,10 +746,73 @@
       c.beginPath(); c.ellipse(DAIS.x, DAIS.y + 20, 120, 52, 0, -Math.PI / 2, -Math.PI / 2 + TAU * full); c.stroke();
     }
   };
+  // Robert's portal energy (assets/sprites/hall/energy.png, 2026-11-11): one picture fitted to each mouth
+  // (DL.FINALE.hall.mouths), as drawn while the portal sleeps, and tinted to its dungeon's colour once it burns. A portal
+  // that woke since you last stood in the hall fills with its colour over a few seconds (save.finale.seen).
+  let EN = null;
+  const tinted = {};
+  function energyPic() {
+    if (!EN) { EN = new Image(); EN.src = DL.asset("assets/sprites/hall/energy.png"); }
+    return EN.complete && EN.naturalWidth ? EN : null;
+  }
+  function tint(col) {
+    if (tinted[col]) return tinted[col];
+    const im = energyPic();
+    if (!im) return null;
+    const cv = document.createElement("canvas"), g = cv.getContext("2d");
+    cv.width = im.width; cv.height = im.height;
+    g.drawImage(im, 0, 0);
+    const d = g.getImageData(0, 0, cv.width, cv.height), px = d.data, [cr, cg, cb] = col.split(",").map(Number);
+    for (let i = 0; i < px.length; i += 4) {
+      const l = Math.min(1, (px[i] * 0.3 + px[i + 1] * 0.59 + px[i + 2] * 0.11) / 75); // (the picture is dark: 75 is bright in it)
+      const w = Math.max(0, l - 0.55) * 1.6; // the brightest wisps run to white
+      px[i] = Math.min(255, cr * (0.1 + 1.25 * l) + 255 * w);
+      px[i + 1] = Math.min(255, cg * (0.1 + 1.25 * l) + 255 * w);
+      px[i + 2] = Math.min(255, cb * (0.1 + 1.25 * l) + 255 * w);
+    }
+    g.putImageData(d, 0, 0);
+    return (tinted[col] = cv);
+  }
+  const fill = [];
+  function drawEnergy(c, i, t) {
+    const im = energyPic(), m = HL.mouths[i];
+    if (!im || !m) return;
+    const x0 = X0 + m[0] * SC, y0 = Y0 + m[1] * SC, w = (m[2] - m[0]) * SC, h = (m[3] - m[1]) * SC;
+    const lit = Finale.portalLit(i), host = !G.isGuest(), seen = host ? S().seen || 0 : 0;
+    if (fill[i] == null) fill[i] = lit && (!host || seen & (1 << i)) ? 1 : 0;
+    if (!lit) fill[i] = 0;
+    else if (fill[i] < 1) {
+      fill[i] = Math.min(1, fill[i] + 1 / 180); // about 3 s
+      if (Math.random() < 0.5) G.spark(x0 + Math.random() * w, y0 + h * (0.3 + Math.random() * 0.7), F.portals[i].col, 70);
+      if (fill[i] >= 1 && host && inHallNow()) { S().seen = seen | (1 << i); store(); }
+    }
+    const k = fill[i], pulse = 0.9 + 0.1 * Math.sin(t * 2.2 + i);
+    if (k < 1) { c.globalAlpha = 0.9 * (1 - k); c.drawImage(im, x0, y0, w, h); }
+    const tc = k > 0 ? tint(F.portals[i].col) : null;
+    if (tc) {
+      c.globalAlpha = k * pulse;
+      c.drawImage(tc, x0, y0, w, h);
+      // a second layer, mirrored and breathing, so the mist seems to stir
+      c.save(); c.globalAlpha = k * (0.12 + 0.1 * Math.sin(t * 1.3 + i * 2)); c.globalCompositeOperation = "lighter";
+      c.translate(x0 + w, y0); c.scale(-1, 1); c.drawImage(tc, 0, 0, w, h); c.restore();
+    }
+    c.globalAlpha = 1;
+  }
+
   // In the camp: the pit north of the Flame, a ragged hole of broken flagstones with the hall's light far down in it
-  // (drawn in code until Robert's picture of it)
+  // (drawn in code if his picture hasn't loaded)
   function drawPit(c, t) {
     const o = pit(), lit = Finale.won(), b = Finale.b, col = lit ? "200,150,255" : SPARK;
+    if (DL.Art.sprites.hallPit) { // Robert's picture of it (props/hallPit, 2026-11-11), and its glow stirring while he climbs down
+      spr(c, "hallPit", o.x + 2, o.y + 40, 1);
+      const k = b && b.descend != null ? 0.25 + 0.5 * b.descend : 0.08 + 0.06 * Math.sin(t * 1.8);
+      c.save(); c.globalCompositeOperation = "lighter";
+      const g = c.createRadialGradient(o.x, o.y + 6, 0, o.x, o.y + 6, PIT_RX);
+      g.addColorStop(0, `rgba(${col},${k})`); g.addColorStop(1, `rgba(${col},0)`);
+      c.fillStyle = g; c.beginPath(); c.ellipse(o.x, o.y + 4, PIT_RX, PIT_RY, 0, 0, TAU); c.fill();
+      c.restore();
+      return;
+    }
     c.save();
     c.translate(o.x, o.y);
     // the broken stones round its lip
@@ -810,7 +856,7 @@
     const b = Finale.b;
     if (visible(view, X0, Y0, X0 + HL.w * SC, Y0 + HL.h * SC)) {
       for (let i = 0; i < 8; i++) {
-        if (Finale.portalLit(i)) { const o = portalAt(i, 0); glow(c, o.x, o.y - 30 * SC, 70 + Math.sin(t * 2.4 + i) * 6, F.portals[i].col, 0.45); }
+        if (Finale.portalLit(i) && fill[i] > 0) { const m = HL.mouths[i]; glow(c, X0 + (m[0] + m[2]) * SC / 2, Y0 + (m[1] + m[3]) * SC / 2, 80 + Math.sin(t * 2.4 + i) * 6, F.portals[i].col, 0.35 * fill[i]); }
         portalName(c, i);
       }
     }
@@ -841,7 +887,7 @@
     else if (b.moving && Math.abs(ca) > Math.abs(sa) * 1.2) { n = sb ? "sbSide" : "fbSide"; flip = ca < 0; }
     else if (b.moving && sa < 0) n = sb ? "sbBack" : "fbBack";
     else if (b.moving && !sb) n = "fbFront";
-    spr(c, n, b.x, b.y + (n === "sbPour" ? 34 * k : 0), k, flip); // the pouring picture stands on its own dais
+    spr(c, n, b.x, b.y + (n === "sbPour" ? 8 * k : 0), k, flip); // (his spark's beam reaches a little below his feet)
   }
   function drawBearer(c, b, t) {
     const s = bearerScale(b), dsc = b.descend != null ? b.descend : 0;

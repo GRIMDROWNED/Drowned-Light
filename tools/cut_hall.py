@@ -36,3 +36,12 @@ Image.fromarray((keep * 255).astype(np.uint8)).resize((img.width // 2, img.heigh
 clean = os.path.join(SRC, 'hall', 'hall-clean.png')
 (Image.open(clean).convert('RGB') if os.path.exists(clean) else img).save(os.path.join(OUT, 'hall.jpg'), quality=90)
 print('hall', img.size, 'walkable', round(keep.mean(), 3))
+
+# the portals' energy (Robert, 2026-11-11): cropped to what's drawn, at a size the hall draws it (src/finale.js tints it)
+en = os.path.join(SRC, 'hall', 'energy.png')
+if os.path.exists(en):
+    e = Image.open(en).convert('RGBA')
+    e = e.crop(e.getchannel('A').point(lambda v: 255 if v >= 20 else 0).getbbox())  # (a faint haze reaches the edges)
+    e = e.resize((200, round(200 * e.height / e.width)), Image.LANCZOS)
+    e.save(os.path.join(OUT, 'energy.png'), optimize=True)
+    print('energy', e.size)
