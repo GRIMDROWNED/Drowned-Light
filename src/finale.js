@@ -2,15 +2,19 @@
    Gate and the Sunken King).
    Nothing of it shows until it's earned (the secrecy rule): Central Flame DL.FINALE.flame, the Starved Bell and the
    Deadly Rose slain, Derek won, and your Kindle lit (Finale.ready). At the next dawn Kindle climbs into the Central Flame
-   and drinks it in, and a spark catches in him: he stands up as the Spark Bearer, and beside the Flame stone steps open
-   in the ground, the stair down to the Portal Hall.
+   and drinks it in, and a spark catches in him: he stands up as the Spark Bearer, and north of the Flame the ground
+   cracks open on a pit, the way down to the Portal Hall.
+     the escort   (Robert, 2026-11-11: a ceremony, not a mission) the first time, walk up to him and he sets out from the
+                  Flame for the pit, slowly, only while a knight walks with him (DL.FINALE.escort). At its edge he
+                  climbs down and the party follows him into the hall (save.finale.hole: after that he waits by the pit
+                  and you climb down yourself).
      the hall     Robert's picture, far off the map (DL.FINALE.hall): stone walkways over black water from the dais at
-                  its heart out to eight portals, and a road off its foot back up to the camp. G.cave is set while the party is down there (`hall: true`), so the
-                  world's clock, its spawns and its bosses leave it alone, just as in Derek's Hollow (src/cave.js).
-     the defense  walk down with the Bearer waiting and he climbs onto the dais at the hall's heart to fill it with his
+                  its heart out to eight portals, and a road off its foot back up to the camp. G.cave is set while the party is
+                  down there (`hall: true`), so the world's clock, its spawns and its bosses leave it alone, just as in Derek's Hollow (src/cave.js).
+     the defense  down in the hall the Bearer climbs onto the dais at the hall's heart to fill it with his
                   spark. The Drowned pour out of the eight dark portals at him (the Sunken King's Tide Stalkers, Sunken
                   Wisps and Tide Leeches among them) while the knights hold them off. Struck down he loses part of his
-                  spark and gets up again. If every knight is down at once the hall casts the party out and the stair
+                  spark and gets up again. If every knight is down at once the hall casts the party out and the pit
                   stays shut until the next dawn.
      lit          the spark full, Kindle comes back off the dais, small again, the first portal (the Abyssal Spires)
                   opens and the victory screen shows. Each later portal opens when the dungeon behind the one before it
@@ -31,7 +35,8 @@
   let net = { stage: 0, charge: 0, mask: 0 }, seen = -1, winAt = 0;
 
   /* ---------------- state ---------------- */
-  // stage: 0 nothing yet (all secret), 1 the Bearer waits by the stair, 4 the hall is lit (old worlds' 2 and 3, the
+  // stage: 0 nothing yet (all secret), 1 the Bearer waits (by the Flame, or by the pit once
+  // he's been walked there: s.hole), 4 the hall is lit (old worlds' 2 and 3, the
   // march and the gate, go back to 1)
   const S = () => G.save.finale;
   Finale.stage = () => (G.isGuest() ? net.stage : S().stage);
@@ -77,12 +82,16 @@
   Finale.inHall = (x, y) => Math.abs(x - HX) < (HL.w * SC) / 2 + 200 && Math.abs(y - HY) < (HL.h * SC) / 2 + 200;
   // a portal's mouth foot, `out` world px down from it (out onto its platform)
   const portalAt = (i, out) => { const o = at(HL.portals[i]); return { x: o.x, y: o.y + out }; };
-  // the stair down, by the Central Flame, and where the Bearer waits beside it
-  // (the base's own Portal Hall building, DL.Camp.layout().hall, from the base redesign, when it stands; else DL.FINALE.door
-  // and a stand-in stairwell drawn here)
+  // the pit down, north of the Central Flame (on the ground the compact base keeps for it, DL.Camp.layout().hall; else
+  // DL.FINALE.door), and where the Bearer waits: beside the Flame until he's led to the pit once (save.finale.hole),
+  // then beside the pit
   const built = () => { const L = DL.Camp.layout ? DL.Camp.layout(G.save.up) : null; return L && L.hall ? L.hall : null; };
   const door = () => { const h = built(); return h ? { x: h.x, y: h.y + 20, hw: h.hw } : { x: F.door.x, y: F.door.y, hw: 44 }; };
-  const waitSpot = () => { const d = door(); return { x: d.x + d.hw + 40, y: d.y + 10 }; };
+  const pit = () => { const d = door(); return { x: d.x, y: d.y - 34 }; }; // the pit's middle (rx PIT_RX, ry PIT_RY)
+  const PIT_RX = 46, PIT_RY = 24;
+  const flameSpot = () => ({ x: 78, y: 34 });
+  const pitSide = () => { const d = door(); return { x: d.x + d.hw + 40, y: d.y + 10 }; };
+  const waitSpot = () => (S().hole ? pitSide() : flameSpot());
   const backSpot = (n) => { const d = door(); return { x: d.x + (n ? 34 * n * (n % 2 ? 1 : -1) / 2 : 0), y: d.y + 70 }; }; // coming back up
   const topOfStair = (n) => { const e = at(HL.enter); return { x: e.x + (n ? 26 * n * (n % 2 ? 1 : -1) / 2 : 0), y: e.y }; };
 
@@ -217,7 +226,7 @@
     Finale.b = null; winAt = 0;
     if (G.isGuest()) return;
     const s = S();
-    if (s.stage === 2 || s.stage === 3) { s.stage = 1; s.rest = null; } // the march and the gate are gone: he waits by the stair
+    if (s.stage === 2 || s.stage === 3) { s.stage = 1; s.rest = null; } // the march and the gate are gone: he waits again
     if (s.stage === 1) Finale.b = makeBearer(waitSpot().x, waitSpot().y);
   };
   function store() { G.persist(); }
@@ -260,14 +269,14 @@
   /* ---------------- rising (host, at dawn) ---------------- */
   function rise() {
     const s = S();
-    s.stage = 1; s.fail = -1;
+    s.stage = 1; s.fail = -1; s.hole = 0;
     G.kindles = G.kindles.filter((k) => k.owner !== 0); // Kindle goes into the fire
-    Finale.b = makeBearer(waitSpot().x, waitSpot().y);
+    Finale.b = makeBearer(flameSpot().x, flameSpot().y);
     Finale.b.grow = 0;
     store();
     setTimeout(() => say("Kindle scuttles up onto the Central Flame and drinks it in, flame and all.", "good"), 2600);
     setTimeout(() => { sfx("milestone"); G.camera.shake = 10; say("A spark catches in him, and he stands up as tall as a tower: the Spark Bearer.", "good"); }, 6500);
-    setTimeout(() => say("Beside the Flame the ground splits open on a stair, down to a hall no knight has seen. The Bearer waits there for you: walk down with him.", "warn"), 11000);
+    setTimeout(() => say("North of the Flame the ground cracks open on a deep pit, down to a hall no knight has seen. Walk up to the Spark Bearer and he'll lead the way.", "warn"), 11000);
   }
   Finale.dawn = function () {
     if (G.isGuest()) return;
@@ -281,7 +290,7 @@
     if (G.isGuest() || inHallNow()) return;
     const s = S();
     if (s.stage === 0) return rise();
-    s.stage = 0; s.fail = -1; s.won = 0;
+    s.stage = 0; s.fail = -1; s.won = 0; s.hole = 0;
     Finale.b = null;
     if (G.save.kindle.lit && !G.kindles.some((k) => k.owner === 0)) DL.Kindle.back(G.player.x - 26, G.player.y + 10);
     store();
@@ -304,14 +313,14 @@
     for (const f of followers()) { f.x = p.x + rand(-30, 30); f.y = p.y + rand(-10, 20); }
     if (mode === "defend") {
       const b = Finale.b || (Finale.b = makeBearer(DAIS.x, DAIS.y));
-      Object.assign(b, { x: DAIS.x, y: DAIS.y, hp: maxHp(), max: maxHp(), down: false, lit: true, charge: 0, angle: Math.PI / 2, grow: 1, moving: false });
+      Object.assign(b, { x: DAIS.x, y: DAIS.y, hp: maxHp(), max: maxHp(), down: false, lit: true, charge: 0, angle: Math.PI / 2, grow: 1, moving: false, walk: false, descend: null });
       sfx("rise");
       G.camera.shake = 8;
-      say("Down the stair lies a hall of eight dark portals. The Spark Bearer climbs onto the dais at its heart and begins to burn. Something stirs in the portals: guard him until his spark fills the hall!", "warn");
+      say("Down the pit lies a hall of eight dark portals. The Spark Bearer climbs onto the dais at its heart and begins to burn. Something stirs in the portals: guard him until his spark fills the hall!", "warn");
     } else {
       sfx("chime");
-      toast(`The Portal Hall. ${litCount()} of 8 portals burn; walk into one to go through. The stair leads back up to the camp.`, "good");
-      if (G.allies.length) DL.Net.say("Your party walks down the stair into the Portal Hall.", "good");
+      toast(`The Portal Hall. ${litCount()} of 8 portals burn; walk into one to go through. The road at its foot leads back up to the camp.`, "good");
+      if (G.allies.length) DL.Net.say("Your party climbs down the pit into the Portal Hall.", "good");
     }
   }
   function pull(a) {
@@ -320,7 +329,7 @@
     if (G.cave) G.cave.sendT[a.id] = 2;
     DL.Net.sendTo(a.id, { t: "hall", on: 1, mode: G.cave ? G.cave.mode : "open", x: s.x, y: s.y });
   }
-  // Back up the stair into the camp (`lost`: cast out of a lost defense).
+  // Back up out of the pit into the camp (`lost`: cast out of a lost defense).
   function leave(lost) {
     G.cave = null;
     G.enemies = []; G.projectiles = []; G.telegraphs = []; G.hexPools = []; G.stoneWalls = [];
@@ -344,7 +353,7 @@
     leave(true);
     if (b) Object.assign(b, waitSpot(), { hp: maxHp(), max: maxHp(), down: false, lit: true, charge: 0, moving: false });
     sfx("death");
-    say("Every knight is down. The hall casts you out, and the Spark Bearer climbs back up the stair, his spark spent. The stair stays shut until the next dawn.", "danger");
+    say("Every knight is down. The hall casts you out, and the Spark Bearer climbs back out of the pit, his spark spent. The pit stays shut until the next dawn.", "danger");
   }
   function win() {
     const s = S(), b = Finale.b, cv = G.cave;
@@ -414,21 +423,60 @@
     if (b && b.leave != null) leaving(b, dt);
     if (inHallNow()) return G.cave.mode === "defend" ? defend(dt) : hub(dt);
     if (G.spires || G.cave || G.state !== "play" || S().stage < 1) return;
-    // walking down the stair by the Central Flame
-    const d = door();
+    if (b && S().stage === 1 && (!S().hole || b.descend != null)) return escort(b, dt);
+    // climbing down into the pit north of the Central Flame
+    const c = pit();
     for (const k of everyone()) {
       if (!k || k.down || k.downT > 0) continue;
       k.hallT = Math.max(0, (k.hallT || 0) - dt);
-      const dx = k.x - d.x, dy = k.y - d.y;
-      if (Math.abs(dx) > 30 || dy < -54 || dy > -12) continue;
-      if (k.hallT > 0) continue;
-      const id = k === G.player ? 0 : k.id;
+      const dx = (k.x - c.x) / PIT_RX, dy = (k.y - c.y) / PIT_RY;
+      if (dx * dx + dy * dy > 0.6 || k.hallT > 0) continue;
       if (S().stage === 4) return enter("open");
-      if (Finale.sealed()) { k.hallT = 6; if (id === 0) { toast("The stair is shut. The hall will open again at dawn.", "warn"); sfx("deny"); } else DL.Net.tell(id, "The stair is shut. The hall will open again at dawn.", "warn"); continue; }
+      if (Finale.sealed()) { k.hallT = 6; tell(k, "The pit is shut. The hall will open again at dawn."); continue; }
       return enter("defend");
     }
   };
-  // Into the hall's middle he goes (from the stair's foot); back out of it, small again, at the end.
+  const tell = (k, msg) => { if (k === G.player) { toast(msg, "warn"); sfx("deny"); } else DL.Net.tell(k.id, msg, "warn"); };
+
+  // The first time: the knights walk the Spark Bearer from the Flame to the pit (a short, slow walk: a ceremony, not
+  // a fight), and he climbs down into it, the party after him.
+  function escort(b, dt) {
+    if (b.descend != null) return descend(b, dt);
+    const near = everyone().filter((k) => k && !k.down && !(k.downT > 0) && dist(k.x, k.y, b.x, b.y) < F.escort.near);
+    if (!b.walk) { // waiting beside the Flame for a knight to step up to him
+      b.moving = false;
+      const k = near.find((q) => dist(q.x, q.y, b.x, b.y) < F.escort.start && !(q.hallT > 0));
+      if (!k || (b.grow != null && b.grow < 1)) return;
+      if (Finale.sealed()) { k.hallT = 6; tell(k, "The Spark Bearer's spark is spent. He'll set out again at dawn."); return; }
+      b.walk = true; b.trailT = 0;
+      sfx("chime");
+      say("The Spark Bearer turns toward the pit and sets out, slow and solemn. Walk beside him.", "good");
+    }
+    const c = pit(), tx = c.x, ty = c.y + PIT_RY + 26, d = dist(b.x, b.y, tx, ty);
+    b.moving = near.length > 0 && d > 4;
+    if (!b.moving) return;
+    const step = Math.min(d, F.escort.speed * dt);
+    b.angle = Math.atan2(ty - b.y, tx - b.x);
+    b.x += Math.cos(b.angle) * step; b.y += Math.sin(b.angle) * step;
+    b.trailT -= dt;
+    if (b.trailT <= 0) { b.trailT = 0.18; G.spark(b.x + rand(-16, 16), b.y - rand(0, 10), SPARK, 50); } // embers where he walks
+    if (dist(b.x, b.y, tx, ty) > 4) return;
+    b.moving = false; b.walk = false; b.descend = 0;
+    S().hole = 1; store();
+    sfx("rise"); G.camera.shake = 8;
+    say("At the pit's edge the Spark Bearer stops. His light pours down into the dark, and he climbs down after it. Follow him!", "warn");
+  }
+  function descend(b, dt) {
+    const c = pit();
+    b.descend += dt / F.escort.descend;
+    b.angle = -Math.PI / 2;
+    b.x += (c.x - b.x) * Math.min(1, dt * 2); b.y += (c.y - b.y) * Math.min(1, dt * 2);
+    if (Math.random() < 0.6) G.spark(c.x + rand(-PIT_RX, PIT_RX) * 0.7, c.y - rand(0, 30), SPARK, 140);
+    if (b.descend < 1) return;
+    b.descend = null;
+    enter("defend");
+  }
+  // Into the hall's middle he goes (from the road at its foot); back out of it, small again, at the end.
   function leaving(b, dt) {
     b.leave += dt / 4;
     if (b.leave < 1) return;
@@ -489,7 +537,7 @@
     for (let k = 0; k < 6; k++) G.puff(o.x + rand(-20, 20), o.y + rand(-8, 8), "rgba(150,90,220,0.6)", 60, 0.7, -30);
   }
 
-  // Host, in the lit hall: the stair back up, and the portals.
+  // Host, in the lit hall: the road back up, and the portals.
   function hub(dt) {
     for (const k of everyone()) {
       if (!k || k.down || k.downT > 0) continue;
@@ -524,22 +572,27 @@
     const st = Finale.stage();
     if (st < 1) return "";
     if (st === 4) return `<article class="card finale-card"><header><h3>The Portal Hall</h3><span class="tag">${litCount()} of 8 lit</span></header>
-      <p>The Spark Bearer filled the hall below the camp with his spark. Walk down the stair beside the Central Flame and into a burning portal to reach the dungeon behind it. Clear a dungeon and the next portal wakes.</p></article>`;
+      <p>The Spark Bearer filled the hall below the camp with his spark. Climb down the pit north of the Central Flame and walk into a burning portal to reach the dungeon behind it. Clear a dungeon and the next portal wakes.</p></article>`;
     const shut = Finale.sealed();
-    return `<article class="card finale-card"><header><h3>The Spark Bearer</h3><span class="tag">${shut ? "The stair is shut" : "Waiting"}</span></header>
-      <p>Kindle drank the Central Flame and rose as the Spark Bearer. He waits by the stair beside the Flame, down to a hall of eight dark portals. Walk down with him and hold the hall while he fills it with his spark: the Drowned will pour out of the portals at him.</p>
-      ${shut ? `<footer><span class="req">The hall cast you out. The stair opens again at dawn.</span></footer>` : ""}</article>`;
+    return `<article class="card finale-card"><header><h3>The Spark Bearer</h3><span class="tag">${shut ? "The pit is shut" : "Waiting"}</span></header>
+      <p>Kindle drank the Central Flame and rose as the Spark Bearer. ${S().hole ? "He waits beside the pit north of the Flame" : "He waits beside the Flame for you to walk him to the pit north of it"}, down to a hall of eight dark portals. Climb down after him and hold the hall while he fills it with his spark: the Drowned will pour out of the portals at him.</p>
+      ${shut ? `<footer><span class="req">The hall cast you out. The pit opens again at dawn.</span></footer>` : ""}</article>`;
   };
   Finale.guideLine = function () {
     const st = Finale.stage();
     if (st === 0) return "";
-    if (st === 4) return `<b>The Portal Hall</b> lies down the stair beside the Central Flame: ${litCount()} of its 8 portals burn.`;
-    return "<b>The Spark Bearer</b> waits by the stair beside the Central Flame, down to the Portal Hall.";
+    if (st === 4) return `<b>The Portal Hall</b> lies down the pit north of the Central Flame: ${litCount()} of its 8 portals burn.`;
+    return "<b>The Spark Bearer</b> waits " + (S().hole ? "by the pit north of" : "beside") + " the Central Flame, to lead you down to the Portal Hall.";
   };
   // The banner in the camp (the hall's own comes through Cave.objective, below)
   Finale.objective = function (p) {
     if (inHallNow() || Finale.stage() !== 1 || !Finale.b) return "";
-    return dist(p.x, p.y, door().x, door().y) < 420 ? (Finale.sealed() ? "The stair to the Portal Hall is shut until dawn" : "The Spark Bearer waits · walk down the stair with him") : "";
+    const b = Finale.b;
+    if (b.descend != null) return "The Spark Bearer climbs down into the pit · follow him";
+    if (b.walk || b.moving) return "Walk the Spark Bearer to the pit";
+    if (dist(p.x, p.y, b.x, b.y) > 520 && dist(p.x, p.y, door().x, door().y) > 520) return "";
+    if (Finale.sealed()) return "The pit to the Portal Hall is shut until dawn";
+    return S().hole || G.isGuest() ? "The Spark Bearer waits · climb down the pit after him" : "The Spark Bearer waits · walk up to him and he'll lead you to the pit";
   };
   Finale.hallObjective = function () {
     const cv = G.cave, b = Finale.b;
@@ -550,10 +603,10 @@
     if (b && b.down) return `The Spark Bearer is down · his spark ${ch}% · hold them off`;
     return `Guard the Spark Bearer · his spark ${ch}%` + (b ? ` · ${Math.max(0, Math.ceil(b.hp))} / ${b.max}` : "");
   };
-  // The compass: back to the stair while the Bearer waits and you're out in the marsh.
+  // The compass: back to the pit while the Bearer waits and you're out in the marsh.
   Finale.nav = function (p) {
     if (G.cave || G.spires || Finale.stage() !== 1) return null;
-    return dist(p.x, p.y, door().x, door().y) > 700 ? { x: door().x, y: door().y, label: "Portal Hall" } : null;
+    return dist(p.x, p.y, door().x, door().y) > 700 ? (S().hole ? { x: door().x, y: door().y, label: "Portal Hall" } : { x: Finale.b ? Finale.b.x : 0, y: Finale.b ? Finale.b.y : 0, label: "Spark Bearer" }) : null;
   };
   // In the defense the camera pulls back to show the whole hall (src/render.js, src/game.js).
   Finale.view = (p) => (defending() && p && Finale.inHall(p.x, p.y) ? { need: 1150, needW: 1500, x: DAIS.x, y: DAIS.y - 60, lean: 0.5 } : null);
@@ -591,7 +644,7 @@
     let mask = 0;
     for (let i = 0; i < 8; i++) if (portalLit(i)) mask |= 1 << i;
     return [st, b ? [r1(b.x), r1(b.y), Math.round(b.hp), b.max, (b.down ? 1 : 0) | (b.moving ? 4 : 0), r1(b.angle), Math.round(b.charge * 1000) / 1000,
-      b.leave != null ? r1(b.leave) : -1, b.grow != null ? r1(b.grow) : 1] : 0,
+      b.leave != null ? r1(b.leave) : -1, b.grow != null ? r1(b.grow) : 1, b.descend != null ? r1(b.descend) : -1] : 0,
       cv && cv.hall ? [cv.mode === "defend" ? 1 : 0] : 0, mask];
   };
   Finale.applySnap = function (m) {
@@ -605,7 +658,7 @@
       const b = Finale.b || (Finale.b = { kind: "bearer", x: r[0], y: r[1], rad: 34, animT: 0, hitT: 0 });
       if (Math.hypot(r[0] - b.x, r[1] - b.y) > 600) { b.x = r[0]; b.y = r[1]; } // into the hall, or back up: no gliding there
       Object.assign(b, { tx: r[0], ty: r[1], hp: r[2], max: r[3], down: !!(r[4] & 1), moving: !!(r[4] & 4), angle: r[5], lit: !(r[4] & 1), charge: r[6],
-        leave: r[7] >= 0 ? r[7] : null, grow: r[8] });
+        leave: r[7] >= 0 ? r[7] : null, grow: r[8], descend: r[9] >= 0 ? r[9] : null });
       net.charge = r[6];
     } else Finale.b = null;
     if (m[2]) G.cave = { hall: true, mode: m[2][0] ? "defend" : "open", guest: true }; // (Cave.applySnap cleared it just before)
@@ -671,7 +724,7 @@
   Finale.groundColor = function (x, y) { const v = 5 + DL.fbm(x / 70, y / 70, 31) * 5; return [v, v + 1, v + 3]; };
 
   Finale.drawGround = function (c, view, t) {
-    if (Finale.stage() >= 1 && !built() && visible(view, door().x - 80, door().y - 80, door().x + 80, door().y + 40)) drawStairwell(c, t);
+    if (Finale.stage() >= 1 && visible(view, door().x - 90, door().y - 90, door().x + 90, door().y + 40)) drawPit(c, t);
     if (!visible(view, X0, Y0, X0 + HL.w * SC, Y0 + HL.h * SC)) return;
     loadHall();
     if (PIC.complete && PIC.naturalWidth) { // only the part on screen
@@ -710,35 +763,38 @@
       c.beginPath(); c.ellipse(DAIS.x, DAIS.y + 20, 120, 52, 0, -Math.PI / 2, -Math.PI / 2 + TAU * full); c.stroke();
     }
   };
-  // In the camp: the stair down beside the Flame (a dark well with steps going down north).
-  function drawStairwell(c, t) {
-    const d = door();
+  // In the camp: the pit north of the Flame, a ragged hole of broken flagstones with the hall's light far down in it
+  // (drawn in code until Robert's picture of it)
+  function drawPit(c, t) {
+    const o = pit(), lit = Finale.won(), b = Finale.b, col = lit ? "200,150,255" : SPARK;
     c.save();
-    c.fillStyle = "#3d3a36"; c.fillRect(d.x - 44, d.y - 62, 88, 62);
-    c.fillStyle = "#08070a"; c.fillRect(d.x - 36, d.y - 56, 72, 50);
-    for (let i = 0; i < 4; i++) { c.fillStyle = `rgba(70,64,60,${0.9 - i * 0.2})`; c.fillRect(d.x - 34 + i * 2, d.y - 18 - i * 10, 68 - i * 4, 6); }
-    const a = 0.25 + 0.15 * Math.sin(t * 2);
-    c.fillStyle = Finale.won() ? `rgba(200,150,255,${a})` : `rgba(${SPARK},${a})`;
-    c.fillRect(d.x - 30, d.y - 54, 60, 10);
+    c.translate(o.x, o.y);
+    // the broken stones round its lip
+    c.fillStyle = "#2e2b29";
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * TAU, w = 10 + ((i * 7) % 5) * 2;
+      c.beginPath(); c.ellipse(Math.cos(a) * (PIT_RX + 5), Math.sin(a) * (PIT_RY + 4), w, w * 0.55, a, 0, TAU); c.fill();
+    }
+    c.fillStyle = "#151313"; c.beginPath(); c.ellipse(0, 0, PIT_RX + 4, PIT_RY + 3, 0, 0, TAU); c.fill();
+    // the dark, and a glow from far below it (brighter while he climbs down)
+    c.fillStyle = "#030203"; c.beginPath(); c.ellipse(0, 2, PIT_RX - 2, PIT_RY - 2, 0, 0, TAU); c.fill();
+    const k = b && b.descend != null ? 0.35 + 0.5 * b.descend : 0.22 + 0.08 * Math.sin(t * 1.8);
+    const g = c.createRadialGradient(0, 8, 0, 0, 8, PIT_RX * 0.8);
+    g.addColorStop(0, `rgba(${col},${k})`); g.addColorStop(1, `rgba(${col},0)`);
+    c.fillStyle = g; c.beginPath(); c.ellipse(0, 4, PIT_RX - 4, PIT_RY - 4, 0, 0, TAU); c.fill();
+    // the inner wall falling away on the far side
+    c.fillStyle = "#1d1a19"; c.beginPath(); c.ellipse(0, -PIT_RY * 0.35, PIT_RX - 3, PIT_RY * 0.55, 0, Math.PI, TAU); c.fill();
     c.restore();
   }
 
-  // Into the y-sorted scene: the stair's two posts in camp, the spark left on the dais, and the Bearer.
+  // Into the y-sorted scene: the spark left on the dais, and the Bearer.
   Finale.push = function (list, c, t, view) {
-    const b = Finale.b, d = door();
-    if (Finale.stage() >= 1 && !built() && visible(view, d.x - 80, d.y - 200, d.x + 80, d.y + 40))
-      for (const sx of [-1, 1]) list.push({ y: d.y - 2, f: () => post(c, d.x + sx * 46, d.y - 2, t) });
+    const b = Finale.b;
     if (!b && Finale.won() && visible(view, DAIS.x - 100, DAIS.y - 200, DAIS.x + 100, DAIS.y + 40))
       list.push({ y: DAIS.y, f: () => DL.Art.drawFire(c, DAIS.x, DAIS.y - 4, 1.6, t) }); // the spark he left on the dais
     if (b && visible(view, b.x - 300, b.y - 600, b.x + 300, b.y + 60)) list.push({ y: b.y, f: () => drawBearer(c, b, t) });
   };
-  function post(c, x, y, t) {
-    c.fillStyle = "rgba(0,0,0,0.35)"; c.beginPath(); c.ellipse(x, y, 14, 5, 0, 0, TAU); c.fill();
-    c.fillStyle = "#4a4640"; c.fillRect(x - 9, y - 70, 18, 70);
-    c.fillStyle = "#5c5750"; c.fillRect(x - 9, y - 70, 18, 5);
-    c.fillStyle = "#2a2724"; c.fillRect(x - 12, y - 78, 24, 10);
-    DL.Art.drawFire(c, x, y - 80, 0.6, t + x);
-  }
+
   // A portal's name over its mouth, close by ("???" while it's dark)
   function portalName(c, i) {
     const o = portalAt(i, 0), p = G.player, lit = Finale.portalLit(i), q = F.portals[i];
@@ -775,7 +831,7 @@
     const grow = b.grow != null ? b.grow : 1, leave = b.leave != null ? b.leave : 0;
     return (1 + 3.4 * grow) * (1 - 0.75 * Math.min(1, leave * 1.5));
   }
-  // Robert's drawn Spark Bearer (props/sb*, 2026-11-10): standing by the stair, pouring his spark into the dais in the
+  // Robert's drawn Spark Bearer (props/sb*, 2026-11-10): standing by the Flame or the pit, pouring his spark into the dais in the
   // defense, collapsed when down. (His old Fire Bearer, props/fb*, stands in if those haven't loaded.)
   function drawnBearer(c, b, t, k) {
     const ca = Math.cos(b.angle), sa = Math.sin(b.angle), sb = !!DL.Art.sprites.sbFront;
@@ -788,8 +844,9 @@
     spr(c, n, b.x, b.y + (n === "sbPour" ? 34 * k : 0), k, flip); // the pouring picture stands on its own dais
   }
   function drawBearer(c, b, t) {
-    const s = bearerScale(b);
+    const s = bearerScale(b), dsc = b.descend != null ? b.descend : 0;
     c.save();
+    if (dsc) { c.globalAlpha = 1 - dsc; c.translate(0, dsc * 50); } // climbing down into the pit
     c.fillStyle = "rgba(0,0,0,0.4)";
     c.beginPath(); c.ellipse(b.x, b.y, 12 * s, 4.4 * s, 0, 0, TAU); c.fill();
     if (b.hitT > 0) c.filter = "brightness(1.8)";

@@ -775,6 +775,9 @@
       { id: "mines", name: "The Molten Mines", col: "255,120,40" },
       null, null, null, null, null, null,
     ],
+    // the walk from the Flame to the pit, the first time: he walks while a knight is within `near` px, sets out when one
+    // comes within `start`, at `speed` px/s, and takes `descend` s to climb down
+    escort: { near: 260, start: 120, speed: 30, descend: 2.6 },
     charge: 150, hitCharge: 0.003, wispSlow: 0.6,
     hp: 1500, light: 280, pulseEvery: 3, pulseR: 100, pulseDmg: 18,
     fallLoss: 0.25, downFor: 8, riseHp: 0.5,
