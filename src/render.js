@@ -923,6 +923,7 @@
       if (it.ph) put(it.y, () => { if (!DL.Refuge.drawBuilding(c, it.id, 1, it.x, it.y)) DL.Refuge.drawPlaceholder(c, it); });
     }
     const A = DL.Refuge.art, img = (n, x, y, w) => { const im = A[n]; if (!im) return 0; const h = (w * im.height) / im.width; c.drawImage(im, x - w / 2, y - h, w, h); return h; };
+    for (const m of L.monuments || []) put(m.y, () => DL.Refuge.drawMonument(c, m, t)); // the dungeons' monument ring
     for (const d of L.decor || []) put(d.y, () => img("d-" + d.kind, d.x, d.y + 4, { statue: 34, well: 46, rack: 32, crates: 46, planter: 36 }[d.kind] || 34));
     for (const f of L.fires) put(f.y, () => {
       if (f.kind === "torch" && A["d-lantern"]) { const h = img("d-lantern", f.x, f.y + 4, 22); Art.drawFire(c, f.x - 7, f.y + 4 - h * 0.6, 0.35, t); return; }

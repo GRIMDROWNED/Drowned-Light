@@ -80,9 +80,9 @@
   // the compact base (src/refuge.js) keeps fixed ground for it, clear of its buildings
   const fixed = (k) => { const L = DL.Camp.layout(G.save.up); return L && L.compact ? L[k] : null; };
   Rift.lanternSpot = () => (G.save.up.mistlantern ? fixed("mistLantern") || at(LANTERN) : null);
-  // the Rift Portal stands in camp as the Spires' monument once every Mist Well burns (no longer a way through:
-  // the dungeons are reached from the Portal Hall, src/finale.js)
-  Rift.portalSpot = () => (Rift.portal() ? fixed("riftPortal") || at(PORTAL) : null);
+  // the Rift Portal stood in camp as the Spires' monument (no longer a way through: the dungeons are reached from the
+  // Portal Hall, src/finale.js); the compact base's monument ring stands for it instead (src/refuge.js)
+  Rift.portalSpot = () => { const L = DL.Camp.layout(G.save.up); return Rift.portal() && !(L && L.monuments) ? at(PORTAL) : null; };
 
   /* ---------------- the Crystal Turret ---------------- */
   const GATES = [-Math.PI / 2, Math.PI / 2, 0, Math.PI]; // north and south first, then east and west

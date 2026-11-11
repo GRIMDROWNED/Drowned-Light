@@ -1190,20 +1190,29 @@
      either side of it (`hall`). save.up.fortress: 1/missing = this compact base, 2 = the old spreading fortress, 0 = squares. */
   DL.BASE = {
     tiers: [
-      { R: 470, kit: "low" },                  // 0: the first camp (low walls from Flame 3)
-      { R: 490, kit: "court" },                // 1: Abyssal Spires
-      { R: 510, kit: "mward" },                // 2: Molten Mines
-      { R: 530, kit: "ward", side: 0.62 },     // 3
-      { R: 550, kit: "lward", side: 0.62 },    // 4
-      { R: 570, kit: "curt", side: 0.62 },     // 5
-      { R: 590, kit: "great", side: 0.62 },    // 6
-      { R: 610, kit: "great", side: 0.62 },    // 7
-      { R: 630, kit: "great", side: 0.62 },    // 8: all eight dungeons
+      { R: 490, kit: "low" },                  // 0: the first camp (low walls from Flame 3)
+      { R: 520, kit: "court" },                // 1: Abyssal Spires
+      { R: 530, kit: "mward" },                // 2: Molten Mines
+      { R: 550, kit: "ward", side: 0.62 },     // 3
+      { R: 570, kit: "lward", side: 0.62 },    // 4
+      { R: 590, kit: "curt", side: 0.62 },     // 5
+      { R: 610, kit: "great", side: 0.62 },    // 6
+      { R: 630, kit: "great", side: 0.62 },    // 7
+      { R: 650, kit: "great", side: 0.62 },    // 8: all eight dungeons
     ],
     cap: [5, 7, 9, 11, 13, 15, 17, 19, 20],
     dungeons: ["spires", "mines"],            // the first two; the portal room's next six add theirs (save.dungeons[id] = 1)
-    hall: { hw: 84, h: 170, gap: 150 },       // the Portal Hall's reserved picture box; the north stairs stand `gap` px either side
+    // the pit down to the Portal Hall (the Spark Bearer thread's props/hallPit): its foot `y` stands `h` px in from the
+    // north wall's top; ground kept clear `hw` px either side, `up` above and `down` below its foot, and east of it out to
+    // `wait` px where the Bearer waits; the north stairs stand `gap` px either side
+    hall: { hw: 90, h: 170, up: 60, down: 40, wait: 170, gap: 150 },
     torches: 3, braziers: 5, lamps: 6, beacons: 8, // the tier these lit pieces appear from
+    /* The monument ring (step 2, 2026-11-11): eight plinths round the sanctum, one per Portal Hall portal, clockwise from
+       the north-east. A plinth stays a dark stub until its dungeon is cleared, then its monument rises in the dungeon's
+       colour, so the base shows at a glance how many of the eight are done. `r` = how far out from the sanctum's edge
+       they're sought, `hw`/`h` = each one's picture box. Colours come from DL.FINALE.portals when it has them. */
+    monuments: { r: 50, hw: 24, h: 118,
+      fallback: [{ id: "spires", name: "The Abyssal Spires", col: "190,130,255" }, { id: "mines", name: "The Molten Mines", col: "255,120,40" }] },
   };
 
   // What the Refuge's upper works do (Robert's picks, 2026-11-04; src/works.js). Each works once its refuge level stands.

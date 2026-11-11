@@ -47,6 +47,9 @@ for (const mode of MODES) for (let lv = 1; lv <= 20; lv++) for (const full of [t
   if (mode.fortress === 1) { // the compact base: every plot fixed, every building and refuge piece has its ground
     assert.equal(L.missing.length, 0, `${tag}: everything has its ground (${L.missing})`);
     assert.ok(R <= 660, `${tag}: compact (half-side ${R})`);
+    assert.equal(L.monuments.length, 8, `${tag}: eight monument plinths`);
+    assert.equal(L.monuments.filter((m) => m.lit).length, mode.tier, `${tag}: one monument lit per dungeon cleared`);
+    for (const m of L.monuments) assert.ok(reach(m.x, m.y + 26), `${tag}: monument ${m.i} can be reached`);
     const all = L.plots.map((p) => [p.x - p.hw, p.y - p.hw, p.x + p.hw, p.y]);
     for (let a = 0; a < all.length; a++) for (let b = a + 1; b < all.length; b++) assert.ok(all[a][2] <= all[b][0] || all[b][2] <= all[a][0] || all[a][3] <= all[b][1] || all[b][3] <= all[a][1], `${tag}: plots ${a} and ${b} overlap`);
   }

@@ -7,6 +7,11 @@
 > (5, 7, 9 ... 20). All buildings get fixed plots per tier. The Portal Hall (the Spark Bearer's portal room door) has
 > reserved ground at the end of the north avenue, with a stair either side of it. The pause switch cycles
 > Compact / Old fortress / Squares; everything below describes the old fortress (`save.up.fortress` 2).
+>
+> **Monument ring (2026-11-11):** eight plinths round the sanctum (`L.monuments`, `DL.BASE.monuments`), one per Portal
+> Hall portal, clockwise from the north-east. Plinth i lights once `save.up.tier > i` (portals open in order), in the
+> colour of `DL.FINALE.portals[i]` (fallback list in `DL.BASE.monuments`). Coded stand-ins (`Refuge.drawMonument`) until
+> Robert's pictures (`art-prompts/base-monument-prompts.md`).
 
 Status: **built on a branch for Robert to try (v0.15.203)**. Robert asked for it 2026-11-03 and chose that the fortress
 **replaces the whole square grid** (he may switch to "replaces only the camp" later). Target look: Robert's concept
