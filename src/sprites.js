@@ -516,7 +516,7 @@
     // hands, the Drowned Gate and its causeway were cut on 2026-11-10; their pictures stay in assets/sprites/props as fn*)
     "fbFront", "fbBack", "fbSide", "fbCamp", "fbHurl", "fbDown",
     // the Spark Bearer, drawn by Robert (2026-11-10): front, back, side, pouring his spark into the dais, collapsed
-    "sbFront", "sbBack", "sbSide", "sbPour", "sbDown", "hallPit"];
+    "sbFront", "sbBack", "sbSide", "sbPour", "sbDown", "hallPit", "sbWalkF1", "sbWalkF2", "sbWalkF3", "sbWalkF4", "sbWalkB1", "sbWalkB2", "sbWalkB3", "sbWalkB4", "sbWalkS1", "sbWalkS2", "sbWalkS3", "sbWalkS4"];
   const PROPS = {
     path: "assets/sprites/",
     // cut at 2 file px per art pixel, like the units

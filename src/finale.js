@@ -877,7 +877,7 @@
     const grow = b.grow != null ? b.grow : 1, leave = b.leave != null ? b.leave : 0;
     return (1 + 3.4 * grow) * (1 - 0.75 * Math.min(1, leave * 1.5));
   }
-  // Robert's drawn Spark Bearer (props/sb*, 2026-11-10): standing by the Flame or the pit, pouring his spark into the dais in the
+  // Robert's drawn Spark Bearer (props/sb*, 2026-11-10; walks 2026-11-11): standing by the Flame or the pit, pouring his spark into the dais in the
   // defense, collapsed when down. (His old Fire Bearer, props/fb*, stands in if those haven't loaded.)
   function drawnBearer(c, b, t, k) {
     const ca = Math.cos(b.angle), sa = Math.sin(b.angle), sb = !!DL.Art.sprites.sbFront;
@@ -887,6 +887,11 @@
     else if (b.moving && Math.abs(ca) > Math.abs(sa) * 1.2) { n = sb ? "sbSide" : "fbSide"; flip = ca < 0; }
     else if (b.moving && sa < 0) n = sb ? "sbBack" : "fbBack";
     else if (b.moving && !sb) n = "fbFront";
+    // walking: Robert's 4-frame walks (props/sbWalkF/B/S1-4, 2026-11-11), about 7 steps a second
+    if (b.moving && !b.down && n.startsWith("sb") && DL.Art.sprites.sbWalkF1) {
+      const f = 1 + (Math.floor(b.animT * 20) % 4);
+      n = n === "sbSide" ? "sbWalkS" + f : n === "sbBack" ? "sbWalkB" + f : "sbWalkF" + f;
+    }
     spr(c, n, b.x, b.y + (n === "sbPour" ? 8 * k : 0), k, flip); // (his spark's beam reaches a little below his feet)
   }
   function drawBearer(c, b, t) {
