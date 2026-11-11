@@ -1011,6 +1011,7 @@
     every: 10, waveEvery: 10, first: 4, sides: 2, groups: 4, size: 1.5, warn: 8, daze: 2, spawnGap: 300,
     zone: (night) => Math.min(4, 1 + Math.floor(night / 10)),
     gameOver: true,
+    oldReach: true, // compact base: waves start as far out as the old fortress's (Siege.reach, src/siege.js)
   };
   /* The Rose Heart (src/trophies.js): from dusk to dawn, every `every` s it binds the `n` Drowned nearest it within
      `reach` px with briar: they can't move or strike for `hold` s (bosses for half as long) and take `sting` damage
