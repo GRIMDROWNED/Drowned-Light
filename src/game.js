@@ -884,7 +884,7 @@
       if (G.siegeT <= 0) {
         G.siegeT = 11;
         const n = Math.round((3 + Math.floor(G.save.day * 1.3)) * G.diff().spawn * G.partyScale());
-        DL.Siege.campSpawned(spawnWave(0, 0, DL.campPool(G.save.day), n, G.flame, DL.WALL_R + 305, 1, wa));
+        DL.Siege.campSpawned(spawnWave(0, 0, DL.campPool(G.save.day), n, G.flame, DL.Siege.reach() + 305, 1, wa));
         if (G.save.day >= SOVEREIGN_SIEGE_DAY && !G.champSpawned && G.phase() === "night") {
           G.champSpawned = true;
           const a = rand(0, TAU);

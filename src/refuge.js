@@ -398,7 +398,7 @@
     const placed = P.placed;
     L.missing = P.missing.slice();
     for (const [id] of MONUMENTS) { const p = placed.find((q) => q.id === id); if (p) L[id] = { x: p.x, y: p.y }; }
-    for (const m of L.monuments) L.plots.push({ x: m.x, y: m.y, hw: m.hw, id: "monument" });
+    for (const m of L.monuments) L.plots.push({ x: m.x, y: m.y, hw: m.hw, id: "monument", art: Refuge.monumentArt(m) });
     for (const p of placed) {
       if (!RF.items[p.id]) continue;
       const it = RF.items[p.id], isB = BUILDINGS.includes(p.id);
@@ -650,7 +650,7 @@
       box: { nw: [20, 10, 190, 300], n: [185, 95, 300, 240], stN: [480, 10, 773, 245], w: [50, 410, 170, 450], stW: [50, 500, 170, 640], sw: [10, 840, 180, 1215], s: [180, 900, 290, 1200], stS: [460, 800, 793, 1238], ne: [1063, 10, 1233, 300], se: [1073, 840, 1243, 1215], e: [1083, 410, 1203, 450], stE: [1083, 500, 1203, 640] } },
   };
   if (typeof Image !== "undefined") {
-    const names = ["foundation", "plaza", "terrace-floor", "avenue-ew", "avenue-ns", "floor-sanctum", "floor-flags", "floor-cobble", "plot-s", "plot-m", "plot-l", "d-bastion", "d-tower", "d-gate", "d-battlement", "d-pillar", "d-beacon", "d-bowl", "d-lantern", "d-statue", "d-planter", "d-well", "d-rack", "d-crates", "hearth1", "hearth5", "hearth10", "hearth15", "hearth20"];
+    const names = ["foundation", "plaza", "terrace-floor", "avenue-ew", "avenue-ns", "floor-sanctum", "floor-flags", "floor-cobble", "plot-s", "plot-m", "plot-l", "d-bastion", "d-tower", "d-gate", "d-battlement", "d-pillar", "d-beacon", "d-bowl", "d-lantern", "d-statue", "d-planter", "d-well", "d-rack", "d-crates", "hearth1", "hearth5", "hearth10", "hearth15", "hearth20", "m-stub", "m-spires", "m-mines"];
     for (const k of ["terrace", "low", "rim", "tier", "sanct", "court", "ward", "mward", "lward", "curt", "great"]) for (const n of Object.keys(KIT[k].box)) names.push(k + "-" + n);
     for (const n of names) { const img = new Image(); img.onload = () => { IMG[n] = img; }; img.src = DL.asset("assets/sprites/refuge/" + n + ".png"); }
   }
@@ -888,13 +888,29 @@
       for (let i = 0; i <= 16; i++) { const a = (i / 16) * Math.PI * 2 - Math.PI / 2, r = i % 2 ? 46 : 84; c[i ? "lineTo" : "moveTo"](Math.cos(a) * r, Math.sin(a) * r * 0.75 + 4); }
       c.stroke();
     }
-    for (const p of L.plots) if (!(p.id && IMG["b-" + p.id + "1"] && !p.reserved)) plot(c, p, flags);
+    for (const p of L.plots) if (!(p.id && IMG["b-" + p.id + "1"] && !p.reserved) && !(p.art && IMG[p.art])) plot(c, p, flags); // drawn monuments bring their own plinth
   };
 
-  /* A dungeon's monument on its plinth (stand-in until Robert's pictures): a dark broken stub while its dungeon
-     stands, then a crystal obelisk in the dungeon's colour that breathes light. */
+  /* A dungeon's monument on its plinth. Robert's pictures (M1, tools/cut_monuments.py): m-stub, a broken stub on its
+     plinth while the dungeon stands, and m-<dungeon id> once its boss falls, glowing in the dungeon's colour. Dungeons
+     without a picture yet get a coded crystal obelisk on a plain plot. Pictures are 2 file px per world px, the
+     plinth's front edge on the bottom row, which sits 16 px below the spot like the buildings'. */
+  Refuge.monumentArt = (m) => (m.lit ? (m.id ? "m-" + m.id : null) : "m-stub");
   Refuge.drawMonument = function (c, m, t) {
-    const x = m.x, y = m.y + 2;
+    const x = m.x, y = m.y + 2, art = Refuge.monumentArt(m), im = art && IMG[art];
+    if (im) {
+      if (m.lit) {
+        const pulse = 0.65 + 0.35 * Math.sin(t * 2 + m.i), cy = m.y + 16 - im.height * 0.3;
+        c.save(); c.globalCompositeOperation = "lighter";
+        const g = c.createRadialGradient(x, cy, 4, x, cy, 64);
+        g.addColorStop(0, `rgba(${m.col},${0.28 * pulse})`); g.addColorStop(1, `rgba(${m.col},0)`);
+        c.fillStyle = g; c.fillRect(x - 64, cy - 64, 128, 128);
+        c.restore();
+      }
+      const w = im.width / 2, h = im.height / 2;
+      c.drawImage(im, x - w / 2, m.y + 16 - h, w, h);
+      return;
+    }
     if (!m.lit) {
       c.fillStyle = "#1f1b17"; c.beginPath(); c.moveTo(x - 9, y); c.lineTo(x - 7, y - 20); c.lineTo(x - 1, y - 26); c.lineTo(x + 3, y - 19); c.lineTo(x + 8, y - 23); c.lineTo(x + 9, y); c.closePath(); c.fill();
       c.fillStyle = "rgba(200,185,150,0.18)"; c.fillRect(x - 7, y - 20, 2, 19);

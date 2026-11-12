@@ -27,6 +27,15 @@
     return n === 0 ? "Tonight the Drowned march on all your squares: the Great Siege." : `The Great Siege comes every ${S.every}th night: ${n} night${n > 1 ? "s" : ""} from now.`;
   };
 
+  /* How far out the camp's waves start (Robert, 2026-11-11): the compact base (src/refuge.js) no longer grows with the
+     flame, so its waves start as far out as the old spreading fortress's would have at this flame level. The marsh
+     between gives the knights the same time to meet them that they had before. */
+  Siege.reach = function () {
+    const R = DL.Refuge;
+    if (!R || !R.on() || !R.compact() || !S.oldReach) return DL.WALL_R;
+    return Math.max(DL.WALL_R, R.geo(R.level(), -1).R);
+  };
+
   Siege.reset = function () { Siege.on = false; Siege.fallen = false; Siege.nextA = null; Siege.warned = false; };
 
   Siege.nightfall = function () {
@@ -112,7 +121,7 @@
     const n = Math.round((3 + Math.floor(G.save.day * 1.3)) * S.size * D.spawn * G.partyScale());
     const all = [], picks = Siege.pick(), stamp = (Siege.stamp = (Siege.stamp || 0) + 1);
     if (!picks.length) { // no squares held: the camp itself
-      for (let s = 0; s < S.sides; s++) all.push(...G.spawnWave(G.flame.x, G.flame.y, DL.campPool(G.save.day), Math.ceil(n / S.sides), G.flame, DL.WALL_R + S.spawnGap, zi, Siege.nextA + (s * TAU) / S.sides));
+      for (let s = 0; s < S.sides; s++) all.push(...G.spawnWave(G.flame.x, G.flame.y, DL.campPool(G.save.day), Math.ceil(n / S.sides), G.flame, Siege.reach() + S.spawnGap, zi, Siege.nextA + (s * TAU) / S.sides));
     }
     for (const target of picks) {
       const wave = approach(target);
