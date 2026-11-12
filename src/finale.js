@@ -108,9 +108,28 @@
       g.drawImage(m, 0, 0);
       const d = g.getImageData(0, 0, MW, MH).data, w = new Uint8Array(MW * MH);
       for (let i = 0; i < w.length; i++) w[i] = d[i * 4] > 127 ? 1 : 0;
-      WALK = w; fields.clear(); cells = null;
+      WALK = smooth(w, MW, MH, 3); fields.clear(); cells = null;
     };
     m.src = DL.asset("assets/sprites/hall/walk.png");
+  }
+  // Close the mask (grow, then shrink, by `k` mask px): fills the notches lantern posts and ragged balustrades cut
+  // into the walkways, which snagged knights on the stairs, without bridging the water between walkways.
+  function smooth(w, W, H, k) {
+    const pass = (src, keep) => { // keep=1: grow (any stone near), keep=0: shrink (any water near)
+      const h = new Uint8Array(W * H), o = new Uint8Array(W * H);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        let v = keep ^ 1;
+        for (let dx = -k; dx <= k && v !== keep; dx++) { const xx = x + dx; if (xx >= 0 && xx < W && src[y * W + xx] === keep) v = keep; }
+        h[y * W + x] = v;
+      }
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        let v = keep ^ 1;
+        for (let dy = -k; dy <= k && v !== keep; dy++) { const yy = y + dy; if (yy >= 0 && yy < H && h[yy * W + x] === keep) v = keep; }
+        o[y * W + x] = v;
+      }
+      return o;
+    };
+    return pass(pass(w, 1), 0);
   }
   const MK = 2 * SC; // world px per mask px
   function walkable(x, y) {
@@ -125,18 +144,28 @@
   Finale.collideHall = function (ent, r) {
     if (!Finale.inHall(ent.x, ent.y)) return;
     loadHall();
-    const m = Math.min(14, Math.max(6, r * 0.9)); // (most of a walker's width: their feet stay on the stone)
+    // (most of a Drowned's width, so their feet stay on the stone; less for knights, so edges don't snag them)
+    const m = ent === G.player ? 5 : Math.min(14, Math.max(6, r * 0.9));
     if (!walkR(ent.x, ent.y, m)) {
       const lx = ent.hwx, ly = ent.hwy;
       if (lx != null && Finale.inHall(lx, ly) && walkR(lx, ly, m)) {
         if (walkR(ent.x, ly, m)) ent.y = ly;
         else if (walkR(lx, ent.y, m)) ent.x = lx;
-        else { ent.x = lx; ent.y = ly; }
+        else { // glance off a slanted edge: the same step turned a little either way, or stay put
+          const dx = ent.x - lx, dy = ent.y - ly;
+          let ok = false;
+          for (const a of GLANCE) {
+            const c = Math.cos(a), s = Math.sin(a), k = Math.cos(a), nx = lx + (dx * c - dy * s) * k, ny = ly + (dx * s + dy * c) * k;
+            if (walkR(nx, ny, m)) { ent.x = nx; ent.y = ny; ok = true; break; }
+          }
+          if (!ok) { ent.x = lx; ent.y = ly; }
+        }
       } else { const q = nearestWalk(ent.x, ent.y, m); if (q) { ent.x = q.x; ent.y = q.y; } } // set down off the stone: onto the nearest
     }
     ent.hwx = ent.x; ent.hwy = ent.y;
   };
 
+  const GLANCE = [0.4, -0.4, 0.8, -0.8, 1.2, -1.2]; // radians tried when a step meets a slanted edge
   // the nearest spot a walker of margin `m` may stand, searching out in rings (null if none close)
   function nearestWalk(x, y, m) {
     if (!WALK) return null;
