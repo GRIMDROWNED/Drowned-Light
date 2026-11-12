@@ -620,7 +620,7 @@
     return dist(p.x, p.y, door().x, door().y) > 700 ? (S().hole ? { x: door().x, y: door().y, label: "Portal Hall" } : { x: Finale.b ? Finale.b.x : 0, y: Finale.b ? Finale.b.y : 0, label: "Spark Bearer" }) : null;
   };
   // In the defense the camera pulls back to show the whole hall (src/render.js, src/game.js).
-  Finale.view = (p) => (defending() && p && Finale.inHall(p.x, p.y) ? { need: 950, needW: 1240, x: DAIS.x, y: DAIS.y - 60, lean: 0.5 } : null);
+  Finale.view = (p) => (defending() && p && Finale.inHall(p.x, p.y) ? { need: 760, needW: 990, x: DAIS.x, y: DAIS.y - 60, lean: 0.25 } : null);
 
   /* ---------------- light ---------------- */
   // The hall's glow (it halts corruption, like the bloomlight), its platforms' lanterns, the burning portals, the Bearer.
