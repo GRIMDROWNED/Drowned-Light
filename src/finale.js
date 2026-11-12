@@ -125,16 +125,27 @@
   Finale.collideHall = function (ent, r) {
     if (!Finale.inHall(ent.x, ent.y)) return;
     loadHall();
-    const m = Math.min(8, r * 0.6);
+    const m = Math.min(14, Math.max(6, r * 0.9)); // (most of a walker's width: their feet stay on the stone)
     if (!walkR(ent.x, ent.y, m)) {
       const lx = ent.hwx, ly = ent.hwy;
-      if (lx == null || !Finale.inHall(lx, ly)) { /* nowhere to go back to: leave it be */ }
-      else if (walkR(ent.x, ly, m)) ent.y = ly;
-      else if (walkR(lx, ent.y, m)) ent.x = lx;
-      else { ent.x = lx; ent.y = ly; }
+      if (lx != null && Finale.inHall(lx, ly) && walkR(lx, ly, m)) {
+        if (walkR(ent.x, ly, m)) ent.y = ly;
+        else if (walkR(lx, ent.y, m)) ent.x = lx;
+        else { ent.x = lx; ent.y = ly; }
+      } else { const q = nearestWalk(ent.x, ent.y, m); if (q) { ent.x = q.x; ent.y = q.y; } } // set down off the stone: onto the nearest
     }
     ent.hwx = ent.x; ent.hwy = ent.y;
   };
+
+  // the nearest spot a walker of margin `m` may stand, searching out in rings (null if none close)
+  function nearestWalk(x, y, m) {
+    if (!WALK) return null;
+    for (let d = 6; d <= 240; d += 6) for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * TAU, px = x + Math.cos(a) * d, py = y + Math.sin(a) * d;
+      if (walkR(px, py, m)) return { x: px, y: py };
+    }
+    return null;
+  }
 
   // The Drowned find their way along the walkways: a flow field over a coarse grid of the mask, one per target cell
   // (cached), followed as far ahead as there's a clear line. From the enemy walk in src/game.js.
@@ -146,7 +157,7 @@
     GW = Math.ceil(MW / CELL); GH = Math.ceil(MH / CELL);
     cells = new Uint8Array(GW * GH);
     for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++)
-      cells[gy * GW + gx] = walkR(X0 + (gx + 0.5) * CW, Y0 + (gy + 0.5) * CW, 12) ? 1 : 0;
+      cells[gy * GW + gx] = walkR(X0 + (gx + 0.5) * CW, Y0 + (gy + 0.5) * CW, 16) ? 1 : 0;
     return cells;
   }
   const cellOf = (x, y) => { const gx = Math.floor((x - X0) / CW), gy = Math.floor((y - Y0) / CW); return gx < 0 || gy < 0 || gx >= GW || gy >= GH ? -1 : gy * GW + gx; };
@@ -183,7 +194,7 @@
   }
   function clear(x0, y0, x1, y1) {
     const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 14);
-    for (let i = 1; i <= n; i++) if (!walkR(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n, 7)) return false;
+    for (let i = 1; i <= n; i++) if (!walkR(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n, 12)) return false;
     return true;
   }
   Finale.route = function (x, y, tx, ty) {
