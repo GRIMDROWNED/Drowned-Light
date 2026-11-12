@@ -90,7 +90,7 @@
   };
   /* The compact base's rings (DL.BASE): the sanctum round the flame as before (by Central Flame level), and ONE outer
      wall at the tier's half-side, rebuilt in the tier's drawn look. Tier 0 has the first camp's low walls (from Flame 3);
-     from tier 1 the whole base stands on a raised terrace. The north wall's two stairs flank the Portal Hall. */
+     from tier 1 the whole base stands on a raised terrace. The pit down to the Portal Hall stands beside the north avenue. */
   const compactCache = new Map();
   function compactGeo(lv, tier) {
     const k = lv + ":" + tier;
@@ -99,8 +99,7 @@
     const stairs = (half, sideW) => {
       const out = [];
       for (let s = 0; s < 4; s++) {
-        if (s === 0) for (const sg of [-1, 1]) out.push({ s, at: sg * B.hall.gap, w: cw, main: true }); // either side of the hall
-        else out.push({ s, at: 0, w: cw, main: true });
+        out.push({ s, at: 0, w: cw, main: true }); // (the north one too, on its avenue: the pit stands beside it, Robert 2026-11-11)
         if (T.side && s !== 0) for (const sg of [-1, 1]) out.push({ s, at: sg * Math.round(half * T.side), w: sideW });
       }
       return out;
@@ -321,7 +320,7 @@
 
   /* The compact base's layout (DL.BASE). Every plot is fixed for the tier: all the buildings and refuge pieces the
      tier's flame cap can reach get their ground at once (built or not), so nothing moves as you build, only when a
-     dungeon is cleared and the whole base is rebuilt a size up. The Portal Hall's ground at the end of the north avenue
+     dungeon is cleared and the whole base is rebuilt a size up. The pit's ground beside the north avenue
      and the dungeons' camp pieces (Rift Portal, Mist Lantern, Forge Gate) are reserved the same way. */
   // (the Rift Portal and Forge Gate no longer stand in camp: the monument ring replaces them, 2026-11-11)
   const MONUMENTS = [["mistLantern", "sw", [-150, 250]]];
@@ -337,15 +336,15 @@
     const towerSpots = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(tSpot);
     const s0r = g.rings.find((r) => r.id === "sanctum"), s = s0r ? s0r.half : 70;
     const sP = gp.rings.find((r) => r.id === "sanctum").half; // the fires stand round the biggest sanctum (they are fixed ground too)
-    // the Portal Hall: its picture's foot near the north wall, on the avenue
-    const H = B.hall, hy = -R + 26 + H.h - 16;
-    L.hall = { x: 0, y: hy, hw: H.hw };
-    const hallBox = [-H.hw, hy - H.up, H.hw, hy + H.down], waitBox = [H.hw, hy, H.wait, hy + 50]; // the pit, and where the Bearer waits
+    // the pit down to the Portal Hall: near the north wall, just west of the avenue to the north gate
+    const H = B.hall, hy = -R + 26 + H.h - 16, hx = -(g.cw / 2 + H.hw + H.side);
+    L.hall = { x: hx, y: hy, hw: H.hw };
+    const hallBox = [hx - H.hw, hy - H.up, hx + H.hw, hy + H.down], waitBox = [hx + H.hw, hy, hx + H.wait, hy + 50]; // the pit, and where the Bearer waits
     // lit pieces by tier: torches along the avenues, braziers off the sanctum's corners, lamps at the stairs, beacons
     L.fires = [];
     const dAv = (sP + R) / 2;
     if (tier >= B.torches) for (const sg of [-1, 1]) for (const [nx, ny] of SIDES) {
-      const d = ny < 0 ? (sP + hallBox[3]) / 2 - 10 : dAv;
+      const d = dAv;
       L.fires.push({ x: nx * d + (ny ? sg * (g.cw / 2 + 12) : 0), y: ny * d + (nx ? sg * (g.cw / 2 + 12) : 0), kind: "torch" });
     }
     if (tier >= B.braziers) for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) L.fires.push({ x: sx * (sP + 44), y: sy * (sP + 44), kind: "brazier" });
@@ -354,10 +353,10 @@
       for (const sg of [-1, 1]) L.fires.push({ x: e.inn.x + (nx ? 0 : sg * (q.w / 2 + 8)), y: e.inn.y + (nx ? sg * (q.w / 2 + 8) : 0), kind: "torch" });
     }
     if (tier >= B.beacons || lv >= 20) for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) L.fires.push({ x: sx * (sP + 4), y: sy * (sP + 4), kind: "beacon" });
-    // pylons on open ground inside the gates (the north pair beside the hall's stairs)
+    // pylons on open ground inside the gates
     const ux = (a) => Math.round(Math.cos(a)), uy = (a) => Math.round(Math.sin(a));
     const pylonSpots = [[-Math.PI / 2, -1], [Math.PI / 2, -1], [0, -1], [Math.PI, -1], [-Math.PI / 2, 1], [Math.PI / 2, 1]]
-      .map(([a, o]) => { const north = a < -1, along = o * ((north ? H.gap : 0) + g.cw / 2 + 30), out = north ? -95 : -60; return { x: ux(a) * (R + out) - uy(a) * along, y: uy(a) * (R + out) + ux(a) * along }; });
+      .map(([a, o]) => { const north = a < -1, along = o * (g.cw / 2 + 30), out = north ? -95 : -60; return { x: ux(a) * (R + out) - uy(a) * along, y: uy(a) * (R + out) + ux(a) * along }; });
     const obstacles = [hallBox, waitBox, ...towerSpots.map((t) => picBox("tower", t.x, t.y)), ...pylonSpots.map((t) => picBox("pylon", t.x, t.y)),
       ...L.fires.map((f) => [f.x - 10, f.y - 34, f.x + 10, f.y + 6])];
     // everything this tier can hold: the camp buildings, then the refuge pieces up to the flame cap, then the dungeons' pieces

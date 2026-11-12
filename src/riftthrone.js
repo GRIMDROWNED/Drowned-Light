@@ -190,6 +190,7 @@
     G.camera.shake = 14;
     DL.Sound.play("milestone");
     G.save.riftlord = (G.save.riftlord || 0) + 1;
+    DL.Finale.cleared("spires"); // the Portal Hall's next portal wakes (src/finale.js)
     DL.Spires.won(S.reward);
     G.persist();
     const fell = "The Lord of the Rift Throne drops to his knees, and the rift behind him tears him apart into light.";

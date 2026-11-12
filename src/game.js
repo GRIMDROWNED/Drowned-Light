@@ -63,12 +63,14 @@
     // outposts raised in bloom groves (src/outposts.js): [grove cell x, grove cell y, x, y]
     outposts: [], // (old saves: each becomes a Pyramid square, src/pyramid.js)
     pyramid: { sq: {} },
-    // the finale (src/finale.js): stage (0 nothing yet, 1 the Fire Bearer waits in camp, 2 on the march, 3 at the gate, 4 won),
-    // where the Bearer stands, its health (-1: full), guttered, its last camp, the gate found yet, and the day it was won
+    // the Spark Bearer and the Portal Hall (src/finale.js): stage (0 nothing yet, 1 the Bearer waits by the stair down to the hall,
+    // 4 the hall lit; old worlds' 2 and 3, the gate, go back to 1), the day it was lit, and the day the hall last cast you out
     riftlord: 0, // how often the Lord of the Rift Throne has been beaten in this world (src/riftthrone.js)
     minesHome: 0, // 1 once Obsidian was first carried home from the Molten Mines: their camp buildings show from then (src/lavacamp.js)
     riftHome: 0, // 1 once Rift Shards were first carried home from a dungeon: their buildings show from then (src/rift.js)
-    finale: { stage: 0, x: 0, y: 0, hp: -1, down: false, rest: null, found: false, won: 0 },
+    finale: { stage: 0, x: 0, y: 0, hp: -1, down: false, rest: null, found: false, won: 0, fail: -1 },
+    // dungeons cleared, by id (the Portal Hall's portals open one after another, src/finale.js): { spires: 1, mines: 1, ... }
+    dungeons: {},
     started: false,
     lastPlayed: 0,
   });
@@ -353,7 +355,6 @@
     DL.Works.update(dt);
     DL.Finale.update(dt);
     DL.Finale.local();
-    DL.Rift.local(); // walking into the open Drowned Gate: the dungeons (src/rift.js)
     DL.Rift.update(dt); // the Crystal Turrets
     DL.LavaCamp.local(); // the Forge Gate (src/lavacamp.js)
     DL.LavaCamp.update(dt); // the Brazier Towers' mortars, the Fire Grate Gates
@@ -394,7 +395,6 @@
     DL.Net.smooth(dt);
     DL.Dungeon.update(dt); // a run in the host's Spires: the portals and seals round this knight (src/spires.js)
     DL.Bullets.update(dt); // the host's bullets, flown on and dodged here (src/bullets.js)
-    DL.Rift.local(); // the open Drowned Gate and the camp's Rift Portal
     DL.LavaCamp.local(); // the Forge Gate
     DL.Rose.local();
     DL.Finale.update(dt);
@@ -645,7 +645,6 @@
     p.kx *= decay; p.ky *= decay;
     W.collide(p, 10);
     collideCamp(p, 10);
-    DL.Finale.collide(p);
 
     // Combat and mining. Auto mode fights the nearest Drowned, or mines a supply node you stand by
     // when none are near. Manual mode keeps them apart: Attack strikes where you aim (mouse, or the
@@ -917,7 +916,6 @@
       if (dist(p.x, p.y, ev.obj.x, ev.obj.y) < 650) return; // the knight at the root gets waves, not roamers
     }
     if (DL.Fred.busy(p)) return; // and the knights defending Fred's fairy ring get its waves (src/fred.js)
-    if (DL.Finale.busySpot(p)) return; // and the Fire Bearer's camp and the gate get theirs (src/finale.js)
 
     G.spawnT -= dt;
     if (G.spawnT > 0) return;
@@ -1107,8 +1105,6 @@
         // a foe of the Abyssal Spires: its own leaps and volleys (src/spirefoes.js)
       } else if (e.def.mine && DL.MineFoes.busy(e, dt, p, dp)) {
         // an Ember Halberdier winding up its throw (src/minefoes.js)
-      } else if (e.def.king && DL.Finale.busy()) {
-        // the Sunken King: his hands do everything (src/finale.js)
       } else if (e.def.bell && DL.Bell.busy(e, dt, p, dp)) {
         // the Starved Bell rearing to swallow, lunging, or eating
       } else if (e.def.rose && DL.Rose.busy(e, dt, p)) {
@@ -1141,7 +1137,7 @@
         const spd = e.speed * (humanLightAt(e.x, e.y) ? 0.72 : 1) * (e.slow > 0 ? 0.6 : 1) * (e.spore > 0 ? e.sporeK : 1) * (e.rallied > 0 ? 1.2 : 1);
         // Walls in the way: head for the nearest gate first.
         const campWp = want === 1 && !e.def.fly ? DL.Camp.route(e.x, e.y, tx, ty, G.save.up) : null;
-        const wp = want === 1 && !e.def.fly ? DL.Dungeon.route(e.x, e.y, tx, ty) || (DL.Pyramid.route(e.x, e.y, campWp ? campWp.x : tx, campWp ? campWp.y : ty) || campWp) : null; // what flies goes over the walls
+        const wp = want === 1 && !e.def.fly ? DL.Finale.route(e.x, e.y, tx, ty) || DL.Dungeon.route(e.x, e.y, tx, ty) || (DL.Pyramid.route(e.x, e.y, campWp ? campWp.x : tx, campWp ? campWp.y : ty) || campWp) : null; // what flies goes over the walls
         let mx = wp ? wp.x - e.x : dx, my = wp ? wp.y - e.y : dy;
         if (e.def.zigzag && want === 1 && !wp && d > 80) { // weave from side to side on the way in
           const w = Math.sin(e.animT * 5 + e.id) * 0.9, ox = mx;
@@ -1225,7 +1221,6 @@
       DL.Golems.push(a, a.def.radius * 0.6);
       W.collide(a, a.def.radius * 0.6);
       collideCamp(a, a.def.radius * 0.6);
-      if (!a.def.king) DL.Finale.collide(a);
     }
     G.enemies = G.enemies.filter((e) => !e.removed);
   }
@@ -1250,7 +1245,6 @@
     if (d.sentinel) DL.Bullets.sentinel(e, dt, p, dp); // the Spire Sentinel's bullet patterns (src/bullets.js)
     if (d.bell) DL.Bell.behave(e, dt, p, dp);
     if (d.colossus) DL.Colossus.think(e, dt, p, dp);
-    if (d.king) DL.Finale.think(e, dt); // the Sunken King picks his moves (src/finale.js)
     if (d.wyvern) DL.Wyvern.think(e, dt, p, dp); // the mother wyvern picks her moves (src/wyvern.js)
     if (d.rose) DL.Rose.think(e, dt, p, dp); // the Deadly Rose picks her moves (src/rose.js) // the Drowned Colossus picks its moves (src/colossus.js)
   }
@@ -1440,8 +1434,6 @@
 
   function hitEnemy(e, dmg, ang, kb, burn, remote) {
     if (e.removed || e.hidden) return;
-    // the Sunken King can only be hurt while the Fire Bearer's flame has his heart open (src/finale.js)
-    if (e.def.king && !DL.Finale.isOpen(e)) { if (!remote) DL.Finale.immune(e); return; }
     const crit = !remote && Math.random() < 0.12;
     let d = dmg * (crit ? 1.6 : 1);
     if (!remote && !e.struck && G.spires && DL.Spires.misty(G.player.x, G.player.y)) d *= DL.SPIRES.mist.strike; // first strike from the mist
@@ -1468,7 +1460,6 @@
     if (e.def.boss) d *= DL.Minions.ward(e); // warded by a Totem Servitor (src/minions.js)
     if (e.cursed) d *= 1 + (e.curseK || DL.ABIGAIL.curse); // weakened by one of Abigail's orbs
     if (e.brittle > 0) d *= 1 + DL.ICE.brittle; // made brittle by the Frostweaver
-    if (e.def.king) d = DL.Finale.cap(e, d);
     e.hp -= d;
     e.flash = 0.12;
     if (e.dormant) e.dormant = false;
@@ -1505,7 +1496,6 @@
     if (e.def.bell) DL.Bell.slain(e);
     if (e.def.rose) DL.Rose.slain(e);
     if (e.def.wyvern) DL.Wyvern.slain(e);
-    if (e.def.king) { DL.Finale.slain(e); return; }
     if (e.def.riftlord) { DL.RiftThrone.slain(e); return; } // the Spires' boss: the run is won (src/riftthrone.js)
     sfx("kill");
     G.effects.push({ type: "dissolve", e, t: 0, max: 0.6 });
@@ -1807,7 +1797,7 @@
   function updateCamera(dt) {
     const c = G.camera, p = G.player;
     const k = 1 - Math.pow(0.0005, dt);
-    const fv = DL.Finale.view(p) || G.bossView(p); // facing the Sunken King (src/finale.js) or a great boss: lean toward it
+    const fv = DL.Finale.view(p) || G.bossView(p); // the Portal Hall's defense (src/finale.js) or a great boss: lean toward it
     const lean = fv && fv.lean != null ? fv.lean : 0.5;
     const tx = fv ? p.x + (fv.x - p.x) * lean : p.x, ty = fv ? p.y - 20 + (fv.y - p.y + 20) * lean : p.y - 20;
     c.x += (tx - c.x) * k;

@@ -15,7 +15,7 @@
   // The map's grid ends GRID px out (Camp.sq); past it a rim of Abyss shore, then black water to EDGE, where the
   // world ends (DL.MAP, docs/PYRAMID-PLAN.md). Derek's Hollow lies off the map and isn't bounded.
   // Off the map: Derek's Hollow and the dungeons (src/dungeon.js; nothing of the wetland is made there).
-  const offMap = (x, y) => DL.Cave.inRegion(x, y) || DL.Dungeon.inRegion(x, y);
+  const offMap = (x, y) => DL.Cave.inRegion(x, y) || DL.Dungeon.inRegion(x, y) || DL.Finale.inHall(x, y); // and the Portal Hall (src/finale.js)
   const GRID = DL.MAP.cell * (DL.MAP.rings + 0.5), EDGE = GRID + DL.MAP.rim, SEA = 160;
 
   const W = (DL.World = {
@@ -29,6 +29,7 @@
 
     zoneIndex(x, y) {
       if (DL.Cave.inRegion(x, y)) return DL.CAVE.zone; // Derek's Hollow, far off the map
+      if (DL.Finale.inHall(x, y)) return DL.FINALE.zone; // the Portal Hall (src/finale.js)
       if (DL.Dungeon.inRegion(x, y)) return 0; // the dungeons (src/dungeon.js)
       const d = DL.Camp.sq(x, y); // the zones are the map's square rings
       let z = 0;
@@ -69,8 +70,6 @@
       const fr = DL.Fred.ringSpot(), frHere = Math.hypot(mx - fr.x, my - fr.y) < CH + DL.FRED.clear;
       // and the wyvern's nest one for its rocks (src/wyvern.js)
       const wn = DL.Wyvern.nestSpot(), wnHere = Math.hypot(mx - wn.x, my - wn.y) < CH + DL.WYVERN.clear;
-      // and the Drowned Gate's arena and black water bare ground (src/finale.js)
-      const fg = DL.Finale.gate(), fnHere = Math.hypot(mx - fg.x, my - fg.y - DL.FINALE.gate.arenaY) < CH + DL.FINALE.gate.clear + 900;
       const n = Math.round(DL.ZONES[zi].density * D.density * (0.7 + DL.hash(cx, cy, 5) * 0.6));
       for (let i = 0; i < n; i++) {
         const x = (cx + DL.hash(cx, cy, i * 3 + 1)) * CH, y = (cy + DL.hash(cx, cy, i * 3 + 2)) * CH;
@@ -93,7 +92,6 @@
         if (rlHere && DL.Rose.clears(x, y)) continue;
         if (frHere && DL.Fred.clears(x, y)) continue;
         if (wnHere && DL.Wyvern.clears(x, y)) continue;
-        if (fnHere && DL.Finale.clears(x, y)) continue;
         const wild = this.makeObj(type, x, y, `${cx},${cy},${i}`, ozi, DL.hash(cx, cy, i * 5 + 4));
         wild.wild = true; // hidden once its square is held and paved (src/pyramid.js)
         objs.push(wild);
@@ -138,7 +136,7 @@
         if (Math.floor(g.x / CH) === cx && Math.floor(g.y / CH) === cy) objs.push(this.makeObj(g.type, g.x, g.y, `${cx},${cy},grave${g.i}`, zi, (g.i * 0.37) % 1));
       }
       // Rare Mother Roots in the Mire and deeper.
-      if (zi >= 2 && DL.hash(cx, cy, 77) < 0.06 * D.bloom && !this.isWater(mx, my) && !denHere && !gsHere && !frHere && !fnHere && !DL.Cave.clears(mx, my)) objs.push(this.makeObj("root", mx, my, `${cx},${cy},root`, zi, 0.5));
+      if (zi >= 2 && DL.hash(cx, cy, 77) < 0.06 * D.bloom && !this.isWater(mx, my) && !denHere && !gsHere && !frHere && !DL.Cave.clears(mx, my)) objs.push(this.makeObj("root", mx, my, `${cx},${cy},root`, zi, 0.5));
       return objs;
     },
 
@@ -206,6 +204,7 @@
     // Push a circle out of solid objects (trees, rocks, pillars, roots).
     collide(ent, r) {
       DL.Cave.collide(ent, r); // the cave mouth's mound, and the Hollow's walls
+      DL.Finale.collideHall(ent, r); // the Portal Hall's eight walls
       DL.Dungeon.collide(ent, r); // in a dungeon only its stone holds you up
       // nobody wades out past the world's end
       if (!offMap(ent.x, ent.y)) {
@@ -284,6 +283,7 @@
 
     groundColor(x, y) {
       if (DL.Cave.inRegion(x, y)) return DL.Cave.groundColor(x, y);
+      if (DL.Finale.inHall(x, y)) return DL.Finale.groundColor(x, y);
       const out = DL.Camp.sq(x, y) > GRID ? this.shoreOut(x, y) : -1;
       if (out > 0) {
         // the black water at the world's end, darkening out to nothing

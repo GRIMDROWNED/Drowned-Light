@@ -526,6 +526,7 @@
       DL.Wyvern.wonGuest(m.m);
       if (DL.UI.refreshCamp) DL.UI.refreshCamp();
     } else if (m.t === "cave" || m.t === "caveMend") DL.Cave.guestMsg(m);
+    else if (m.t === "hall") DL.Finale.guestMsg(m); // pulled down into the Portal Hall, or sent back up (src/finale.js)
     else if (m.t === "spires") DL.Spires.guestMsg(m);
     else if (m.t === "mines") DL.Mines.guestMsg(m);
     else if (m.t === "snap") applySnap(m);

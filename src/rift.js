@@ -1,8 +1,7 @@
 /* Drowned Light — runs and rewards (step 6 of the Level 2 plan): the way into the dungeons, and what they pay for.
 
-   The Drowned Gate: once the Sunken King has fallen, walk up the causeway into its open arch and it offers the
-     dungeons beyond it (one for now, the Abyssal Spires; each new level adds one more). The Rift Portal at camp, opened
-     by lighting every Mist Well in the Spires once, offers the same choice from home.
+   The way in is the Portal Hall (src/finale.js): eight portals, one per dungeon, each woken by clearing the one before
+     (Rift.DUNGEONS holds what each portal leads to; the Drowned Gate and the camp's Rift Portal were cut on 2026-11-10).
    A run's loot: Rift Shards (foes, won rooms, side-room chests) and the Aether Crystals you didn't burn. Walk out and
      half comes home to the stash (all of it once the boss is beaten, step 7); fall and the mist keeps it all.
    What it buys (DL.UPGRADES with `rift`, hidden until Rift Shards first come home):
@@ -12,7 +11,7 @@
    device takes the whole party in (src/spires.js); the loot comes home to the host's stash, which is everyone's.
    Art (Robert's, cut by tools/cut_spires.py to assets/sprites/rift, drawn at half size): the turret's 3 levels (its
    launcher drawn pointing right, so it's mirrored to face Drowned on the left), its bolt, muzzle flash and shatter,
-   the Mist Lantern's 3 levels and the Rift Portal (dormant and open). */
+   the Mist Lantern's 3 levels and the Rift Portal (dormant and open; it stands in for the Portal Hall's portals now). */
 "use strict";
 (function (DL) {
   const G = DL.Game, R = DL.RIFT;
@@ -62,6 +61,7 @@
   };
   /* ---------------- Robert's art ---------------- */
   const ART = ["turret-1", "turret-2", "turret-3", "bolt", "flash-1", "flash-2", "hit", "lantern-1", "lantern-2", "lantern-3", "portal-off", "portal-on"];
+  Rift.art = (n) => (loadArt(), IMG[n] || null); // Robert's pictures for the Portal Hall's stand-ins (src/finale.js)
   const IMG = {};
   let loading = false;
   function loadArt() {
@@ -74,41 +74,15 @@
     if (!flip) return c.drawImage(im, x - w / 2, y - h, w, h);
     c.save(); c.translate(x, y); c.scale(-1, 1); c.drawImage(im, -w / 2, -h, w, h); c.restore();
   };
-  // where the camp's Mist Lantern and Rift Portal stand: fractions of the palisade's half-side, east and west of the Flame, south of the cross paths
+  // where the camp's Mist Lantern stands: fractions of the palisade's half-side, east of the Flame, south of the cross paths
   const LANTERN = { fx: 0.55, fy: 0.24 }, PORTAL = { fx: -0.56, fy: 0.26, k: 0.36 };
   const at = (q) => ({ x: Math.round(q.fx * DL.WALL_R), y: Math.round(q.fy * DL.WALL_R) });
-  // the compact base (src/refuge.js) keeps fixed ground for them, clear of its buildings
+  // the compact base (src/refuge.js) keeps fixed ground for it, clear of its buildings
   const fixed = (k) => { const L = DL.Camp.layout(G.save.up); return L && L.compact ? L[k] : null; };
   Rift.lanternSpot = () => (G.save.up.mistlantern ? fixed("mistLantern") || at(LANTERN) : null);
-  // the compact base's monument ring stands for the Spires instead of the camp Rift Portal (src/refuge.js)
+  // the Rift Portal stood in camp as the Spires' monument (no longer a way through: the dungeons are reached from the
+  // Portal Hall, src/finale.js); the compact base's monument ring stands for it instead (src/refuge.js)
   Rift.portalSpot = () => { const L = DL.Camp.layout(G.save.up); return Rift.portal() && !(L && L.monuments) ? at(PORTAL) : null; };
-
-  // Walking into the open Drowned Gate: the choice of dungeons (once each time you come up to it).
-  let atGate = false, atPortal = false;
-  Rift.local = function () {
-    const p = G.player;
-    if (G.spires) { atGate = true; return; } // back out of a dungeon you stand in the arch: step away first
-    if (!p || G.state !== "play" || G.cave) { atGate = atPortal = false; return; }
-    // the Rift Portal at camp: step into its swirl (not in co-op yet: then it stands dormant)
-    const ps = Rift.portalSpot();
-    if (ps) {
-      const dx = p.x - ps.x, dy = p.y - ps.y;
-      if (Math.abs(dx) < 34 && dy > -14 && dy < 16) { if (!atPortal) { atPortal = true; DL.UI.openGate("portal"); } }
-      else if (Math.hypot(dx, dy) > 90) atPortal = false;
-    }
-    if (!DL.Finale.won()) { atGate = false; return; }
-    const g = DL.Finale.gate(), dx = p.x - g.x, dy = p.y - g.y;
-    if (Math.abs(dx) < 60 && dy > 0 && dy < 46) {
-      if (!atGate) { atGate = true; DL.UI.openGate("gate"); }
-    } else if (Math.hypot(dx, dy) > 130) atGate = false;
-  };
-  // the Rift Portal's card, top of the camp's Buildings tab
-  Rift.card = function () {
-    if (!Rift.portal()) return "";
-    return `<article class="card rift-card"><header><h3>Rift Portal</h3><span class="tag">Open</span></header>
-      <p>Every Mist Well in the Spires burns, and their light holds a rift open here in the camp: a way straight to the roads beyond the Drowned Gate.</p>
-      <footer><button data-act="rift">Step through</button></footer></article>`;
-  };
 
   /* ---------------- the Crystal Turret ---------------- */
   const GATES = [-Math.PI / 2, Math.PI / 2, 0, Math.PI]; // north and south first, then east and west
@@ -145,7 +119,7 @@
       }
     });
   };
-  // the turrets, the Mist Lantern and the Rift Portal among the camp's buildings
+  // the turrets and the Mist Lantern among the camp's buildings
   Rift.push = function (list, c, t) {
     if (G.spires || G.cave) return;
     loadArt();
@@ -153,8 +127,8 @@
     if (lv) Rift.spots().forEach((s, i) => list.push({ y: s.y, f: () => (IMG["turret-" + lv] ? turretArt(c, s, i, lv, t) : turret(c, s.x, s.y, t + i)) }));
     const ls = Rift.lanternSpot(), ll = Math.min(3, G.save.up.mistlantern || 0), li = IMG["lantern-" + ll];
     if (ls && li) list.push({ y: ls.y, f: () => draw(c, li, ls.x, ls.y + 4) });
-    const ps = Rift.portalSpot(), open = true, pi = IMG[open ? "portal-on" : "portal-off"];
-    if (ps && pi) list.push({ y: ps.y, f: () => portalArt(c, pi, ps, open, t) });
+    const ps = Rift.portalSpot(), pi = IMG["portal-on"];
+    if (ps && pi) list.push({ y: ps.y, f: () => portalArt(c, pi, ps, t) });
     if (hits.length && IMG.hit) list.push({ y: 1e9, f: () => {
       for (const h of hits) { c.globalAlpha = 1 - h.t / 0.25; draw(c, IMG.hit, h.x, h.y + 11, 0.4 + h.t); }
       c.globalAlpha = 1;
@@ -175,11 +149,10 @@
     c.fillStyle = g; c.fillRect(s.x - 30, gy - 30, 60, 60);
     c.restore();
   }
-  // the Rift Portal: its swirl slowly turning (a soft pulse over the drawn disc), or dormant in co-op
-  function portalArt(c, im, ps, open, t) {
+  // the Rift Portal: its swirl slowly turning (a soft pulse over the drawn disc)
+  function portalArt(c, im, ps, t) {
     c.fillStyle = "rgba(0,0,0,0.3)"; c.beginPath(); c.ellipse(ps.x, ps.y - 2, im.width * PORTAL.k * 0.45, 9, 0, 0, Math.PI * 2); c.fill();
     draw(c, im, ps.x, ps.y + 4, PORTAL.k);
-    if (!open) return;
     const h = im.height * PORTAL.k, cy = ps.y + 4 - h * 0.56, r = im.width * PORTAL.k * 0.24;
     c.save(); c.globalCompositeOperation = "lighter";
     const g = c.createRadialGradient(ps.x, cy, 0, ps.x, cy, r);
@@ -219,8 +192,9 @@
   };
   Rift.campLights = function (L) {
     if (G.spires || G.cave) return;
-    const ls = Rift.lanternSpot(), ps = Rift.portalSpot();
+    const ls = Rift.lanternSpot();
     if (ls) L.push({ x: ls.x, y: ls.y - 90, r: 70 + 20 * G.save.up.mistlantern, s: 0.5, col: "215,180,255", a: 0.8 });
+    const ps = Rift.portalSpot();
     if (ps) L.push({ x: ps.x, y: ps.y - 60, r: 120, s: 0.6, col: "190,130,255", a: 0.85 });
   };
 })(window.DL);

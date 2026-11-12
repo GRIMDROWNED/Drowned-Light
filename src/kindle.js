@@ -86,7 +86,7 @@
     refillT = K.refillEvery * 0.5;
     if (!G.isGuest() && G.save.kindle.lit && G.player && !DL.Finale.bearing()) spawn(0, G.player.x - 26, G.player.y + 10);
   };
-  // Host: back out of the Drowned Gate after the finale (src/finale.js), small again.
+  // Host: back from the Portal Hall's dais once its spark is full (src/finale.js), small again.
   Kindle.back = function (x, y) { if (G.save.kindle.lit) spawn(0, x, y); };
   // Host: a friend who has lit their Kindle (here or in any world) brings it along.
   Kindle.join = function (owner) {
@@ -250,7 +250,7 @@
 
   // The field guide's line about him (camp menu).
   Kindle.guideLine = function () {
-    if (DL.Finale.bearing()) return "<b>Kindle</b> drank the Central Flame and walks as the Fire Bearer now.";
+    if (DL.Finale.bearing()) return "<b>Kindle</b> drank the Central Flame and stands as the Spark Bearer now, by the stair down to the Portal Hall.";
     const M = mine();
     if (M.lit) return `<b>Kindle</b> follows you. He tops up your lantern oil now and then (not your corruption), and every ${K.guideEvery} nights he leads you somewhere worth finding.`;
     if (G.save.kindle.found || M.fed) { const s = Kindle.spot(); return `A broken lantern lies to the ${compass(s.x, s.y)} of the camp. Walk up to it with torches: ${K.torches - M.fed} more and it burns again.`; }

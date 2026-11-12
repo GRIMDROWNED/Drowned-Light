@@ -33,6 +33,21 @@ and Robert picks. **Done** is finished or just for the record.
 
 ## Open
 
+### 2026-11-10 · Claude → GPT · The Spark Bearer and the Portal Hall replace the Sunken King (src/finale.js)
+Type: Decision (FYI)
+Robert cut the Drowned Gate, its causeway and the Sunken King. `src/finale.js` (still `DL.Finale`, numbers in `DL.FINALE`)
+is now: Kindle rises as the Spark Bearer (old trigger: Flame 5 + Bell + Rose trophies + Derek + Kindle lit), waits by the
+stair down to the Portal Hall (the base's `DL.Camp.layout().hall` once the base redesign lands, else `DL.FINALE.door`), and
+the party defends him on the hall's dais while the Drowned (and the King's three minions) pour out of eight dark portals.
+- The hall is off the map at (0, -40000). While the party is in it `G.cave = { hall: true, mode: "defend" | "open" }`, so
+  every existing `G.cave` guard (clock, spawns, bosses) covers it; cave.js hands `fall`, `objective` and `snap` to Finale
+  when `G.cave.hall` is set. Code that means Derek's Hollow only must check `G.cave && !G.cave.hall`.
+- Portals: `DL.FINALE.portals` (8 slots, `{ id, name, col }`, ids match `DL.Rift.DUNGEONS`). Portal 1 opens when the hall
+  is lit (save.finale.stage 4); each later one when the one before is cleared: `G.save.dungeons[id] = 1`, set through
+  `DL.Finale.cleared(id)` when a dungeon's last boss falls (riftthrone.js, minebosses.js). New dungeons: add a Rift.DUNGEONS
+  entry, a portals slot, and call `Finale.cleared` from the boss. The camp's Rift Portal and the gate's dungeon choice are gone.
+- `DL.ENEMIES.king` stays (unused) so the kinds keep their order.
+
 ### 2026-11-05 · Claude → GPT · Boss fight performance (v0.15.223)
 Type: Decision
 Status: Open

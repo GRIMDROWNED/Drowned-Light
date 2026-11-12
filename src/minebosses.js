@@ -699,6 +699,7 @@
   function sovSlain(e) {
     for (const o of G.enemies) if (o.room === e.room && o !== e && o.def.mine && !o.removed) { o.hp = 0; o.removed = true; for (let i = 0; i < 6; i++) G.puff(o.x, o.y - rand(0, 40), "rgba(120,100,90,0.7)", 50, 0.8, -20); }
     G.save.sovereign = (G.save.sovereign || 0) + 1;
+    DL.Finale.cleared("mines"); // the Portal Hall's next portal wakes (src/finale.js)
     G.persist();
     const fell = "The Ashen Sovereign falls to one knee, and his crown gutters out. The Molten Mines are yours.";
     say(fell, "good");
