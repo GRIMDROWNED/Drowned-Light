@@ -89,7 +89,7 @@
   const door = () => { const h = built(); return h ? { x: h.x, y: h.y + 20, hw: h.hw } : { x: F.door.x, y: F.door.y, hw: 44 }; };
   const pit = () => { const d = door(); return { x: d.x, y: d.y - 34 }; }; // the pit's middle (rx PIT_RX, ry PIT_RY)
   const PIT_RX = 46, PIT_RY = 24;
-  const flameSpot = () => ({ x: 78, y: 34 });
+  const flameSpot = () => ({ x: 118, y: 30 });
   const pitSide = () => { const d = door(); return { x: d.x + d.hw + 40, y: d.y + 10 }; };
   const waitSpot = () => (S().hole ? pitSide() : flameSpot());
   const backSpot = (n) => { const d = door(); return { x: d.x + (n ? 34 * n * (n % 2 ? 1 : -1) / 2 : 0), y: d.y + 70 }; }; // coming back up
